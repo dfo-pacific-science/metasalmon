@@ -171,17 +171,17 @@ Edit your dictionary to add IRIs from the DFO Salmon Ontology:
 ``` r
 
 # Example: Add concept IRIs for species
-# Using DFO Salmon Ontology IRIs (https://w3id.org/gcdfos/salmon#)
-dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#Stock"
-dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#SalmonOriginScheme"
+# Using DFO Salmon Ontology IRIs (https://w3id.org/gcdfo/salmon#)
+dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#Stock"
+dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#SalmonOriginScheme"
 
 # Example: Link escapement measurements
-dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#EscapementMeasurement"
-dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#RelativeAbundanceMetric"
+dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#EscapementMeasurement"
+dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#RelativeAbundanceMetric"
 
 # Example: Link year fields
-dict$concept_iri[dict$column_name == "BROOD_YEAR"] <- "https://w3id.org/gcdfos/salmon#BroodYear"
-dict$concept_iri[dict$column_name == "CATCH_YEAR"] <- "https://w3id.org/gcdfos/salmon#CatchYear"
+dict$concept_iri[dict$column_name == "BROOD_YEAR"] <- "https://w3id.org/gcdfo/salmon#BroodYear"
+dict$concept_iri[dict$column_name == "CATCH_YEAR"] <- "https://w3id.org/gcdfo/salmon#CatchYear"
 
 # Validate again
 validate_dictionary(dict, require_iris = FALSE)  # Set TRUE to require IRIs
@@ -199,8 +199,8 @@ codes <- tibble::tibble(
   column_name = "SPECIES",
   code_value = "Coho",
   code_label = "Coho Salmon (Oncorhynchus kisutch)",
-  concept_scheme_iri = "https://w3id.org/gcdfos/salmon#SalmonOriginScheme",
-  concept_iri = "https://w3id.org/gcdfos/salmon#Stock"
+  concept_scheme_iri = "https://w3id.org/gcdfo/salmon#SalmonOriginScheme",
+  concept_iri = "https://w3id.org/gcdfo/salmon#Stock"
 )
 
 # Apply dictionary with codes to get factor levels
@@ -239,18 +239,18 @@ pkg_path <- create_salmon_datapackage(
     and enable factor levels in R.
 5.  **Link to ontology**: Add IRIs to connect your data to the DFO
     Salmon Ontology for interoperability. Key IRIs include:
-    - `https://w3id.org/gcdfos/salmon#ConservationUnit` - Conservation
+    - `https://w3id.org/gcdfo/salmon#ConservationUnit` - Conservation
       Units
-    - `https://w3id.org/gcdfos/salmon#Stock` - Stock entities
-    - `https://w3id.org/gcdfos/salmon#EscapementMeasurement` -
-      Escapement measurements
-    - `https://w3id.org/gcdfos/salmon#BroodYear` - Brood year references
-    - `https://w3id.org/gcdfos/salmon#CatchYear` - Catch year references
-    - `https://w3id.org/gcdfos/salmon#WSPBiologicalStatusZoneScheme` -
+    - `https://w3id.org/gcdfo/salmon#Stock` - Stock entities
+    - `https://w3id.org/gcdfo/salmon#EscapementMeasurement` - Escapement
+      measurements
+    - `https://w3id.org/gcdfo/salmon#BroodYear` - Brood year references
+    - `https://w3id.org/gcdfo/salmon#CatchYear` - Catch year references
+    - `https://w3id.org/gcdfo/salmon#WSPBiologicalStatusZoneScheme` -
       Status zone scheme (Green/Amber/Red)
-    - `https://w3id.org/gcdfos/salmon#SalmonOriginScheme` - Origin
-      scheme (natural/hatchery)
-    - See the full ontology at <https://w3id.org/gcdfos/salmon> for all
+    - `https://w3id.org/gcdfo/salmon#SalmonOriginScheme` - Origin scheme
+      (natural/hatchery)
+    - See the full ontology at <https://w3id.org/gcdfo/salmon> for all
       available terms
 
 ## Next Steps

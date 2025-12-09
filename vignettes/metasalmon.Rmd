@@ -66,4 +66,3 @@ pkg_path <- create_salmon_datapackage(
 - `inst/extdata/`: Example data files for tests and vignettes
 - `tests/testthat/`: Automated tests
 - `vignettes/`: Long-form documentation
-

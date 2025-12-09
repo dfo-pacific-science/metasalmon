@@ -1,5 +1,7 @@
 # metasalmon
 
+![metasalmon logo](reference/figures/logo.png)
+
 R package for creating portable, ontology-aware Salmon Data Packages.
 Wrap your analysis-ready tables into Frictionless Data Packages extended
 with semantic fields (IRIs, concept schemes) that link to the DFO Salmon
@@ -88,7 +90,7 @@ devtools::install_github("dfo-pacific-science/metasalmon")
 ## DFO Salmon Ontology
 
 This package links your data to the [DFO Salmon
-Ontology](https://w3id.org/gcdfos/salmon) using semantic IRIs. Key
+Ontology](https://w3id.org/gcdfo/salmon) using semantic IRIs. Key
 ontology terms include:
 
 - **Classes**: `ConservationUnit`, `Stock`, `EscapementMeasurement`,
@@ -99,7 +101,7 @@ ontology terms include:
 - **Metrics**: `RelativeAbundanceMetric`, `LongTermTrendMetric`,
   `PercentChangeMetric`
 
-See the [full ontology](https://w3id.org/gcdfos/salmon) and
+See the [full ontology](https://w3id.org/gcdfo/salmon) and
 [repository](https://github.com/dfo-pacific-science/salmon-ontology) for
 all available terms.
 

@@ -88,12 +88,12 @@ these into R:
 
 # Update dictionary with GPT's suggestions using DFO Salmon Ontology IRIs
 dict$column_description[dict$column_name == "SPECIES"] <- "Salmon species name"
-dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#Stock"
-dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#SalmonOriginScheme"
+dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#Stock"
+dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#SalmonOriginScheme"
 
 # Example: Link escapement measurements
-dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#EscapementMeasurement"
-dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#RelativeAbundanceMetric"
+dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#EscapementMeasurement"
+dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#RelativeAbundanceMetric"
 
 # GPT might also suggest code lists
 codes <- tibble::tibble(
@@ -102,8 +102,8 @@ codes <- tibble::tibble(
   column_name = "SPECIES",
   code_value = "Coho",
   code_label = "Coho Salmon (Oncorhynchus kisutch)",
-  concept_scheme_iri = "https://w3id.org/gcdfos/salmon#SalmonOriginScheme",
-  concept_iri = "https://w3id.org/gcdfos/salmon#Stock"
+  concept_scheme_iri = "https://w3id.org/gcdfo/salmon#SalmonOriginScheme",
+  concept_iri = "https://w3id.org/gcdfo/salmon#Stock"
 )
 ```
 
@@ -164,7 +164,7 @@ pkg_path <- create_salmon_datapackage(
 
     For each column, please:
     1. Write a clear description (1-2 sentences)
-    2. Suggest the appropriate DFO Salmon Ontology IRI (concept_iri) from https://w3id.org/gcdfos/salmon#
+    2. Suggest the appropriate DFO Salmon Ontology IRI (concept_iri) from https://w3id.org/gcdfo/salmon#
        - Common classes: ConservationUnit, Stock, EscapementMeasurement, BroodYear, CatchYear
        - See the ontology for all available terms
     3. Identify the concept scheme (concept_scheme_iri) from available schemes:
@@ -234,7 +234,7 @@ dict <- infer_dictionary(df, dataset_id = "my-dataset", table_id = "my-table")
 
 # 3. Extract GPT suggestions (example)
 dict$column_description <- c("Species name", "Population count", ...)  # From GPT
-dict$concept_iri <- c("https://w3id.org/gcdfos/salmon#Stock", "https://w3id.org/gcdfos/salmon#EscapementMeasurement", ...)  # From GPT
+dict$concept_iri <- c("https://w3id.org/gcdfo/salmon#Stock", "https://w3id.org/gcdfo/salmon#EscapementMeasurement", ...)  # From GPT
 
 # 4. Validate
 validate_dictionary(dict)
@@ -245,7 +245,7 @@ create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 
 ## Resources
 
-- **DFO Salmon Ontology**: <https://w3id.org/gcdfos/salmon>
+- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon>
   - Key classes: `ConservationUnit`, `Stock`, `EscapementMeasurement`,
     `BroodYear`, `CatchYear`
   - Key schemes: `WSPBiologicalStatusZoneScheme`, `SalmonOriginScheme`,

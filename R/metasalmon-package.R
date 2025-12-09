@@ -10,4 +10,3 @@
 #' @docType package
 #' @name metasalmon
 "_PACKAGE"
-
