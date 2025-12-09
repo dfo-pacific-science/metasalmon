@@ -1,0 +1,31 @@
+Package: metasalmon
+Type: Package
+Title: Metasalmon: Salmon Data Utilities
+Version: 0.0.0.9000
+Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
+Description: Scaffolding for salmon monitoring utilities. Functions and data
+    will be added incrementally to standardize, validate, transform, summarize, and
+    visualize salmon datasets using the DFO Salmon Ontology.
+License: MIT + file LICENSE
+URL: https://dfo-pacific-science.github.io/metasalmon/
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: R (>= 4.4.0)
+Imports:
+    tibble,
+    readr,
+    jsonlite,
+    cli,
+    rlang,
+    dplyr,
+    purrr
+Suggests:
+    testthat (>= 3.2.1),
+    knitr,
+    rmarkdown,
+    frictionless,
+    withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+LazyData: true

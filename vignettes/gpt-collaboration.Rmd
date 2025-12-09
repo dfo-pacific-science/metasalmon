@@ -1,0 +1,254 @@
+---
+title: "Collaborating with GPT for Salmon Data Packages"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Collaborating with GPT for Salmon Data Packages}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Overview
+
+This vignette shows how to collaborate with GPT (or other LLMs) to propose semantic data dictionaries, IRIs, code lists, and metadata for your Salmon Data Packages. This workflow combines AI assistance with the deterministic R functions in `metasalmon` for a powerful, reproducible pipeline.
+
+# Workflow Overview
+
+1. **Bootstrap**: Use `infer_dictionary()` to create a starter dictionary from your data.
+2. **Prompt GPT**: Send the dictionary and data sample to GPT with a focused prompt.
+3. **Extract**: Copy GPT's suggested IRIs, descriptions, and codes into your dictionary.
+4. **Validate**: Use `validate_dictionary()` to ensure everything is correct.
+5. **Package**: Create your Salmon Data Package with enriched semantics.
+
+# Step-by-Step Guide
+
+## Step 1: Prepare Your Data and Starter Dictionary
+
+```{r}
+library(metasalmon)
+library(readr)
+
+# Load your data
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+df <- read_csv(data_path, show_col_types = FALSE)
+
+# Create starter dictionary
+dict <- infer_dictionary(
+  df,
+  dataset_id = "nuseds-fraser-coho-2024",
+  table_id = "escapement"
+)
+
+# Show a sample for GPT
+head(df, 5)
+dict
+```
+
+## Step 2: Craft a GPT Prompt
+
+Create a prompt that asks GPT to:
+- Propose column descriptions
+- Suggest IRIs from the DFO Salmon Ontology
+- Identify categorical fields that need code lists
+- Propose controlled vocabulary values
+
+**Example prompt:**
+
+```
+I'm creating a Salmon Data Package for coho escapement data. Here's my data sample and starter dictionary:
+
+Data sample (first 5 rows):
+[Paste head(df) output]
+
+Dictionary:
+[Paste dict output]
+
+Please help me enrich this dictionary by:
+1. Writing clear, biologist-friendly descriptions for each column
+2. Suggesting IRIs from the DFO Salmon Ontology (or appropriate vocabularies) for:
+   - concept_iri: the specific concept this column represents
+   - concept_scheme_iri: the controlled vocabulary scheme
+   - metric_iri: if this is a measurement/metric
+   - dimension_iri: if this is a dimension
+3. Identifying which columns should have code lists (categorical fields)
+4. Proposing code values and labels for categorical fields
+
+Return the enriched dictionary as a CSV or R code that I can copy into my R session.
+```
+
+## Step 3: Extract GPT's Suggestions
+
+GPT will return enriched dictionary rows and possibly code lists. Copy these into R:
+
+```{r}
+# Example: GPT suggests descriptions and IRIs
+# You would copy GPT's suggestions here
+
+# Update dictionary with GPT's suggestions using DFO Salmon Ontology IRIs
+dict$column_description[dict$column_name == "SPECIES"] <- "Salmon species name"
+dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#Stock"
+dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfos/salmon#SalmonOriginScheme"
+
+# Example: Link escapement measurements
+dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#EscapementMeasurement"
+dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfos/salmon#RelativeAbundanceMetric"
+
+# GPT might also suggest code lists
+codes <- tibble::tibble(
+  dataset_id = "nuseds-fraser-coho-2024",
+  table_id = "escapement",
+  column_name = "SPECIES",
+  code_value = "Coho",
+  code_label = "Coho Salmon (Oncorhynchus kisutch)",
+  concept_scheme_iri = "https://w3id.org/gcdfos/salmon#SalmonOriginScheme",
+  concept_iri = "https://w3id.org/gcdfos/salmon#Stock"
+)
+```
+
+## Step 4: Validate and Refine
+
+Always validate GPT's suggestions:
+
+```{r}
+# Validate dictionary
+validate_dictionary(dict, require_iris = FALSE)
+
+# Check for any issues GPT might have introduced
+# (e.g., invalid IRIs, wrong types)
+```
+
+## Step 5: Create Your Package
+
+Use the enriched dictionary and codes:
+
+```{r}
+# Prepare metadata (you can also ask GPT to help draft this)
+dataset_meta <- tibble::tibble(
+  dataset_id = "nuseds-fraser-coho-2024",
+  title = "NuSEDS Fraser River Coho Escapement Data",
+  description = "Escapement monitoring data for coho salmon in PFMA 29",
+  # ... other fields
+)
+
+table_meta <- tibble::tibble(
+  dataset_id = "nuseds-fraser-coho-2024",
+  table_id = "escapement",
+  file_name = "escapement.csv",
+  table_label = "Escapement Data",
+  # ... other fields
+)
+
+# Create package
+resources <- list(escapement = df)
+pkg_path <- create_salmon_datapackage(
+  resources,
+  dataset_meta,
+  table_meta,
+  dict,
+  codes = codes,
+  path = tempdir(),
+  format = "csv",
+  overwrite = TRUE
+)
+```
+
+# Advanced: GPT Prompt Templates
+
+## Template 1: Dictionary Enrichment
+
+```
+I have a salmon monitoring dataset with the following columns: [list columns].
+
+For each column, please:
+1. Write a clear description (1-2 sentences)
+2. Suggest the appropriate DFO Salmon Ontology IRI (concept_iri) from https://w3id.org/gcdfos/salmon#
+   - Common classes: ConservationUnit, Stock, EscapementMeasurement, BroodYear, CatchYear
+   - See the ontology for all available terms
+3. Identify the concept scheme (concept_scheme_iri) from available schemes:
+   - WSPBiologicalStatusZoneScheme (Green/Amber/Red zones)
+   - SalmonOriginScheme (natural/hatchery origin)
+   - EnumerationMethodScheme, EstimateMethodScheme, EstimateTypeScheme
+   - COSEWICStatusScheme, StockStatusZoneScheme, etc.
+4. Determine if it's a measurement (metric_iri) or dimension (dimension_iri)
+
+Return as an R tibble I can copy-paste.
+```
+
+## Template 2: Code List Generation
+
+```
+I have a categorical column "[COLUMN_NAME]" with values: [list unique values].
+
+Please:
+1. Create a controlled vocabulary (code list) with proper labels
+2. Suggest IRIs for each code value
+3. Identify the concept scheme IRI
+
+Return as an R tibble matching the codes.csv schema.
+```
+
+## Template 3: Metadata Generation
+
+```
+I'm creating a Salmon Data Package for [describe your dataset].
+
+Please help me draft:
+1. Dataset title and description
+2. Appropriate license
+3. Temporal and spatial extent
+4. Contact information format
+
+Return as an R tibble matching the dataset.csv schema.
+```
+
+# Tips for Effective GPT Collaboration
+
+1. **Provide context**: Include sample data rows so GPT understands your domain.
+2. **Be specific**: Ask for IRIs from specific ontologies (DFO Salmon Ontology).
+3. **Validate everything**: Always run `validate_dictionary()` after GPT suggestions.
+4. **Iterate**: Refine prompts based on GPT's responses.
+5. **Keep deterministic**: Use GPT for suggestions, but rely on R functions for validation and packaging.
+
+# Future: Automated Semantic Suggestion
+
+The `suggest_semantics()` function is a placeholder for future automated semantic suggestion. When implemented, it will:
+- Use heuristics or LLM APIs to propose IRIs
+- Validate suggestions against the DFO Salmon Ontology
+- Provide confidence scores for suggestions
+
+For now, use the manual GPT workflow described above.
+
+# Example: Complete Workflow
+
+```{r}
+# 1. Bootstrap
+dict <- infer_dictionary(df, dataset_id = "my-dataset", table_id = "my-table")
+
+# 2. (Manual step: prompt GPT with dict and sample data)
+
+# 3. Extract GPT suggestions (example)
+dict$column_description <- c("Species name", "Population count", ...)  # From GPT
+dict$concept_iri <- c("https://w3id.org/gcdfos/salmon#Stock", "https://w3id.org/gcdfos/salmon#EscapementMeasurement", ...)  # From GPT
+
+# 4. Validate
+validate_dictionary(dict)
+
+# 5. Create package
+create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
+```
+
+# Resources
+
+- **DFO Salmon Ontology**: https://w3id.org/gcdfos/salmon
+  - Key classes: `ConservationUnit`, `Stock`, `EscapementMeasurement`, `BroodYear`, `CatchYear`
+  - Key schemes: `WSPBiologicalStatusZoneScheme`, `SalmonOriginScheme`, `EnumerationMethodScheme`
+  - Repository: https://github.com/dfo-pacific-science/salmon-ontology
+- **Frictionless Data Package spec**: https://specs.frictionlessdata.io/data-package/
+- **Custom GPT prompt template**: See `docs/context/custom-gpt-prompt.md`

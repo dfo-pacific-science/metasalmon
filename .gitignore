@@ -1,0 +1,49 @@
+.Rhistory
+.RData
+.Rproj.user
+.Rproj
+.DS_Store
+/*.Rcheck/
+/.Ruserdata
+/inst/doc
+/*.tar.gz
+/.Rbuildignore
+/.lintr
+/.env
+/.Renviron
+/.vscode
+/.idea
+
+# R session/editor artifacts
+.Rprofile
+.Rapp.history
+*.swp
+*.tmp
+
+# Knit and vignette intermediates (retain final rendered docs in pkgdown)
+vignettes/*.utf8.md
+vignettes/*.knit.md
+vignettes/*.html
+vignettes/*.R
+
+# renv (if enabled; keep lockfile tracked)
+renv/library/
+renv/staging/
+renv/.cache/
+
+# Nix / devenv
+.devenv/
+.devenv.flake.nix
+devenv.local.nix
+.direnv/
+result*
+
+AGENTS.md
+agent-config/
+.cursor/
+project-specific-instructions.md
+docs/plans/
+.cursorignore
+/doc/
+/Meta/
+pkgdown/

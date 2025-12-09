@@ -1,0 +1,79 @@
+url: https://dfo-pacific-science.github.io/metasalmon/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#0d7377"
+    base_font:
+      google: "Source Sans Pro"
+    code_font:
+      google: "Source Code Pro"
+
+home:
+  title: "metasalmon: Salmon Data Package Utilities"
+  description: |
+    Create portable, ontology-aware Salmon Data Packages from your analysis-ready
+    tables. Link your data to the DFO Salmon Ontology with semantic fields (IRIs,
+    concept schemes) while preserving your original data structure.
+
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+    components:
+      citation:
+        title: Citation
+        text: |
+          If you use metasalmon in your research, please cite it.
+      license:
+        title: License
+        text: |
+          MIT + file LICENSE
+      community:
+        title: Community
+        text: |
+          - [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
+          - [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
+      dev:
+        title: Development
+        text: |
+          This package is under active development.
+
+reference:
+  - title: "Dictionary Functions"
+    desc: "Infer, validate, and apply semantic data dictionaries"
+    contents:
+      - infer_dictionary
+      - validate_dictionary
+      - apply_salmon_dictionary
+
+  - title: "Package Functions"
+    desc: "Create and read Salmon Data Packages"
+    contents:
+      - create_salmon_datapackage
+      - read_salmon_datapackage
+
+  - title: "Semantic Helpers"
+    desc: "Future semantic suggestion capabilities"
+    contents:
+      - suggest_semantics
+
+articles:
+  - title: "Getting Started"
+    navbar: ~
+    contents:
+      - metasalmon
+
+  - title: "Workflows"
+    navbar: ~
+    contents:
+      - functions-workflow
+      - gpt-collaboration
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]
+
+footer:
+  structure:
+    right: [built_with]
+    left: [developed_by]
