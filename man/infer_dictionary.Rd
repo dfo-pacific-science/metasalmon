@@ -23,8 +23,7 @@ infer_dictionary(
 \value{
 A tibble with dictionary schema columns: \code{dataset_id}, \code{table_id},
 \code{column_name}, \code{column_label}, \code{column_description}, \code{column_role},
-\code{value_type}, \code{unit_label}, \code{unit_iri}, \code{metric_iri}, \code{dimension_iri},
-\code{concept_scheme_iri}, \code{concept_iri}, \code{required}
+\code{value_type}, \code{unit_label}, \code{unit_iri}, \code{term_iri}, \code{term_type}, \code{required}
 }
 \description{
 Proposes a starter dictionary (column dictionary schema) from raw data by

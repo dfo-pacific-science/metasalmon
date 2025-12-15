@@ -13,9 +13,7 @@
 <link rel="manifest" href="../site.webmanifest">
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Collaborating with GPT for Salmon Data Packages">
 </head>
@@ -27,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,8 +83,8 @@ reproducible pipeline.</p>
 </h2>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Bootstrap</strong>: Use <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code> to
-create a starter dictionary from your data.</li>
+<strong>Bootstrap</strong>: Use <a href="https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md"><code>infer_dictionary()</code></a>
+to create a starter dictionary from your data.</li>
 <li>
 <strong>Prompt GPT</strong>: Send the dictionary and data sample to
 GPT with a focused prompt.</li>
@@ -94,8 +92,8 @@ GPT with a focused prompt.</li>
 <strong>Extract</strong>: Copy GPT’s suggested IRIs, descriptions,
 and codes into your dictionary.</li>
 <li>
-<strong>Validate</strong>: Use <code><a href="../reference/validate_dictionary.html">validate_dictionary()</a></code> to
-ensure everything is correct.</li>
+<strong>Validate</strong>: Use <a href="https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md"><code>validate_dictionary()</code></a>
+to ensure everything is correct.</li>
 <li>
 <strong>Package</strong>: Create your Salmon Data Package with
 enriched semantics.</li>
@@ -108,10 +106,11 @@ enriched semantics.</li>
 <h3 id="step-1-prepare-your-data-and-starter-dictionary">Step 1: Prepare Your Data and Starter Dictionary<a class="anchor" aria-label="anchor" href="#step-1-prepare-your-data-and-starter-dictionary"></a>
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://readr.tidyverse.org" class="external-link">readr</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Load your data</span></span>
+<span><span class="co"># Load the example NuSEDS Fraser River Coho data included in the metasalmon package</span></span>
 <span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -124,34 +123,85 @@ enriched semantics.</li>
 <span></span>
 <span><span class="co"># Show a sample for GPT</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span>, <span class="fl">5</span><span class="op">)</span></span>
-<span><span class="va">dict</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optional: extra summaries that help GPT map fields more accurately</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">colSums</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">dict</span></span>
+<span></span>
+<span><span class="co"># Optional: write small files to upload to GPT (often more reliable than copy/paste)</span></span>
+<span><span class="co"># CAUTION: Do not include any sensitive data in the files you upload to GPT</span></span>
+<span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span>, <span class="fl">500</span><span class="op">)</span>, <span class="st">"data-sample.csv"</span><span class="op">)</span></span>
+<span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"dictionary.csv"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="optional-build-a-gpt-context-pack-recommended">Optional: Build a GPT Context Pack (Recommended)<a class="anchor" aria-label="anchor" href="#optional-build-a-gpt-context-pack-recommended"></a>
+</h3>
+<p>GPT will do better when you give it machine-readable files (and the
+exact schemas you need back), rather than pasted console prints.</p>
+<p>If your GPT interface supports file uploads, consider uploading:</p>
+<ul>
+<li>Your inferred dictionary (<code>dictionary.csv</code>)</li>
+<li>A small sample of your data (<code>data-sample.csv</code>)</li>
+<li>The <code>metasalmon</code> schema templates:
+<code>dataset.csv</code>, <code>tables.csv</code>,
+<code>column_dictionary.csv</code>, <code>codes.csv</code>
+</li>
+<li>The latest DFO Salmon Ontology file (e.g.,
+<code>dfo-salmon.ttl</code>) and any other vocabularies you rely on
+(e.g., units)</li>
+<li>Any methods / codebook documents that define how fields were
+collected and what values mean</li>
+<li>The ontology repository’s GitHub issue template for term requests
+(optional, but helps the model draft issues in the expected format)</li>
+</ul>
 </div>
 <div class="section level3">
 <h3 id="step-2-craft-a-gpt-prompt">Step 2: Craft a GPT Prompt<a class="anchor" aria-label="anchor" href="#step-2-craft-a-gpt-prompt"></a>
 </h3>
-<p>Create a prompt that asks GPT to: - Propose column descriptions -
-Suggest IRIs from the DFO Salmon Ontology - Identify categorical fields
-that need code lists - Propose controlled vocabulary values</p>
+<p>Create a prompt that asks GPT to:</p>
+<ul>
+<li>Propose column descriptions</li>
+<li>Suggest IRIs from the DFO Salmon Ontology (or appropriate
+vocabularies)</li>
+<li>Identify categorical fields that need code lists</li>
+<li>Propose controlled vocabulary values</li>
+<li>Return results in a strict, copy/pasteable format (CSV or R code)
+matching the <code>metasalmon</code> schemas (see
+<code>column_dictionary.csv</code> and <code>codes.csv</code>)</li>
+</ul>
 <p><strong>Example prompt:</strong></p>
 <pre><code>I'm creating a Salmon Data Package for coho escapement data. Here's my data sample and starter dictionary:
 
 Data sample (first 5 rows):
-[Paste head(df) output]
+[Paste head(df) output from above code chunk]
+
+Data structure summary:
+[Paste str(df) output from above code chunk]
+
+Optional summaries:
+[Paste summary(df) and colSums(is.na(df)) output]
 
 Dictionary:
-[Paste dict output]
+[Paste dict output from above code chunk]
 
 Please help me enrich this dictionary by:
 1. Writing clear, biologist-friendly descriptions for each column
 2. Suggesting IRIs from the DFO Salmon Ontology (or appropriate vocabularies) for:
-   - concept_iri: the specific concept this column represents
-   - concept_scheme_iri: the controlled vocabulary scheme
-   - metric_iri: if this is a measurement/metric
-   - dimension_iri: if this is a dimension
+   - term_iri: the IRI for this column (use an OWL class IRI when it’s a “type”, or a SKOS concept IRI when it’s a controlled vocabulary term)
+   - term_type: set to `owl_class` or `skos_concept` (leave NA if unknown)
+   - unit_label / unit_iri: if applicable
+   - If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology
 3. Identifying which columns should have code lists (categorical fields)
 4. Proposing code values and labels for categorical fields
 
-Return the enriched dictionary as a CSV or R code that I can copy into my R session.</code></pre>
+Output requirements:
+- Return R code that creates a tibble named `dict_gpt` with the same columns as `dict` (do not rename keys or columns).
+- Use only valid `value_type` values: string, integer, number, boolean, date, datetime.
+- Use only valid `column_role` values: identifier, attribute, measurement, temporal, categorical.
+- If you cannot find an exact IRI in the provided ontology file, leave it blank (NA) and propose a new term in a separate tibble named `proposed_terms` (term_label + term_definition + term_type + suggested_parent_iri + suggested_relationships).
+- Do not invent IRIs.</code></pre>
 </div>
 <div class="section level3">
 <h3 id="step-3-extract-gpts-suggestions">Step 3: Extract GPT’s Suggestions<a class="anchor" aria-label="anchor" href="#step-3-extract-gpts-suggestions"></a>
@@ -159,27 +209,53 @@ Return the enriched dictionary as a CSV or R code that I can copy into my R sess
 <p>GPT will return enriched dictionary rows and possibly code lists.
 Copy these into R:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Example: GPT suggests descriptions and IRIs</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Option A (more deterministic): GPT returns a full dict tibble (`dict_gpt`)</span></span>
+<span><span class="co"># and you merge by keys, only filling blanks.</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="va">dict</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
+<span>    <span class="va">dict_gpt</span>,</span>
+<span>    by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dataset_id"</span>, <span class="st">"table_id"</span>, <span class="st">"column_name"</span><span class="op">)</span>,</span>
+<span>    suffix <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">""</span>, <span class="st">".gpt"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
+<span>    column_label <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">column_label</span>, <span class="va">`column_label.gpt`</span><span class="op">)</span>,</span>
+<span>    column_description <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">column_description</span>, <span class="va">`column_description.gpt`</span><span class="op">)</span>,</span>
+<span>    column_role <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">column_role</span>, <span class="va">`column_role.gpt`</span><span class="op">)</span>,</span>
+<span>    value_type <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">value_type</span>, <span class="va">`value_type.gpt`</span><span class="op">)</span>,</span>
+<span>    unit_label <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">unit_label</span>, <span class="va">`unit_label.gpt`</span><span class="op">)</span>,</span>
+<span>    unit_iri <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">unit_iri</span>, <span class="va">`unit_iri.gpt`</span><span class="op">)</span>,</span>
+<span>    term_iri <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">term_iri</span>, <span class="va">`term_iri.gpt`</span><span class="op">)</span>,</span>
+<span>    term_type <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">term_type</span>, <span class="va">`term_type.gpt`</span><span class="op">)</span>,</span>
+<span>    required <span class="op">=</span> <span class="va">required</span> <span class="op">|</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/coalesce.html" class="external-link">coalesce</a></span><span class="op">(</span><span class="va">`required.gpt`</span>, <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="op">-</span><span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tidyselect.r-lib.org/reference/starts_with.html" class="external-link">ends_with</a></span><span class="op">(</span><span class="st">".gpt"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Example: GPT suggests descriptions and IRIs</span></span>
 <span><span class="co"># You would copy GPT's suggestions here</span></span>
 <span></span>
 <span><span class="co"># Update dictionary with GPT's suggestions using DFO Salmon Ontology IRIs</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Salmon species name"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">concept_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#Stock"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">concept_scheme_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#SalmonOriginScheme"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Salmon species common name/code"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#Stock"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_type</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPECIES"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"owl_class"</span></span>
 <span></span>
-<span><span class="co"># Example: Link escapement measurements</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">concept_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"MAX_ESTIMATE"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#EscapementMeasurement"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">metric_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"MAX_ESTIMATE"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#RelativeAbundanceMetric"</span></span>
+<span><span class="co"># Example: Link an escapement measurement column</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"Estimated total natural-origin spawners"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#EscapementMeasurement"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_type</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"owl_class"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">unit_label</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"fish (count)"</span></span>
 <span></span>
 <span><span class="co"># GPT might also suggest code lists</span></span>
 <span><span class="va">codes</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"nuseds-fraser-coho-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  column_name <span class="op">=</span> <span class="st">"SPECIES"</span>,</span>
-<span>  code_value <span class="op">=</span> <span class="st">"Coho"</span>,</span>
-<span>  code_label <span class="op">=</span> <span class="st">"Coho Salmon (Oncorhynchus kisutch)"</span>,</span>
-<span>  concept_scheme_iri <span class="op">=</span> <span class="st">"https://w3id.org/gcdfo/salmon#SalmonOriginScheme"</span>,</span>
-<span>  concept_iri <span class="op">=</span> <span class="st">"https://w3id.org/gcdfo/salmon#Stock"</span></span>
+<span>  column_name <span class="op">=</span> <span class="st">"RUN_TYPE"</span>,</span>
+<span>  code_value <span class="op">=</span> <span class="st">"FALL"</span>,</span>
+<span>  code_label <span class="op">=</span> <span class="st">"Fall run timing"</span>,</span>
+<span>  code_description <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  concept_scheme_iri <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  term_iri <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  term_type <span class="op">=</span> <span class="cn">NA_character_</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -187,8 +263,20 @@ Copy these into R:</p>
 </h3>
 <p>Always validate GPT’s suggestions:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Validate dictionary</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Validate dictionary</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optional: check that codes cover observed values (otherwise factor conversion will introduce NAs)</span></span>
+<span><span class="va">col</span> <span class="op">&lt;-</span> <span class="st">"SPECIES"</span></span>
+<span><span class="va">observed</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">df</span><span class="op">[[</span><span class="va">col</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="va">observed</span> <span class="op">&lt;-</span> <span class="va">observed</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">observed</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">covered</span> <span class="op">&lt;-</span> <span class="va">codes</span><span class="op">$</span><span class="va">code_value</span><span class="op">[</span><span class="va">codes</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="va">col</span><span class="op">]</span></span>
+<span><span class="va">missing_codes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">observed</span>, <span class="va">covered</span><span class="op">)</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">missing_codes</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="va">missing_codes</span></span>
+<span></span>
+<span><span class="co"># Optional: apply dictionary + codes to catch type/factor issues early</span></span>
+<span><span class="va">df_transformed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_salmon_dictionary.html">apply_salmon_dictionary</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span>, codes <span class="op">=</span> <span class="va">codes</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Check for any issues GPT might have introduced</span></span>
 <span><span class="co"># (e.g., invalid IRIs, wrong types)</span></span></code></pre></div>
@@ -198,7 +286,8 @@ Copy these into R:</p>
 </h3>
 <p>Use the enriched dictionary and codes:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Prepare metadata (you can also ask GPT to help draft this)</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># Prepare metadata (you can also ask GPT to help draft this)</span></span>
 <span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"nuseds-fraser-coho-2024"</span>,</span>
 <span>  title <span class="op">=</span> <span class="st">"NuSEDS Fraser River Coho Escapement Data"</span>,</span>
@@ -238,43 +327,83 @@ Copy these into R:</p>
 
 For each column, please:
 1. Write a clear description (1-2 sentences)
-2. Suggest the appropriate DFO Salmon Ontology IRI (concept_iri) from https://w3id.org/gcdfo/salmon#
-   - Common classes: ConservationUnit, Stock, EscapementMeasurement, BroodYear, CatchYear
-   - See the ontology for all available terms
-3. Identify the concept scheme (concept_scheme_iri) from available schemes:
-   - WSPBiologicalStatusZoneScheme (Green/Amber/Red zones)
-   - SalmonOriginScheme (natural/hatchery origin)
-   - EnumerationMethodScheme, EstimateMethodScheme, EstimateTypeScheme
-   - COSEWICStatusScheme, StockStatusZoneScheme, etc.
-4. Determine if it's a measurement (metric_iri) or dimension (dimension_iri)
+2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon# and put it in the right field:
+   - term_iri for the best-matching term
+   - term_type: `owl_class` when the match is an OWL class ("type" in the ontology, e.g., EscapementMeasurement), `skos_concept` when the match is a SKOS concept (a controlled vocabulary term)
+   - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
+3. For measurement columns, suggest unit_label and unit_iri (if available). For categorical columns, keep `concept_scheme_iri` in the codes.csv output (not in the column dictionary).
 
-Return as an R tibble I can copy-paste.</code></pre>
+Return as an R tibble matching the column_dictionary.csv schema. Also return `proposed_terms` with:
+- term_type: "skos_concept" or "owl_class"
+- suggested_parent_iri: a broader concept (for SKOS) or a superclass (for OWL classes)
+- suggested_relationships: broader/narrower/closeMatch/related (for SKOS) or subclass/sameAs/seeAlso (for OWL)</code></pre>
 </div>
 <div class="section level3">
 <h3 id="template-2-code-list-generation">Template 2: Code List Generation<a class="anchor" aria-label="anchor" href="#template-2-code-list-generation"></a>
 </h3>
-<pre><code>I have a categorical column "[COLUMN_NAME]" with values: [list unique values].
+<pre><code>I have a categorical column "[COLUMN_NAME]". Here's the output of:
+- str(df)
+- sort(unique(df$[COLUMN_NAME])) (or the top ~50 values)
+- dplyr::count(df, [COLUMN_NAME], sort = TRUE)
 
 Please:
 1. Create a controlled vocabulary (code list) with proper labels
-2. Suggest IRIs for each code value
-3. Identify the concept scheme IRI
+2. Suggest an IRI for each code value:
+   - term_iri when the match is known; set term_type to `skos_concept` or `owl_class`
+3. Identify the concept scheme IRI (concept_scheme_iri) when these values belong to a SKOS concept scheme (otherwise leave NA)
+4. If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology and draft a github issue according to the github issue template in the dfo-salmon repository
 
 Return as an R tibble matching the codes.csv schema.</code></pre>
 </div>
 <div class="section level3">
 <h3 id="template-3-metadata-generation">Template 3: Metadata Generation<a class="anchor" aria-label="anchor" href="#template-3-metadata-generation"></a>
 </h3>
-<pre><code>I'm creating a Salmon Data Package for [describe your dataset].
+<pre><code>I'm creating a Salmon Data Package for [replace this section with a description of the who, what, what, where, and why of your dataset using the microphone transcription option to provide as much detail as possible. Additionally consider attaching supporting documentation like a pdf or word doc about the methods].
 
-Please help me draft:
-1. Dataset title and description
-2. Appropriate license
-3. Temporal and spatial extent
-4. Contact information format
+Please help me draft metadata for the dataset, providing values for each of the required fields in the Salmon Data Package dataset.csv file:
 
-Return as an R tibble matching the dataset.csv schema.</code></pre>
+- dataset_id
+- title
+- description
+- creator
+- contact_name
+- contact_email
+- license
+- temporal_start
+- temporal_end
+- spatial_extent
+- dataset_type
+- dataset_iri
+- source_citation
+
+For each required field, provide a realistic value if sufficient information is available. Otherwise, ask for clarification. Return the result as an R tibble matching the dataset.csv schema.</code></pre>
 </div>
+</div>
+<div class="section level2">
+<h2 id="handling-ontology-gaps-important">Handling Ontology Gaps (Important)<a class="anchor" aria-label="anchor" href="#handling-ontology-gaps-important"></a>
+</h2>
+<p>The DFO Salmon Ontology is still evolving, so it’s normal that many
+terms you want will not exist yet.</p>
+<p>When a specific term isn’t available:</p>
+<ul>
+<li>Prefer a broader existing IRI (a more general concept or superclass)
+when it is still semantically correct.</li>
+<li>Leave <code>term_iri</code> blank (<code>NA</code>) rather than
+inventing an IRI.</li>
+<li>Capture what you <em>wanted</em> as a proposed new term and include
+its parent relationship:
+<ul>
+<li>For SKOS concepts, use a broader concept (broader means “more
+general”).</li>
+<li>For OWL classes, use a superclass (superclass means “a more general
+type”).</li>
+</ul>
+</li>
+<li>Draft a GitHub issue for the ontology repository and include the
+proposed term label + definition + parent relationship.</li>
+<li>Periodically refresh the ontology file in your Custom GPT so
+suggestions are based on the latest terms.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="tips-for-effective-gpt-collaboration">Tips for Effective GPT Collaboration<a class="anchor" aria-label="anchor" href="#tips-for-effective-gpt-collaboration"></a>
@@ -284,40 +413,55 @@ Return as an R tibble matching the dataset.csv schema.</code></pre>
 <strong>Provide context</strong>: Include sample data rows so GPT
 understands your domain.</li>
 <li>
+<strong>Attach files when possible</strong>: Upload your
+<code>dictionary.csv</code> and a small <code>data-sample.csv</code>
+rather than pasting printed tibbles.</li>
+<li>
+<strong>Minimize sensitive data</strong>: Use a representative
+sample and remove any sensitive identifiers before uploading.</li>
+<li>
 <strong>Be specific</strong>: Ask for IRIs from specific ontologies
 (DFO Salmon Ontology).</li>
 <li>
-<strong>Validate everything</strong>: Always run
-<code><a href="../reference/validate_dictionary.html">validate_dictionary()</a></code> after GPT suggestions.</li>
+<strong>Validate everything</strong>: Always run manually review and
+edit gpt suggestions and then run <a href="https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md"><code>validate_dictionary()</code></a>
+after GPT suggestions.</li>
 <li>
 <strong>Iterate</strong>: Refine prompts based on GPT’s
 responses.</li>
 <li>
-<strong>Keep deterministic</strong>: Use GPT for suggestions, but
-rely on R functions for validation and packaging.</li>
+<strong>Keep deterministic</strong>: Keep prompts in version
+control, ask for strict output (R code/CSV only), prefer “merge by keys”
+workflows, and (if using an API) use a low temperature.</li>
+<li>
+<strong>Expect ontology gaps</strong>: If an IRI doesn’t exist yet,
+leave it blank and draft a term request (don’t invent IRIs).</li>
 </ol>
 </div>
 <div class="section level2">
 <h2 id="future-automated-semantic-suggestion">Future: Automated Semantic Suggestion<a class="anchor" aria-label="anchor" href="#future-automated-semantic-suggestion"></a>
 </h2>
-<p>The <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> function is a placeholder for
-future automated semantic suggestion. When implemented, it will: - Use
-heuristics or LLM APIs to propose IRIs - Validate suggestions against
-the DFO Salmon Ontology - Provide confidence scores for suggestions</p>
+<p>The <a href="https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md"><code>suggest_semantics()</code></a>
+function is a placeholder for future automated semantic suggestion. When
+implemented, it will: - Use heuristics or LLM APIs to propose IRIs -
+Validate suggestions against the DFO Salmon Ontology - Provide
+confidence scores for suggestions</p>
 <p>For now, use the manual GPT workflow described above.</p>
 </div>
 <div class="section level2">
 <h2 id="example-complete-workflow">Example: Complete Workflow<a class="anchor" aria-label="anchor" href="#example-complete-workflow"></a>
 </h2>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># 1. Bootstrap</span></span>
+<code class="sourceCode R"><span></span>
+<span><span class="co"># 1. Bootstrap</span></span>
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"my-dataset"</span>, table_id <span class="op">=</span> <span class="st">"my-table"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 2. (Manual step: prompt GPT with dict and sample data)</span></span>
 <span></span>
 <span><span class="co"># 3. Extract GPT suggestions (example)</span></span>
 <span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Species name"</span>, <span class="st">"Population count"</span>, <span class="va">...</span><span class="op">)</span>  <span class="co"># From GPT</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">concept_iri</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://w3id.org/gcdfo/salmon#Stock"</span>, <span class="st">"https://w3id.org/gcdfo/salmon#EscapementMeasurement"</span>, <span class="va">...</span><span class="op">)</span>  <span class="co"># From GPT</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"https://w3id.org/gcdfo/salmon#Stock"</span>, <span class="st">"https://w3id.org/gcdfo/salmon#EscapementMeasurement"</span>, <span class="va">...</span><span class="op">)</span>  <span class="co"># From GPT</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_type</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"owl_class"</span>, <span class="st">"owl_class"</span>, <span class="va">...</span><span class="op">)</span>  <span class="co"># From GPT</span></span>
 <span></span>
 <span><span class="co"># 4. Validate</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
@@ -348,8 +492,17 @@ the DFO Salmon Ontology - Provide confidence scores for suggestions</p>
 <strong>Frictionless Data Package spec</strong>: <a href="https://specs.frictionlessdata.io/data-package/" class="external-link uri">https://specs.frictionlessdata.io/data-package/</a>
 </li>
 <li>
-<strong>Custom GPT prompt template</strong>: See
-<code>docs/context/custom-gpt-prompt.md</code>
+<strong>Schemas to upload to GPT</strong> (included with the
+package):
+<code>system.file("extdata", "dataset.csv", package = "metasalmon")</code>,
+<code>system.file("extdata", "tables.csv", package = "metasalmon")</code>,
+<code>system.file("extdata", "column_dictionary.csv", package = "metasalmon")</code>,
+<code>system.file("extdata", "codes.csv", package = "metasalmon")</code>
+</li>
+<li>
+<strong>Custom GPT prompt template</strong> (included with the
+package):
+<code>system.file("extdata", "custom-gpt-prompt.md", package = "metasalmon")</code>
 </li>
 </ul>
 </div>

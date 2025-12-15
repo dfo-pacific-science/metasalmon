@@ -7,7 +7,6 @@
 /.Ruserdata
 /inst/doc
 /*.tar.gz
-/.Rbuildignore
 /.lintr
 /.env
 /.Renviron
@@ -47,3 +46,7 @@ docs/plans/
 /doc/
 /Meta/
 pkgdown/
+docs/adr/0001.md
+docs/entrypoints.md
+docs/tech-debt.md
+docs/todo-list.md

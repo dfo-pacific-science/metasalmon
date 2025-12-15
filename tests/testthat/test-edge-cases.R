@@ -91,8 +91,7 @@ test_that("validate_dictionary handles invalid IRI formats gracefully", {
   dict <- infer_dictionary(df)
 
   # Add invalid IRI (validation doesn't check format, but shouldn't crash)
-  dict$concept_iri[1] <- "not a valid IRI"
-  dict$concept_scheme_iri[1] <- "also not valid"
+  dict$term_iri[1] <- "not a valid IRI"
 
   # Should still pass validation (IRI format not validated)
   expect_invisible(validate_dictionary(dict))
@@ -212,7 +211,8 @@ test_that("apply_salmon_dictionary handles codes with mismatched values", {
     code_value = c("Coho", "Chinook"),  # Missing "Unknown"
     code_label = c("Coho Salmon", "Chinook Salmon"),
     concept_scheme_iri = NA_character_,
-    concept_iri = NA_character_
+    term_iri = NA_character_,
+    term_type = NA_character_
   )
 
   result <- apply_salmon_dictionary(df, dict, codes = codes)

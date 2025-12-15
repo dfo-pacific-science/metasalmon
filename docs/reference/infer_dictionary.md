@@ -37,8 +37,8 @@ infer_dictionary(
 
 A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 `column_name`, `column_label`, `column_description`, `column_role`,
-`value_type`, `unit_label`, `unit_iri`, `metric_iri`, `dimension_iri`,
-`concept_scheme_iri`, `concept_iri`, `required`
+`value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`,
+`required`
 
 ## Examples
 

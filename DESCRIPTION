@@ -1,9 +1,9 @@
 Package: metasalmon
 Type: Package
 Title: Metasalmon: Salmon Data Utilities
-Version: 0.0.0.9000
+Version: 0.0.2
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
-Description: Scaffolding for salmon monitoring utilities. Functions and data
+Description: Scaffolding for salmon data utilities. Functions and data
     will be added incrementally to standardize, validate, transform, summarize, and
     visualize salmon datasets using the DFO Salmon Ontology.
 License: MIT + file LICENSE
@@ -28,4 +28,3 @@ Suggests:
     withr
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-LazyData: true

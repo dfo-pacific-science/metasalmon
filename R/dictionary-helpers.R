@@ -11,8 +11,7 @@
 #'
 #' @return A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 #'   `column_name`, `column_label`, `column_description`, `column_role`,
-#'   `value_type`, `unit_label`, `unit_iri`, `metric_iri`, `dimension_iri`,
-#'   `concept_scheme_iri`, `concept_iri`, `required`
+#'   `value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`, `required`
 #'
 #' @export
 #'
@@ -44,10 +43,8 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     value_type = rep(NA_character_, n_cols),
     unit_label = rep(NA_character_, n_cols),
     unit_iri = rep(NA_character_, n_cols),
-    metric_iri = rep(NA_character_, n_cols),
-    dimension_iri = rep(NA_character_, n_cols),
-    concept_scheme_iri = rep(NA_character_, n_cols),
-    concept_iri = rep(NA_character_, n_cols),
+    term_iri = rep(NA_character_, n_cols),
+    term_type = rep(NA_character_, n_cols),
     required = rep(FALSE, n_cols)
   )
 
@@ -161,8 +158,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   # Optional semantic columns (should exist but can be empty)
   semantic_cols <- c(
-    "unit_label", "unit_iri", "metric_iri", "dimension_iri",
-    "concept_scheme_iri", "concept_iri"
+    "unit_label", "unit_iri", "term_iri", "term_type"
   )
 
   # Validate value types
@@ -208,17 +204,12 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   # Optionally require IRIs
   if (require_iris) {
-    iri_cols <- c("concept_scheme_iri", "concept_iri")
-    for (col in iri_cols) {
-      if (col %in% names(dict)) {
-        missing_iris <- is.na(dict[[col]]) | dict[[col]] == ""
-        if (any(missing_iris)) {
-          bad_rows <- which(missing_iris)
-          cli::cli_abort(
-            "Missing required {.field {col}} in rows {bad_rows}"
-          )
-        }
-      }
+    missing_semantic_iri <- is.na(dict$term_iri) | dict$term_iri == ""
+    if (any(missing_semantic_iri)) {
+      bad_rows <- which(missing_semantic_iri)
+      cli::cli_abort(
+        "Missing required {.field term_iri} in rows {bad_rows}"
+      )
     }
   }
 

@@ -161,18 +161,16 @@ For a richer package, add semantic annotations (IRIs linking to the DFO Salmon O
 Edit your dictionary to add IRIs from the DFO Salmon Ontology:
 
 ```{r}
-# Example: Add concept IRIs for species
+# Example: Add OWL class IRIs for columns
+# (An OWL class is a "type" in the ontology, e.g. EscapementMeasurement)
 # Using DFO Salmon Ontology IRIs (https://w3id.org/gcdfo/salmon#)
-dict$concept_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#Stock"
-dict$concept_scheme_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#SalmonOriginScheme"
+dict$term_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#Stock"
+dict$term_type[dict$column_name == "SPECIES"] <- "owl_class"
 
-# Example: Link escapement measurements
-dict$concept_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#EscapementMeasurement"
-dict$metric_iri[dict$column_name == "MAX_ESTIMATE"] <- "https://w3id.org/gcdfo/salmon#RelativeAbundanceMetric"
-
-# Example: Link year fields
-dict$concept_iri[dict$column_name == "BROOD_YEAR"] <- "https://w3id.org/gcdfo/salmon#BroodYear"
-dict$concept_iri[dict$column_name == "CATCH_YEAR"] <- "https://w3id.org/gcdfo/salmon#CatchYear"
+# Example: Link an escapement measurement column
+dict$term_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#EscapementMeasurement"
+dict$term_type[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "owl_class"
+dict$unit_label[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "fish (count)"
 
 # Validate again
 validate_dictionary(dict, require_iris = FALSE)  # Set TRUE to require IRIs
@@ -186,11 +184,13 @@ Create a codes tibble for categorical fields:
 codes <- tibble::tibble(
   dataset_id = "nuseds-fraser-coho-2024",
   table_id = "escapement",
-  column_name = "SPECIES",
-  code_value = "Coho",
-  code_label = "Coho Salmon (Oncorhynchus kisutch)",
-  concept_scheme_iri = "https://w3id.org/gcdfo/salmon#SalmonOriginScheme",
-  concept_iri = "https://w3id.org/gcdfo/salmon#Stock"
+  column_name = "RUN_TYPE",
+  code_value = "FALL",
+  code_label = "Fall run timing",
+  code_description = NA_character_,
+  concept_scheme_iri = NA_character_,
+  term_iri = NA_character_,
+  term_type = NA_character_
 )
 
 # Apply dictionary with codes to get factor levels

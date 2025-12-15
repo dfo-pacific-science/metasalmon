@@ -10,7 +10,7 @@ test_that("infer_dictionary creates valid structure", {
 
   expect_s3_class(dict, "tbl_df")
   expect_equal(nrow(dict), 4)
-  expect_equal(ncol(dict), 14)
+  expect_equal(ncol(dict), 12)
 
   # Check required columns exist
   required_cols <- c(
@@ -121,7 +121,8 @@ test_that("apply_salmon_dictionary applies factor levels from codes", {
     code_value = c("Coho", "Chinook"),
     code_label = c("Coho Salmon", "Chinook Salmon"),
     concept_scheme_iri = NA_character_,
-    concept_iri = NA_character_
+    term_iri = NA_character_,
+    term_type = NA_character_
   )
 
   result <- apply_salmon_dictionary(df, dict, codes = codes)

@@ -24,6 +24,10 @@ Ontology.
 
 ``` r
 
+# install remotes and metasalmon project
+install.packages('remotes')
+remotes::install_github('dfo-pacific-science/metasalmon')
+
 library(metasalmon)
 
 # Load your data

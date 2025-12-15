@@ -134,17 +134,11 @@ create_salmon_datapackage <- function(
       if (!is.na(table_dict$unit_iri[i]) && table_dict$unit_iri[i] != "") {
         field$unit_iri <- table_dict$unit_iri[i]
       }
-      if (!is.na(table_dict$metric_iri[i]) && table_dict$metric_iri[i] != "") {
-        field$metric_iri <- table_dict$metric_iri[i]
+      if ("term_iri" %in% names(table_dict) && !is.na(table_dict$term_iri[i]) && table_dict$term_iri[i] != "") {
+        field$term_iri <- table_dict$term_iri[i]
       }
-      if (!is.na(table_dict$dimension_iri[i]) && table_dict$dimension_iri[i] != "") {
-        field$dimension_iri <- table_dict$dimension_iri[i]
-      }
-      if (!is.na(table_dict$concept_scheme_iri[i]) && table_dict$concept_scheme_iri[i] != "") {
-        field$concept_scheme_iri <- table_dict$concept_scheme_iri[i]
-      }
-      if (!is.na(table_dict$concept_iri[i]) && table_dict$concept_iri[i] != "") {
-        field$concept_iri <- table_dict$concept_iri[i]
+      if ("term_type" %in% names(table_dict) && !is.na(table_dict$term_type[i]) && table_dict$term_type[i] != "") {
+        field$term_type <- table_dict$term_type[i]
       }
 
       # Remove NULL values
@@ -296,10 +290,8 @@ read_salmon_datapackage <- function(path) {
           value_type = if (is.null(field$type)) "string" else field$type,
           unit_label = NA_character_,
           unit_iri = if (is.null(field$unit_iri)) NA_character_ else field$unit_iri,
-          metric_iri = if (is.null(field$metric_iri)) NA_character_ else field$metric_iri,
-          dimension_iri = if (is.null(field$dimension_iri)) NA_character_ else field$dimension_iri,
-          concept_scheme_iri = if (is.null(field$concept_scheme_iri)) NA_character_ else field$concept_scheme_iri,
-          concept_iri = if (is.null(field$concept_iri)) NA_character_ else field$concept_iri,
+          term_iri = if (is.null(field$term_iri)) NA_character_ else field$term_iri,
+          term_type = if (is.null(field$term_type)) NA_character_ else field$term_type,
           required = FALSE
         )
       }

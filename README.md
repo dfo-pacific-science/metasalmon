@@ -16,6 +16,10 @@ R package for creating portable, ontology-aware Salmon Data Packages. Wrap your 
 ## Quick Start
 
 ```r
+# install remotes and metasalmon project
+install.packages('remotes')
+remotes::install_github('dfo-pacific-science/metasalmon')
+
 library(metasalmon)
 
 # Load your data
