@@ -16,3 +16,4 @@ inst/extdata/\.gitkeep$
 ^project-specific-instructions\.md$
 ^doc$
 ^Meta$
+^\\.tmp$
