@@ -72,6 +72,7 @@ test_that("validate_dictionary handles empty dictionary", {
 test_that("validate_dictionary handles NA in required fields", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
 
   # Set required to NA (NA is logical, so this might pass)
   dict$required[1] <- NA
@@ -89,6 +90,7 @@ test_that("validate_dictionary handles NA in required fields", {
 test_that("validate_dictionary handles invalid IRI formats gracefully", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
 
   # Add invalid IRI (validation doesn't check format, but shouldn't crash)
   dict$term_iri[1] <- "not a valid IRI"
@@ -100,6 +102,7 @@ test_that("validate_dictionary handles invalid IRI formats gracefully", {
 test_that("validate_dictionary handles very long strings", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
 
   # Very long description
   long_string <- paste(rep("a", 10000), collapse = "")
@@ -112,6 +115,7 @@ test_that("validate_dictionary handles very long strings", {
 test_that("validate_dictionary requires_iris flag works", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
 
   # Without IRIs, should pass with require_iris = FALSE
   expect_invisible(validate_dictionary(dict, require_iris = FALSE))
@@ -127,6 +131,7 @@ test_that("apply_salmon_dictionary handles empty data frame", {
   empty_df <- data.frame()
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   # Empty data.frame() is still a data.frame, so it passes the inherits check
@@ -139,6 +144,7 @@ test_that("apply_salmon_dictionary handles empty data frame", {
 test_that("apply_salmon_dictionary handles columns not in dictionary", {
   df <- data.frame(x = 1:3, y = 4:6, z = 7:9)
   dict <- infer_dictionary(df[, 1:2, drop = FALSE])  # Only x and y
+  dict <- fill_measurement_components(dict)
 
   validate_dictionary(dict)
   result <- apply_salmon_dictionary(df, dict)
@@ -150,6 +156,7 @@ test_that("apply_salmon_dictionary handles columns not in dictionary", {
 test_that("apply_salmon_dictionary handles dictionary columns not in data", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(data.frame(x = 1:3, y = 4:6))  # Has y, but df doesn't
+  dict <- fill_measurement_components(dict)
 
   validate_dictionary(dict)
   result <- apply_salmon_dictionary(df, dict)
@@ -161,6 +168,7 @@ test_that("apply_salmon_dictionary handles dictionary columns not in data", {
 test_that("apply_salmon_dictionary handles type coercion failures (strict)", {
   df <- data.frame(count = c("100", "not-a-number", "200"))
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   dict$value_type[dict$column_name == "count"] <- "integer"
 
   validate_dictionary(dict)
@@ -181,6 +189,7 @@ test_that("apply_salmon_dictionary handles type coercion failures (strict)", {
 test_that("apply_salmon_dictionary handles type coercion failures (non-strict)", {
   df <- data.frame(count = c("100", "not-a-number", "200"))
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   dict$value_type[dict$column_name == "count"] <- "integer"
 
   validate_dictionary(dict)
@@ -202,6 +211,7 @@ test_that("apply_salmon_dictionary handles codes with mismatched values", {
   df <- data.frame(species = c("Coho", "Chinook", "Unknown"))
 
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   codes <- tibble::tibble(
@@ -210,7 +220,7 @@ test_that("apply_salmon_dictionary handles codes with mismatched values", {
     column_name = "species",
     code_value = c("Coho", "Chinook"),  # Missing "Unknown"
     code_label = c("Coho Salmon", "Chinook Salmon"),
-    concept_scheme_iri = NA_character_,
+    vocabulary_iri = NA_character_,
     term_iri = NA_character_,
     term_type = NA_character_
   )
@@ -224,6 +234,7 @@ test_that("apply_salmon_dictionary handles codes with mismatched values", {
 test_that("apply_salmon_dictionary handles missing required columns", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+  dict <- fill_measurement_components(dict)
   dict$required[1] <- TRUE
   validate_dictionary(dict)
 
@@ -253,6 +264,7 @@ test_that("create_salmon_datapackage handles empty resources list", {
   resources <- list()
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -277,6 +289,7 @@ test_that("create_salmon_datapackage handles resources with no matching table_me
   resources <- list(missing_table = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -308,6 +321,7 @@ test_that("create_salmon_datapackage handles invalid format parameter", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -337,6 +351,7 @@ test_that("create_salmon_datapackage handles invalid path", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -371,6 +386,8 @@ test_that("create_salmon_datapackage handles multiple resources", {
 
   dict1 <- infer_dictionary(resources$table1, dataset_id = "test-1", table_id = "table1")
   dict2 <- infer_dictionary(resources$table2, dataset_id = "test-1", table_id = "table2")
+  dict1 <- fill_measurement_components(dict1)
+  dict2 <- fill_measurement_components(dict2)
   dict <- dplyr::bind_rows(dict1, dict2)
   validate_dictionary(dict)
 
@@ -407,6 +424,7 @@ test_that("create_salmon_datapackage handles resources with no matching dictiona
 
   # Dictionary only has x, not y
   dict <- infer_dictionary(data.frame(x = 1:3), dataset_id = "test-1", table_id = "main")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -469,6 +487,7 @@ test_that("read_salmon_datapackage handles missing resource files", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "main")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -556,6 +575,7 @@ test_that("create_salmon_datapackage handles dataset_meta with wrong number of r
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "main")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   # Wrong number of rows
@@ -586,6 +606,7 @@ test_that("create_salmon_datapackage handles empty table_meta", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "main")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   dataset_meta <- tibble::tibble(
@@ -625,6 +646,7 @@ test_that("apply_salmon_dictionary handles datetime conversion", {
   )
 
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   dict$value_type[dict$column_name == "date_col"] <- "datetime"
   validate_dictionary(dict)
 
@@ -640,6 +662,7 @@ test_that("apply_salmon_dictionary handles date conversion", {
   )
 
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
   dict$value_type[dict$column_name == "date_col"] <- "date"
   validate_dictionary(dict)
 

@@ -10,7 +10,8 @@ validate_dictionary(dict, require_iris = FALSE)
 \item{dict}{A tibble or data.frame with dictionary schema columns}
 
 \item{require_iris}{Logical; if \code{TRUE}, requires non-empty IRIs for semantic
-fields (default: \code{FALSE})}
+fields (default: \code{FALSE}). Measurement columns always require \code{term_iri},
+\code{property_iri}, \code{entity_iri}, and \code{unit_iri}.}
 }
 \value{
 Invisibly returns the normalized dictionary if valid; otherwise

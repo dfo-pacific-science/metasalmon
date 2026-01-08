@@ -12,6 +12,9 @@ R package for creating portable, ontology-aware Salmon Data Packages. Wrap your 
 - **Data transformation**: Apply dictionaries to rename columns, coerce types, and apply factor levels
 - **Package creation**: Assemble Frictionless Data Packages with salmon-specific semantic extensions
 - **Package reading**: Load packages back into R as tidy tibbles with metadata
+- **I-ADOPT components for measurements**: Preserve and round-trip required `term_iri`, `property_iri`, `entity_iri`, and `unit_iri` on measurement columns, with optional `constraint_iri` and `method_iri`.
+- **I-ADOPT-aware term search**: `find_terms()` ranks vocabulary hits using the I-ADOPT terminology catalogue; `suggest_semantics()` adds best-effort suggestions for missing measurement metadata.
+- **smn-gpt alignment**: Shares schemas and the same I-ADOPT terminology catalogue used by the `smn-gpt` system prompt, so GPT outputs can be applied directly.
 
 ## Quick Start
 

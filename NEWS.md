@@ -1,3 +1,16 @@
+metasalmon 0.0.3
+----------------
+
+- Added `find_terms()` function for searching candidate terms across external vocabularies (OLS, NVS, BioPortal).
+- `find_terms()` now ranks results deterministically using I-ADOPT role hints from `inst/extdata/iadopt-terminologies.csv` (preferred vocabularies boosted; ties stable).
+- `suggest_semantics()` now returns best-effort suggestions (stored in `attr(,'semantic_suggestions')`) instead of a placeholder message.
+- Added I-ADOPT component fields (`property_iri`, `entity_iri`, `constraint_iri`, `method_iri`) to dictionary schema and package creation/reading.
+- Enhanced validation: measurement columns now require I-ADOPT components (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`).
+- Updated table metadata: renamed `entity_type`/`entity_iri` to `observation_unit`/`observation_unit_iri` for clarity.
+- Added `httr` package dependency for vocabulary search functionality.
+- Dictionary validation now normalizes optional semantic columns and returns the normalized dictionary.
+- Vignettes now show end-to-end semantic enrichment (I-ADOPT-aware suggestions) and how to align with `smn-gpt`.
+
 metasalmon 0.0.2
 ----------------
 

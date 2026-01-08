@@ -10,7 +10,7 @@ test_that("infer_dictionary creates valid structure", {
 
   expect_s3_class(dict, "tbl_df")
   expect_equal(nrow(dict), 4)
-  expect_equal(ncol(dict), 12)
+  expect_equal(ncol(dict), 16)
 
   # Check required columns exist
   required_cols <- c(
@@ -18,6 +18,7 @@ test_that("infer_dictionary creates valid structure", {
     "column_description", "column_role", "value_type", "required"
   )
   expect_true(all(required_cols %in% names(dict)))
+  expect_true(all(c("property_iri", "entity_iri", "constraint_iri", "method_iri") %in% names(dict)))
 
   # Check inferred types
   expect_equal(dict$value_type[dict$column_name == "count"], "integer")
@@ -26,9 +27,73 @@ test_that("infer_dictionary creates valid structure", {
   expect_equal(dict$value_type[dict$column_name == "is_active"], "boolean")
 })
 
+test_that("suggest_semantics attaches empty suggestions when sources disabled", {
+  dict <- tibble::tibble(
+    dataset_id = "test",
+    table_id = "t1",
+    column_name = "value",
+    column_label = "Spawner abundance",
+    column_description = "Spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  res <- suggest_semantics(NULL, dict, sources = character(0))
+  expect_equal(res$column_name, dict$column_name)
+  suggestions <- attr(res, "semantic_suggestions")
+  expect_s3_class(suggestions, "tbl_df")
+  expect_equal(nrow(suggestions), 0)
+})
+
+test_that("suggest_semantics captures suggestions with dictionary_role and column_name", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "value",
+    column_label = "Spawner abundance",
+    column_description = "Spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c("Option A", "Option B"),
+      iri = c("http://example.org/a", "http://example.org/b"),
+      source = c("ols", "ols"),
+      ontology = c("demo", "demo"),
+      role = role,
+      match_type = "",
+      definition = ""
+    )
+  }
+
+  res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+  suggestions <- attr(res, "semantic_suggestions")
+  expect_equal(nrow(suggestions), 6) # variable/property/entity/unit/constraint/method
+  expect_true(all(c("dictionary_role", "column_name") %in% names(suggestions)))
+  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
+  expect_true(all(suggestions$column_name == "value"))
+})
+
 test_that("validate_dictionary passes valid dictionary", {
   df <- data.frame(x = 1:5, y = letters[1:5])
   dict <- infer_dictionary(df)
+  dict <- fill_measurement_components(dict)
 
   # Validation passes (may produce success messages)
   expect_invisible(validate_dictionary(dict))
@@ -81,6 +146,7 @@ test_that("apply_salmon_dictionary renames columns", {
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
   dict$column_label[dict$column_name == "species"] <- "Species Name"
   dict$column_label[dict$column_name == "count"] <- "Total Count"
+  dict <- fill_measurement_components(dict)
 
   validate_dictionary(dict)
   result <- apply_salmon_dictionary(df, dict)
@@ -100,6 +166,7 @@ test_that("apply_salmon_dictionary coerces types", {
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
   dict$value_type[dict$column_name == "count"] <- "integer"
   dict$value_type[dict$column_name == "value"] <- "number"
+  dict <- fill_measurement_components(dict)
 
   validate_dictionary(dict)
   result <- apply_salmon_dictionary(df, dict, strict = TRUE)
@@ -112,6 +179,7 @@ test_that("apply_salmon_dictionary applies factor levels from codes", {
   df <- data.frame(species = c("Coho", "Chinook", "Coho"))
 
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+  dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 
   codes <- tibble::tibble(
@@ -120,7 +188,7 @@ test_that("apply_salmon_dictionary applies factor levels from codes", {
     column_name = "species",
     code_value = c("Coho", "Chinook"),
     code_label = c("Coho Salmon", "Chinook Salmon"),
-    concept_scheme_iri = NA_character_,
+    vocabulary_iri = NA_character_,
     term_iri = NA_character_,
     term_type = NA_character_
   )

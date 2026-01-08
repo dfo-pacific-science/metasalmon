@@ -11,7 +11,9 @@
 #'
 #' @return A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 #'   `column_name`, `column_label`, `column_description`, `column_role`,
-#'   `value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`, `required`
+#'   `value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`, `required`,
+#'   and I-ADOPT component fields (`property_iri`, `entity_iri`,
+#'   `constraint_iri`, `method_iri`).
 #'
 #' @export
 #'
@@ -45,7 +47,11 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     unit_iri = rep(NA_character_, n_cols),
     term_iri = rep(NA_character_, n_cols),
     term_type = rep(NA_character_, n_cols),
-    required = rep(FALSE, n_cols)
+    required = rep(FALSE, n_cols),
+    property_iri = rep(NA_character_, n_cols),
+    entity_iri = rep(NA_character_, n_cols),
+    constraint_iri = rep(NA_character_, n_cols),
+    method_iri = rep(NA_character_, n_cols)
   )
 
   if (guess_types) {
@@ -126,7 +132,8 @@ infer_column_role <- function(col_name, col) {
 #'
 #' @param dict A tibble or data.frame with dictionary schema columns
 #' @param require_iris Logical; if `TRUE`, requires non-empty IRIs for semantic
-#'   fields (default: `FALSE`)
+#'   fields (default: `FALSE`). Measurement columns always require `term_iri`,
+#'   `property_iri`, `entity_iri`, and `unit_iri`.
 #'
 #' @return Invisibly returns the normalized dictionary if valid; otherwise
 #'   raises errors with clear messages
@@ -156,10 +163,16 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
     )
   }
 
-  # Optional semantic columns (should exist but can be empty)
+  # Ensure optional semantic columns exist (fill with NA if absent)
   semantic_cols <- c(
-    "unit_label", "unit_iri", "term_iri", "term_type"
+    "unit_label", "unit_iri", "term_iri", "term_type",
+    "property_iri", "entity_iri", "constraint_iri", "method_iri"
   )
+  for (col in semantic_cols) {
+    if (!col %in% names(dict)) {
+      dict[[col]] <- NA_character_
+    }
+  }
 
   # Validate value types
   valid_types <- c("string", "integer", "number", "boolean", "date", "datetime")
@@ -188,6 +201,19 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   # Validate required flag is logical
   if (!is.logical(dict$required)) {
     cli::cli_abort("{.field required} must be logical (TRUE/FALSE)")
+  }
+
+  # Measurement columns require I-ADOPT components and units
+  measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
+  required_measurement_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
+  for (field in required_measurement_fields) {
+    missing_field <- measurement_rows & (is.na(dict[[field]]) | dict[[field]] == "")
+    if (any(missing_field, na.rm = TRUE)) {
+      bad_rows <- which(missing_field)
+      cli::cli_abort(
+        "Measurement columns require {.field {field}}; missing in rows {bad_rows}."
+      )
+    }
   }
 
   # Check for duplicate column names within same table
@@ -246,8 +272,8 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
     cli::cli_abort("{.arg df} must be a data frame or tibble")
   }
 
-  # Validate dictionary first
-  validate_dictionary(dict, require_iris = FALSE)
+  # Validate dictionary first (also normalizes optional columns)
+  dict <- validate_dictionary(dict, require_iris = FALSE)
 
   # Start with a copy
   result <- tibble::as_tibble(df)

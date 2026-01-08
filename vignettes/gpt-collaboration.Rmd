@@ -126,7 +126,7 @@ Create a prompt that asks GPT to:
     Output requirements:
     - Return R code that creates a tibble named `dict_gpt` with the same columns as `dict` (do not rename keys or columns).
     - Use only valid `value_type` values: string, integer, number, boolean, date, datetime.
-    - Use only valid `column_role` values: identifier, attribute, measurement, temporal, categorical.
+    - Use only valid `column_role` values: identifier, attribute, measurement, temporal, categorical. Use `measurement` **only** for variables you would analyze (e.g., counts, rates, lengths), and keep IDs, dates, sample labels, and descriptive text as identifier/temporal/attribute.
     - If you cannot find an exact IRI in the provided ontology file, leave it blank (NA) and propose a new term in a separate tibble named `proposed_terms` (term_label + term_definition + term_type + suggested_parent_iri + suggested_relationships).
     - Do not invent IRIs.
 
@@ -180,11 +180,38 @@ codes <- tibble::tibble(
   code_value = "FALL",
   code_label = "Fall run timing",
   code_description = NA_character_,
-  concept_scheme_iri = NA_character_,
+  vocabulary_iri = NA_character_,
   term_iri = NA_character_,
   term_type = NA_character_
 )
 ```
+
+### Step 3b: Pull role-aware suggestions locally (I-ADOPT catalogue)
+
+Before (or alongside) GPT, you can ask `metasalmon` to propose candidates using the bundled I-ADOPT terminology catalogue:
+
+``` r
+# Role-aware suggestions; no network keys needed for OLS/NVS
+dict_suggested <- suggest_semantics(
+  df = df,
+  dict = dict,
+  sources = c("ols", "nvs")
+)
+
+suggestions <- attr(dict_suggested, "semantic_suggestions")
+# Inspect by role
+dplyr::count(suggestions, dictionary_role)
+head(suggestions)
+
+# Manually accept the top-ranked picks per role for a measurement column
+nat_row <- dict$column_name == "NATURAL_SPAWNERS_TOTAL"
+dict$term_iri[nat_row]      <- suggestions$iri[suggestions$dictionary_role == "variable"][1]
+dict$property_iri[nat_row]  <- suggestions$iri[suggestions$dictionary_role == "property"][1]
+dict$entity_iri[nat_row]    <- suggestions$iri[suggestions$dictionary_role == "entity"][1]
+dict$unit_iri[nat_row]      <- suggestions$iri[suggestions$dictionary_role == "unit"][1]
+```
+
+`smn-gpt` uses the same I-ADOPT catalogue (symlinked into the repo) and follows the same rules: measurement columns require `term_iri`, `property_iri`, `entity_iri`, `unit_iri`, with optional `constraint_iri` and `method_iri`.
 
 ### Step 4: Validate and Refine
 
@@ -229,7 +256,10 @@ table_meta <- tibble::tibble(
   table_id = "escapement",
   file_name = "escapement.csv",
   table_label = "Escapement Data",
-  # ... other fields
+  description = "Coho escapement counts and metadata",
+  observation_unit = NA_character_,      # or a short label like "CU-year record"
+  observation_unit_iri = NA_character_,  # optional class for the table’s unit-of-observation
+  primary_key = "POP_ID"
 )
 
 # Create package
@@ -258,7 +288,7 @@ pkg_path <- create_salmon_datapackage(
        - term_iri for the best-matching term
        - term_type: `owl_class` when the match is an OWL class ("type" in the ontology, e.g., EscapementMeasurement), `skos_concept` when the match is a SKOS concept (a controlled vocabulary term)
        - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
-    3. For measurement columns, suggest unit_label and unit_iri (if available). For categorical columns, keep `concept_scheme_iri` in the codes.csv output (not in the column dictionary).
+    3. For measurement columns, suggest unit_label and unit_iri (if available). For categorical columns, keep `vocabulary_iri` in the codes.csv output (not in the column dictionary).
 
     Return as an R tibble matching the column_dictionary.csv schema. Also return `proposed_terms` with:
     - term_type: "skos_concept" or "owl_class"
@@ -276,7 +306,7 @@ pkg_path <- create_salmon_datapackage(
     1. Create a controlled vocabulary (code list) with proper labels
     2. Suggest an IRI for each code value:
        - term_iri when the match is known; set term_type to `skos_concept` or `owl_class`
-    3. Identify the concept scheme IRI (concept_scheme_iri) when these values belong to a SKOS concept scheme (otherwise leave NA)
+    3. Identify the vocabulary IRI (`vocabulary_iri`) when these values belong to a controlled vocabulary (often a SKOS concept scheme; otherwise leave NA)
     4. If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology and draft a github issue according to the github issue template in the dfo-salmon repository
 
     Return as an R tibble matching the codes.csv schema.

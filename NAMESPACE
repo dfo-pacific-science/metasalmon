@@ -2,9 +2,12 @@
 
 export(apply_salmon_dictionary)
 export(create_salmon_datapackage)
+export(find_terms)
 export(infer_dictionary)
 export(read_salmon_datapackage)
 export(suggest_semantics)
 export(validate_dictionary)
+import(httr)
 importFrom(dplyr,"%>%")
+importFrom(rlang,"%||%")
 importFrom(rlang,.data)

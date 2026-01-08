@@ -4,27 +4,37 @@
 \alias{suggest_semantics}
 \title{Suggest semantic annotations for a dictionary}
 \usage{
-suggest_semantics(df, dict)
+suggest_semantics(
+  df,
+  dict,
+  sources = c("ols", "nvs"),
+  max_per_role = 3,
+  search_fn = find_terms
+)
 }
 \arguments{
 \item{df}{A data frame or tibble}
 
 \item{dict}{A dictionary tibble (may be incomplete)}
+
+\item{sources}{Search sources to use for \code{find_terms()}; default is OLS + NVS.}
+
+\item{max_per_role}{Maximum suggestions to keep per role/column.}
+
+\item{search_fn}{Function used to search terms (defaults to \code{find_terms});
+useful for testing or custom search strategies.}
 }
 \value{
-The dictionary tibble unchanged (placeholder implementation)
+The dictionary tibble (unchanged) with a \code{semantic_suggestions}
+attribute containing suggested IRIs for missing fields.
 }
 \description{
 Placeholder function for future GPT/LLM or heuristic-based suggestions
 of IRIs, concept schemes, and semantic annotations for dictionary fields.
 }
-\details{
-Currently returns the dictionary unchanged with a message indicating
-that semantic suggestion is not yet implemented.
-}
 \examples{
 \dontrun{
 dict <- infer_dictionary(mtcars)
-suggested <- suggest_semantics(mtcars, dict)
+suggested <- suggest_semantics(mtcars, dict, sources = "ols")
 }
 }

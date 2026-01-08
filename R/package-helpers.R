@@ -69,8 +69,8 @@ create_salmon_datapackage <- function(
     cli::cli_abort("{.arg resources} must be a named list")
   }
 
-  # Validate dictionary
-  validate_dictionary(dict, require_iris = FALSE)
+  # Validate dictionary (also normalizes optional columns)
+  dict <- validate_dictionary(dict, require_iris = FALSE)
 
   # Check if path exists
   if (dir.exists(path) && !overwrite) {
@@ -139,6 +139,18 @@ create_salmon_datapackage <- function(
       }
       if ("term_type" %in% names(table_dict) && !is.na(table_dict$term_type[i]) && table_dict$term_type[i] != "") {
         field$term_type <- table_dict$term_type[i]
+      }
+      if ("property_iri" %in% names(table_dict) && !is.na(table_dict$property_iri[i]) && table_dict$property_iri[i] != "") {
+        field$property_iri <- table_dict$property_iri[i]
+      }
+      if ("entity_iri" %in% names(table_dict) && !is.na(table_dict$entity_iri[i]) && table_dict$entity_iri[i] != "") {
+        field$entity_iri <- table_dict$entity_iri[i]
+      }
+      if ("constraint_iri" %in% names(table_dict) && !is.na(table_dict$constraint_iri[i]) && table_dict$constraint_iri[i] != "") {
+        field$constraint_iri <- table_dict$constraint_iri[i]
+      }
+      if ("method_iri" %in% names(table_dict) && !is.na(table_dict$method_iri[i]) && table_dict$method_iri[i] != "") {
+        field$method_iri <- table_dict$method_iri[i]
       }
 
       # Remove NULL values
@@ -265,15 +277,15 @@ read_salmon_datapackage <- function(path) {
     resource_df <- readr::read_csv(file_path, show_col_types = FALSE)
     resources[[resource_name]] <- resource_df
 
-    # Build table metadata
+    # Build table metadata (observation_unit = what each row is about / unit of observation)
     table_meta_rows[[length(table_meta_rows) + 1]] <- list(
       dataset_id = datapackage$name,
       table_id = resource_name,
       file_name = resource$path,
       table_label = resource_name,
       description = NA_character_,
-      entity_type = NA_character_,
-      entity_iri = NA_character_,
+      observation_unit = NA_character_,
+      observation_unit_iri = NA_character_,
       primary_key = NA_character_
     )
 
@@ -292,7 +304,11 @@ read_salmon_datapackage <- function(path) {
           unit_iri = if (is.null(field$unit_iri)) NA_character_ else field$unit_iri,
           term_iri = if (is.null(field$term_iri)) NA_character_ else field$term_iri,
           term_type = if (is.null(field$term_type)) NA_character_ else field$term_type,
-          required = FALSE
+          required = FALSE,
+          property_iri = if (is.null(field$property_iri)) NA_character_ else field$property_iri,
+          entity_iri = if (is.null(field$entity_iri)) NA_character_ else field$entity_iri,
+          constraint_iri = if (is.null(field$constraint_iri)) NA_character_ else field$constraint_iri,
+          method_iri = if (is.null(field$method_iri)) NA_character_ else field$method_iri
         )
       }
     }

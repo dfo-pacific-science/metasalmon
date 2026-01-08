@@ -28,7 +28,7 @@ Recommended (per dataset):
 - Put IRIs in the correct field:
   - `term_iri`: the best-matching term IRI
   - `term_type`: set to `owl_class` when the IRI is an OWL class, `skos_concept` when it is a SKOS concept
-  - `concept_scheme_iri`: only for categorical code lists (codes.csv) when values belong to a SKOS concept scheme
+  - `vocabulary_iri`: only for categorical code lists (codes.csv) when values belong to a controlled vocabulary (often a SKOS concept scheme)
 - Use only allowed enumerations:
   - `value_type`: `string`, `integer`, `number`, `boolean`, `date`, `datetime`
   - `column_role`: `identifier`, `attribute`, `measurement`, `temporal`, `categorical`
