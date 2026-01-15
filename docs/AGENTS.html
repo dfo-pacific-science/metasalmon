@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,8 +19,11 @@
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/functions-workflow.html">Salmon Data Package Functions Workflow</a></li>
-    <li><a class="dropdown-item" href="articles/gpt-collaboration.html">Collaborating with GPT for Salmon Data Packages</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Data Dictionary and Publication</a></li>
+    <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a></li>
+    <li><a class="dropdown-item" href="articles/gpt-collaboration.html">AI Assistance for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="articles/glossary.html">Glossary</a></li>
+    <li><a class="dropdown-item" href="articles/faq.html">Frequently Asked Questions</a></li>
   </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -57,8 +60,30 @@
 <h2 id="skills-index-tool-agnostic">Skills Index (tool-agnostic)<a class="anchor" aria-label="anchor" href="#skills-index-tool-agnostic"></a></h2>
 <p>Canonical skills live in <code>~/.codex/skills</code> (projects may not contain a local copy).</p>
 <p>Progressive disclosure rule: enumerate skills by reading YAML frontmatter only (name + description), and only open SKILL.md bodies when relevant. If <code>list-skills</code> is available, use it; otherwise, scan <code>~/.codex/skills/**/SKILL.md</code> and read frontmatter only. If a skill references a missing tool (e.g., <code>TodoWrite</code>), use the closest native equivalent (e.g., <code>update_plan</code>) and proceed.</p>
-<p>Skill router (when to load which skill): - <code>teach-concept</code>: Brett asks for an explanation or says he’s confused. - <code>memory-and-context</code>: session start, any memory read/write, or learning-plan decisions. - <code>repo-hygiene</code>: Mode B cleanup triggers or “which file is live?” risk. - <code>ui-styling</code>: any UI/layout/styling change (enforce repo-majority styling system). - <code>testing-and-verification</code>: deciding what validation to run or re-validating after cleanup. - <code>docs-and-entrypoints</code>: wiring/entrypoints/styling entry points changed. - <code>security-and-trust</code>: auth, secrets, untrusted inputs, dependencies, or risky execution. - <code>mcp-usage</code>: deciding whether/when to use MCP tools without bloating context. - <code>execplans</code>: Brett explicitly asks for an execplan or autonomous execution. - <code>skill-creator</code>: a multi-step workflow looks reusable across projects; ask if Brett wants it turned into a new skill. - <code>pdf</code> / <code>docx</code> / <code>xlsx</code>: the task involves those creating those file formats.</p>
-</div>
+<p>Skill router (when to load which skill):</p>
+<ul><li>
+<code>teach-concept</code>: Brett asks for an explanation or says he’s confused.</li>
+<li>
+<code>memory-and-context</code>: session start, any memory read/write, or learning-plan decisions.</li>
+<li>
+<code>repo-hygiene</code>: Mode B cleanup triggers or “which file is live?” risk.</li>
+<li>
+<code>ui-styling</code>: any UI/layout/styling change (enforce repo-majority styling system).</li>
+<li>
+<code>testing-and-verification</code>: deciding what validation to run or re-validating after cleanup.</li>
+<li>
+<code>docs-and-entrypoints</code>: wiring/entrypoints/styling entry points changed.</li>
+<li>
+<code>security-and-trust</code>: auth, secrets, untrusted inputs, dependencies, or risky execution.</li>
+<li>
+<code>mcp-usage</code>: deciding whether/when to use MCP tools without bloating context.</li>
+<li>
+<code>execplans</code>: Brett explicitly asks for an execplan or autonomous execution.</li>
+<li>
+<code>skill-creator</code>: a multi-step workflow looks reusable across projects; ask if Brett wants it turned into a new skill.</li>
+<li>
+<code>pdf</code> / <code>docx</code> / <code>xlsx</code>: the task involves those creating those file formats.</li>
+</ul></div>
 <div class="section level2">
 <h2 id="learning--memory-progressive-disclosure">Learning &amp; Memory (progressive disclosure)<a class="anchor" aria-label="anchor" href="#learning--memory-progressive-disclosure"></a></h2>
 <ul><li>If Brett asks for an explanation or says he’s confused, follow <code>~/.codex/skills/teach-concept/SKILL.md</code> (default: 1-minute inline teach + one tiny exercise; optional <code>.qmd</code> tutoring session if <code>CODEX_MEMORY_DIR</code> is set).</li>
@@ -67,8 +92,12 @@
 <li>Learning plan: <code>~/.codex/learning-plan.md</code> is a short index; open only when goals/deliverables are relevant.</li>
 </ul><div class="section level3">
 <h3 id="active-path-declaration-after-code-changes">Active Path Declaration (after code changes)<a class="anchor" aria-label="anchor" href="#active-path-declaration-after-code-changes"></a></h3>
-<p>State: - Canonical implementation (files/symbols) - Entry point / wiring (how it runs) - What was removed/redirected/quarantined - How to verify (exact commands)</p>
-</div>
+<p>State:</p>
+<ul><li>Canonical implementation (files/symbols)</li>
+<li>Entry point / wiring (how it runs)</li>
+<li>What was removed/redirected/quarantined</li>
+<li>How to verify (exact commands)</li>
+</ul></div>
 </div>
 <div class="section level2">
 <h2 id="cleanup-rules-delete-vs-quarantine">Cleanup Rules (delete vs quarantine)<a class="anchor" aria-label="anchor" href="#cleanup-rules-delete-vs-quarantine"></a></h2>
@@ -106,6 +135,7 @@
 <h3 id="project-overivew">Project Overivew<a class="anchor" aria-label="anchor" href="#project-overivew"></a></h3>
 <p>This is an R package repository for salmon data utility functions that users can leverage to improve their data interoperability.</p>
 <p>Everything in the ./docs/ folder is auto generated from files elsewhere in the repo and shouldn’t be edited or reviewed</p>
+<p>Any changes to functions in the this metasalmon R package need to be reflected in the salmonpy R package at ../salmonpy/ by making analagous updates there too.</p>
 </div>
 </div>
 </div>

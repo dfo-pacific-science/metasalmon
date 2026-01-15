@@ -26,16 +26,30 @@ find_terms <- function(query,
     return(.empty_terms(role))
   }
 
+  cache_key <- paste(query, role, paste(sort(sources), collapse = ","), sep = "::")
+  if (.metasalmon_cache_enabled && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
+    return(get(cache_key, envir = .metasalmon_cache))
+  }
+
   results <- purrr::map(sources, function(src) {
-    if (src == "ols") .search_ols(query, role)
-    else if (src == "nvs") .search_nvs(query, role)
-    else if (src == "bioportal") .search_bioportal(query, role)
-    else .empty_terms(role)
+    if (src == "ols") {
+      .search_ols(query, role)
+    } else if (src == "nvs") {
+      .search_nvs(query, role)
+    } else if (src == "bioportal") {
+      .search_bioportal(query, role)
+    } else {
+      .empty_terms(role)
+    }
   })
 
   combined <- dplyr::bind_rows(results)
   ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab())
-  dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition)
+  ranked <- dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition)
+  if (.metasalmon_cache_enabled) {
+    assign(cache_key, ranked, envir = .metasalmon_cache)
+  }
+  ranked
 }
 
 .empty_terms <- function(role) {
@@ -50,11 +64,18 @@ find_terms <- function(query,
   )
 }
 
+.metasalmon_cache <- new.env(parent = emptyenv())
+.metasalmon_cache_enabled <- tolower(Sys.getenv("METASALMON_CACHE", unset = "")) %in% c("1", "true", "yes")
+
+.metasalmon_cache <- new.env(parent = emptyenv())
+
 .safe_json <- function(url, headers = NULL) {
   tryCatch(
     {
       res <- httr::GET(url, httr::add_headers(.headers = headers %||% list()))
-      if (httr::status_code(res) >= 300) return(NULL)
+      if (httr::status_code(res) >= 300) {
+        return(NULL)
+      }
       jsonlite::fromJSON(httr::content(res, as = "text", encoding = "UTF-8"))
     },
     error = function(...) NULL
@@ -65,7 +86,9 @@ find_terms <- function(query,
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://www.ebi.ac.uk/ols4/api/search?q=", encoded)
   data <- .safe_json(url)
-  if (is.null(data) || is.null(data$response$docs)) return(.empty_terms(role))
+  if (is.null(data) || is.null(data$response$docs)) {
+    return(.empty_terms(role))
+  }
 
   docs <- data$response$docs
   tibble::tibble(
@@ -89,7 +112,9 @@ find_terms <- function(query,
 
   rows <- purrr::map(urls, function(u) {
     data <- .safe_json(u)
-    if (is.null(data) || is.null(data$results)) return(.empty_terms(role))
+    if (is.null(data) || is.null(data$results)) {
+      return(.empty_terms(role))
+    }
     tibble::tibble(
       label = data$results$prefLabel %||% "",
       iri = data$results$uri %||% "",
@@ -106,11 +131,25 @@ find_terms <- function(query,
 
 .search_bioportal <- function(query, role) {
   apikey <- Sys.getenv("BIOPORTAL_APIKEY", unset = "")
-  if (apikey == "") return(.empty_terms(role))
+  if (apikey == "") {
+    if (isFALSE(getOption("metasalmon.warned_bioportal_missing", FALSE))) {
+      warning(
+        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
+        "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
+        "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
+        "Get a key at https://bioportal.bioontology.org/register. ",
+        call. = FALSE
+      )
+      options(metasalmon.warned_bioportal_missing = TRUE)
+    }
+    return(.empty_terms(role))
+  }
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://data.bioontology.org/search?q=", encoded, "&apikey=", apikey)
   data <- .safe_json(url)
-  if (is.null(data) || is.null(data$collection)) return(.empty_terms(role))
+  if (is.null(data) || is.null(data$collection)) {
+    return(.empty_terms(role))
+  }
 
   coll <- data$collection
   tibble::tibble(
@@ -126,7 +165,9 @@ find_terms <- function(query,
 
 .iadopt_vocab <- function() {
   path <- system.file("extdata", "iadopt-terminologies.csv", package = "metasalmon", mustWork = TRUE)
-  if (!file.exists(path)) return(tibble::tibble())
+  if (!file.exists(path)) {
+    return(tibble::tibble())
+  }
   tib <- readr::read_csv(path, show_col_types = FALSE, progress = FALSE)
   tib %>%
     dplyr::mutate(
@@ -137,7 +178,9 @@ find_terms <- function(query,
 }
 
 .score_and_rank_terms <- function(df, role, vocab_tbl) {
-  if (nrow(df) == 0) return(df)
+  if (nrow(df) == 0) {
+    return(df)
+  }
 
   base_source_weight <- c(ols = 0.3, nvs = 0.6, bioportal = 0.2)
   role_boost <- list(

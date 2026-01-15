@@ -19,7 +19,8 @@ validate_dictionary(dict, require_iris = FALSE)
 - require_iris:
 
   Logical; if `TRUE`, requires non-empty IRIs for semantic fields
-  (default: `FALSE`)
+  (default: `FALSE`). Measurement columns always require `term_iri`,
+  `property_iri`, `entity_iri`, and `unit_iri`.
 
 ## Value
 

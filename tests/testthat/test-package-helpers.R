@@ -19,7 +19,6 @@ test_that("create_salmon_datapackage creates valid package", {
     temporal_end = NA_character_,
     spatial_extent = NA_character_,
     dataset_type = NA_character_,
-    dataset_iri = NA_character_,
     source_citation = NA_character_
   )
 
@@ -80,7 +79,6 @@ test_that("read_salmon_datapackage reads package correctly", {
     temporal_end = NA_character_,
     spatial_extent = NA_character_,
     dataset_type = NA_character_,
-    dataset_iri = NA_character_,
     source_citation = NA_character_
   )
 
@@ -153,7 +151,6 @@ test_that("create_salmon_datapackage round-trip preserves data", {
     temporal_end = NA_character_,
     spatial_extent = NA_character_,
     dataset_type = NA_character_,
-    dataset_iri = NA_character_,
     source_citation = NA_character_
   )
 
@@ -218,7 +215,6 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
     temporal_end = NA_character_,
     spatial_extent = NA_character_,
     dataset_type = NA_character_,
-    dataset_iri = NA_character_,
     source_citation = NA_character_
   )
 
@@ -292,7 +288,6 @@ test_that("create_salmon_datapackage errors on existing path without overwrite",
     temporal_end = NA_character_,
     spatial_extent = NA_character_,
     dataset_type = NA_character_,
-    dataset_iri = NA_character_,
     source_citation = NA_character_
   )
   table_meta <- tibble::tibble(

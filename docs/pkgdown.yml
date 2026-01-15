@@ -2,10 +2,13 @@ pandoc: 3.8.3
 pkgdown: 2.2.0
 pkgdown_sha: ~
 articles:
-  functions-workflow: functions-workflow.html
+  data-dictionary-publication: data-dictionary-publication.html
+  faq: faq.html
+  glossary: glossary.html
   gpt-collaboration: gpt-collaboration.html
   metasalmon: metasalmon.html
-last_built: 2025-12-15T21:18Z
+  reusing-standards-salmon-data-terms: reusing-standards-salmon-data-terms.html
+last_built: 2026-01-15T21:53Z
 urls:
   reference: https://dfo-pacific-science.github.io/metasalmon/reference
   article: https://dfo-pacific-science.github.io/metasalmon/articles

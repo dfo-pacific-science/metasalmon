@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,8 +19,11 @@
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/functions-workflow.html">Salmon Data Package Functions Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Collaborating with GPT for Salmon Data Packages</a></li>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Data Dictionary and Publication</a></li>
+    <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">AI Assistance for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
+    <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
@@ -36,6 +39,30 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.5" id="metasalmon-005">metasalmon 0.0.5<a class="anchor" aria-label="anchor" href="#metasalmon-005"></a></h2>
+<ul><li>Renamed the GitHub CSV helpers to generic names: <code><a href="../reference/github_raw_url.html">github_raw_url()</a></code> and <code><a href="../reference/read_github_csv.html">read_github_csv()</a></code>. <code>repo</code> is now required unless you provide a full URL.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.4" id="metasalmon-004">metasalmon 0.0.4<a class="anchor" aria-label="anchor" href="#metasalmon-004"></a></h2>
+<ul><li>Added <code><a href="../reference/ms_setup_github.html">ms_setup_github()</a></code> to guide one-time PAT setup (git check, browser token creation, git credential storage) and verify access to the private Qualark data repository.</li>
+<li>Added <code>qualark_raw_url()</code> and <code>read_qualark_csv()</code> to build stable raw GitHub URLs and read Qualark CSVs using the stored PAT (with SSO-aware error messages and retry logic).</li>
+<li>New tests cover URL construction, blob/raw URL normalization, and an opt-in Qualark fetch when a token is configured.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.3" id="metasalmon-003">metasalmon 0.0.3<a class="anchor" aria-label="anchor" href="#metasalmon-003"></a></h2>
+<ul><li>Added <code><a href="../reference/find_terms.html">find_terms()</a></code> function for searching candidate terms across external vocabularies (OLS, NVS, BioPortal).</li>
+<li>
+<code><a href="../reference/find_terms.html">find_terms()</a></code> now ranks results deterministically using I-ADOPT role hints from <code>inst/extdata/iadopt-terminologies.csv</code> (preferred vocabularies boosted; ties stable).</li>
+<li>
+<code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> now returns best-effort suggestions (stored in <code>attr(,'semantic_suggestions')</code>) instead of a placeholder message.</li>
+<li>Added I-ADOPT component fields (<code>property_iri</code>, <code>entity_iri</code>, <code>constraint_iri</code>, <code>method_iri</code>) to dictionary schema and package creation/reading.</li>
+<li>Enhanced validation: measurement columns now require I-ADOPT components (<code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>, <code>unit_iri</code>).</li>
+<li>Updated table metadata: renamed <code>entity_type</code>/<code>entity_iri</code> to <code>observation_unit</code>/<code>observation_unit_iri</code> for clarity.</li>
+<li>Added <code>httr</code> package dependency for vocabulary search functionality.</li>
+<li>Dictionary validation now normalizes optional semantic columns and returns the normalized dictionary.</li>
+<li>Vignettes now show end-to-end semantic enrichment (I-ADOPT-aware suggestions) and how to align with <code>smn-gpt</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.2" id="metasalmon-002">metasalmon 0.0.2<a class="anchor" aria-label="anchor" href="#metasalmon-002"></a></h2>
 <ul><li>Unified semantic fields to <code>term_iri</code> + <code>term_type</code> and reserved <code>concept_scheme_iri</code> for code lists only.</li>

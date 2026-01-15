@@ -38,7 +38,8 @@ infer_dictionary(
 A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 `column_name`, `column_label`, `column_description`, `column_role`,
 `value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`,
-`required`
+`required`, and I-ADOPT component fields (`property_iri`, `entity_iri`,
+`constraint_iri`, `method_iri`).
 
 ## Examples
 

@@ -1,0 +1,186 @@
+# Glossary
+
+This glossary defines technical terms used throughout the metasalmon
+documentation in plain English. You don’t need to memorize these - refer
+back here whenever you encounter an unfamiliar term.
+
+## Core Concepts
+
+### Data Package
+
+A folder containing your data files plus a “recipe file” (called
+`datapackage.json`) that explains what’s in them. Think of it like
+shipping a box with a detailed packing list - the recipient knows
+exactly what they’re getting.
+
+**Example**: A folder containing: - `escapement.csv` (your data) -
+`datapackage.json` (the recipe/packing list) - `column_dictionary.csv`
+(column descriptions)
+
+### Data Dictionary
+
+A table that describes each column in your data - what it means, what
+type of values it contains, and what units it uses.
+
+**Example**:
+
+| Column   | Description                  | Type    |
+|----------|------------------------------|---------|
+| POP_ID   | Unique population identifier | text    |
+| SPAWNERS | Estimated spawner count      | number  |
+| YEAR     | Survey year                  | integer |
+
+### Column Role
+
+A category that describes what kind of information a column contains.
+metasalmon uses these roles:
+
+| Role            | What it means                | Examples                   |
+|-----------------|------------------------------|----------------------------|
+| **identifier**  | Uniquely identifies a record | POP_ID, SITE_CODE          |
+| **attribute**   | Describes a characteristic   | STREAM_NAME, SPECIES       |
+| **measurement** | A numeric observation        | SPAWNER_COUNT, TEMPERATURE |
+| **temporal**    | A date or time               | SURVEY_DATE, YEAR          |
+| **categorical** | A code from a fixed list     | RUN_TYPE, QUALITY_FLAG     |
+
+### Code List
+
+A table that explains what each code value means for categorical
+columns.
+
+**Example** for a SPECIES column:
+
+| Code | Label          |
+|------|----------------|
+| CO   | Coho Salmon    |
+| CH   | Chinook Salmon |
+| PK   | Pink Salmon    |
+| SO   | Sockeye Salmon |
+
+## Semantic Web Terms
+
+These terms relate to linking your data to standard scientific
+definitions. **You don’t need to understand these to use metasalmon** -
+they’re handled automatically. This section is for those who want to
+understand what’s happening behind the scenes.
+
+### IRI (Internationalized Resource Identifier)
+
+A web address (like a URL) that points to an official definition of a
+term. When we say “spawner count” means the same thing across all DFO
+datasets, we prove it by pointing to a shared IRI.
+
+**Example**: `https://w3id.org/gcdfo/salmon#NaturalSpawnerCount`
+
+Think of it like a library catalog number - it uniquely identifies a
+specific concept so there’s no confusion.
+
+### Ontology
+
+A shared vocabulary where scientists agree on what terms mean - like a
+specialized dictionary for salmon science. An ontology defines not just
+terms, but also how they relate to each other.
+
+**Example**: The DFO Salmon Ontology defines terms like “Conservation
+Unit”, “Escapement”, and “Run Timing”, and explains how they relate
+(e.g., a Conservation Unit contains multiple Populations).
+
+### SKOS (Simple Knowledge Organization System)
+
+A system for organizing vocabulary terms into lists. Used for: - Code
+lists (all valid species codes) - Measurement definitions (what
+“escapement” means) - Vocabulary schemes (all run timing categories)
+
+**Plain English**: Think of SKOS as a way to create organized lists with
+definitions.
+
+### OWL (Web Ontology Language)
+
+A system for defining categories of things and their relationships. Used
+for: - Defining what a “Conservation Unit” is - Saying that “Coho” is a
+type of “Pacific Salmon” - Describing that a “Population” belongs to a
+“Conservation Unit”
+
+**Plain English**: Think of OWL as a classification system, like how
+biology classifies species into genus, family, order, etc.
+
+### Semantic
+
+“Meaning-aware” - data that carries its definitions with it so computers
+and humans can understand it the same way.
+
+**Non-semantic data**: A column called `SPAWN_EST` with no explanation
+**Semantic data**: The same column linked to a definition that says
+“Estimated count of naturally spawning adults”
+
+## I-ADOPT Framework
+
+I-ADOPT is a framework for describing measurements. It answers the
+question: “What exactly did you measure?”
+
+### The Four Components
+
+When you record a measurement like “water temperature = 12.5°C”, I-ADOPT
+breaks it down:
+
+| Component    | Question it answers  | Example             |
+|--------------|----------------------|---------------------|
+| **Property** | What characteristic? | Temperature         |
+| **Entity**   | Of what thing?       | Water               |
+| **Unit**     | In what units?       | Degrees Celsius     |
+| **Method**   | How was it measured? | Thermometer reading |
+
+**Why this matters**: Two researchers might both measure “temperature”
+but mean different things (air vs. water, surface vs. depth). I-ADOPT
+removes ambiguity.
+
+### Constraint (Optional)
+
+An additional qualifier that limits the scope of a measurement.
+
+**Example**: “Maximum daily temperature” - the constraint is “maximum
+daily”
+
+## Frictionless Data
+
+A standard format for data packages that works across different software
+and programming languages. metasalmon creates Frictionless-compatible
+packages, which means:
+
+- Your packages work with Python, R, JavaScript, and other tools
+- Other researchers can open your packages without installing metasalmon
+- The format follows an international standard (not a DFO-specific
+  format)
+
+**Learn more**: [frictionlessdata.io](https://frictionlessdata.io/)
+
+## Quick Reference
+
+| Term            | One-line definition                        |
+|-----------------|--------------------------------------------|
+| Data Package    | Folder with data + documentation           |
+| Data Dictionary | Table describing your columns              |
+| Column Role     | What type of information a column contains |
+| Code List       | Definitions for categorical codes          |
+| IRI             | Web address pointing to a definition       |
+| Ontology        | Shared vocabulary with relationships       |
+| SKOS            | System for organizing term lists           |
+| OWL             | System for classification hierarchies      |
+| Semantic        | Data that carries its meaning with it      |
+| I-ADOPT         | Framework for describing measurements      |
+| Frictionless    | International data package standard        |
+
+## Still Confused?
+
+That’s okay! The most important terms for getting started are:
+
+1.  **Data Package** - what you’re creating
+2.  **Data Dictionary** - what describes your columns
+3.  **Code List** - what explains your categorical codes
+
+Everything else is handled automatically by metasalmon. You can create
+excellent, shareable data packages without understanding IRIs, SKOS,
+OWL, or I-ADOPT.
+
+Ready to get started? See the [5-Minute
+Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md).

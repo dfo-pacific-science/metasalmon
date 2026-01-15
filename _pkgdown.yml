@@ -48,9 +48,17 @@ reference:
       - read_salmon_datapackage
 
   - title: "Semantic Helpers"
-    desc: "Future semantic suggestion capabilities"
+    desc: "Semantic suggestion and vocabulary search capabilities"
     contents:
       - suggest_semantics
+      - find_terms
+
+  - title: "GitHub Access"
+    desc: "Authenticate once and read CSVs from private GitHub repositories"
+    contents:
+      - ms_setup_github
+      - github_raw_url
+      - read_github_csv
 
 articles:
   - title: "Getting Started"
@@ -61,8 +69,16 @@ articles:
   - title: "Workflows"
     navbar: ~
     contents:
-      - functions-workflow
+      - data-dictionary-publication
+      - reusing-standards-salmon-data-terms
       - gpt-collaboration
+
+  - title: "Help & Reference"
+    navbar: ~
+    desc: "Glossary definitions and frequently asked questions"
+    contents:
+      - glossary
+      - faq
 
 navbar:
   structure:

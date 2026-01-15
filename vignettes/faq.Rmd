@@ -1,0 +1,302 @@
+---
+title: "Frequently Asked Questions"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Frequently Asked Questions}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+## General Questions
+
+### Do I need to understand ontologies to use this package?
+
+**No.** You can create perfectly good data packages without knowing anything about ontologies, SKOS, OWL, or IRIs. metasalmon handles the technical details automatically.
+
+If you're curious about what these terms mean, see the [Glossary](glossary.html). But you don't need to understand them to use the package effectively.
+
+### What's the difference between this and just sharing a CSV?
+
+A CSV file contains only data - numbers and text. Anyone opening it has to guess what the columns mean, what units are used, and what the codes represent.
+
+A data package contains:
+
+| Component | What it provides |
+|-----------|------------------|
+| Your data | The actual numbers (same as a CSV) |
+| Data dictionary | What each column means |
+| Code lists | What each code value means (e.g., "CO" = "Coho Salmon") |
+| Metadata | Who created it, when, license, contact info |
+| Standard links | (Optional) Links to official scientific definitions |
+
+**Think of it like shipping a package**: A CSV is like sending a box with no label. A data package is like sending a box with a detailed packing list, return address, and handling instructions.
+
+### How long does it take to create a data package?
+
+| Scenario | Time |
+|----------|------|
+| Simple dataset, using defaults | 5-10 minutes |
+| Adding custom descriptions | 15-30 minutes |
+| Complex dataset with many categorical columns | 30-60 minutes |
+| Using AI assistance for descriptions | 30-60 minutes |
+
+The [5-Minute Quickstart](metasalmon.html) walks you through the fastest path.
+
+### Can I edit the data package after creating it?
+
+Yes! A data package is just a folder with files. You can:
+
+- **Edit the CSV files** directly in Excel or R
+- **Modify the dictionary** and re-run `create_salmon_datapackage()`
+- **Hand-edit the JSON files** if you're comfortable with JSON
+- **Add or remove files** as needed
+
+The package structure is designed to be human-readable and editable.
+
+### Can colleagues open my package without installing metasalmon?
+
+Yes! The data package format is based on [Frictionless Data](https://frictionlessdata.io/), an international standard. Your colleagues can:
+
+- **Open the CSVs** in Excel, R, Python, or any spreadsheet software
+- **Read the dictionary** to understand what columns mean
+- **Use the metadata** to understand the dataset's context
+
+metasalmon makes it easy to *create* packages, but anyone can *read* them without special software.
+
+### Does this work with Python?
+
+The data packages created by metasalmon follow the Frictionless Data standard, which has excellent Python support:
+
+```python
+from frictionless import Package
+
+# Load a metasalmon-created package
+package = Package("path/to/my-data-package/datapackage.json")
+
+# Access the data
+for resource in package.resources:
+    print(resource.read_rows())
+```
+
+See the [Frictionless Python documentation](https://framework.frictionlessdata.io/) for more details.
+
+---
+
+## Technical Questions
+
+### validate_dictionary() shows errors. What do I do?
+
+Here are the most common errors and how to fix them:
+
+| Error | Meaning | Fix |
+|-------|---------|-----|
+| "Missing required column" | Your dictionary is missing a required column | Check the template: `system.file("extdata", "column_dictionary.csv", package = "metasalmon")` |
+| "Invalid value_type" | You used a type that doesn't exist | Use one of: `string`, `integer`, `number`, `boolean`, `date`, `datetime` |
+| "Invalid column_role" | You used a role that doesn't exist | Use one of: `identifier`, `attribute`, `measurement`, `temporal`, `categorical` |
+| "Duplicate column names" | Two rows have the same `column_name` | Remove or rename the duplicate |
+
+**Example fix**:
+
+```{r}
+# See what the error message says, then fix it:
+dict$value_type[dict$column_name == "PROBLEM_COLUMN"] <- "string"
+dict$column_role[dict$column_name == "ANOTHER_COLUMN"] <- "attribute"
+
+# Validate again
+validate_dictionary(dict)
+```
+
+### My data has special characters. Will that cause problems?
+
+metasalmon handles UTF-8 encoded data correctly. If you have special characters (accents, non-English letters):
+
+1. Make sure your CSV is saved as UTF-8
+2. Use `readr::read_csv()` which defaults to UTF-8
+3. If using base R, specify encoding: `read.csv("file.csv", encoding = "UTF-8")`
+
+### Can I use this with data in formats other than CSV?
+
+metasalmon works with data frames in R. You can read data from any format into R first:
+
+```{r}
+# From Excel
+library(readxl)
+df <- read_excel("your-data.xlsx")
+
+# From a database
+library(DBI)
+con <- dbConnect(...)
+df <- dbReadTable(con, "your_table")
+
+# From Parquet
+library(arrow)
+df <- read_parquet("your-data.parquet")
+
+# Then use metasalmon as usual
+dict <- infer_dictionary(df, dataset_id = "my-data", table_id = "main")
+```
+
+### What's the difference between dataset_id and table_id?
+
+| Field | Scope | Example |
+|-------|-------|---------|
+| `dataset_id` | The overall dataset (may contain multiple tables) | `"fraser-coho-monitoring-2024"` |
+| `table_id` | A specific table within the dataset | `"escapement"`, `"age-composition"`, `"catch"` |
+
+If you have a single table, use the same approach but with descriptive IDs:
+
+```{r}
+# Single table dataset
+dict <- infer_dictionary(df,
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement"
+)
+```
+
+If you have multiple related tables:
+
+```{r}
+# Multi-table dataset
+dict_esc <- infer_dictionary(df_escapement,
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement"
+)
+
+dict_age <- infer_dictionary(df_age,
+  dataset_id = "fraser-coho-2024",  # Same dataset_id
+  table_id = "age-composition"       # Different table_id
+)
+```
+
+### How do I add code lists for categorical columns?
+
+If you have columns with coded values (like `SPECIES = "CO"` for Coho), you can add a code list:
+
+```{r}
+codes <- tibble::tibble(
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement",
+  column_name = "SPECIES",
+  code_value = c("CO", "CH", "PK", "SO", "CM"),
+  code_label = c("Coho Salmon", "Chinook Salmon", "Pink Salmon",
+                 "Sockeye Salmon", "Chum Salmon"),
+  code_description = NA_character_
+)
+
+# Include codes when creating the package
+pkg_path <- create_salmon_datapackage(
+  resources = list(escapement = df),
+  dataset_meta = dataset_meta,
+  table_meta = table_meta,
+  dict = dict,
+  codes = codes,  # Add this parameter
+  path = "my-package"
+)
+```
+
+### Can I include multiple tables in one package?
+
+Yes! Just include multiple data frames in the `resources` list:
+
+```{r}
+resources <- list(
+  escapement = df_escapement,
+  age_composition = df_age,
+  catch = df_catch
+)
+
+# Create dictionaries for each table
+dict_all <- dplyr::bind_rows(
+  dict_escapement,
+  dict_age,
+  dict_catch
+)
+
+# Create table metadata for each table
+table_meta <- tibble::tibble(
+  dataset_id = rep("fraser-coho-2024", 3),
+  table_id = c("escapement", "age_composition", "catch"),
+  file_name = c("escapement.csv", "age_composition.csv", "catch.csv"),
+  table_label = c("Escapement Data", "Age Composition", "Catch Data"),
+  description = c("Spawner counts", "Age structure", "Harvest numbers")
+)
+
+pkg_path <- create_salmon_datapackage(
+  resources = resources,
+  dataset_meta = dataset_meta,
+  table_meta = table_meta,
+  dict = dict_all,
+  path = "multi-table-package"
+)
+```
+
+---
+
+## Workflow Questions
+
+### Should I edit the dictionary before or after validation?
+
+**After** - The validation tells you what needs fixing:
+
+1. Generate dictionary: `dict <- infer_dictionary(...)`
+2. Validate: `validate_dictionary(dict)` - note any errors/warnings
+3. Fix issues: Edit `dict` to fix problems
+4. Validate again: `validate_dictionary(dict)` - should pass now
+5. Create package: `create_salmon_datapackage(...)`
+
+### How detailed should my descriptions be?
+
+Aim for descriptions that would help a colleague (or your future self) understand the data without asking questions:
+
+| Too brief | Good | Too detailed |
+|-----------|------|--------------|
+| "Count" | "Estimated count of naturally spawning adult coho salmon" | "This field contains the estimated count of naturally spawning adult coho salmon as determined by visual surveys conducted during peak spawning season (typically October-November) using standard area-under-the-curve methodology..." |
+
+A good rule of thumb: one sentence that answers "What is this and how was it measured?"
+
+### Do I need to fill in all the semantic fields (IRI, property_iri, etc.)?
+
+**No.** These fields are optional and are primarily for data stewards who want to link data to standard scientific vocabularies.
+
+For most users, the basic fields (`column_name`, `column_label`, `column_description`, `value_type`, `column_role`) are sufficient for creating useful, shareable data packages.
+
+---
+
+## Getting More Help
+
+### Where can I report bugs or request features?
+
+Use the GitHub issues page:
+
+- [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=bug)
+- [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=enhancement)
+
+### Is there more documentation?
+
+Yes! Here are the key resources:
+
+| Resource | Best for |
+|----------|----------|
+| [5-Minute Quickstart](metasalmon.html) | Getting started fast |
+| [How It Fits Together](../index.html#how-it-fits-together) | Understanding the big picture |
+| [Data Dictionary & Publication](data-dictionary-publication.html) | Detailed control over metadata and publishing |
+| [Glossary](glossary.html) | Understanding technical terms |
+| [Function Reference](../reference/index.html) | Looking up specific functions |
+
+### Can I contribute to metasalmon?
+
+Yes! Contributions are welcome:
+
+1. Fork the repository on GitHub
+2. Create a branch for your feature or fix
+3. Submit a pull request
+
+See the repository's CONTRIBUTING.md for guidelines.

@@ -1,8 +1,8 @@
 ---
-title: "Getting started with metasalmon"
+title: "5-Minute Quickstart"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Getting started with metasalmon}
+  %\VignetteIndexEntry{5-Minute Quickstart}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -15,54 +15,273 @@ knitr::opts_chunk$set(
 )
 ```
 
-# Overview
+## What You'll Learn
 
-The `metasalmon` package helps salmon scientists wrap their analysis-ready tables into portable, ontology-aware Salmon Data Packages. A Salmon Data Package is a Frictionless Data Package extended with salmon-specific semantic fields (IRIs, concept schemes) that link your data to the DFO Salmon Ontology.
+By the end of this guide, you'll be able to:
 
-# Quick Example
+- Turn your salmon data spreadsheet into a shareable "data package"
+- Create a data dictionary that explains what each column means
+- Share data that colleagues can immediately understand
+
+## What You'll Need
+
+- R installed (version 4.4 or higher)
+- Your salmon data as a CSV file (or use our example data)
+- About 5 minutes
+
+## Video Version
+
+Prefer video? [Watch the 5-minute walkthrough](https://www.example.com/metasalmon-quickstart-video)
+
+---
+
+## Step 1: Load Your Data
+
+First, let's load the metasalmon package and some example data. We'll use a sample of NuSEDS escapement data for Fraser River coho that comes with the package.
 
 ```{r}
 library(metasalmon)
 
-# Load your data
-df <- readr::read_csv("your-data.csv")
+# Load the example data included with the package
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv",
+                          package = "metasalmon")
+df <- readr::read_csv(data_path, show_col_types = FALSE)
 
-# Infer a starter dictionary
-dict <- infer_dictionary(df, dataset_id = "my-dataset", table_id = "my-table")
+# Take a look at what we have
+head(df)
+```
 
-# Validate it
+**What you see**: A table with columns like `POP_ID`, `SPECIES`, `ANALYSIS_YR`, `MAX_ESTIMATE`, etc.
+
+**The problem**: What does `POP_ID` mean? What are the valid values for `SPECIES`? If you shared this CSV with a colleague, they'd have questions.
+
+> **Using your own data?** Just replace the `data_path` line with your file path:
+> ```r
+> df <- readr::read_csv("path/to/your-data.csv", show_col_types = FALSE)
+> ```
+
+---
+
+## Step 2: Generate a Data Dictionary
+
+metasalmon can look at your data and create a starter dictionary - a table that describes each column.
+
+```{r}
+dict <- infer_dictionary(
+  df,
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement"
+)
+
+# See what it created
+print(dict)
+```
+
+**What you get**: A table with one row per column in your data, describing:
+
+| Field | What it means |
+|-------|---------------|
+| `column_name` | The column name from your data |
+| `column_label` | A human-readable label (you can edit this) |
+| `value_type` | Is it text (`string`), a number (`integer`, `number`), a date? |
+| `column_role` | Is this an ID, a measurement, a category, or a date? |
+
+The dictionary is a starting point - metasalmon makes educated guesses, but you can (and should) review and improve the descriptions.
+
+> **Tip**: To see all columns in the dictionary, use `View(dict)` in RStudio or `print(dict, width = Inf)`.
+
+---
+
+## Step 3: Check Your Dictionary
+
+Before packaging, let's make sure the dictionary is valid:
+
+```{r}
 validate_dictionary(dict)
+```
 
-# Create a package
-resources <- list(main_table = df)
+**What happens**:
+
+- **Green checkmarks** = everything looks good
+- **Warnings** = optional improvements you could make
+- **Errors** = things you need to fix before proceeding
+
+If you see errors, the message will tell you what's wrong. Common fixes:
+
+```{r}
+# Example: Fix a column type that was guessed incorrectly
+dict$value_type[dict$column_name == "YEAR"] <- "integer"
+
+# Example: Add a better description
+dict$column_description[dict$column_name == "POP_ID"] <-
+  "Unique population identifier from the NuSEDS database"
+
+# Validate again
+validate_dictionary(dict)
+```
+
+---
+
+## Step 4: Describe Your Dataset
+
+Now we need to add some basic information about the dataset as a whole - who created it, what it contains, and how others can use it.
+
+```{r}
+# Dataset-level metadata (describes the overall dataset)
 dataset_meta <- tibble::tibble(
-  dataset_id = "my-dataset",
-  title = "My Dataset",
-  description = "Description here",
-  # ... other fields
-)
-table_meta <- tibble::tibble(
-  dataset_id = "my-dataset",
-  table_id = "main_table",
-  file_name = "main_table.csv",
-  # ... other fields
+  dataset_id = "fraser-coho-2024",
+  title = "Fraser River Coho Escapement Data",
+  description = "Sample escapement monitoring data for coho salmon in PFMA 29",
+  creator = "DFO Pacific Science",
+  contact_name = "Your Name",
+  contact_email = "your.email@dfo-mpo.gc.ca",
+  license = "Open Government License - Canada",
+  temporal_start = "2001",
+  temporal_end = "2024",
+  spatial_extent = "PFMA 29, Fraser River watershed"
 )
 
-pkg_path <- create_salmon_datapackage(
-  resources, dataset_meta, table_meta, dict,
-  path = "output-package"
+# Table-level metadata (describes this specific table)
+table_meta <- tibble::tibble(
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement",
+  file_name = "escapement.csv",
+  table_label = "Escapement Data",
+  description = "Coho escapement counts by population and year",
+  primary_key = "POP_ID"
 )
 ```
 
-# Learn More
+**What these fields mean**:
 
-- **Functions workflow**: See `vignette("functions-workflow")` for a detailed walkthrough
-- **GPT collaboration**: See `vignette("gpt-collaboration")` for using AI assistance
-- **Package reference**: Browse function documentation with `?infer_dictionary`
+| Field | Purpose |
+|-------|---------|
+| `dataset_id` | A short identifier (letters, numbers, hyphens) |
+| `title` | Human-readable title for the dataset |
+| `description` | What the data contains |
+| `creator` | Who created/collected the data |
+| `contact_name/email` | Who to contact with questions |
+| `license` | How others can use the data |
+| `table_id` | Identifier for this table (matches `dict`) |
+| `file_name` | What to name the output CSV file |
 
-# Package Layout
+---
 
-- `R/`: Core functions for dictionary inference/validation, package creation/reading
-- `inst/extdata/`: Example data files for tests and vignettes
-- `tests/testthat/`: Automated tests
-- `vignettes/`: Long-form documentation
+## Step 5: Create Your Data Package
+
+Now let's bundle everything together into a shareable package:
+
+```{r}
+pkg_path <- create_salmon_datapackage(
+  resources = list(escapement = df),
+  dataset_meta = dataset_meta,
+  table_meta = table_meta,
+  dict = dict,
+  path = "my-first-package",
+  overwrite = TRUE
+)
+
+# See what was created
+list.files(pkg_path)
+```
+
+**What you get**: A folder called `my-first-package/` containing:
+
+| File | Purpose |
+|------|---------|
+| `escapement.csv` | Your data |
+| `column_dictionary.csv` | What each column means |
+| `datapackage.json` | Machine-readable metadata |
+| `dataset.csv` | Dataset-level information |
+| `tables.csv` | Table-level information |
+
+---
+
+## Step 6: Share It!
+
+Your data package is ready. You can:
+
+- **Email the folder** to a colleague (zip it first)
+- **Upload to a data repository** like Zenodo or CIOOS
+- **Archive it** for your future self
+- **Include it** in a research compendium
+
+When someone opens your package, they'll find not just data, but complete documentation explaining what every column means.
+
+---
+
+## Reading a Package Back
+
+Later, you (or a colleague) can load the package back into R:
+
+```{r}
+# Read the package
+pkg <- read_salmon_datapackage(pkg_path)
+
+# What's inside?
+names(pkg)
+
+# Access the components
+pkg$dataset      # Dataset metadata
+pkg$tables       # Table metadata
+pkg$dictionary   # Column descriptions
+pkg$resources    # Your actual data
+
+# Get your data back as a tibble
+head(pkg$resources$escapement)
+```
+
+---
+
+## What's Next?
+
+You've created your first Salmon Data Package! Here are some ways to go deeper:
+
+- **[How It All Fits Together](how-it-fits-together.html)** - Understand the big picture
+- **[Detailed Data Dictionary & Publication](data-dictionary-publication.html)** - More control over metadata and publishing
+- **[Glossary](glossary.html)** - Definitions of technical terms
+- **[FAQ](faq.html)** - Common questions and troubleshooting
+
+---
+
+## Troubleshooting
+
+### "validate_dictionary() shows errors"
+
+This usually means a column type was guessed incorrectly. Check the error message and fix:
+
+```{r}
+# See what types are valid
+# string, integer, number, boolean, date, datetime
+
+# Fix a specific column
+dict$value_type[dict$column_name == "PROBLEM_COLUMN"] <- "string"
+```
+
+### "Column not found in dictionary"
+
+Make sure your `table_id` in `table_meta` matches the `table_id` you used in `infer_dictionary()`.
+
+### "I don't understand what a field means"
+
+See the [Glossary](glossary.html) for plain-English definitions of terms like "column_role", "value_type", etc.
+
+### "I want to add better descriptions"
+
+Edit the dictionary directly before creating the package:
+
+```{r}
+# View and edit in RStudio
+View(dict)
+
+# Or edit programmatically
+dict$column_description[dict$column_name == "MAX_ESTIMATE"] <-
+  "Maximum escapement estimate for the population in a given year"
+dict$column_label[dict$column_name == "MAX_ESTIMATE"] <-
+  "Maximum Estimate"
+```
+
+### Still stuck?
+
+- [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
+- [Ask a question](https://github.com/dfo-pacific-science/metasalmon/issues)

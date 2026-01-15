@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Getting started with metasalmon • metasalmon</title>
+<title>5-Minute Quickstart • metasalmon</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Getting started with metasalmon">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="5-Minute Quickstart">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,8 +39,11 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/functions-workflow.html">Salmon Data Package Functions Workflow</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Collaborating with GPT for Salmon Data Packages</a></li>
+<li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Data Dictionary and Publication</a></li>
+    <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a></li>
+    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">AI Assistance for Salmon Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
+    <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -61,7 +64,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Getting started with metasalmon</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>5-Minute Quickstart</h1>
             
       
 
@@ -71,81 +74,382 @@
     
     
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="what-youll-learn">What You’ll Learn<a class="anchor" aria-label="anchor" href="#what-youll-learn"></a>
 </h2>
-<p>The <code>metasalmon</code> package helps salmon scientists wrap
-their analysis-ready tables into portable, ontology-aware Salmon Data
-Packages. A Salmon Data Package is a Frictionless Data Package extended
-with salmon-specific semantic fields (IRIs, concept schemes) that link
-your data to the DFO Salmon Ontology.</p>
+<p>By the end of this guide, you’ll be able to:</p>
+<ul>
+<li>Turn your salmon data spreadsheet into a shareable “data
+package”</li>
+<li>Create a data dictionary that explains what each column means</li>
+<li>Share data that colleagues can immediately understand</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
+<h2 id="what-youll-need">What You’ll Need<a class="anchor" aria-label="anchor" href="#what-youll-need"></a>
 </h2>
+<ul>
+<li>R installed (version 4.4 or higher)</li>
+<li>Your salmon data as a CSV file (or use our example data)</li>
+<li>About 5 minutes</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="video-version">Video Version<a class="anchor" aria-label="anchor" href="#video-version"></a>
+</h2>
+<p>Prefer video? <a href="https://www.example.com/metasalmon-quickstart-video" class="external-link">Watch the
+5-minute walkthrough</a></p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="step-1-load-your-data">Step 1: Load Your Data<a class="anchor" aria-label="anchor" href="#step-1-load-your-data"></a>
+</h2>
+<p>First, let’s load the metasalmon package and some example data. We’ll
+use a sample of NuSEDS escapement data for Fraser River coho that comes
+with the package.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Load your data</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="st">"your-data.csv"</span><span class="op">)</span></span>
+<span><span class="co"># Load the example data included with the package</span></span>
+<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>,</span>
+<span>                          package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Infer a starter dictionary</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"my-dataset"</span>, table_id <span class="op">=</span> <span class="st">"my-table"</span><span class="op">)</span></span>
+<span><span class="co"># Take a look at what we have</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
+<p><strong>What you see</strong>: A table with columns like
+<code>POP_ID</code>, <code>SPECIES</code>, <code>ANALYSIS_YR</code>,
+<code>MAX_ESTIMATE</code>, etc.</p>
+<p><strong>The problem</strong>: What does <code>POP_ID</code> mean?
+What are the valid values for <code>SPECIES</code>? If you shared this
+CSV with a colleague, they’d have questions.</p>
+<blockquote>
+<p><strong>Using your own data?</strong> Just replace the
+<code>data_path</code> line with your file path:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="st">"path/to/your-data.csv"</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</blockquote>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="step-2-generate-a-data-dictionary">Step 2: Generate a Data Dictionary<a class="anchor" aria-label="anchor" href="#step-2-generate-a-data-dictionary"></a>
+</h2>
+<p>metasalmon can look at your data and create a starter dictionary - a
+table that describes each column.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
+<span>  <span class="va">df</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Validate it</span></span>
-<span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
+<span><span class="co"># See what it created</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span></code></pre></div>
+<p><strong>What you get</strong>: A table with one row per column in
+your data, describing:</p>
+<table class="table">
+<colgroup>
+<col width="31%">
+<col width="68%">
+</colgroup>
+<thead><tr class="header">
+<th>Field</th>
+<th>What it means</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>column_name</code></td>
+<td>The column name from your data</td>
+</tr>
+<tr class="even">
+<td><code>column_label</code></td>
+<td>A human-readable label (you can edit this)</td>
+</tr>
+<tr class="odd">
+<td><code>value_type</code></td>
+<td>Is it text (<code>string</code>), a number (<code>integer</code>,
+<code>number</code>), a date?</td>
+</tr>
+<tr class="even">
+<td><code>column_role</code></td>
+<td>Is this an ID, a measurement, a category, or a date?</td>
+</tr>
+</tbody>
+</table>
+<p>The dictionary is a starting point - metasalmon makes educated
+guesses, but you can (and should) review and improve the
+descriptions.</p>
+<blockquote>
+<p><strong>Tip</strong>: To see all columns in the dictionary, use
+<code>View(dict)</code> in RStudio or
+<code>print(dict, width = Inf)</code>.</p>
+</blockquote>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="step-3-check-your-dictionary">Step 3: Check Your Dictionary<a class="anchor" aria-label="anchor" href="#step-3-check-your-dictionary"></a>
+</h2>
+<p>Before packaging, let’s make sure the dictionary is valid:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span></code></pre></div>
+<p><strong>What happens</strong>:</p>
+<ul>
+<li>
+<strong>Green checkmarks</strong> = everything looks good</li>
+<li>
+<strong>Warnings</strong> = optional improvements you could
+make</li>
+<li>
+<strong>Errors</strong> = things you need to fix before
+proceeding</li>
+</ul>
+<p>If you see errors, the message will tell you what’s wrong. Common
+fixes:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Example: Fix a column type that was guessed incorrectly</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">value_type</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"YEAR"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"integer"</span></span>
 <span></span>
-<span><span class="co"># Create a package</span></span>
-<span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>main_table <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
+<span><span class="co"># Example: Add a better description</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"POP_ID"</span><span class="op">]</span> <span class="op">&lt;-</span></span>
+<span>  <span class="st">"Unique population identifier from the NuSEDS database"</span></span>
+<span></span>
+<span><span class="co"># Validate again</span></span>
+<span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="step-4-describe-your-dataset">Step 4: Describe Your Dataset<a class="anchor" aria-label="anchor" href="#step-4-describe-your-dataset"></a>
+</h2>
+<p>Now we need to add some basic information about the dataset as a
+whole - who created it, what it contains, and how others can use it.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Dataset-level metadata (describes the overall dataset)</span></span>
 <span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"my-dataset"</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"My Dataset"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"Description here"</span>,</span>
-<span>  <span class="co"># ... other fields</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"my-dataset"</span>,</span>
-<span>  table_id <span class="op">=</span> <span class="st">"main_table"</span>,</span>
-<span>  file_name <span class="op">=</span> <span class="st">"main_table.csv"</span>,</span>
-<span>  <span class="co"># ... other fields</span></span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  title <span class="op">=</span> <span class="st">"Fraser River Coho Escapement Data"</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">"Sample escapement monitoring data for coho salmon in PFMA 29"</span>,</span>
+<span>  creator <span class="op">=</span> <span class="st">"DFO Pacific Science"</span>,</span>
+<span>  contact_name <span class="op">=</span> <span class="st">"Your Name"</span>,</span>
+<span>  contact_email <span class="op">=</span> <span class="st">"your.email@dfo-mpo.gc.ca"</span>,</span>
+<span>  license <span class="op">=</span> <span class="st">"Open Government License - Canada"</span>,</span>
+<span>  temporal_start <span class="op">=</span> <span class="st">"2001"</span>,</span>
+<span>  temporal_end <span class="op">=</span> <span class="st">"2024"</span>,</span>
+<span>  spatial_extent <span class="op">=</span> <span class="st">"PFMA 29, Fraser River watershed"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
-<span>  <span class="va">resources</span>, <span class="va">dataset_meta</span>, <span class="va">table_meta</span>, <span class="va">dict</span>,</span>
-<span>  path <span class="op">=</span> <span class="st">"output-package"</span></span>
+<span><span class="co"># Table-level metadata (describes this specific table)</span></span>
+<span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
+<span>  file_name <span class="op">=</span> <span class="st">"escapement.csv"</span>,</span>
+<span>  table_label <span class="op">=</span> <span class="st">"Escapement Data"</span>,</span>
+<span>  description <span class="op">=</span> <span class="st">"Coho escapement counts by population and year"</span>,</span>
+<span>  primary_key <span class="op">=</span> <span class="st">"POP_ID"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p><strong>What these fields mean</strong>:</p>
+<table class="table">
+<thead><tr class="header">
+<th>Field</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>dataset_id</code></td>
+<td>A short identifier (letters, numbers, hyphens)</td>
+</tr>
+<tr class="even">
+<td><code>title</code></td>
+<td>Human-readable title for the dataset</td>
+</tr>
+<tr class="odd">
+<td><code>description</code></td>
+<td>What the data contains</td>
+</tr>
+<tr class="even">
+<td><code>creator</code></td>
+<td>Who created/collected the data</td>
+</tr>
+<tr class="odd">
+<td><code>contact_name/email</code></td>
+<td>Who to contact with questions</td>
+</tr>
+<tr class="even">
+<td><code>license</code></td>
+<td>How others can use the data</td>
+</tr>
+<tr class="odd">
+<td><code>table_id</code></td>
+<td>Identifier for this table (matches <code>dict</code>)</td>
+</tr>
+<tr class="even">
+<td><code>file_name</code></td>
+<td>What to name the output CSV file</td>
+</tr>
+</tbody>
+</table>
+<hr>
 </div>
 <div class="section level2">
-<h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
+<h2 id="step-5-create-your-data-package">Step 5: Create Your Data Package<a class="anchor" aria-label="anchor" href="#step-5-create-your-data-package"></a>
 </h2>
-<ul>
-<li>
-<strong>Functions workflow</strong>: See
-<code><a href="../articles/functions-workflow.html">vignette("functions-workflow")</a></code> for a detailed
-walkthrough</li>
-<li>
-<strong>GPT collaboration</strong>: See
-<code><a href="../articles/gpt-collaboration.html">vignette("gpt-collaboration")</a></code> for using AI assistance</li>
-<li>
-<strong>Package reference</strong>: Browse function documentation
-with <code><a href="../reference/infer_dictionary.html">?infer_dictionary</a></code>
-</li>
-</ul>
+<p>Now let’s bundle everything together into a shareable package:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span>  resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">df</span><span class="op">)</span>,</span>
+<span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
+<span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
+<span>  dict <span class="op">=</span> <span class="va">dict</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"my-first-package"</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># See what was created</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<p><strong>What you get</strong>: A folder called
+<code>my-first-package/</code> containing:</p>
+<table class="table">
+<thead><tr class="header">
+<th>File</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>escapement.csv</code></td>
+<td>Your data</td>
+</tr>
+<tr class="even">
+<td><code>column_dictionary.csv</code></td>
+<td>What each column means</td>
+</tr>
+<tr class="odd">
+<td><code>datapackage.json</code></td>
+<td>Machine-readable metadata</td>
+</tr>
+<tr class="even">
+<td><code>dataset.csv</code></td>
+<td>Dataset-level information</td>
+</tr>
+<tr class="odd">
+<td><code>tables.csv</code></td>
+<td>Table-level information</td>
+</tr>
+</tbody>
+</table>
+<hr>
 </div>
 <div class="section level2">
-<h2 id="package-layout">Package Layout<a class="anchor" aria-label="anchor" href="#package-layout"></a>
+<h2 id="step-6-share-it">Step 6: Share It!<a class="anchor" aria-label="anchor" href="#step-6-share-it"></a>
 </h2>
+<p>Your data package is ready. You can:</p>
 <ul>
 <li>
-<code>R/</code>: Core functions for dictionary inference/validation,
-package creation/reading</li>
+<strong>Email the folder</strong> to a colleague (zip it first)</li>
 <li>
-<code>inst/extdata/</code>: Example data files for tests and
-vignettes</li>
+<strong>Upload to a data repository</strong> like Zenodo or
+CIOOS</li>
 <li>
-<code>tests/testthat/</code>: Automated tests</li>
+<strong>Archive it</strong> for your future self</li>
 <li>
-<code>vignettes/</code>: Long-form documentation</li>
+<strong>Include it</strong> in a research compendium</li>
 </ul>
+<p>When someone opens your package, they’ll find not just data, but
+complete documentation explaining what every column means.</p>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="reading-a-package-back">Reading a Package Back<a class="anchor" aria-label="anchor" href="#reading-a-package-back"></a>
+</h2>
+<p>Later, you (or a colleague) can load the package back into R:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Read the package</span></span>
+<span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># What's inside?</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access the components</span></span>
+<span><span class="va">pkg</span><span class="op">$</span><span class="va">dataset</span>      <span class="co"># Dataset metadata</span></span>
+<span><span class="va">pkg</span><span class="op">$</span><span class="va">tables</span>       <span class="co"># Table metadata</span></span>
+<span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span>   <span class="co"># Column descriptions</span></span>
+<span><span class="va">pkg</span><span class="op">$</span><span class="va">resources</span>    <span class="co"># Your actual data</span></span>
+<span></span>
+<span><span class="co"># Get your data back as a tibble</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">resources</span><span class="op">$</span><span class="va">escapement</span><span class="op">)</span></span></code></pre></div>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="whats-next">What’s Next?<a class="anchor" aria-label="anchor" href="#whats-next"></a>
+</h2>
+<p>You’ve created your first Salmon Data Package! Here are some ways to
+go deeper:</p>
+<ul>
+<li>
+<strong><a href="how-it-fits-together.html">How It All Fits
+Together</a></strong> - Understand the big picture</li>
+<li>
+<strong><a href="data-dictionary-publication.html">Detailed Data
+Dictionary &amp; Publication</a></strong> - More control over metadata
+and publishing</li>
+<li>
+<strong><a href="glossary.html">Glossary</a></strong> - Definitions
+of technical terms</li>
+<li>
+<strong><a href="faq.html">FAQ</a></strong> - Common questions and
+troubleshooting</li>
+</ul>
+<hr>
+</div>
+<div class="section level2">
+<h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
+</h2>
+<div class="section level3">
+<h3 id="validate_dictionary-shows-errors">“validate_dictionary() shows errors”<a class="anchor" aria-label="anchor" href="#validate_dictionary-shows-errors"></a>
+</h3>
+<p>This usually means a column type was guessed incorrectly. Check the
+error message and fix:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># See what types are valid</span></span>
+<span><span class="co"># string, integer, number, boolean, date, datetime</span></span>
+<span></span>
+<span><span class="co"># Fix a specific column</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">value_type</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"PROBLEM_COLUMN"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"string"</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="column-not-found-in-dictionary">“Column not found in dictionary”<a class="anchor" aria-label="anchor" href="#column-not-found-in-dictionary"></a>
+</h3>
+<p>Make sure your <code>table_id</code> in <code>table_meta</code>
+matches the <code>table_id</code> you used in
+<code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code>.</p>
+</div>
+<div class="section level3">
+<h3 id="i-dont-understand-what-a-field-means">“I don’t understand what a field means”<a class="anchor" aria-label="anchor" href="#i-dont-understand-what-a-field-means"></a>
+</h3>
+<p>See the <a href="glossary.html">Glossary</a> for plain-English
+definitions of terms like “column_role”, “value_type”, etc.</p>
+</div>
+<div class="section level3">
+<h3 id="i-want-to-add-better-descriptions">“I want to add better descriptions”<a class="anchor" aria-label="anchor" href="#i-want-to-add-better-descriptions"></a>
+</h3>
+<p>Edit the dictionary directly before creating the package:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># View and edit in RStudio</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Or edit programmatically</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">column_description</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"MAX_ESTIMATE"</span><span class="op">]</span> <span class="op">&lt;-</span></span>
+<span>  <span class="st">"Maximum escapement estimate for the population in a given year"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">column_label</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"MAX_ESTIMATE"</span><span class="op">]</span> <span class="op">&lt;-</span></span>
+<span>  <span class="st">"Maximum Estimate"</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="still-stuck">Still stuck?<a class="anchor" aria-label="anchor" href="#still-stuck"></a>
+</h3>
+<ul>
+<li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Report a
+bug</a></li>
+<li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Ask a
+question</a></li>
+</ul>
+</div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

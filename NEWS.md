@@ -1,3 +1,15 @@
+metasalmon 0.0.5
+----------------
+
+- Renamed the GitHub CSV helpers to generic names: `github_raw_url()` and `read_github_csv()`. `repo` is now required unless you provide a full URL.
+
+metasalmon 0.0.4
+----------------
+
+- Added `ms_setup_github()` to guide one-time PAT setup (git check, browser token creation, git credential storage) and verify access to the private Qualark data repository.
+- Added `qualark_raw_url()` and `read_qualark_csv()` to build stable raw GitHub URLs and read Qualark CSVs using the stored PAT (with SSO-aware error messages and retry logic).
+- New tests cover URL construction, blob/raw URL normalization, and an opt-in Qualark fetch when a token is configured.
+
 metasalmon 0.0.3
 ----------------
 

@@ -1,8 +1,8 @@
 ---
-title: "Collaborating with GPT for Salmon Data Packages"
+title: "AI Assistance for Salmon Data Packages"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Collaborating with GPT for Salmon Data Packages}
+  %\VignetteIndexEntry{AI Assistance for Salmon Data Packages}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -22,6 +22,21 @@ propose semantic data dictionaries, IRIs, code lists, and metadata for
 your Salmon Data Packages. This workflow combines AI assistance with the
 deterministic R functions in `metasalmon` for a powerful, reproducible
 pipeline.
+
+**See also:**
+- The README’s “How It Fits Together” section for the full picture
+- [Data Dictionary & Publication](articles/data-dictionary-publication.html) for the metadata and publication workflow
+- [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) for the plain-language ontology guidance
+
+**Canonical output contract:** Use `smn-gpt/SYSTEM-PROMPT.md` as the authoritative format rules (CSV only).
+
+## Safe data checklist
+
+- Share 50–500 representative rows, not the full dataset.
+- Include column summaries (types, missingness, and unique values for categoricals).
+- Remove or mask sensitive identifiers before sharing.
+- Attach codebooks or methods docs when available.
+- Treat `dfo-salmon.ttl` as schema-only (vocabulary source, not data).
 
 ## Workflow Overview
 
@@ -83,9 +98,11 @@ If your GPT interface supports file uploads, consider uploading:
 - Your inferred dictionary (`dictionary.csv`)
 - A small sample of your data (`data-sample.csv`)
 - The `metasalmon` schema templates: `dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv`
-- The latest DFO Salmon Ontology file (e.g., `dfo-salmon.ttl`) and any other vocabularies you rely on (e.g., units)
+- The latest DFO Salmon Ontology file (e.g., `dfo-salmon.ttl`) as a schema-only vocabulary source (not data)
+- Any other vocabularies you rely on (e.g., units)
 - Any methods / codebook documents that define how fields were collected and what values mean
-- The ontology repository’s GitHub issue template for term requests (optional, but helps the model draft issues in the expected format)
+- The ontology repository’s term request template (optional, but helps the model draft issues in the expected format):  
+  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 
 ### Step 2: Craft a GPT Prompt
 
@@ -95,7 +112,7 @@ Create a prompt that asks GPT to:
 - Suggest IRIs from the DFO Salmon Ontology (or appropriate vocabularies)
 - Identify categorical fields that need code lists
 - Propose controlled vocabulary values
-- Return results in a strict, copy/pasteable format (CSV or R code) matching the `metasalmon` schemas (see `column_dictionary.csv` and `codes.csv`)
+- Return results in a strict, copy/pasteable CSV format matching the `metasalmon` schemas (see `column_dictionary.csv` and `codes.csv`)
 
 **Example prompt:**
 
@@ -116,29 +133,39 @@ Create a prompt that asks GPT to:
     Please help me enrich this dictionary by:
     1. Writing clear, biologist-friendly descriptions for each column
     2. Suggesting IRIs from the DFO Salmon Ontology (or appropriate vocabularies) for:
-       - term_iri: the IRI for this column (use an OWL class IRI when it’s a “type”, or a SKOS concept IRI when it’s a controlled vocabulary term)
-       - term_type: set to `owl_class` or `skos_concept` (leave NA if unknown)
+       - term_iri: the IRI for this column (use a SKOS concept IRI for compound variables)
+       - term_type: set to `skos_concept` or `owl_class` (leave NA if unknown)
        - unit_label / unit_iri: if applicable
+       - For measurement columns, also provide `property_iri`, `entity_iri`, and optional `constraint_iri` / `method_iri`
        - If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology
     3. Identifying which columns should have code lists (categorical fields)
     4. Proposing code values and labels for categorical fields
 
     Output requirements:
-    - Return R code that creates a tibble named `dict_gpt` with the same columns as `dict` (do not rename keys or columns).
+    - Return a CSV named `column_dictionary_gpt.csv` with the same columns as `dict` (do not rename keys or columns).
     - Use only valid `value_type` values: string, integer, number, boolean, date, datetime.
     - Use only valid `column_role` values: identifier, attribute, measurement, temporal, categorical. Use `measurement` **only** for variables you would analyze (e.g., counts, rates, lengths), and keep IDs, dates, sample labels, and descriptive text as identifier/temporal/attribute.
-    - If you cannot find an exact IRI in the provided ontology file, leave it blank (NA) and propose a new term in a separate tibble named `proposed_terms` (term_label + term_definition + term_type + suggested_parent_iri + suggested_relationships).
+    - If you cannot find an exact IRI in the provided ontology file, leave it blank (NA) and propose a new term in a separate CSV named `gpt_proposed_terms.csv` with:
+      - term_label
+      - term_definition
+      - definition_source_url (optional)
+      - term_type (`skos_concept` | `owl_class` | `owl_object_property`)
+      - suggested_parent_iri
+      - suggested_relationships
+      - notes
+    - If categorical columns exist, return `codes.csv`; otherwise omit it.
     - Do not invent IRIs.
 
 ### Step 3: Extract GPT’s Suggestions
 
-GPT will return enriched dictionary rows and possibly code lists. Copy
-these into R:
+GPT will return enriched dictionary rows and possibly code lists. Save
+the CSVs and load them in R:
 
 ``` r
 
-# Option A (more deterministic): GPT returns a full dict tibble (`dict_gpt`)
+# Option A (more deterministic): GPT returns a full CSV (`column_dictionary_gpt.csv`)
 # and you merge by keys, only filling blanks.
+dict_gpt <- readr::read_csv("column_dictionary_gpt.csv", show_col_types = FALSE)
 dict <- dict |>
   dplyr::left_join(
     dict_gpt,
@@ -163,27 +190,18 @@ dict <- dict |>
 
 # Update dictionary with GPT's suggestions using DFO Salmon Ontology IRIs
 dict$column_description[dict$column_name == "SPECIES"] <- "Salmon species common name/code"
-dict$term_iri[dict$column_name == "SPECIES"] <- "https://w3id.org/gcdfo/salmon#Stock"
-dict$term_type[dict$column_name == "SPECIES"] <- "owl_class"
+dict$column_role[dict$column_name == "SPECIES"] <- "categorical"
 
 # Example: Link an escapement measurement column
 dict$column_description[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "Estimated total natural-origin spawners"
-dict$term_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#EscapementMeasurement"
-dict$term_type[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "owl_class"
-dict$unit_label[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "fish (count)"
+dict$term_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "<DFO variable concept IRI>"
+dict$term_type[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "skos_concept"
+dict$property_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://qudt.org/vocab/quantitykind/NumberOfOrganisms"
+dict$entity_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#Stock"
+dict$unit_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "http://qudt.org/vocab/unit/Each"
 
 # GPT might also suggest code lists
-codes <- tibble::tibble(
-  dataset_id = "nuseds-fraser-coho-2024",
-  table_id = "escapement",
-  column_name = "RUN_TYPE",
-  code_value = "FALL",
-  code_label = "Fall run timing",
-  code_description = NA_character_,
-  vocabulary_iri = NA_character_,
-  term_iri = NA_character_,
-  term_type = NA_character_
-)
+codes <- readr::read_csv("codes.csv", show_col_types = FALSE)
 ```
 
 ### Step 3b: Pull role-aware suggestions locally (I-ADOPT catalogue)
@@ -248,7 +266,10 @@ dataset_meta <- tibble::tibble(
   dataset_id = "nuseds-fraser-coho-2024",
   title = "NuSEDS Fraser River Coho Escapement Data",
   description = "Escapement monitoring data for coho salmon in PFMA 29",
-  # ... other fields
+  creator = "DFO",
+  contact_name = "DFO Data Stewardship Unit",
+  contact_email = "data.stewardship@example.org",
+  license = "Open Government License - Canada"
 )
 
 table_meta <- tibble::tibble(
@@ -269,7 +290,7 @@ pkg_path <- create_salmon_datapackage(
   dataset_meta,
   table_meta,
   dict,
-  codes = codes,
+  codes = codes, # include only when categorical columns exist
   path = tempdir(),
   format = "csv",
   overwrite = TRUE
@@ -285,15 +306,19 @@ pkg_path <- create_salmon_datapackage(
     For each column, please:
     1. Write a clear description (1-2 sentences)
     2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon# and put it in the right field:
-       - term_iri for the best-matching term
-       - term_type: `owl_class` when the match is an OWL class ("type" in the ontology, e.g., EscapementMeasurement), `skos_concept` when the match is a SKOS concept (a controlled vocabulary term)
+       - term_iri for the best-matching term (use a SKOS concept for compound variables)
+       - term_type: `skos_concept` when the match is a SKOS concept (a controlled vocabulary term); use `owl_class` only when the column represents a class/type rather than a variable
        - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
-    3. For measurement columns, suggest unit_label and unit_iri (if available). For categorical columns, keep `vocabulary_iri` in the codes.csv output (not in the column dictionary).
+    3. For measurement columns, suggest unit_label and unit_iri (if available) and include `property_iri`, `entity_iri`, and optional `constraint_iri` / `method_iri`. For categorical columns, keep `vocabulary_iri` in the codes.csv output (not in the column dictionary).
 
-    Return as an R tibble matching the column_dictionary.csv schema. Also return `proposed_terms` with:
-    - term_type: "skos_concept" or "owl_class"
+    Return as a CSV named `column_dictionary_gpt.csv` matching the column_dictionary.csv schema. Also return `gpt_proposed_terms.csv` with:
+    - term_label
+    - term_definition
+    - definition_source_url (optional)
+    - term_type: "skos_concept", "owl_class", or "owl_object_property"
     - suggested_parent_iri: a broader concept (for SKOS) or a superclass (for OWL classes)
     - suggested_relationships: broader/narrower/closeMatch/related (for SKOS) or subclass/sameAs/seeAlso (for OWL)
+    - notes
 
 ### Template 2: Code List Generation
 
@@ -306,10 +331,11 @@ pkg_path <- create_salmon_datapackage(
     1. Create a controlled vocabulary (code list) with proper labels
     2. Suggest an IRI for each code value:
        - term_iri when the match is known; set term_type to `skos_concept` or `owl_class`
-    3. Identify the vocabulary IRI (`vocabulary_iri`) when these values belong to a controlled vocabulary (often a SKOS concept scheme; otherwise leave NA)
-    4. If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology and draft a github issue according to the github issue template in the dfo-salmon repository
+    3. If `term_iri` is a DFO SKOS concept and it has a `skos:notation`, set `code_value` to that notation
+    4. Identify the vocabulary IRI (`vocabulary_iri`) when these values belong to a controlled vocabulary (often a SKOS concept scheme; otherwise leave NA)
+    5. If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology and draft a github issue according to the github issue template in the dfo-salmon repository
 
-    Return as an R tibble matching the codes.csv schema.
+    Return as a CSV named `codes.csv` matching the codes.csv schema.
 
 ### Template 3: Metadata Generation
 
@@ -328,10 +354,9 @@ pkg_path <- create_salmon_datapackage(
     - temporal_end
     - spatial_extent
     - dataset_type
-    - dataset_iri
     - source_citation
 
-    For each required field, provide a realistic value if sufficient information is available. Otherwise, ask for clarification. Return the result as an R tibble matching the dataset.csv schema.
+    For each required field, provide a realistic value if sufficient information is available. Otherwise, ask for clarification. Return the result as a CSV named `dataset.csv` matching the dataset.csv schema.
 
 ## Handling Ontology Gaps (Important)
 
@@ -341,10 +366,12 @@ When a specific term isn't available:
 
 - Prefer a broader existing IRI (a more general concept or superclass) when it is still semantically correct.
 - Leave `term_iri` blank (`NA`) rather than inventing an IRI.
-- Capture what you *wanted* as a proposed new term and include its parent relationship:
+- Capture what you *wanted* as a proposed new term in `gpt_proposed_terms.csv` and include its parent relationship:
   - For SKOS concepts, use a broader concept (broader means "more general").
   - For OWL classes, use a superclass (superclass means "a more general type").
-- Draft a GitHub issue for the ontology repository and include the proposed term label + definition + parent relationship.
+- Include `definition_source_url` and `notes` when available.
+- Draft a GitHub issue for the ontology repository using the new-term template:  
+  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 - Periodically refresh the ontology file in your Custom GPT so suggestions are based on the latest terms.
 
 ## Tips for Effective GPT Collaboration
@@ -359,19 +386,21 @@ When a specific term isn't available:
     [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
     after GPT suggestions.
 6.  **Iterate**: Refine prompts based on GPT’s responses.
-7.  **Keep deterministic**: Keep prompts in version control, ask for strict output (R code/CSV only), prefer "merge by keys" workflows, and (if using an API) use a low temperature.
+7.  **Keep deterministic**: Keep prompts in version control, ask for strict output (CSV only), prefer "merge by keys" workflows, and (if using an API) use a low temperature.
 8.  **Expect ontology gaps**: If an IRI doesn't exist yet, leave it blank and draft a term request (don't invent IRIs).
 
-## Future: Automated Semantic Suggestion
+## Automated Semantic Suggestion
 
 The
 [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-function is a placeholder for future automated semantic suggestion. When
-implemented, it will: - Use heuristics or LLM APIs to propose IRIs -
-Validate suggestions against the DFO Salmon Ontology - Provide
-confidence scores for suggestions
+function provides role-aware IRI suggestions using the bundled I-ADOPT terminology catalogue and external ontology services (OLS, NVS, BioPortal):
 
-For now, use the manual GPT workflow described above.
+```r
+dict_suggested <- suggest_semantics(df, dict, sources = c("ols", "nvs"))
+suggestions <- attr(dict_suggested, "semantic_suggestions")
+```
+
+This complements the GPT workflow by providing deterministic, reproducible suggestions that you can review and merge into your dictionary. See [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) for details on `find_terms()` and the I-ADOPT catalogue.
 
 ## Example: Complete Workflow
 
@@ -384,8 +413,8 @@ dict <- infer_dictionary(df, dataset_id = "my-dataset", table_id = "my-table")
 
 # 3. Extract GPT suggestions (example)
 dict$column_description <- c("Species name", "Population count", ...)  # From GPT
-dict$term_iri <- c("https://w3id.org/gcdfo/salmon#Stock", "https://w3id.org/gcdfo/salmon#EscapementMeasurement", ...)  # From GPT
-dict$term_type <- c("owl_class", "owl_class", ...)  # From GPT
+dict$term_iri <- c("<DFO variable concept IRI>", ...)  # From GPT
+dict$term_type <- c("skos_concept", ...)  # From GPT
 
 # 4. Validate
 validate_dictionary(dict)
@@ -397,10 +426,9 @@ create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 ## Resources
 
 - **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon>
-  - Key classes: `ConservationUnit`, `Stock`, `EscapementMeasurement`,
-    `BroodYear`, `CatchYear`
-  - Key schemes: `WSPBiologicalStatusZoneScheme`, `SalmonOriginScheme`,
-    `EnumerationMethodScheme`
+  - Key classes: `ConservationUnit`, `Stock`, `BroodYear`, `CatchYear`
+  - Key schemes: `WSPMetricScheme`, `WSPBiologicalStatusZoneScheme`,
+    `SalmonOriginScheme`, `EnumerationMethodScheme`
   - Repository: <https://github.com/dfo-pacific-science/salmon-ontology>
 - **Frictionless Data Package spec**:
   <https://specs.frictionlessdata.io/data-package/>

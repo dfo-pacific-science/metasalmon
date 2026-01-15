@@ -22,7 +22,20 @@ Create and read Salmon Data Packages
 
 ## Semantic Helpers
 
-Future semantic suggestion capabilities
+Semantic suggestion and vocabulary search capabilities
 
 - [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
   : Suggest semantic annotations for a dictionary
+- [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  : Find candidate terms across external vocabularies
+
+## GitHub Access
+
+Authenticate once and read CSVs from private GitHub repositories
+
+- [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+  : Set up GitHub access for private GitHub data
+- [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
+  : Build a stable raw GitHub URL
+- [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+  : Read a CSV from a GitHub repository
