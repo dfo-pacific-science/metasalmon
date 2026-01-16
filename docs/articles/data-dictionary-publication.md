@@ -1,4 +1,4 @@
-# Data Dictionary and Publication
+# Publishing Data Packages
 
 ## Overview
 
@@ -123,12 +123,13 @@ archiving, or sharing with colleagues.
 
 ### Next steps
 
-- See the “How It Fits Together” section in the README (link to
-  `#how-it-fits-together`) for a visual map of how the components
-  interact.
-- Read the [Reusing Standards for Salmon Data
-  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/articles/reusing-standards-salmon-data-terms.md)
+- See the “How It Fits Together” section in the README for a visual map
+  of how the components interact.
+- Read the [Linking to Standard
+  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
   guide when you want to align your dictionary with published
   vocabularies.
-- Try the Salmon Data Standardizer GPT for drafting descriptions and
-  ontology-aligned metadata quickly.
+- Try the [Using AI to Document Your
+  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)
+  workflow for drafting descriptions and ontology-aligned metadata
+  quickly.

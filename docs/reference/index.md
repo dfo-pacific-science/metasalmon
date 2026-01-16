@@ -34,7 +34,7 @@ Semantic suggestion and vocabulary search capabilities
 Authenticate once and read CSVs from private GitHub repositories
 
 - [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
-  : Set up GitHub access for private GitHub data
+  : Set up GitHub access for private repositories
 - [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
   : Build a stable raw GitHub URL
 - [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
