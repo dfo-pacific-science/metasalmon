@@ -100,6 +100,27 @@ The dictionary is a starting point - metasalmon makes educated guesses, but you 
 
 > **Tip**: To see all columns in the dictionary, use `View(dict)` in RStudio or `print(dict, width = Inf)`.
 
+### Need Help Finding Standard Terms?
+
+Not sure what the official salmon data standard term is for a column? The `suggest_semantics()` function can automatically suggest standard terminology from scientific vocabularies:
+
+```{r}
+# Get semantic suggestions for your dictionary
+dict_suggested <- suggest_semantics(
+  df,
+  dict,
+  sources = c("ols", "nvs")
+)
+
+# View the suggestions
+suggestions <- attr(dict_suggested, "semantic_suggestions")
+head(suggestions)
+```
+
+This will search standard ontologies and vocabularies to find matching terms for your columns, helping you link your data to recognized scientific standards.
+
+> **Want faster results?** Use the [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) to get AI-powered suggestions for terminology, descriptions, and metadata. Just upload your dictionary and data sample!
+
 ---
 
 ## Step 3: Check Your Dictionary
@@ -247,6 +268,7 @@ head(pkg$resources$escapement)
 
 You've created your first Salmon Data Package! Here are some ways to go deeper:
 
+- **[Using AI to Document Your Data](gpt-collaboration.html)** - Use the Salmon Data Standardizer GPT to get AI-powered suggestions for terminology, descriptions, and metadata
 - **[Publishing Data Packages](data-dictionary-publication.html)** - More control over metadata and publishing
 - **[Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html)** - Connect your data to scientific standards
 - **[Accessing Data from GitHub](github-csv-access.html)** - Read CSVs from private repositories
