@@ -1,24 +1,49 @@
 #' Find candidate terms across external vocabularies
 #'
-#' Lightweight meta-search helper for IRIs. Uses public APIs when available:
-#' - OLS (no key): broad cross-ontology search
-#' - NERC NVS P01/P06 (best-effort; returns empty on failure)
-#' - BioPortal (optional; requires API key via env `BIOPORTAL_APIKEY`)
+#' Searches multiple vocabulary services to find IRIs that match a query string.
+#' Useful for discovering existing terms to link your data to standard
+#' scientific definitions.
 #'
-#' Results are scored using role-specific I-ADOPT vocabulary hints (from
-#' `inst/extdata/iadopt-terminologies.csv`) and deterministic tie-breakers so
-#' the ordering is stable.
+#' **Supported sources:**
+#' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
+#' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
+#' - **BioPortal**: Requires API key via `BIOPORTAL_APIKEY` environment variable
 #'
-#' Network calls are best-effort and will return an empty tibble on failure.
+#' Results are scored using I-ADOPT vocabulary hints and ranked by relevance.
+#' Network calls are best-effort and return an empty tibble on failure.
 #'
-#' @param query Character search string.
-#' @param role Optional I-ADOPT role hint (`"variable"`, `"property"`, `"entity"`,
-#'   `"constraint"`, `"method"`, `"unit"`); used only for metadata tagging.
-#' @param sources Character vector of sources to query (`"ols"`, `"nvs"`, `"bioportal"`).
-#' @return Tibble with columns `label`, `iri`, `source`, `ontology`, `role`, `match_type`, `definition`.
+#' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
+#' @param role Optional I-ADOPT role hint for ranking results. One of:
+#'   `"variable"` (compound term), `"property"` (characteristic),
+#'   `"entity"` (thing measured), `"constraint"` (qualifier), or `"unit"`.
+#'   Results matching the specified role are ranked higher.
+#' @param sources Character vector of vocabulary sources to query. Options:
+#'   `"ols"`, `"nvs"`, `"bioportal"`. Default is `c("ols", "nvs")`.
+#'
+#' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
+#'   `match_type`, `definition`. Returns empty tibble if no matches found.
+#'
+#' @seealso [suggest_semantics()] for automated suggestions based on your dictionary.
+#'
 #' @export
 #' @import httr
 #' @importFrom rlang %||%
+#'
+#' @examples
+#' \dontrun{
+#' # Search for terms matching "spawner count"
+#' results <- find_terms("spawner count")
+#' head(results)
+#'
+#' # Search specifically for property terms
+#' property_terms <- find_terms("temperature", role = "property")
+#'
+#' # Search a specific source
+#' ols_results <- find_terms("salmon", sources = "ols")
+#'
+#' # Search multiple sources
+#' all_results <- find_terms("escapement", sources = c("ols", "nvs"))
+#' }
 find_terms <- function(query,
                        role = NA_character_,
                        sources = c("ols", "nvs")) {
