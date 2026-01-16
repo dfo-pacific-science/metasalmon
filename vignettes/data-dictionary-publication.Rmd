@@ -1,8 +1,8 @@
 ---
-title: "Data Dictionary and Publication"
+title: "Publishing Data Packages"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Data Dictionary and Publication}
+  %\VignetteIndexEntry{Publishing Data Packages}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -112,6 +112,6 @@ This writes the CSV files plus `datapackage.json` that follow the Salmon Data Pa
 
 ## Next steps
 
-- See the “How It Fits Together” section in the README (link to `#how-it-fits-together`) for a visual map of how the components interact.
-- Read the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide when you want to align your dictionary with published vocabularies.
-- Try the Salmon Data Standardizer GPT for drafting descriptions and ontology-aligned metadata quickly.
+- See the "How It Fits Together" section in the README for a visual map of how the components interact.
+- Read the [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) guide when you want to align your dictionary with published vocabularies.
+- Try the [Using AI to Document Your Data](gpt-collaboration.html) workflow for drafting descriptions and ontology-aligned metadata quickly.

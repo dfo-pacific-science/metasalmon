@@ -1,4 +1,4 @@
-# Glossary
+# Glossary of Terms
 
 This glossary defines technical terms used throughout the metasalmon
 documentation in plain English. You don’t need to memorize these - refer
@@ -115,31 +115,48 @@ and humans can understand it the same way.
 
 ## I-ADOPT Framework
 
-I-ADOPT is a framework for describing measurements. It answers the
-question: “What exactly did you measure?”
+I-ADOPT (InteroperAble Descriptions of Observable Property Terminology)
+is a framework for precisely describing what a measurement represents.
+It answers the question: “What exactly did you measure?”
 
-### The Four Components
+### The Core Components
 
-When you record a measurement like “water temperature = 12.5°C”, I-ADOPT
-breaks it down:
+I-ADOPT defines observable properties using four components:
 
-| Component    | Question it answers  | Example             |
-|--------------|----------------------|---------------------|
-| **Property** | What characteristic? | Temperature         |
-| **Entity**   | Of what thing?       | Water               |
-| **Unit**     | In what units?       | Degrees Celsius     |
-| **Method**   | How was it measured? | Thermometer reading |
+| Component | Question it answers | Example |
+|----|----|----|
+| **Variable** | What compound concept? | “Sea surface temperature” (the full term) |
+| **Property** | What characteristic? | Temperature |
+| **Entity** | Of what thing? | Sea surface (water at ocean surface) |
+| **Constraint** | Any qualifiers or limits? | Maximum, daily average, etc. |
 
 **Why this matters**: Two researchers might both measure “temperature”
 but mean different things (air vs. water, surface vs. depth). I-ADOPT
-removes ambiguity.
+removes ambiguity by requiring you to specify exactly what property of
+what entity you measured.
 
-### Constraint (Optional)
+### Understanding the Components
 
-An additional qualifier that limits the scope of a measurement.
+- **Variable**: The complete, compound term that describes what you
+  measured (e.g., “Natural spawner count”). In metasalmon, this maps to
+  `term_iri`.
+- **Property**: The measurable characteristic (e.g., “count”,
+  “temperature”, “length”). Maps to `property_iri`.
+- **Entity**: The thing being measured (e.g., “spawning salmon”, “stream
+  water”). Maps to `entity_iri`.
+- **Constraint**: Optional qualifiers that narrow the scope (e.g.,
+  “maximum”, “annual”, “wild-origin only”). Maps to `constraint_iri`.
 
-**Example**: “Maximum daily temperature” - the constraint is “maximum
-daily”
+### Units (Not Part of I-ADOPT Core)
+
+While I-ADOPT focuses on describing *what* you measured, you’ll also
+need to record the **units** (how the measurement is expressed).
+metasalmon includes `unit_iri` for this purpose, typically linking to
+vocabularies like QUDT.
+
+**Note**: Method (how the measurement was made) is important metadata
+but is not part of the I-ADOPT framework itself. You can document
+methods in your column descriptions or other metadata fields.
 
 ## Frictionless Data
 
@@ -156,19 +173,19 @@ packages, which means:
 
 ## Quick Reference
 
-| Term            | One-line definition                        |
-|-----------------|--------------------------------------------|
-| Data Package    | Folder with data + documentation           |
-| Data Dictionary | Table describing your columns              |
-| Column Role     | What type of information a column contains |
-| Code List       | Definitions for categorical codes          |
-| IRI             | Web address pointing to a definition       |
-| Ontology        | Shared vocabulary with relationships       |
-| SKOS            | System for organizing term lists           |
-| OWL             | System for classification hierarchies      |
-| Semantic        | Data that carries its meaning with it      |
-| I-ADOPT         | Framework for describing measurements      |
-| Frictionless    | International data package standard        |
+| Term | One-line definition |
+|----|----|
+| Data Package | Folder with data + documentation |
+| Data Dictionary | Table describing your columns |
+| Column Role | What type of information a column contains |
+| Code List | Definitions for categorical codes |
+| IRI | Web address pointing to a definition |
+| Ontology | Shared vocabulary with relationships |
+| SKOS | System for organizing term lists |
+| OWL | System for classification hierarchies |
+| Semantic | Data that carries its meaning with it |
+| I-ADOPT | Framework for describing observable properties (variable, property, entity, constraint) |
+| Frictionless | International data package standard |
 
 ## Still Confused?
 

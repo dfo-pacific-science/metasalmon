@@ -245,13 +245,17 @@ head(pkg$resources$escapement)
 You’ve created your first Salmon Data Package! Here are some ways to go
 deeper:
 
-- **[How It All Fits
-  Together](https://dfo-pacific-science.github.io/metasalmon/articles/how-it-fits-together.md)** -
-  Understand the big picture
-- **[Detailed Data Dictionary &
-  Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)** -
+- **[Publishing Data
+  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)** -
   More control over metadata and publishing
-- **[Glossary](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md)** -
+- **[Linking to Standard
+  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)** -
+  Connect your data to scientific standards
+- **[Accessing Data from
+  GitHub](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md)** -
+  Read CSVs from private repositories
+- **[Glossary of
+  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md)** -
   Definitions of technical terms
 - **[FAQ](https://dfo-pacific-science.github.io/metasalmon/articles/faq.md)** -
   Common questions and troubleshooting

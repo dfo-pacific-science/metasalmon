@@ -48,10 +48,11 @@ concept schemes) while preserving your original data structure.
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Data Dictionary and Publication</a></li>
-    <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a></li>
-    <li><a class="dropdown-item" href="articles/gpt-collaboration.html">AI Assistance for Salmon Data Packages</a></li>
-    <li><a class="dropdown-item" href="articles/glossary.html">Glossary</a></li>
+<li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
+    <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
+    <li><a class="dropdown-item" href="articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
+    <li><a class="dropdown-item" href="articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
+    <li><a class="dropdown-item" href="articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
 </li>
@@ -164,32 +165,6 @@ concept schemes) while preserving your original data structure.
 <p><strong>Result</strong>: A folder containing your data + documentation that anyone can understand.</p>
 </div>
 <div class="section level2">
-<h2 id="access-private-csvs-from-github">Access private CSVs from GitHub<a class="anchor" aria-label="anchor" href="#access-private-csvs-from-github"></a>
-</h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># One-time setup: creates/stores a PAT with repo scope and verifies access</span></span>
-<span><span class="fu">metasalmon</span><span class="fu">::</span><span class="fu"><a href="reference/ms_setup_github.html">ms_setup_github</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Read a CSV from the Qualark data repository (defaults to the main branch)</span></span>
-<span><span class="va">dim_date</span> <span class="op">&lt;-</span> <span class="fu">metasalmon</span><span class="fu">::</span><span class="fu"><a href="reference/read_github_csv.html">read_github_csv</a></span><span class="op">(</span></span>
-<span>  <span class="st">"data/gold/dimension_tables/dim_date.csv"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/qualark-data"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pin to a tag or commit for reproducibility</span></span>
-<span><span class="va">dim_date_pinned</span> <span class="op">&lt;-</span> <span class="fu">metasalmon</span><span class="fu">::</span><span class="fu"><a href="reference/read_github_csv.html">read_github_csv</a></span><span class="op">(</span></span>
-<span>  <span class="st">"data/gold/dimension_tables/dim_date.csv"</span>,</span>
-<span>  ref <span class="op">=</span> <span class="st">"v0.3.0"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/qualark-data"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Get the stable raw URL identifier (no token embedded)</span></span>
-<span><span class="fu">metasalmon</span><span class="fu">::</span><span class="fu"><a href="reference/github_raw_url.html">github_raw_url</a></span><span class="op">(</span></span>
-<span>  <span class="st">"data/gold/dimension_tables/dim_date.csv"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/qualark-data"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-</div>
-<div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
 </h2>
 <table class="table">
@@ -218,6 +193,10 @@ concept schemes) while preserving your original data structure.
 <td>Interested in AI-assisted documentation</td>
 <td><a href="articles/gpt-collaboration.html">AI Assistance (Advanced)</a></td>
 </tr>
+<tr>
+<td>Reading CSVs from private GitHub repos</td>
+<td><a href="articles/github-csv-access.html">GitHub CSV Access</a></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -230,7 +209,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -249,8 +228,8 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
 </h2>
-<p><strong>For everyday use:</strong> - Automatically generate data dictionaries from your data frames - Validate that your dictionary is complete and correct - Create shareable packages that work across R, Python, and other tools</p>
-<p><strong>For data stewards (optional):</strong> - Link columns to standard DFO Salmon Ontology terms - Add I-ADOPT measurement metadata (property, entity, unit, method) - Use AI assistance to help write descriptions</p>
+<p><strong>For everyday use:</strong> - Automatically generate data dictionaries from your data frames - Validate that your dictionary is complete and correct - Create shareable packages that work across R, Python, and other tools - Read CSVs directly from private GitHub repositories</p>
+<p><strong>For data stewards (optional):</strong> - Link columns to standard DFO Salmon Ontology terms - Add I-ADOPT measurement metadata (property, entity, unit, constraint) - Use AI assistance to help write descriptions</p>
 </div>
 <div class="section level2">
 <h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
@@ -326,7 +305,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -334,7 +313,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>

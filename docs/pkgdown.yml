@@ -4,11 +4,12 @@ pkgdown_sha: ~
 articles:
   data-dictionary-publication: data-dictionary-publication.html
   faq: faq.html
+  github-csv-access: github-csv-access.html
   glossary: glossary.html
   gpt-collaboration: gpt-collaboration.html
   metasalmon: metasalmon.html
   reusing-standards-salmon-data-terms: reusing-standards-salmon-data-terms.html
-last_built: 2026-01-15T21:53Z
+last_built: 2026-01-16T02:33Z
 urls:
   reference: https://dfo-pacific-science.github.io/metasalmon/reference
   article: https://dfo-pacific-science.github.io/metasalmon/articles

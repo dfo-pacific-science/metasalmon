@@ -1,4 +1,4 @@
-# AI Assistance for Salmon Data Packages
+# Using AI to Document Your Data
 
 ## Overview
 
@@ -9,11 +9,10 @@ deterministic R functions in `metasalmon` for a powerful, reproducible
 pipeline.
 
 **See also:** - The README’s “How It Fits Together” section for the full
-picture - [Data Dictionary &
-Publication](https://dfo-pacific-science.github.io/metasalmon/articles/articles/data-dictionary-publication.md)
-for the metadata and publication workflow - [Reusing Standards for
-Salmon Data
-Terms](https://dfo-pacific-science.github.io/metasalmon/articles/articles/reusing-standards-salmon-data-terms.md)
+picture - [Publishing Data
+Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
+for the metadata and publication workflow - [Linking to Standard
+Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
 for the plain-language ontology guidance
 
 **Canonical output contract:** Use `smn-gpt/SYSTEM-PROMPT.md` as the
@@ -133,7 +132,7 @@ Create a prompt that asks GPT to:
        - term_iri: the IRI for this column (use a SKOS concept IRI for compound variables)
        - term_type: set to `skos_concept` or `owl_class` (leave NA if unknown)
        - unit_label / unit_iri: if applicable
-       - For measurement columns, also provide `property_iri`, `entity_iri`, and optional `constraint_iri` / `method_iri`
+       - For measurement columns, also provide `property_iri`, `entity_iri`, and optional `constraint_iri`
        - If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology
     3. Identifying which columns should have code lists (categorical fields)
     4. Proposing code values and labels for categorical fields
@@ -231,8 +230,8 @@ dict$unit_iri[nat_row]      <- suggestions$iri[suggestions$dictionary_role == "u
 
 `smn-gpt` uses the same I-ADOPT catalogue (symlinked into the repo) and
 follows the same rules: measurement columns require `term_iri`,
-`property_iri`, `entity_iri`, `unit_iri`, with optional `constraint_iri`
-and `method_iri`.
+`property_iri`, `entity_iri`, `unit_iri`, with optional
+`constraint_iri`.
 
 ### Step 4: Validate and Refine
 
@@ -314,7 +313,7 @@ pkg_path <- create_salmon_datapackage(
        - term_iri for the best-matching term (use a SKOS concept for compound variables)
        - term_type: `skos_concept` when the match is a SKOS concept (a controlled vocabulary term); use `owl_class` only when the column represents a class/type rather than a variable
        - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
-    3. For measurement columns, suggest unit_label and unit_iri (if available) and include `property_iri`, `entity_iri`, and optional `constraint_iri` / `method_iri`. For categorical columns, keep `vocabulary_iri` in the codes.csv output (not in the column dictionary).
+    3. For measurement columns, suggest unit_label and unit_iri (if available) and include `property_iri`, `entity_iri`, and optional `constraint_iri`. For categorical columns, keep `vocabulary_iri` in the codes.csv output (not in the column dictionary).
 
     Return as a CSV named `column_dictionary_gpt.csv` matching the column_dictionary.csv schema. Also return `gpt_proposed_terms.csv` with:
     - term_label
@@ -423,8 +422,8 @@ suggestions <- attr(dict_suggested, "semantic_suggestions")
 
 This complements the GPT workflow by providing deterministic,
 reproducible suggestions that you can review and merge into your
-dictionary. See [Reusing Standards for Salmon Data
-Terms](https://dfo-pacific-science.github.io/metasalmon/articles/articles/reusing-standards-salmon-data-terms.md)
+dictionary. See [Linking to Standard
+Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
 for details on
 [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
 and the I-ADOPT catalogue.

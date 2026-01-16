@@ -7,28 +7,52 @@
 find_terms(query, role = NA_character_, sources = c("ols", "nvs"))
 }
 \arguments{
-\item{query}{Character search string.}
+\item{query}{Character search string (e.g., \code{"spawner count"}, \code{"temperature"}).}
 
-\item{role}{Optional I-ADOPT role hint (\code{"variable"}, \code{"property"}, \code{"entity"},
-\code{"constraint"}, \code{"method"}, \code{"unit"}); used only for metadata tagging.}
+\item{role}{Optional I-ADOPT role hint for ranking results. One of:
+\code{"variable"} (compound term), \code{"property"} (characteristic),
+\code{"entity"} (thing measured), \code{"constraint"} (qualifier), or \code{"unit"}.
+Results matching the specified role are ranked higher.}
 
-\item{sources}{Character vector of sources to query (\code{"ols"}, \code{"nvs"}, \code{"bioportal"}).}
+\item{sources}{Character vector of vocabulary sources to query. Options:
+\code{"ols"}, \code{"nvs"}, \code{"bioportal"}. Default is \code{c("ols", "nvs")}.}
 }
 \value{
-Tibble with columns \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role}, \code{match_type}, \code{definition}.
+Tibble with columns: \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role},
+\code{match_type}, \code{definition}. Returns empty tibble if no matches found.
 }
 \description{
-Lightweight meta-search helper for IRIs. Uses public APIs when available:
-\itemize{
-\item OLS (no key): broad cross-ontology search
-\item NERC NVS P01/P06 (best-effort; returns empty on failure)
-\item BioPortal (optional; requires API key via env \code{BIOPORTAL_APIKEY})
-}
+Searches multiple vocabulary services to find IRIs that match a query string.
+Useful for discovering existing terms to link your data to standard
+scientific definitions.
 }
 \details{
-Results are scored using role-specific I-ADOPT vocabulary hints (from
-\code{inst/extdata/iadopt-terminologies.csv}) and deterministic tie-breakers so
-the ordering is stable.
+\strong{Supported sources:}
+\itemize{
+\item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
+\item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
+\item \strong{BioPortal}: Requires API key via \code{BIOPORTAL_APIKEY} environment variable
+}
 
-Network calls are best-effort and will return an empty tibble on failure.
+Results are scored using I-ADOPT vocabulary hints and ranked by relevance.
+Network calls are best-effort and return an empty tibble on failure.
+}
+\examples{
+\dontrun{
+# Search for terms matching "spawner count"
+results <- find_terms("spawner count")
+head(results)
+
+# Search specifically for property terms
+property_terms <- find_terms("temperature", role = "property")
+
+# Search a specific source
+ols_results <- find_terms("salmon", sources = "ols")
+
+# Search multiple sources
+all_results <- find_terms("escapement", sources = c("ols", "nvs"))
+}
+}
+\seealso{
+\code{\link[=suggest_semantics]{suggest_semantics()}} for automated suggestions based on your dictionary.
 }

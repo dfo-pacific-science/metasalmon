@@ -237,9 +237,10 @@ head(pkg$resources$escapement)
 
 You've created your first Salmon Data Package! Here are some ways to go deeper:
 
-- **[How It All Fits Together](how-it-fits-together.html)** - Understand the big picture
-- **[Detailed Data Dictionary & Publication](data-dictionary-publication.html)** - More control over metadata and publishing
-- **[Glossary](glossary.html)** - Definitions of technical terms
+- **[Publishing Data Packages](data-dictionary-publication.html)** - More control over metadata and publishing
+- **[Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html)** - Connect your data to scientific standards
+- **[Accessing Data from GitHub](github-csv-access.html)** - Read CSVs from private repositories
+- **[Glossary of Terms](glossary.html)** - Definitions of technical terms
 - **[FAQ](faq.html)** - Common questions and troubleshooting
 
 ---
