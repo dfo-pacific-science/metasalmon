@@ -27,6 +27,16 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
+First, install the package from GitHub:
+
+```r
+# Install from GitHub (recommended)
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
+Then use it to create a data package:
+
 ```r
 library(metasalmon)
 
