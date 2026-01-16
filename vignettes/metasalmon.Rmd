@@ -15,6 +15,16 @@ knitr::opts_chunk$set(
 )
 ```
 
+## Installation
+
+First, install metasalmon from GitHub:
+
+```{r}
+# Install from GitHub (recommended)
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
 ## What You'll Learn
 
 By the end of this guide, you'll be able to:
