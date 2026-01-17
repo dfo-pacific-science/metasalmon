@@ -23,7 +23,24 @@ This plan is intentionally **cross-repo**:
   - Python: added curl fallback for environments with broken urllib SSL, configurable timeout, debug mode via `SALMONPY_DEBUG_FETCH=1`
   - R: updated `.safe_json` with configurable timeout, simplified NVS SPARQL query
   - All unit tests pass in both repos
-- [ ] Phase 2 — encode ontology preferences by role (salmon-first, QUDT units, Darwin Core scaffold, Wikidata alignment-only).
+- [x] 2026-01-17: Phase 2 — encode ontology preferences by role (salmon-first, QUDT units, Darwin Core scaffold, Wikidata alignment-only).
+  - Created `inst/extdata/ontology-preferences.csv` with ranked allowlist per I-ADOPT role
+  - Added QUDT source (`.search_qudt()`) using SPARQL endpoint for unit lookups
+  - Added GBIF source (`.search_gbif()`) for taxon backbone entity resolution
+  - Added WoRMS source (`.search_worms()`) for marine species entity resolution
+  - Added `sources_for_role()` helper to get role-optimized source sets
+  - Updated `.score_and_rank_terms()` with role-based ontology preference scoring:
+    - Priority-based boost: Priority 1 = +2.0, Priority 2 = +1.5, etc.
+    - QUDT preferred for unit role (priority 1)
+    - GBIF/WoRMS preferred for entity role (priority 4-5)
+    - STATO/OBA preferred for property role
+    - gcdfo: SKOS + SOSA/PROV patterns preferred for method role
+  - Implemented Wikidata alignment-only handling:
+    - `alignment_only` column added to results
+    - Wikidata IRIs penalized (-0.5 score) rather than boosted
+  - Updated `find_terms()` to support new sources and return `alignment_only` flag
+  - Added comprehensive tests for Phase 2 features
+  - Note: salmonpy not found in environment, Python mirroring deferred
 - [ ] Phase 3 — Darwin Core: prefer DwC Conceptual Model + DwC Data Package (DwC-DP), not legacy "DwC terms" search.
 - [ ] Phase 4 — matching quality: role-aware query expansion, cross-source agreement boosts, optional embedding rerank.
 
@@ -33,13 +50,22 @@ This plan is intentionally **cross-repo**:
 - NVS SPARQL queries with OPTIONAL + REGEX on altLabel are very slow (>30s); simplified to prefLabel-only REGEX.
 - Python urllib on some macOS configurations fails with DNS errors (`Errno 8` or `Errno 9`); curl fallback was essential.
 - `dfo-salmon-ontology` conventions explicitly treat Darwin Core mostly as **properties** and as an **interoperability scaffold**, and recommend Wikidata **alignment-only**.
-- DwC “the new way” is the **DwC Conceptual Model + DwC Data Package guide** (DwC-DP), hosted at `https://gbif.github.io/dwc-dp/` (schemas in `gbif/dwc-dp`).
+- DwC "the new way" is the **DwC Conceptual Model + DwC Data Package guide** (DwC-DP), hosted at `https://gbif.github.io/dwc-dp/` (schemas in `gbif/dwc-dp`).
+- **Phase 2**: QUDT SPARQL endpoint (`https://www.qudt.org/fuseki/qudt/sparql`) works well for unit lookups; returns JSON with `Accept: application/sparql-results+json`.
+- **Phase 2**: GBIF species match API (`/v1/species/match`) returns single best match; fallback to `/v1/species/search` for broader results.
+- **Phase 2**: WoRMS API returns data frames directly; `AphiaRecordsByMatchNames` endpoint useful for fuzzy matching.
 
 ## Decision Log
 
 - 2026-01-16: Fix NVS by switching to NVS SPARQL (`https://vocab.nerc.ac.uk/sparql/`) restricted to P01/P06 rather than relying on `search_nvs`.
 - 2026-01-16: Add ZOOMA as a candidate generator (`source = "zooma"`) that resolves returned `semanticTags` to OLS term metadata.
 - 2026-01-16: Add ICES Vocab API as a **code-list** integration (separate from ontology term search), starting with code-type + code retrieval helpers.
+- 2026-01-17: Add QUDT as preferred source for unit role; implemented via SPARQL endpoint with 60s timeout.
+- 2026-01-17: Add GBIF/WoRMS as taxon resolvers for entity role; GBIF uses species match/search APIs, WoRMS uses AphiaRecordsByName.
+- 2026-01-17: Create `ontology-preferences.csv` to encode ranked allowlists per I-ADOPT role with priority rankings.
+- 2026-01-17: Implement priority-based scoring: Priority 1 = +2.0 boost, Priority 2 = +1.5, etc.; Wikidata penalized as alignment-only.
+- 2026-01-17: Add `sources_for_role()` helper function to simplify role-aware source selection.
+- 2026-01-17: Add `alignment_only` column to results to flag Wikidata terms for downstream filtering.
 
 ## Context and Orientation
 
@@ -99,12 +125,28 @@ This plan is intentionally **cross-repo**:
 
 ### Phase 1 acceptance criteria
 
-- `find_terms(..., sources="nvs")` returns real results (non-empty label + IRI) for reasonable queries (e.g., “count”, “fish”).
-- `find_terms(..., sources="zooma")` returns non-empty results for a phrase query (e.g., “spawner count”), with resolved labels/definitions (not just raw IRIs).
+- `find_terms(..., sources="nvs")` returns real results (non-empty label + IRI) for reasonable queries (e.g., "count", "fish").
+- `find_terms(..., sources="zooma")` returns non-empty results for a phrase query (e.g., "spawner count"), with resolved labels/definitions (not just raw IRIs).
 - ICES helpers return non-empty code types and codes (e.g., `Gear`) and allow basic filtering.
 - Tests pass in both repos:
   - R: `devtools::test(..., filter = 'term-search|dictionary-helpers')`
   - Python: `python3 -m unittest salmonpy.tests.test_term_search salmonpy.tests.test_semantics`
+
+### Phase 2 acceptance criteria
+
+- `sources_for_role("unit")` returns `c("qudt", "nvs", "ols")` (QUDT first).
+- `sources_for_role("entity")` returns `c("gbif", "worms", "ols")` (taxon resolvers first).
+- `find_terms("kilogram", role="unit", sources="qudt")` returns QUDT unit IRIs.
+- `find_terms("Oncorhynchus kisutch", role="entity", sources="gbif")` returns GBIF taxon backbone results.
+- `find_terms("Oncorhynchus kisutch", role="entity", sources="worms")` returns WoRMS marine species results.
+- Results from QUDT/GBIF/WoRMS rank higher than generic OLS results for their respective roles.
+- Wikidata results have `alignment_only = TRUE` and score lower than domain-specific ontology matches.
+- `ontology-preferences.csv` correctly encodes:
+  - Unit: QUDT (priority 1), NVS P06 (priority 2)
+  - Entity: salmon (priority 1), fishtraits (priority 2), ncbitaxon (priority 3), worms (priority 4), gbif (priority 5)
+  - Property: STATO (priority 1), OBA (priority 2), PATO (priority 3)
+  - Method: gcdfo (priority 1), sosa (priority 2), prov (priority 3)
+- All Phase 2 tests pass: `devtools::test(..., filter = 'term-search')`
 
 ## Concrete Steps (Phase 1)
 
@@ -116,6 +158,29 @@ Run from the appropriate repo directories:
   - `Rscript -e "devtools::load_all('../metasalmon'); metasalmon::find_terms('spawner count', sources='zooma') %>% head()"`
 - Python package smoke:
   - `python3 -c "import sys; sys.path.insert(0,'../'); import salmonpy; print(salmonpy.find_terms('spawner count').head())"`
+
+## Concrete Steps (Phase 2)
+
+Run from the metasalmon repo directory to validate Phase 2 changes:
+
+- Role-optimized source selection:
+  - `Rscript -e "devtools::load_all('.'); sources_for_role('unit')"`
+  - `Rscript -e "devtools::load_all('.'); sources_for_role('entity')"`
+
+- QUDT unit search:
+  - `Rscript -e "devtools::load_all('.'); find_terms('kilogram', role='unit', sources=sources_for_role('unit')) %>% head()"`
+
+- GBIF taxon resolution:
+  - `Rscript -e "devtools::load_all('.'); find_terms('Oncorhynchus kisutch', role='entity', sources='gbif') %>% head()"`
+
+- WoRMS marine species:
+  - `Rscript -e "devtools::load_all('.'); find_terms('Oncorhynchus kisutch', role='entity', sources='worms') %>% head()"`
+
+- Verify Wikidata alignment-only:
+  - `Rscript -e "devtools::load_all('.'); res <- find_terms('salmon'); res[res$alignment_only == TRUE, ]"`
+
+- Run Phase 2 tests:
+  - `Rscript -e "devtools::test('.', filter = 'term-search')"`
 
 Notes:
 EBI OLS4 search has lots of knobs + LLM similarity endpoints

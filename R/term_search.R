@@ -1,35 +1,49 @@
 #' Find candidate terms across external vocabularies
 #'
-#' Lightweight meta-search helper for IRIs. Uses public APIs when available:
-#' - OLS (no key): broad cross-ontology search
-#' - NERC NVS P01/P06 (via SPARQL endpoint)
-#' - ZOOMA (no key): EBI text-to-term annotations (resolves to OLS term metadata)
-#' - BioPortal (optional; requires API key via env `BIOPORTAL_APIKEY`)
+#' Lightweight meta-search helper for IRIs. Uses public APIs when available.
+#' Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 #'
 #' **Supported sources:**
 #' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 #' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
+#' - **ZOOMA** (EBI text-to-term annotations): Resolves to OLS term metadata
+#' - **QUDT** (Quantities, Units, Dimensions and Types): Preferred for unit role
+#' - **GBIF** (Global Biodiversity Information Facility): Taxon backbone for entity role
+#' - **WoRMS** (World Register of Marine Species): Marine taxa for entity role
 #' - **BioPortal**: Requires API key via `BIOPORTAL_APIKEY` environment variable
 #'
-#' Results are scored using I-ADOPT vocabulary hints and ranked by relevance.
-#' Network calls are best-effort and return an empty tibble on failure.
+#' **Role-based ontology preferences (Phase 2):**
+#' - `unit`: QUDT preferred, then NVS P06
+#' - `property`: STATO/OBA measurement ontologies, NVS P01
+#' - `entity`: Salmon domain terms, GBIF/WoRMS for taxa
+#' - `method`: gcdfo: SKOS + SOSA/PROV patterns
+#' - Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
+#'
+#' Results are scored using I-ADOPT vocabulary hints and role-based ontology
+#' preferences, then ranked by relevance. Network calls are best-effort and
+#' return an empty tibble on failure.
 #'
 #' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
-#' @param role Optional I-ADOPT role hint for ranking results. One of:
+#' @param role Optional I-ADOPT role hint for ranking and source selection. One of:
 #'   `"variable"` (compound term), `"property"` (characteristic),
-#'   `"entity"` (thing measured), `"constraint"` (qualifier), or `"unit"`.
-#'   Results matching the specified role are ranked higher.
+#'   `"entity"` (thing measured), `"constraint"` (qualifier), `"method"`, or `"unit"`.
+#'   When specified, sources are optimized for the role and results are ranked higher
+#'   when they match preferred ontologies for that role.
 #' @param sources Character vector of vocabulary sources to query. Options:
-#'   `"ols"`, `"nvs"`, `"bioportal"`. Default is `c("ols", "nvs")`.
+#'   `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
+#'   Default is `c("ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
 #'
 #' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
-#'   `match_type`, `definition`. Returns empty tibble if no matches found.
+#'   `match_type`, `definition`, `alignment_only`. The `alignment_only` column
+#'   indicates terms from Wikidata (useful for crosswalks but not canonical modeling).
+#'   Returns empty tibble if no matches found.
 #'
 #' @seealso [suggest_semantics()] for automated suggestions based on your dictionary.
+#' @seealso [sources_for_role()] for role-optimized source selection.
 #'
 #' @export
 #' @import httr
-#' @importFrom rlang %||%
+#' @importFrom rlang %||% .data
 #'
 #' @examples
 #' \dontrun{
@@ -39,6 +53,12 @@
 #'
 #' # Search specifically for property terms
 #' property_terms <- find_terms("temperature", role = "property")
+#'
+#' # Search for units with QUDT preference
+#' unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+#'
+#' # Search for taxa using taxon resolvers
+#' taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
 #'
 #' # Search a specific source
 #' ols_results <- find_terms("salmon", sources = "ols")
@@ -67,14 +87,24 @@ find_terms <- function(query,
       .search_zooma(query, role)
     } else if (src == "bioportal") {
       .search_bioportal(query, role)
+    } else if (src == "qudt") {
+      .search_qudt(query, role)
+    } else if (src == "gbif") {
+      .search_gbif(query, role)
+    } else if (src == "worms") {
+      .search_worms(query, role)
     } else {
       .empty_terms(role)
     }
   })
 
   combined <- dplyr::bind_rows(results)
+  # Add alignment_only column if missing (for sources that don't set it)
+  if (!"alignment_only" %in% names(combined)) {
+    combined$alignment_only <- FALSE
+  }
   ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab(), query)
-  ranked <- dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition)
+  ranked <- dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition, alignment_only)
   if (.metasalmon_cache_enabled) {
     assign(cache_key, ranked, envir = .metasalmon_cache)
   }
@@ -89,7 +119,8 @@ find_terms <- function(query,
     ontology = character(),
     role = if (is.null(role)) NA_character_ else role,
     match_type = character(),
-    definition = character()
+    definition = character(),
+    alignment_only = logical()
   )
 }
 
@@ -286,6 +317,7 @@ find_terms <- function(query,
     }
     return(.empty_terms(role))
   }
+
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://data.bioontology.org/search?q=", encoded, "&apikey=", apikey)
   data <- .safe_json(url)
@@ -305,6 +337,206 @@ find_terms <- function(query,
   )
 }
 
+#' Search QUDT for unit terms
+#'
+#' Preferred source for unit role (per dfo-salmon-ontology CONVENTIONS).
+#' Uses the QUDT SPARQL endpoint to find matching unit terms.
+#'
+#' @param query Search query string
+#' @param role I-ADOPT role (typically "unit")
+#' @return Tibble of matching terms
+#' @keywords internal
+.search_qudt <- function(query, role) {
+  tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(query)), "\\s+")[[1]])
+  tokens <- tokens[nzchar(tokens)]
+  if (length(tokens) == 0) {
+    return(.empty_terms(role))
+  }
+
+  # Build regex pattern for SPARQL FILTER
+
+pattern <- paste(tokens, collapse = ".*")
+  pattern <- gsub("\\\\", "\\\\\\\\", pattern)
+  pattern <- gsub("\"", "\\\\\"", pattern)
+
+  sparql <- paste0(
+    "PREFIX qudt: <http://qudt.org/schema/qudt/>\n",
+    "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n",
+    "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n",
+    "SELECT DISTINCT ?uri ?label ?definition WHERE {\n",
+    "  ?uri a qudt:Unit .\n",
+    "  ?uri rdfs:label ?label .\n",
+    "  OPTIONAL { ?uri skos:definition ?definition . }\n",
+    "  OPTIONAL { ?uri qudt:description ?definition . }\n",
+    "  FILTER(REGEX(LCASE(STR(?label)), \"", pattern, "\", \"i\"))\n",
+    "}\n",
+    "LIMIT 50\n"
+  )
+
+  url <- paste0("https://www.qudt.org/fuseki/qudt/sparql?query=", utils::URLencode(sparql, reserved = TRUE))
+  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = 60)
+  bindings <- data$results$bindings %||% NULL
+  if (is.null(bindings) || length(bindings) == 0) {
+    return(.empty_terms(role))
+  }
+
+  # Handle both list-of-lists and data.frame binding formats
+  if (is.data.frame(bindings)) {
+    sparql_value <- function(var) {
+      flat <- paste0(var, ".value")
+      if (flat %in% names(bindings)) {
+        return(bindings[[flat]])
+      }
+      if (var %in% names(bindings) && is.data.frame(bindings[[var]]) && "value" %in% names(bindings[[var]])) {
+        return(bindings[[var]]$value)
+      }
+      rep("", nrow(bindings))
+    }
+    iri <- sparql_value("uri")
+    label <- sparql_value("label")
+    definition <- sparql_value("definition")
+  } else {
+    # bindings is a list
+    iri <- vapply(bindings, function(b) b$uri$value %||% "", character(1))
+    label <- vapply(bindings, function(b) b$label$value %||% "", character(1))
+    definition <- vapply(bindings, function(b) b$definition$value %||% "", character(1))
+  }
+
+  definition <- ifelse(is.na(definition), "", definition)
+
+  tibble::tibble(
+    label = label,
+    iri = iri,
+    source = "qudt",
+    ontology = "qudt",
+    role = role,
+    match_type = "unit",
+    definition = definition
+  ) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
+}
+
+#' Search GBIF Backbone Taxonomy for taxon entities
+#'
+#' Useful for entity role when the entity is a species/taxon.
+#' Uses GBIF Species API to match taxon names.
+#'
+#' @param query Search query string (taxon name)
+#' @param role I-ADOPT role (typically "entity")
+#' @return Tibble of matching taxa
+#' @keywords internal
+.search_gbif <- function(query, role) {
+  encoded <- utils::URLencode(query, reserved = TRUE)
+  # Use GBIF species match for exact-ish matches
+  url <- paste0("https://api.gbif.org/v1/species/match?name=", encoded, "&verbose=true")
+  data <- .safe_json(url, timeout_secs = 30)
+
+  if (is.null(data) || is.null(data$usageKey)) {
+    # Fallback to species search for broader matches
+    url <- paste0("https://api.gbif.org/v1/species/search?q=", encoded, "&limit=20")
+    data <- .safe_json(url, timeout_secs = 30)
+    if (is.null(data) || is.null(data$results) || length(data$results) == 0) {
+      return(.empty_terms(role))
+    }
+    results <- data$results
+    tibble::tibble(
+      label = vapply(results, function(r) r$scientificName %||% r$canonicalName %||% "", character(1)),
+      iri = vapply(results, function(r) paste0("https://www.gbif.org/species/", r$key), character(1)),
+      source = "gbif",
+      ontology = "gbif_backbone",
+      role = role,
+      match_type = vapply(results, function(r) tolower(r$rank %||% "taxon"), character(1)),
+      definition = vapply(results, function(r) {
+        parts <- c(
+          if (!is.null(r$kingdom)) paste("Kingdom:", r$kingdom) else NULL,
+          if (!is.null(r$phylum)) paste("Phylum:", r$phylum) else NULL,
+          if (!is.null(r$class)) paste("Class:", r$class) else NULL,
+          if (!is.null(r$order)) paste("Order:", r$order) else NULL,
+          if (!is.null(r$family)) paste("Family:", r$family) else NULL
+        )
+        paste(parts, collapse = "; ")
+      }, character(1))
+    ) %>%
+      dplyr::distinct(iri, .keep_all = TRUE)
+  } else {
+    # Single match result
+    tibble::tibble(
+      label = data$scientificName %||% data$canonicalName %||% "",
+      iri = paste0("https://www.gbif.org/species/", data$usageKey),
+      source = "gbif",
+      ontology = "gbif_backbone",
+      role = role,
+      match_type = tolower(data$rank %||% "taxon"),
+      definition = paste(
+        if (!is.null(data$kingdom)) paste("Kingdom:", data$kingdom) else "",
+        if (!is.null(data$phylum)) paste("Phylum:", data$phylum) else "",
+        if (!is.null(data$class)) paste("Class:", data$class) else "",
+        if (!is.null(data$order)) paste("Order:", data$order) else "",
+        if (!is.null(data$family)) paste("Family:", data$family) else "",
+        sep = "; "
+      )
+    )
+  }
+}
+
+#' Search WoRMS for marine species entities
+#'
+#' World Register of Marine Species - authoritative for marine taxa.
+#' Useful for entity role when dealing with marine species (salmon, etc.).
+#'
+#' @param query Search query string (taxon name)
+#' @param role I-ADOPT role (typically "entity")
+#' @return Tibble of matching marine species
+#' @keywords internal
+.search_worms <- function(query, role) {
+  encoded <- utils::URLencode(query, reserved = TRUE)
+  url <- paste0(
+    "https://www.marinespecies.org/rest/AphiaRecordsByName/",
+    encoded,
+    "?like=true&marine_only=false&offset=1"
+  )
+  data <- .safe_json(url, timeout_secs = 30)
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+    # Try fuzzy match endpoint
+    url <- paste0("https://www.marinespecies.org/rest/AphiaRecordsByMatchNames?scientificnames%5B%5D=", encoded)
+    data <- .safe_json(url, timeout_secs = 30)
+    if (is.null(data) || length(data) == 0 || is.null(data[[1]])) {
+      return(.empty_terms(role))
+    }
+    # Flatten the nested list result
+    data <- data[[1]]
+    if (!is.data.frame(data) && is.list(data)) {
+      if (length(data) == 0) return(.empty_terms(role))
+      data <- dplyr::bind_rows(data)
+    }
+    if (!is.data.frame(data) || nrow(data) == 0) {
+      return(.empty_terms(role))
+    }
+  }
+
+  tibble::tibble(
+    label = data$scientificname %||% "",
+    iri = paste0("urn:lsid:marinespecies.org:taxname:", data$AphiaID),
+    source = "worms",
+    ontology = "worms",
+    role = role,
+    match_type = tolower(data$rank %||% "taxon"),
+    definition = vapply(seq_len(nrow(data)), function(i) {
+      r <- data[i, ]
+      parts <- c(
+        if (!is.null(r$kingdom) && !is.na(r$kingdom)) paste("Kingdom:", r$kingdom) else NULL,
+        if (!is.null(r$phylum) && !is.na(r$phylum)) paste("Phylum:", r$phylum) else NULL,
+        if (!is.null(r$class) && !is.na(r$class)) paste("Class:", r$class) else NULL,
+        if (!is.null(r$order) && !is.na(r$order)) paste("Order:", r$order) else NULL,
+        if (!is.null(r$family) && !is.na(r$family)) paste("Family:", r$family) else NULL
+      )
+      paste(parts, collapse = "; ")
+    }, character(1))
+  ) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
+}
+
 .iadopt_vocab <- function() {
   path <- system.file("extdata", "iadopt-terminologies.csv", package = "metasalmon", mustWork = TRUE)
   if (!file.exists(path)) {
@@ -319,29 +551,102 @@ find_terms <- function(query,
     )
 }
 
+#' Load role-based ontology preferences
+#'
+#' Returns the ranked allowlist of preferred ontologies per I-ADOPT role.
+#' Based on dfo-salmon-ontology CONVENTIONS.md:
+#' - unit: QUDT + NVS P06 preferred
+#' - method: gcdfo: SKOS + SOSA/PROV patterns
+#' - entity: salmon domain + taxa resolvers (GBIF/WoRMS)
+#' - property: STATO/OBA measurement ontologies
+#' - Wikidata is alignment-only
+#'
+#' @return Tibble with role preferences and priority rankings
+#' @keywords internal
+.role_preferences <- function() {
+  path <- system.file("extdata", "ontology-preferences.csv", package = "metasalmon", mustWork = FALSE)
+  if (!file.exists(path) || path == "") {
+    # Return default preferences if file not found
+    return(tibble::tibble(
+      role = character(),
+      ontology = character(),
+      priority = integer(),
+      source_hint = character(),
+      iri_pattern = character(),
+      alignment_only = logical(),
+      notes = character()
+    ))
+  }
+  readr::read_csv(path, show_col_types = FALSE, progress = FALSE)
+}
+
+#' Get recommended sources for a given role
+#'
+#' Returns the optimal set of sources to query based on role.
+#' Implements Phase 2 role-aware source selection.
+#'
+#' @param role I-ADOPT role (unit, property, entity, method, variable, constraint)
+#' @return Character vector of recommended sources
+#' @export
+#' @examples
+#' sources_for_role("unit")
+#' # Returns: c("qudt", "nvs", "ols")
+#'
+#' sources_for_role("entity")
+#' # Returns: c("gbif", "worms", "ols")
+sources_for_role <- function(role) {
+  if (is.null(role) || is.na(role) || role == "") {
+    return(c("ols", "nvs"))
+  }
+  role <- tolower(role)
+  switch(role,
+    unit = c("qudt", "nvs", "ols"),
+    property = c("nvs", "ols", "zooma"),
+    entity = c("gbif", "worms", "ols"),
+    method = c("ols", "zooma"),
+    variable = c("nvs", "ols", "zooma"),
+    constraint = c("ols"),
+    c("ols", "nvs")
+  )
+}
+
 .score_and_rank_terms <- function(df, role, vocab_tbl, query = NULL) {
-  if (nrow(df) == 0) {
+if (nrow(df) == 0) {
     return(df)
   }
 
-  base_source_weight <- c(ols = 0.3, nvs = 0.6, zooma = 0.5, bioportal = 0.2)
+  # Load role-based ontology preferences (Phase 2)
+  role_prefs <- .role_preferences()
+
+  # Base source weights - updated for new sources
+  base_source_weight <- c(
+    ols = 0.3,
+    nvs = 0.6,
+    zooma = 0.5,
+    bioportal = 0.2,
+    qudt = 0.7,  # High weight for QUDT (preferred for units)
+    gbif = 0.6,  # High weight for GBIF (preferred for entities)
+    worms = 0.6  # High weight for WoRMS (preferred for entities)
+  )
+
+  # Role-specific source boosts (Phase 2: ontology preferences by role)
   role_boost <- list(
-    unit = c(nvs = 1.2, ols = 0.4),
-    property = c(nvs = 1.0, ols = 0.4),
-    variable = c(ols = 0.4, bioportal = 0.4),
-    entity = c(ols = 0.4, bioportal = 0.4),
-    constraint = c(ols = 0.4, bioportal = 0.4),
-    method = c(ols = 0.4, bioportal = 0.4)
+    unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
+    property = c(nvs = 1.0, ols = 0.5, zooma = 0.4),
+    variable = c(nvs = 1.0, ols = 0.4, zooma = 0.4),
+    entity = c(gbif = 1.3, worms = 1.3, ols = 0.4),
+    constraint = c(ols = 0.5),
+    method = c(ols = 0.5, zooma = 0.4)
   )
 
   role_key <- if (is.null(role) || is.na(role)) NA_character_ else role
-  role_vocabs <- if (!is.na(role_key)) dplyr::filter(vocab_tbl, role == role_key) else vocab_tbl[0, ]
+  role_vocabs <- if (!is.na(role_key)) dplyr::filter(vocab_tbl, .data$role == role_key) else vocab_tbl[0, ]
 
   host_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$host), collapse = "|") else ""
   slug_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$slug), collapse = "|") else ""
   label_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$label_tokens), collapse = "|") else ""
 
-  df$score <- vapply(df$source, function(src) base_source_weight[[src]] %||% 0, numeric(1))
+  df$score <- vapply(df$source, function(src) base_source_weight[[src]] %||% 0.1, numeric(1))
 
   query_tokens <- character()
   if (!is.null(query) && !is.na(query) && nzchar(query)) {
@@ -354,19 +659,53 @@ find_terms <- function(query,
     df$score <- df$score + vapply(df$source, function(src) role_map[[src]] %||% 0, numeric(1))
   }
 
+  # Apply ontology preference boosts based on IRI patterns (Phase 2)
+  if (nrow(role_prefs) > 0 && !is.na(role_key)) {
+    role_specific_prefs <- dplyr::filter(role_prefs, .data$role == role_key | .data$role == "wikidata")
+    if (nrow(role_specific_prefs) > 0) {
+      # Apply priority-based boost: higher priority (lower number) = bigger boost
+      df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+        iri <- df$iri[i]
+        ontology <- df$ontology[i]
+        boost <- 0
+
+        for (j in seq_len(nrow(role_specific_prefs))) {
+          pref <- role_specific_prefs[j, ]
+          pattern <- pref$iri_pattern
+
+          # Check if IRI matches this ontology preference
+          if (!is.na(pattern) && nzchar(pattern) && grepl(pattern, iri, ignore.case = TRUE)) {
+            # Wikidata is alignment-only: penalize instead of boost
+            if (isTRUE(pref$alignment_only)) {
+              boost <- boost - 0.5
+            } else {
+              # Priority 1 = +2.0, Priority 2 = +1.5, Priority 3 = +1.0, etc.
+              priority_boost <- max(0, 2.5 - (pref$priority * 0.5))
+              boost <- boost + priority_boost
+            }
+            break  # Use first matching preference
+          }
+        }
+        boost
+      }, numeric(1))
+    }
+  }
+
+  # I-ADOPT vocabulary matching (legacy, still useful for broad coverage)
   if (host_pattern != "") {
-    df$score <- df$score + ifelse(grepl(host_pattern, df$iri, ignore.case = TRUE), 1, 0)
+    df$score <- df$score + ifelse(grepl(host_pattern, df$iri, ignore.case = TRUE), 0.8, 0)
   }
   if (slug_pattern != "") {
     df$score <- df$score + ifelse(
       grepl(slug_pattern, df$iri, ignore.case = TRUE) | grepl(slug_pattern, df$ontology, ignore.case = TRUE),
-      1, 0
+      0.8, 0
     )
   }
   if (label_pattern != "") {
-    df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), 0.5, 0)
+    df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), 0.4, 0)
   }
 
+  # Query token overlap scoring
   if (length(query_tokens) > 0) {
     df$score <- df$score + vapply(df$label, function(lbl) {
       lbl_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(lbl %||% "")), "\\s+")[[1]])
@@ -375,6 +714,11 @@ find_terms <- function(query,
       length(overlaps) * 0.2
     }, numeric(1))
   }
+
+  # Add alignment_only flag for downstream filtering
+  df$alignment_only <- vapply(df$iri, function(iri) {
+    grepl("wikidata\\.org", iri, ignore.case = TRUE)
+  }, logical(1))
 
   df[order(-df$score, df$source, df$ontology, df$label, df$iri), ]
 }
@@ -389,5 +733,8 @@ utils::globalVariables(c(
   "confidence",
   "href",
   "semanticTag",
-  "match_type.zooma"
+  "match_type.zooma",
+  "alignment_only",
+  "priority",
+  "iri_pattern"
 ))
