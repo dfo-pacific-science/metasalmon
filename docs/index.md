@@ -85,33 +85,6 @@ create_salmon_datapackage(
 **Result**: A folder containing your data + documentation that anyone
 can understand.
 
-## Access private CSVs from GitHub
-
-``` r
-
-# One-time setup: creates/stores a PAT with repo scope and verifies access
-metasalmon::ms_setup_github()
-
-# Read a CSV from the Qualark data repository (defaults to the main branch)
-dim_date <- metasalmon::read_github_csv(
-  "data/gold/dimension_tables/dim_date.csv",
-  repo = "dfo-pacific-science/qualark-data"
-)
-
-# Pin to a tag or commit for reproducibility
-dim_date_pinned <- metasalmon::read_github_csv(
-  "data/gold/dimension_tables/dim_date.csv",
-  ref = "v0.3.0",
-  repo = "dfo-pacific-science/qualark-data"
-)
-
-# Get the stable raw URL identifier (no token embedded)
-metasalmon::github_raw_url(
-  "data/gold/dimension_tables/dim_date.csv",
-  repo = "dfo-pacific-science/qualark-data"
-)
-```
-
 ## Who Is This For?
 
 | If you are… | Start here |
@@ -120,6 +93,7 @@ metasalmon::github_raw_url(
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
 | A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) |
 | Interested in AI-assisted documentation | [AI Assistance (Advanced)](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md) |
+| Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md) |
 
 ## Video Walkthrough
 
@@ -156,11 +130,11 @@ future self - can immediately understand your data.
 **For everyday use:** - Automatically generate data dictionaries from
 your data frames - Validate that your dictionary is complete and
 correct - Create shareable packages that work across R, Python, and
-other tools
+other tools - Read CSVs directly from private GitHub repositories
 
 **For data stewards (optional):** - Link columns to standard DFO Salmon
 Ontology terms - Add I-ADOPT measurement metadata (property, entity,
-unit, method) - Use AI assistance to help write descriptions
+unit, constraint) - Use AI assistance to help write descriptions
 
 ## Getting Help
 

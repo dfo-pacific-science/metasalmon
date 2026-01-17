@@ -1,24 +1,69 @@
 #' Suggest semantic annotations for a dictionary
 #'
-#' Placeholder function for future GPT/LLM or heuristic-based suggestions
-#' of IRIs, concept schemes, and semantic annotations for dictionary fields.
+#' Searches external vocabularies to suggest IRIs for measurement columns that
+#' are missing semantic annotations. For each measurement column with missing
+#' I-ADOPT component fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
+#' `constraint_iri`), this function queries vocabulary services and ranks
+#' results by relevance.
 #'
-#' @param df A data frame or tibble
-#' @param dict A dictionary tibble (may be incomplete)
-#' @param sources Search sources to use for `find_terms()`; default is OLS + NVS.
-#' @param max_per_role Maximum suggestions to keep per role/column.
-#' @param search_fn Function used to search terms (defaults to `find_terms`);
-#'   useful for testing or custom search strategies.
+#' The function uses the column's label or description as the search query and
+#' returns suggestions as an attribute on the dictionary tibble. This allows
+#' you to review candidates before accepting them into your dictionary.
+#'
+#' @param df A data frame or tibble containing the data being documented.
+#' @param dict A dictionary tibble created by `infer_dictionary()` (may have
+#'   incomplete semantic fields).
+#' @param sources Character vector of vocabulary sources to search. Options are
+#'   `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
+#'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
+#'   Default is `c("ols", "nvs")`.
+#' @param max_per_role Maximum number of suggestions to keep per I-ADOPT role
+#'   (variable, property, entity, unit, constraint) per column. Default is 3.
+#' @param search_fn Function used to search terms. Defaults to `find_terms()`.
+#'   Can be replaced for testing or custom search strategies.
 #'
 #' @return The dictionary tibble (unchanged) with a `semantic_suggestions`
-#'   attribute containing suggested IRIs for missing fields.
+#'   attribute containing a tibble of suggested IRIs. The suggestions tibble
+
+#'   includes columns: `column_name`, `dictionary_role` (which IRI field the
+#'   suggestion is for), `label`, `iri`, `source`, `ontology`, and `definition`.
+#'
+#' @details
+#' Only columns with `column_role == "measurement"
+#' are processed, since I-ADOPT components are primarily relevant for
+#' measurement metadata. Columns with existing IRIs in a field are skipped
+#' for that field.
+#'
+#' After calling this function, access suggestions with:
+#' ```
+#' suggestions <- attr(result, "semantic_suggestions")
+#' ```
+#'
+#' Then manually review and copy desired IRIs into your dictionary.
+#'
+#' @seealso [find_terms()] for direct vocabulary searches, [infer_dictionary()]
+#'   for creating starter dictionaries, [validate_dictionary()] for checking
+#'   dictionary completeness.
 #'
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' dict <- infer_dictionary(mtcars)
-#' suggested <- suggest_semantics(mtcars, dict, sources = "ols")
+#' # Create a starter dictionary
+#' dict <- infer_dictionary(my_data, dataset_id = "example", table_id = "main")
+#'
+#' # Get semantic suggestions for measurement columns
+#' dict_with_suggestions <- suggest_semantics(my_data, dict)
+#'
+#' # View the suggestions
+#' suggestions <- attr(dict_with_suggestions, "semantic_suggestions")
+#' print(suggestions)
+#'
+#' # Filter suggestions for a specific column
+#' spawner_suggestions <- suggestions[suggestions$column_name == "SPAWNER_COUNT", ]
+#'
+#' # Accept a suggestion by copying the IRI into your dictionary
+#' dict$term_iri[dict$column_name == "SPAWNER_COUNT"] <- spawner_suggestions$iri[1]
 #' }
 suggest_semantics <- function(df,
                               dict,

@@ -13,28 +13,73 @@ suggest_semantics(
 )
 }
 \arguments{
-\item{df}{A data frame or tibble}
+\item{df}{A data frame or tibble containing the data being documented.}
 
-\item{dict}{A dictionary tibble (may be incomplete)}
+\item{dict}{A dictionary tibble created by \code{infer_dictionary()} (may have
+incomplete semantic fields).}
 
-\item{sources}{Search sources to use for \code{find_terms()}; default is OLS + NVS.}
+\item{sources}{Character vector of vocabulary sources to search. Options are
+\code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
+\code{"bioportal"} (requires \code{BIOPORTAL_APIKEY} environment variable).
+Default is \code{c("ols", "nvs")}.}
 
-\item{max_per_role}{Maximum suggestions to keep per role/column.}
+\item{max_per_role}{Maximum number of suggestions to keep per I-ADOPT role
+(variable, property, entity, unit, constraint) per column. Default is 3.}
 
-\item{search_fn}{Function used to search terms (defaults to \code{find_terms});
-useful for testing or custom search strategies.}
+\item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
+Can be replaced for testing or custom search strategies.}
 }
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
-attribute containing suggested IRIs for missing fields.
+attribute containing a tibble of suggested IRIs. The suggestions tibble
+includes columns: \code{column_name}, \code{dictionary_role} (which IRI field the
+suggestion is for), \code{label}, \code{iri}, \code{source}, \code{ontology}, and \code{definition}.
 }
 \description{
-Placeholder function for future GPT/LLM or heuristic-based suggestions
-of IRIs, concept schemes, and semantic annotations for dictionary fields.
+Searches external vocabularies to suggest IRIs for measurement columns that
+are missing semantic annotations. For each measurement column with missing
+I-ADOPT component fields (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri},
+\code{constraint_iri}), this function queries vocabulary services and ranks
+results by relevance.
+}
+\details{
+The function uses the column's label or description as the search query and
+returns suggestions as an attribute on the dictionary tibble. This allows
+you to review candidates before accepting them into your dictionary.
+
+Only columns with `column_role == "measurement"
+are processed, since I-ADOPT components are primarily relevant for
+measurement metadata. Columns with existing IRIs in a field are skipped
+for that field.
+
+After calling this function, access suggestions with:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{suggestions <- attr(result, "semantic_suggestions")
+}\if{html}{\out{</div>}}
+
+Then manually review and copy desired IRIs into your dictionary.
 }
 \examples{
 \dontrun{
-dict <- infer_dictionary(mtcars)
-suggested <- suggest_semantics(mtcars, dict, sources = "ols")
+# Create a starter dictionary
+dict <- infer_dictionary(my_data, dataset_id = "example", table_id = "main")
+
+# Get semantic suggestions for measurement columns
+dict_with_suggestions <- suggest_semantics(my_data, dict)
+
+# View the suggestions
+suggestions <- attr(dict_with_suggestions, "semantic_suggestions")
+print(suggestions)
+
+# Filter suggestions for a specific column
+spawner_suggestions <- suggestions[suggestions$column_name == "SPAWNER_COUNT", ]
+
+# Accept a suggestion by copying the IRI into your dictionary
+dict$term_iri[dict$column_name == "SPAWNER_COUNT"] <- spawner_suggestions$iri[1]
 }
+}
+\seealso{
+\code{\link[=find_terms]{find_terms()}} for direct vocabulary searches, \code{\link[=infer_dictionary]{infer_dictionary()}}
+for creating starter dictionaries, \code{\link[=validate_dictionary]{validate_dictionary()}} for checking
+dictionary completeness.
 }

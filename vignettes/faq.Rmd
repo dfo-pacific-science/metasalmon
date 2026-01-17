@@ -286,9 +286,10 @@ Yes! Here are the key resources:
 | Resource | Best for |
 |----------|----------|
 | [5-Minute Quickstart](metasalmon.html) | Getting started fast |
-| [How It Fits Together](../index.html#how-it-fits-together) | Understanding the big picture |
-| [Data Dictionary & Publication](data-dictionary-publication.html) | Detailed control over metadata and publishing |
-| [Glossary](glossary.html) | Understanding technical terms |
+| [Publishing Data Packages](data-dictionary-publication.html) | Detailed control over metadata and publishing |
+| [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) | Connecting data to scientific standards |
+| [Accessing Data from GitHub](github-csv-access.html) | Reading CSVs from private repositories |
+| [Glossary of Terms](glossary.html) | Understanding technical terms |
 | [Function Reference](../reference/index.html) | Looking up specific functions |
 
 ### Can I contribute to metasalmon?

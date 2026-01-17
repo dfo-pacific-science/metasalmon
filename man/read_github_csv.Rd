@@ -7,35 +7,78 @@
 read_github_csv(path, ref = "main", repo = NULL, token = NULL, ...)
 }
 \arguments{
-\item{path}{Path inside the repository, or a full GitHub/raw URL.}
+\item{path}{Path to the CSV file inside the repository (e.g.,
+\code{"data/observations.csv"}), or a full GitHub URL (blob or raw format).}
 
-\item{ref}{Git reference (branch, tag, or commit SHA). Ignored when \code{path} is
-already a full URL.}
+\item{ref}{Git reference: branch name, tag, or commit SHA. Defaults to
+\code{"main"}. For reproducible analyses, prefer tags or commit SHAs.
+Ignored when \code{path} is already a full URL with a ref embedded.}
 
-\item{repo}{Repository slug in \code{"owner/name"} form. Required unless \code{path} is
-a full URL.}
+\item{repo}{Repository slug in \code{"owner/name"} form. Required when \code{path} is
+a relative path; optional when \code{path} is a full URL.}
 
-\item{token}{Optional GitHub PAT override. If \code{NULL}, falls back to
-\code{gh::gh_token()}.}
+\item{token}{Optional GitHub PAT override. If \code{NULL} (default), uses the
+token from \code{gh::gh_token()}, which is typically set by \code{ms_setup_github()}.}
 
-\item{...}{Passed through to \code{readr::read_csv()}.}
+\item{...}{Additional arguments passed to \code{readr::read_csv()}, such as
+\code{col_types}, \code{skip}, \code{n_max}, etc.}
 }
 \value{
-Tibble read from the remote CSV.
+A tibble containing the CSV data.
 }
 \description{
-Builds a stable raw URL (no token embedded), sends your GitHub PAT via the
-\code{Authorization} header, and returns the CSV as a tibble. Accepts either a
-path inside the repository or a full GitHub/\code{raw.githubusercontent.com} URL.
+Reads a CSV file directly from a GitHub repository (public or private) and
+returns it as a tibble. Authentication is handled via the GitHub PAT stored
+by \code{ms_setup_github()}; the token is sent via HTTP headers, not embedded in
+the URL.
+}
+\details{
+This function supports automatic retries with exponential backoff for
+transient network errors.
+
+Before using this function, run \code{ms_setup_github()} once to configure
+authentication. For private repositories, your PAT must have the \code{repo}
+scope.
+
+For reproducible analyses, pin to a specific tag or commit SHA rather than
+a branch name like \code{"main"}, since branch contents can change over time.
 }
 \examples{
 \dontrun{
-ms_setup_github()
-dim_date <- read_github_csv("data/gold/dimension_tables/dim_date.csv", repo = "owner/repo")
-dim_date_pinned <- read_github_csv(
-  "data/gold/dimension_tables/dim_date.csv",
-  ref = "v0.3.0",
-  repo = "owner/repo"
+# First, set up authentication (run once)
+ms_setup_github(repo = "myorg/myrepo")
+
+# Read a CSV from the main branch
+data <- read_github_csv("data/observations.csv", repo = "myorg/myrepo")
+
+# Pin to a release tag for reproducibility
+data_v1 <- read_github_csv(
+  "data/observations.csv",
+  ref = "v1.0.0",
+  repo = "myorg/myrepo"
+)
+
+# Pin to a specific commit
+data_exact <- read_github_csv(
+  "data/observations.csv",
+  ref = "a1b2c3d",
+  repo = "myorg/myrepo"
+)
+
+# Pass arguments to read_csv
+data_typed <- read_github_csv(
+  "data/observations.csv",
+  repo = "myorg/myrepo",
+  col_types = "ccin"
+)
+
+# Read from a full GitHub URL
+data_url <- read_github_csv(
+  "https://github.com/myorg/myrepo/blob/main/data/observations.csv"
 )
 }
+}
+\seealso{
+\code{\link[=ms_setup_github]{ms_setup_github()}} for authentication setup,
+\code{\link[=github_raw_url]{github_raw_url()}} for getting the raw URL without fetching data.
 }

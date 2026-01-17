@@ -7,22 +7,39 @@
 github_raw_url(path, ref = "main", repo = NULL)
 }
 \arguments{
-\item{path}{Character scalar path inside the repository, or a full URL.}
+\item{path}{Character scalar path inside the repository (e.g.,
+\code{"data/myfile.csv"}), or a full GitHub URL (blob or raw) which will be
+normalized.}
 
-\item{ref}{Git reference (branch, tag, or commit SHA). Defaults to \code{"main"}.}
+\item{ref}{Git reference: branch name, tag, or commit SHA. Defaults to
+\code{"main"}. For reproducible analyses, prefer tags or commit SHAs over
+branch names.}
 
-\item{repo}{Repository slug in \code{"owner/name"} form when \code{path} is not already
-a full URL. Required unless \code{path} is a full URL.}
+\item{repo}{Repository slug in \code{"owner/name"} form. Required when \code{path} is
+a relative path; optional when \code{path} is already a full URL (the repo
+will be extracted from the URL).}
 }
 \value{
-Character scalar raw URL.
+Character scalar containing the raw GitHub URL.
 }
 \description{
-Treats \code{path} as a path inside the target repository and returns the
-corresponding \code{raw.githubusercontent.com} URL. If you already have a full
-\code{http(s)} URL, it is returned unchanged after stripping any query string.
+Constructs a \code{raw.githubusercontent.com} URL for a file in a GitHub
+repository. This URL format is suitable for programmatic access and can be
+used to document data sources. Note that the URL does not contain
+authentication credentials; tokens are passed via HTTP headers by
+\code{read_github_csv()}.
 }
 \examples{
-github_raw_url("data/gold/dimension_tables/dim_date.csv", repo = "owner/repo")
-github_raw_url("data/gold/dimension_tables/dim_date.csv", ref = "v0.3.0", repo = "owner/repo")
+# Build a raw URL for a file on main branch
+github_raw_url("data/observations.csv", repo = "myorg/myrepo")
+
+# Pin to a specific release tag for reproducibility
+github_raw_url("data/observations.csv", ref = "v1.2.0", repo = "myorg/myrepo")
+
+# Pin to a specific commit SHA
+github_raw_url("data/observations.csv", ref = "abc1234def", repo = "myorg/myrepo")
+}
+\seealso{
+\code{\link[=read_github_csv]{read_github_csv()}} for reading the CSV content directly,
+\code{\link[=ms_setup_github]{ms_setup_github()}} for authentication setup.
 }

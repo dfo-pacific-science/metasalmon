@@ -27,6 +27,16 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
+First, install the package from GitHub:
+
+```r
+# Install from GitHub (recommended)
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
+Then use it to create a data package:
+
 ```r
 library(metasalmon)
 
@@ -70,32 +80,6 @@ create_salmon_datapackage(
 
 **Result**: A folder containing your data + documentation that anyone can understand.
 
-## Access private CSVs from GitHub
-
-```r
-# One-time setup: creates/stores a PAT with repo scope and verifies access
-metasalmon::ms_setup_github()
-
-# Read a CSV from the Qualark data repository (defaults to the main branch)
-dim_date <- metasalmon::read_github_csv(
-  "data/gold/dimension_tables/dim_date.csv",
-  repo = "dfo-pacific-science/qualark-data"
-)
-
-# Pin to a tag or commit for reproducibility
-dim_date_pinned <- metasalmon::read_github_csv(
-  "data/gold/dimension_tables/dim_date.csv",
-  ref = "v0.3.0",
-  repo = "dfo-pacific-science/qualark-data"
-)
-
-# Get the stable raw URL identifier (no token embedded)
-metasalmon::github_raw_url(
-  "data/gold/dimension_tables/dim_date.csv",
-  repo = "dfo-pacific-science/qualark-data"
-)
-```
-
 ## Who Is This For?
 
 | If you are... | Start here |
@@ -104,6 +88,7 @@ metasalmon::github_raw_url(
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
 | A data steward standardizing datasets | [Data Dictionary & Publication](articles/data-dictionary-publication.html) |
 | Interested in AI-assisted documentation | [AI Assistance (Advanced)](articles/gpt-collaboration.html) |
+| Reading CSVs from private GitHub repos | [GitHub CSV Access](articles/github-csv-access.html) |
 
 ## Video Walkthrough
 
@@ -139,10 +124,11 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Automatically generate data dictionaries from your data frames
 - Validate that your dictionary is complete and correct
 - Create shareable packages that work across R, Python, and other tools
+- Read CSVs directly from private GitHub repositories
 
 **For data stewards (optional):**
 - Link columns to standard DFO Salmon Ontology terms
-- Add I-ADOPT measurement metadata (property, entity, unit, method)
+- Add I-ADOPT measurement metadata (property, entity, unit, constraint)
 - Use AI assistance to help write descriptions
 
 ## Getting Help

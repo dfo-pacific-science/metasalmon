@@ -1,4 +1,4 @@
-# Reusing Standards for Salmon Data Terms
+# Linking to Standard Vocabularies
 
 ## Overview
 
@@ -58,13 +58,13 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
   understand the underlying formal logic.
 - **term_iri**: attaches the chosen web address to a column so the
   column is self-explanatory.
-- **entity_iri** and **property_iri**: optional links for table-level
-  descriptions or relationships. Provide them when you want to say “each
-  row describes this kind of thing” or “this column measures that kind
-  of quantity.”
-- **Constraint/method**: optional qualifiers (sometimes called I-ADOPT
-  components) that describe how a measurement was made. Use them only
-  when they add clarity.
+- **entity_iri** and **property_iri**: optional links for measurement
+  columns. Use `property_iri` to specify what characteristic was
+  measured (e.g., “count”), and `entity_iri` to specify what was
+  measured (e.g., “spawning salmon”).
+- **constraint_iri**: an optional I-ADOPT component that qualifies the
+  measurement (e.g., “maximum”, “annual average”). Use it only when it
+  adds clarity.
 
 ### When to skip linking
 
@@ -92,7 +92,7 @@ I-ADOPT components based on the bundled catalog.
 
 ``` r
 
-dict_suggested <- suggest_semantics(dict, df, sources = c("ols", "nvs"))
+dict_suggested <- suggest_semantics(df, dict, sources = c("ols", "nvs"))
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)
 ```
@@ -102,11 +102,12 @@ term labels to match your domain-specific language.
 
 ### Next steps
 
-- See the [How It Fits Together](#how-it-fits-together) section in the
-  README for context on how the dictionary, ontology, and GPT assistant
-  team up.
-- Follow the [Data Dictionary and
-  Publication](https://dfo-pacific-science.github.io/metasalmon/articles/articles/data-dictionary-publication.md)
+- See the “How It Fits Together” section in the README for context on
+  how the dictionary, ontology, and GPT assistant team up.
+- Follow the [Publishing Data
+  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
   guide when you finalize your metadata before publishing.
-- Use the Salmon Data Standardizer GPT to draft column descriptions or
-  propose new terms when the catalog does not yet cover your concept.
+- Try the [Using AI to Document Your
+  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)
+  workflow to draft column descriptions or propose new terms when the
+  catalog does not yet cover your concept.

@@ -4,6 +4,7 @@ pkgdown_sha: ~
 articles:
   data-dictionary-publication: data-dictionary-publication.html
   faq: faq.html
+  github-csv-access: github-csv-access.html
   glossary: glossary.html
   gpt-collaboration: gpt-collaboration.html
   metasalmon: metasalmon.html

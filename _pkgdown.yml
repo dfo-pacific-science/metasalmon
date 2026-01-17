@@ -75,14 +75,21 @@ articles:
     contents:
       - metasalmon
 
-  - title: "Workflows"
+  - title: "Guides"
     navbar: ~
+    desc: "Step-by-step guides for common workflows"
     contents:
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
+      - github-csv-access
+
+  - title: "Advanced"
+    navbar: ~
+    desc: "Advanced features for power users"
+    contents:
       - gpt-collaboration
 
-  - title: "Help & Reference"
+  - title: "Reference"
     navbar: ~
     desc: "Glossary definitions and frequently asked questions"
     contents:

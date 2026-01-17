@@ -1,40 +1,88 @@
 #' Build a stable raw GitHub URL
 #'
-#' Treats `path` as a path inside the target repository and returns the
-#' corresponding `raw.githubusercontent.com` URL. If you already have a full
-#' `http(s)` URL, it is returned unchanged after stripping any query string.
+#' Constructs a `raw.githubusercontent.com` URL for a file in a GitHub
+#' repository. This URL format is suitable for programmatic access and can be
+#' used to document data sources. Note that the URL does not contain
+#' authentication credentials; tokens are passed via HTTP headers by
+#' `read_github_csv()`.
 #'
-#' @param path Character scalar path inside the repository, or a full URL.
-#' @param ref Git reference (branch, tag, or commit SHA). Defaults to `"main"`.
-#' @param repo Repository slug in `"owner/name"` form when `path` is not already
-#'   a full URL. Required unless `path` is a full URL.
+#' @param path Character scalar path inside the repository (e.g.,
+#'   `"data/myfile.csv"`), or a full GitHub URL (blob or raw) which will be
+#'   normalized.
+#' @param ref Git reference: branch name, tag, or commit SHA. Defaults to
+#'   `"main"`. For reproducible analyses, prefer tags or commit SHAs over
+#'   branch names.
+#' @param repo Repository slug in `"owner/name"` form. Required when `path` is
+#'   a relative path; optional when `path` is already a full URL (the repo
+#'   will be extracted from the URL).
 #'
-#' @return Character scalar raw URL.
+#' @return Character scalar containing the raw GitHub URL.
+#'
+#' @seealso [read_github_csv()] for reading the CSV content directly,
+#'   [ms_setup_github()] for authentication setup.
+#'
 #' @export
 #'
 #' @examples
-#' github_raw_url("data/gold/dimension_tables/dim_date.csv", repo = "owner/repo")
-#' github_raw_url("data/gold/dimension_tables/dim_date.csv", ref = "v0.3.0", repo = "owner/repo")
+#' # Build a raw URL for a file on main branch
+#' github_raw_url("data/observations.csv", repo = "myorg/myrepo")
+#'
+#' # Pin to a specific release tag for reproducibility
+#' github_raw_url("data/observations.csv", ref = "v1.2.0", repo = "myorg/myrepo")
+#'
+#' # Pin to a specific commit SHA
+#' github_raw_url("data/observations.csv", ref = "abc1234def", repo = "myorg/myrepo")
 github_raw_url <- function(path, ref = "main", repo = NULL) {
   target <- ms_resolve_path(path, ref = ref, repo = repo)
   target$url
 }
 
-#' Set up GitHub access for private GitHub data
+#' Set up GitHub access for private repositories
 #'
-#' Checks for git, guides creation of a GitHub personal access token (PAT) with
-#' `repo` scope, stores it via `gitcreds`, and optionally verifies access to a
-#' target repository (defaults to the Qualark data repo). PAT stands for
-#' personal access token, which is the GitHub credential used for API requests.
+#' Interactive setup wizard that configures authentication for reading CSV files
+#' from private GitHub repositories. This function:
 #'
-#' @param repo Repository slug in `"owner/name"` form to verify access.
+#' 1. Checks that git is installed and available
+#' 2. Guides creation of a GitHub Personal Access Token (PAT) with `repo` scope
+#'    if one is not already stored
+#' 3. Stores the PAT securely via `gitcreds` for future use
+#' 4. Verifies that authentication works by testing access to a repository
+#'
+#' Run this function once before using `read_github_csv()` to access private
+#' repositories. The stored PAT will be used automatically for subsequent
+#' requests.
+#'
+#' @param repo Repository slug in `"owner/name"` form to verify access. Specify
+#'   the private repository you intend to work with to confirm your PAT has
+#'   the necessary permissions. Default is a test repository, but you should
+#'   specify your target repository for verification.
 #'
 #' @return Invisibly returns the detected PAT.
+#'
+#' @details
+#' A Personal Access Token (PAT) is a GitHub credential that allows API access.
+#' The `repo` scope is required to read from private repositories. Tokens are
+#' stored locally by the `gitcreds` package in your system's credential manager.
+#'
+#' If your organization uses Single Sign-On (SSO), you may need to authorize
+#' your PAT for that organization at https://github.com/settings/tokens after
+#' creating it.
+#'
+#' @seealso [read_github_csv()] for reading CSV files from GitHub,
+#'   [github_raw_url()] for building raw GitHub URLs.
+#'
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \dontrun
+#' # Basic setup (verifies against default test repository)
 #' ms_setup_github()
+#'
+#' # Verify access to a specific private repository
+#' ms_setup_github(repo = "your-org/your-private-repo")
+#'
+#' # After setup, you can read CSVs from private repos
+#' data <- read_github_csv("path/to/file.csv", repo = "your-org/your-repo")
 #' }
 ms_setup_github <- function(repo = "dfo-pacific-science/qualark-data") {
   repo <- ms_normalize_repo(repo)
@@ -84,30 +132,73 @@ ms_setup_github <- function(repo = "dfo-pacific-science/qualark-data") {
 
 #' Read a CSV from a GitHub repository
 #'
-#' Builds a stable raw URL (no token embedded), sends your GitHub PAT via the
-#' `Authorization` header, and returns the CSV as a tibble. Accepts either a
-#' path inside the repository or a full GitHub/`raw.githubusercontent.com` URL.
+#' Reads a CSV file directly from a GitHub repository (public or private) and
+#' returns it as a tibble. Authentication is handled via the GitHub PAT stored
+#' by `ms_setup_github()`; the token is sent via HTTP headers, not embedded in
+#' the URL.
 #'
-#' @param path Path inside the repository, or a full GitHub/raw URL.
-#' @param ref Git reference (branch, tag, or commit SHA). Ignored when `path` is
-#'   already a full URL.
-#' @param repo Repository slug in `"owner/name"` form. Required unless `path` is
-#'   a full URL.
-#' @param token Optional GitHub PAT override. If `NULL`, falls back to
-#'   `gh::gh_token()`.
-#' @param ... Passed through to `readr::read_csv()`.
+#' This function supports automatic retries with exponential backoff for
+#' transient network errors.
 #'
-#' @return Tibble read from the remote CSV.
+#' @param path Path to the CSV file inside the repository (e.g.,
+#'   `"data/observations.csv"`), or a full GitHub URL (blob or raw format).
+#' @param ref Git reference: branch name, tag, or commit SHA. Defaults to
+#'   `"main"`. For reproducible analyses, prefer tags or commit SHAs.
+#'   Ignored when `path` is already a full URL with a ref embedded.
+#' @param repo Repository slug in `"owner/name"` form. Required when `path` is
+#'   a relative path; optional when `path` is a full URL.
+#' @param token Optional GitHub PAT override. If `NULL` (default), uses the
+#'   token from `gh::gh_token()`, which is typically set by `ms_setup_github()`.
+#' @param ... Additional arguments passed to `readr::read_csv()`, such as
+#'   `col_types`, `skip`, `n_max`, etc.
+#'
+#' @return A tibble containing the CSV data.
+#'
+#' @details
+#' Before using this function, run `ms_setup_github()` once to configure
+#' authentication. For private repositories, your PAT must have the `repo`
+#' scope.
+#'
+#' For reproducible analyses, pin to a specific tag or commit SHA rather than
+#' a branch name like `"main"`, since branch contents can change over time.
+#'
+#' @seealso [ms_setup_github()] for authentication setup,
+#'   [github_raw_url()] for getting the raw URL without fetching data.
+#'
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' ms_setup_github()
-#' dim_date <- read_github_csv("data/gold/dimension_tables/dim_date.csv", repo = "owner/repo")
-#' dim_date_pinned <- read_github_csv(
-#'   "data/gold/dimension_tables/dim_date.csv",
-#'   ref = "v0.3.0",
-#'   repo = "owner/repo"
+#' # First, set up authentication (run once)
+#' ms_setup_github(repo = "myorg/myrepo")
+#'
+#' # Read a CSV from the main branch
+#' data <- read_github_csv("data/observations.csv", repo = "myorg/myrepo")
+#'
+#' # Pin to a release tag for reproducibility
+#' data_v1 <- read_github_csv(
+#'   "data/observations.csv",
+#'   ref = "v1.0.0",
+#'   repo = "myorg/myrepo"
+#' )
+#'
+#' # Pin to a specific commit
+#' data_exact <- read_github_csv(
+#'   "data/observations.csv",
+#'   ref = "a1b2c3d",
+#'   repo = "myorg/myrepo"
+#' )
+#'
+#' # Pass arguments to read_csv
+#' data_typed <- read_github_csv(
+#'   "data/observations.csv",
+#'   repo = "myorg/myrepo",
+#'   col_types = "ccin"
+#' )
+#'
+#' # Read from a full GitHub URL
+#' data_url <- read_github_csv(
+#'   "https://github.com/myorg/myrepo/blob/main/data/observations.csv"
 #' )
 #' }
 read_github_csv <- function(

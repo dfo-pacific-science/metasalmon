@@ -307,9 +307,10 @@ Yes! Here are the key resources:
 | Resource | Best for |
 |----|----|
 | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md) | Getting started fast |
-| [How It Fits Together](https://dfo-pacific-science.github.io/metasalmon/index.html#how-it-fits-together) | Understanding the big picture |
-| [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) | Detailed control over metadata and publishing |
-| [Glossary](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md) | Understanding technical terms |
+| [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) | Detailed control over metadata and publishing |
+| [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md) | Connecting data to scientific standards |
+| [Accessing Data from GitHub](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md) | Reading CSVs from private repositories |
+| [Glossary of Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md) | Understanding technical terms |
 | [Function Reference](https://dfo-pacific-science.github.io/metasalmon/reference/index.md) | Looking up specific functions |
 
 ### Can I contribute to metasalmon?

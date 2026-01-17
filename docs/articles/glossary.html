@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Glossary • metasalmon</title>
+<title>Glossary of Terms • metasalmon</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -15,7 +15,7 @@
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Glossary">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Glossary of Terms">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -39,10 +39,11 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Data Dictionary and Publication</a></li>
-    <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">AI Assistance for Salmon Data Packages</a></li>
-    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary</a></li>
+<li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
+    <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
+    <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
+    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
+    <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
 </li>
@@ -64,7 +65,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.png" class="logo" alt=""><h1>Glossary</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Glossary of Terms</h1>
             
       
 
@@ -257,14 +258,19 @@ data</strong>: The same column linked to a definition that says
 <div class="section level2">
 <h2 id="i-adopt-framework">I-ADOPT Framework<a class="anchor" aria-label="anchor" href="#i-adopt-framework"></a>
 </h2>
-<p>I-ADOPT is a framework for describing measurements. It answers the
-question: “What exactly did you measure?”</p>
+<p>I-ADOPT (InteroperAble Descriptions of Observable Property
+Terminology) is a framework for precisely describing what a measurement
+represents. It answers the question: “What exactly did you measure?”</p>
 <div class="section level3">
-<h3 id="the-four-components">The Four Components<a class="anchor" aria-label="anchor" href="#the-four-components"></a>
+<h3 id="the-core-components">The Core Components<a class="anchor" aria-label="anchor" href="#the-core-components"></a>
 </h3>
-<p>When you record a measurement like “water temperature = 12.5°C”,
-I-ADOPT breaks it down:</p>
+<p>I-ADOPT defines observable properties using four components:</p>
 <table class="table">
+<colgroup>
+<col width="26%">
+<col width="51%">
+<col width="21%">
+</colgroup>
 <thead><tr class="header">
 <th>Component</th>
 <th>Question it answers</th>
@@ -272,37 +278,64 @@ I-ADOPT breaks it down:</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><strong>Variable</strong></td>
+<td>What compound concept?</td>
+<td>“Sea surface temperature” (the full term)</td>
+</tr>
+<tr class="even">
 <td><strong>Property</strong></td>
 <td>What characteristic?</td>
 <td>Temperature</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><strong>Entity</strong></td>
 <td>Of what thing?</td>
-<td>Water</td>
-</tr>
-<tr class="odd">
-<td><strong>Unit</strong></td>
-<td>In what units?</td>
-<td>Degrees Celsius</td>
+<td>Sea surface (water at ocean surface)</td>
 </tr>
 <tr class="even">
-<td><strong>Method</strong></td>
-<td>How was it measured?</td>
-<td>Thermometer reading</td>
+<td><strong>Constraint</strong></td>
+<td>Any qualifiers or limits?</td>
+<td>Maximum, daily average, etc.</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Why this matters</strong>: Two researchers might both measure
 “temperature” but mean different things (air vs. water, surface
-vs. depth). I-ADOPT removes ambiguity.</p>
+vs. depth). I-ADOPT removes ambiguity by requiring you to specify
+exactly what property of what entity you measured.</p>
 </div>
 <div class="section level3">
-<h3 id="constraint-optional">Constraint (Optional)<a class="anchor" aria-label="anchor" href="#constraint-optional"></a>
+<h3 id="understanding-the-components">Understanding the Components<a class="anchor" aria-label="anchor" href="#understanding-the-components"></a>
 </h3>
-<p>An additional qualifier that limits the scope of a measurement.</p>
-<p><strong>Example</strong>: “Maximum daily temperature” - the
-constraint is “maximum daily”</p>
+<ul>
+<li>
+<strong>Variable</strong>: The complete, compound term that
+describes what you measured (e.g., “Natural spawner count”). In
+metasalmon, this maps to <code>term_iri</code>.</li>
+<li>
+<strong>Property</strong>: The measurable characteristic (e.g.,
+“count”, “temperature”, “length”). Maps to
+<code>property_iri</code>.</li>
+<li>
+<strong>Entity</strong>: The thing being measured (e.g., “spawning
+salmon”, “stream water”). Maps to <code>entity_iri</code>.</li>
+<li>
+<strong>Constraint</strong>: Optional qualifiers that narrow the
+scope (e.g., “maximum”, “annual”, “wild-origin only”). Maps to
+<code>constraint_iri</code>.</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="units-not-part-of-i-adopt-core">Units (Not Part of I-ADOPT Core)<a class="anchor" aria-label="anchor" href="#units-not-part-of-i-adopt-core"></a>
+</h3>
+<p>While I-ADOPT focuses on describing <em>what</em> you measured,
+you’ll also need to record the <strong>units</strong> (how the
+measurement is expressed). metasalmon includes <code>unit_iri</code> for
+this purpose, typically linking to vocabularies like QUDT.</p>
+<p><strong>Note</strong>: Method (how the measurement was made) is
+important metadata but is not part of the I-ADOPT framework itself. You
+can document methods in your column descriptions or other metadata
+fields.</p>
 </div>
 </div>
 <div class="section level2">
@@ -324,6 +357,10 @@ format)</li>
 <h2 id="quick-reference">Quick Reference<a class="anchor" aria-label="anchor" href="#quick-reference"></a>
 </h2>
 <table class="table">
+<colgroup>
+<col width="22%">
+<col width="77%">
+</colgroup>
 <thead><tr class="header">
 <th>Term</th>
 <th>One-line definition</th>
@@ -367,7 +404,8 @@ format)</li>
 </tr>
 <tr class="even">
 <td>I-ADOPT</td>
-<td>Framework for describing measurements</td>
+<td>Framework for describing observable properties (variable, property,
+entity, constraint)</td>
 </tr>
 <tr class="odd">
 <td>Frictionless</td>

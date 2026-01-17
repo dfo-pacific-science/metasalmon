@@ -2,24 +2,45 @@
 % Please edit documentation in R/github-helpers.R
 \name{ms_setup_github}
 \alias{ms_setup_github}
-\title{Set up GitHub access for private GitHub data}
+\title{Set up GitHub access for private repositories}
 \usage{
 ms_setup_github(repo = "dfo-pacific-science/qualark-data")
 }
 \arguments{
-\item{repo}{Repository slug in \code{"owner/name"} form to verify access.}
+\item{repo}{Repository slug in \code{"owner/name"} form to verify access. Specify
+the private repository you intend to work with to confirm your PAT has
+the necessary permissions. Default is a test repository, but you should
+specify your target repository for verification.}
 }
 \value{
 Invisibly returns the detected PAT.
 }
 \description{
-Checks for git, guides creation of a GitHub personal access token (PAT) with
-\code{repo} scope, stores it via \code{gitcreds}, and optionally verifies access to a
-target repository (defaults to the Qualark data repo). PAT stands for
-personal access token, which is the GitHub credential used for API requests.
+Interactive setup wizard that configures authentication for reading CSV files
+from private GitHub repositories. This function:
 }
-\examples{
-\dontrun{
-ms_setup_github()
+\details{
+\enumerate{
+\item Checks that git is installed and available
+\item Guides creation of a GitHub Personal Access Token (PAT) with \code{repo} scope
+if one is not already stored
+\item Stores the PAT securely via \code{gitcreds} for future use
+\item Verifies that authentication works by testing access to a repository
 }
+
+Run this function once before using \code{read_github_csv()} to access private
+repositories. The stored PAT will be used automatically for subsequent
+requests.
+
+A Personal Access Token (PAT) is a GitHub credential that allows API access.
+The \code{repo} scope is required to read from private repositories. Tokens are
+stored locally by the \code{gitcreds} package in your system's credential manager.
+
+If your organization uses Single Sign-On (SSO), you may need to authorize
+your PAT for that organization at https://github.com/settings/tokens after
+creating it.
+}
+\seealso{
+\code{\link[=read_github_csv]{read_github_csv()}} for reading CSV files from GitHub,
+\code{\link[=github_raw_url]{github_raw_url()}} for building raw GitHub URLs.
 }
