@@ -32,15 +32,16 @@ This plan is intentionally **cross-repo**:
   - Updated `.score_and_rank_terms()` with role-based ontology preference scoring:
     - Priority-based boost: Priority 1 = +2.0, Priority 2 = +1.5, etc.
     - QUDT preferred for unit role (priority 1)
-    - GBIF/WoRMS preferred for entity role (priority 4-5)
+    - gcdfo preferred for entity role (priority 1), then ODO, fishtraits, ncbitaxon, WoRMS, GBIF
     - STATO/OBA preferred for property role
-    - gcdfo: SKOS + SOSA/PROV patterns preferred for method role
+    - gcdfo: SKOS + SOSA/PROV patterns preferred for method role (AGROVOC as broad fallback)
   - Implemented Wikidata alignment-only handling:
     - `alignment_only` column added to results
     - Wikidata IRIs penalized (-0.5 score) rather than boosted
   - Updated `find_terms()` to support new sources and return `alignment_only` flag
   - Added comprehensive tests for Phase 2 features
-  - Note: salmonpy not found in environment, Python mirroring deferred
+  - salmonpy mirroring completed (Phase 2 sources + role preferences)
+  - Phase 2 tests run: `devtools::test('.', filter = 'term-search')` (pass)
 - [ ] Phase 3 — Darwin Core: prefer DwC Conceptual Model + DwC Data Package (DwC-DP), not legacy "DwC terms" search.
 - [ ] Phase 4 — matching quality: role-aware query expansion, cross-source agreement boosts, optional embedding rerank.
 
@@ -102,8 +103,8 @@ This plan is intentionally **cross-repo**:
 
 - Encode a ranked allowlist per role:
   - `unit`: QUDT + NVS P06
-  - `method`: `gcdfo:` SKOS methods + SOSA/PROV patterns
-  - `entity`: salmon domain terms + taxa resolvers (GBIF/WoRMS) for species-like entities
+  - `method`: `gcdfo:` SKOS methods + SOSA/PROV patterns + AGROVOC fallback
+  - `entity`: gcdfo + NCEAS Salmon (ODO) + taxa resolvers (GBIF/WoRMS) for species-like entities
   - `property`: measurement/statistics ontologies (e.g., STATO/OBA) where appropriate
 - Keep Wikidata alignment-only.
 
@@ -135,7 +136,7 @@ This plan is intentionally **cross-repo**:
 ### Phase 2 acceptance criteria
 
 - `sources_for_role("unit")` returns `c("qudt", "nvs", "ols")` (QUDT first).
-- `sources_for_role("entity")` returns `c("gbif", "worms", "ols")` (taxon resolvers first).
+- `sources_for_role("entity")` returns `c("gbif", "worms", "bioportal", "ols")` (taxon resolvers first; gcdfo/ODO preference handled via scoring).
 - `find_terms("kilogram", role="unit", sources="qudt")` returns QUDT unit IRIs.
 - `find_terms("Oncorhynchus kisutch", role="entity", sources="gbif")` returns GBIF taxon backbone results.
 - `find_terms("Oncorhynchus kisutch", role="entity", sources="worms")` returns WoRMS marine species results.
@@ -143,9 +144,9 @@ This plan is intentionally **cross-repo**:
 - Wikidata results have `alignment_only = TRUE` and score lower than domain-specific ontology matches.
 - `ontology-preferences.csv` correctly encodes:
   - Unit: QUDT (priority 1), NVS P06 (priority 2)
-  - Entity: salmon (priority 1), fishtraits (priority 2), ncbitaxon (priority 3), worms (priority 4), gbif (priority 5)
+  - Entity: gcdfo (priority 1), odo (priority 2), fishtraits (priority 3), ncbitaxon (priority 4), worms (priority 5), gbif (priority 6)
   - Property: STATO (priority 1), OBA (priority 2), PATO (priority 3)
-  - Method: gcdfo (priority 1), sosa (priority 2), prov (priority 3)
+  - Method: gcdfo (priority 1), sosa (priority 2), prov (priority 3), obi (priority 4), ices (priority 5), agrovoc (priority 6)
 - All Phase 2 tests pass: `devtools::test(..., filter = 'term-search')`
 
 ## Concrete Steps (Phase 1)

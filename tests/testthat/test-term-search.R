@@ -154,9 +154,9 @@ test_that("score_and_rank_terms is deterministic on ties", {
 
 test_that("sources_for_role returns appropriate sources for each role", {
   expect_equal(sources_for_role("unit"), c("qudt", "nvs", "ols"))
-  expect_equal(sources_for_role("entity"), c("gbif", "worms", "ols"))
+  expect_equal(sources_for_role("entity"), c("gbif", "worms", "bioportal", "ols"))
   expect_equal(sources_for_role("property"), c("nvs", "ols", "zooma"))
-  expect_equal(sources_for_role("method"), c("ols", "zooma"))
+  expect_equal(sources_for_role("method"), c("bioportal", "ols", "zooma"))
   expect_equal(sources_for_role("variable"), c("nvs", "ols", "zooma"))
   expect_equal(sources_for_role("constraint"), c("ols"))
   # Default fallback
@@ -312,9 +312,14 @@ test_that("QUDT is preferred for unit role", {
   expect_equal(qudt_pref$priority[[1]], 1)
 })
 
-test_that("GBIF and WoRMS are preferred for entity role", {
+test_that("Entity role preferences include ODO and taxon resolvers", {
   prefs <- metasalmon:::`.role_preferences`()
   entity_prefs <- dplyr::filter(prefs, role == "entity")
+  gcdfo_pref <- dplyr::filter(entity_prefs, ontology == "gcdfo")
+  expect_true(nrow(gcdfo_pref) > 0)
+  expect_equal(gcdfo_pref$priority[[1]], 1)
+  odo_pref <- dplyr::filter(entity_prefs, ontology == "odo")
+  expect_true(nrow(odo_pref) > 0)
   expect_true("gbif" %in% entity_prefs$ontology)
   expect_true("worms" %in% entity_prefs$ontology)
 })

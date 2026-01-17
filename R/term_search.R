@@ -15,8 +15,8 @@
 #' **Role-based ontology preferences (Phase 2):**
 #' - `unit`: QUDT preferred, then NVS P06
 #' - `property`: STATO/OBA measurement ontologies, NVS P01
-#' - `entity`: Salmon domain terms, GBIF/WoRMS for taxa
-#' - `method`: gcdfo: SKOS + SOSA/PROV patterns
+#' - `entity`: gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
+#' - `method`: gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
 #' - Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
 #'
 #' Results are scored using I-ADOPT vocabulary hints and role-based ontology
@@ -557,7 +557,7 @@ pattern <- paste(tokens, collapse = ".*")
 #' Based on dfo-salmon-ontology CONVENTIONS.md:
 #' - unit: QUDT + NVS P06 preferred
 #' - method: gcdfo: SKOS + SOSA/PROV patterns
-#' - entity: salmon domain + taxa resolvers (GBIF/WoRMS)
+#' - entity: gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
 #' - property: STATO/OBA measurement ontologies
 #' - Wikidata is alignment-only
 #'
@@ -602,8 +602,8 @@ sources_for_role <- function(role) {
   switch(role,
     unit = c("qudt", "nvs", "ols"),
     property = c("nvs", "ols", "zooma"),
-    entity = c("gbif", "worms", "ols"),
-    method = c("ols", "zooma"),
+    entity = c("gbif", "worms", "bioportal", "ols"),
+    method = c("bioportal", "ols", "zooma"),
     variable = c("nvs", "ols", "zooma"),
     constraint = c("ols"),
     c("ols", "nvs")
@@ -634,9 +634,9 @@ if (nrow(df) == 0) {
     unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
     property = c(nvs = 1.0, ols = 0.5, zooma = 0.4),
     variable = c(nvs = 1.0, ols = 0.4, zooma = 0.4),
-    entity = c(gbif = 1.3, worms = 1.3, ols = 0.4),
+    entity = c(gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
     constraint = c(ols = 0.5),
-    method = c(ols = 0.5, zooma = 0.4)
+    method = c(bioportal = 0.4, ols = 0.5, zooma = 0.4)
   )
 
   role_key <- if (is.null(role) || is.na(role)) NA_character_ else role
