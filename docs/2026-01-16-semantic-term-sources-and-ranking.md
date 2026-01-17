@@ -117,3 +117,76 @@ Run from the appropriate repo directories:
 - Python package smoke:
   - `python3 -c "import sys; sys.path.insert(0,'../'); import salmonpy; print(salmonpy.find_terms('spawner count').head())"`
 
+Notes:
+EBI OLS4 search has lots of knobs + LLM similarity endpoints
+Search API supports ontology=, type=, queryFields=, exact=, local=, childrenOf=/allChildrenOf=, and rows= via https://www.ebi.ac.uk/ols4/api/search.
+OpenAPI spec at https://www.ebi.ac.uk/ols4/v3/api-docs shows “LLM” endpoints (embeddings + “similar” lookups), e.g. /api/v2/ontologies/{onto}/classes/{class}/llm_similar and /api/v2/classes/llm_embedding (vector-in, not text-in).
+EBI ZOOMA provides text→term annotation
+https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=... returns semanticTags (IRIs) plus a confidence and OLS links. This is a strong “candidate generator” to complement plain search.
+NVS “search_nvs” JSON appears broken (returns HTML), but NVS SPARQL works
+The URLs you’re using (https://vocab.nerc.ac.uk/search_nvs/P01/?q=...&format=json) are returning HTML now, which explains why sources="nvs" currently yields nothing.
+The SPARQL endpoint works and can return JSON: https://vocab.nerc.ac.uk/sparql/ with Accept: application/sparql-results+json.
+Biodiversity/fisheries vocab sources you can leverage
+Darwin Core terms as RDF: https://rs.tdwg.org/dwc/terms.rdf (useful for common ecological “counts”, “lifeStage”, “sex”, etc.).
+CF Standard Name Table (environment variables): https://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml.
+Taxon resolvers (great for entity_iri when entity is a species):
+GBIF: https://api.gbif.org/v1/species/match?name=Oncorhynchus%20kisutch
+WoRMS: https://www.marinespecies.org/rest/AphiaRecordsByName/Oncorhynchus%20kisutch?like=true&marine_only=false&offset=1
+Similar “pluggable ontology access” design
+The Ontology Access Kit (OAK) docs (https://incatools.github.io/ontology-access-kit/) show a mature pattern: multiple backends (OLS, SPARQL endpoints, etc.) behind a consistent “search” API.
+Other sources worth adding (pragmatic, high value)
+
+ZOOMA as a new "zooma" source: great for short phrases and for getting “computed annotation” style matches + confidence.
+NVS via SPARQL as a fixed "nvs" source (or a new "nvs_sparql"): lets you search skos:prefLabel, skos:altLabel, skos:definition, and restrict to P01/P06 (or broader) via URI prefixes.
+Darwin Core as a lightweight local index: parse terms.rdf once (at build-time or cached download) into a data frame and search it with lexical + fuzzy matching; this will often give better “field name” matches than biomedical ontologies.
+GBIF/WoRMS as a separate “entity resolver” path: when the entity is a taxon, these APIs are more reliable than ontology-wide keyword search.
+Cutting-edge (and realistic) matching strategy
+
+Decompose the query into I-ADOPT-ish parts (even heuristically):
+Detect/normalize tokens from column_name, column_label, column_description (underscores, camelCase, abbreviations).
+Extract likely property (“count”, “abundance”, “length”), entity (“spawner”, “juvenile”), constraints (“natural”, “female”), method (“sonar”, “visual survey”), unit (“fish”, “kg”).
+Role-aware candidate generation
+For each role, query different sources and/or restrict ontologies:
+unit: NVS P06 (SPARQL) + OLS restricted to unit ontologies.
+property: STATO/OBA/other measurement ontologies; NVS P01 can help when it works.
+entity: taxa services + organism/environment ontologies; local salmon ontology should be boosted hard.
+method: OBI and friends.
+Add ZOOMA annotate in parallel (it often “snaps” short phrases to a canonical term).
+Modern reranking
+Keep your current lexical scoring, but add:
+Field-aware boosts: label match > synonym match > definition match.
+Cross-source agreement boost (same IRI or same label from multiple sources).
+Domain boost: ontologies/vocabs you trust for salmon (DFO salmon TTL, Darwin Core, NVS, OBA/STATO/UO) outrank generic biomedical hits.
+Embedding rerank (optional but big payoff):
+Locally embed (query) and (candidate label + definition) with a strong sentence embedding model and cosine-rerank the top ~50 lexical candidates.
+This avoids requiring OLS’s vector endpoint (since OLS expects vectors in its own embedding space).
+Explainability + diagnostics
+Always return why something ranked high: matched tokens, source, ontology preference, confidence (ZOOMA), etc.
+Capture per-source failures (timeouts, HTML instead of JSON, 429s) so “empty results” can be explained instead of mysterious.
+Most important “similar issue” to fix next
+
+Your "nvs" source is effectively non-functional right now because the endpoint is returning HTML. Switching NVS lookup to SPARQL (or detecting HTML and warning) will prevent silent empties that look like “no matches exist”.
+If you want, I can implement the next concrete step: add a "zooma" source and replace "nvs" with an NVS SPARQL adapter (in both metasalmon and salmonpy), plus a small diagnostics attribute so empty results report which sources failed.
+
+Fix the NVS thing for sure. Then read ../dfo-salmon-ontology/docs/CONVENTIONS.md to learn a bit more about ranked preferences regarding using specific ontologies which may slightly tweak your plan (but honestly your plan is pretty much on point already, no major reworks required). Just keep in mind Darwin Core terms are mostly RDF properties AND I want to rely on the new Darwin Core Data Package and Conceptual Model rather than the older DwC terms. Otherwise, let's create the plan and then do a final web search for salmon specific data standards or services that might already be out there that we should leverage.
+
+NVS Fix
+
+Replaced the broken search_nvs/\*?format=json calls (now returning HTML) with NVS SPARQL queries restricted to P01 (observables) + P06 (units) in metasalmon and salmonpy (term_search.R (line 111), term_search.py (line 105)).
+Updated tests to assert the SPARQL endpoint + Accept header usage (test-term-search.R (line 1), test_term_search.py (line 1)).
+Verification
+
+R: Rscript -e "devtools::test('/Users/brettjohnson/code/metasalmon', filter = 'term-search')" and Rscript -e "devtools::test('/Users/brettjohnson/code/metasalmon', filter = 'dictionary-helpers')" (pass)
+Python: python3 -m unittest salmonpy.tests.test_term_search salmonpy.tests.test_semantics (pass; run from /Users/brettjohnson/code so salmonpy imports correctly)
+Updated Roadmap (aligned to dfo-salmon-ontology conventions + your DwC-DP preference)
+
+Phase 1 (sources + guardrails): keep OLS + NVS(SPARQL) + BioPortal; add ZOOMA as a candidate generator; add ICES Vocab API as a code-list/controlled-vocab source (separate from ontology term search).
+Phase 2 (ontology preferences by role): encode a ranked allowlist per I-ADOPT role (e.g., units prefer QUDT + NVS P06; methods prefer gcdfo: SKOS + SOSA/PROV patterns; keep Wikidata alignment-only; AGROVOC OK for generic indexing/alignment).
+Phase 3 (Darwin Core done “the new way”): don’t index old DwC term IRIs as “terms”; instead add a dedicated mapping helper that uses DwC Conceptual Model + DwC Data Package artifacts (schemas/profile) to suggest DwC-DP table/field mappings and only then the appropriate dwc/dwciri properties where relevant.
+Phase 4 (matching quality): role-aware query expansion + per-source diagnostics + optional embedding rerank over top lexical candidates (local model; keep ontology service calls as candidate generation).
+Salmon/Fisheries Standards & Services Found (web scan)
+
+gbif/dwc-dp (DwC Conceptual Model + DwC Data Package guide + Frictionless schemas): https://gbif.github.io/dwc-dp/ and https://github.com/gbif/dwc-dp
+Salmon standards effort + ontology modules: https://github.com/salmon-data-mobiliszation/salmon-data-standards-workshop and https://github.com/salmon-data-mobiliszation/salmon-domain-ontology
+ICES controlled vocab service (REST + Swagger): https://vocab.ices.dk/services/api/swagger/index.html
+Broader fisheries ontologies to evaluate for alignment-only reuse: https://github.com/WorldFishCenter/fish-ontology, https://github.com/AileenUKennedy/FOD-ontology-v1.0
