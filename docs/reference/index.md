@@ -39,3 +39,18 @@ Authenticate once and read CSVs from private GitHub repositories
   : Build a stable raw GitHub URL
 - [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
   : Read a CSV from a GitHub repository
+
+## ICES Vocabulary
+
+Access ICES reference codes and vocabulary
+
+- [`ices_vocab`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_vocab.md)
+  : ICES controlled vocabularies (code lists)
+- [`ices_code_types()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_code_types.md)
+  : List ICES code types
+- [`ices_codes()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_codes.md)
+  : List ICES codes for a code type
+- [`ices_find_code_types()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_code_types.md)
+  : Find ICES code types by text match
+- [`ices_find_codes()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_codes.md)
+  : Find ICES codes within a code type by text match

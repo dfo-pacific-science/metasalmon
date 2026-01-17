@@ -12,7 +12,7 @@ find_terms(query, role = NA_character_, sources = c("ols", "nvs"))
 \item{role}{Optional I-ADOPT role hint (\code{"variable"}, \code{"property"}, \code{"entity"},
 \code{"constraint"}, \code{"method"}, \code{"unit"}); used only for metadata tagging.}
 
-\item{sources}{Character vector of sources to query (\code{"ols"}, \code{"nvs"}, \code{"bioportal"}).}
+\item{sources}{Character vector of sources to query (\code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"bioportal"}).}
 }
 \value{
 Tibble with columns \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role}, \code{match_type}, \code{definition}.
@@ -21,7 +21,8 @@ Tibble with columns \code{label}, \code{iri}, \code{source}, \code{ontology}, \c
 Lightweight meta-search helper for IRIs. Uses public APIs when available:
 \itemize{
 \item OLS (no key): broad cross-ontology search
-\item NERC NVS P01/P06 (best-effort; returns empty on failure)
+\item NERC NVS P01/P06 (via SPARQL endpoint)
+\item ZOOMA (no key): EBI text-to-term annotations (resolves to OLS term metadata)
 \item BioPortal (optional; requires API key via env \code{BIOPORTAL_APIKEY})
 }
 }

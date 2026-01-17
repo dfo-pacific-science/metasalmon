@@ -5,7 +5,10 @@ available:
 
 - OLS (no key): broad cross-ontology search
 
-- NERC NVS P01/P06 (best-effort; returns empty on failure)
+- NERC NVS P01/P06 (via SPARQL endpoint)
+
+- ZOOMA (no key): EBI text-to-term annotations (resolves to OLS term
+  metadata)
 
 - BioPortal (optional; requires API key via env `BIOPORTAL_APIKEY`)
 
@@ -28,7 +31,7 @@ find_terms(query, role = NA_character_, sources = c("ols", "nvs"))
 
 - sources:
 
-  Character vector of sources to query (`"ols"`, `"nvs"`,
+  Character vector of sources to query (`"ols"`, `"nvs"`, `"zooma"`,
   `"bioportal"`).
 
 ## Value

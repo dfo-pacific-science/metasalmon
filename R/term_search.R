@@ -2,7 +2,8 @@
 #'
 #' Lightweight meta-search helper for IRIs. Uses public APIs when available:
 #' - OLS (no key): broad cross-ontology search
-#' - NERC NVS P01/P06 (best-effort; returns empty on failure)
+#' - NERC NVS P01/P06 (via SPARQL endpoint)
+#' - ZOOMA (no key): EBI text-to-term annotations (resolves to OLS term metadata)
 #' - BioPortal (optional; requires API key via env `BIOPORTAL_APIKEY`)
 #'
 #' Results are scored using role-specific I-ADOPT vocabulary hints (from
@@ -14,7 +15,7 @@
 #' @param query Character search string.
 #' @param role Optional I-ADOPT role hint (`"variable"`, `"property"`, `"entity"`,
 #'   `"constraint"`, `"method"`, `"unit"`); used only for metadata tagging.
-#' @param sources Character vector of sources to query (`"ols"`, `"nvs"`, `"bioportal"`).
+#' @param sources Character vector of sources to query (`"ols"`, `"nvs"`, `"zooma"`, `"bioportal"`).
 #' @return Tibble with columns `label`, `iri`, `source`, `ontology`, `role`, `match_type`, `definition`.
 #' @export
 #' @import httr
@@ -36,6 +37,8 @@ find_terms <- function(query,
       .search_ols(query, role)
     } else if (src == "nvs") {
       .search_nvs(query, role)
+    } else if (src == "zooma") {
+      .search_zooma(query, role)
     } else if (src == "bioportal") {
       .search_bioportal(query, role)
     } else {
@@ -44,7 +47,7 @@ find_terms <- function(query,
   })
 
   combined <- dplyr::bind_rows(results)
-  ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab())
+  ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab(), query)
   ranked <- dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition)
   if (.metasalmon_cache_enabled) {
     assign(cache_key, ranked, envir = .metasalmon_cache)
@@ -66,13 +69,19 @@ find_terms <- function(query,
 
 .metasalmon_cache <- new.env(parent = emptyenv())
 .metasalmon_cache_enabled <- tolower(Sys.getenv("METASALMON_CACHE", unset = "")) %in% c("1", "true", "yes")
+.metasalmon_user_agent <- httr::user_agent(
+  sprintf("metasalmon/%s", utils::packageVersion("metasalmon"))
+)
 
-.metasalmon_cache <- new.env(parent = emptyenv())
-
-.safe_json <- function(url, headers = NULL) {
+.safe_json <- function(url, headers = NULL, timeout_secs = 30) {
   tryCatch(
     {
-      res <- httr::GET(url, httr::add_headers(.headers = headers %||% list()))
+      ua <- .metasalmon_user_agent
+      res <- if (!is.null(headers) && length(headers) > 0) {
+        httr::GET(url, ua, httr::timeout(timeout_secs), httr::add_headers(.headers = headers))
+      } else {
+        httr::GET(url, ua, httr::timeout(timeout_secs))
+      }
       if (httr::status_code(res) >= 300) {
         return(NULL)
       }
@@ -84,7 +93,7 @@ find_terms <- function(query,
 
 .search_ols <- function(query, role) {
   encoded <- utils::URLencode(query, reserved = TRUE)
-  url <- paste0("https://www.ebi.ac.uk/ols4/api/search?q=", encoded)
+  url <- paste0("https://www.ebi.ac.uk/ols4/api/search?q=", encoded, "&rows=50")
   data <- .safe_json(url)
   if (is.null(data) || is.null(data$response$docs)) {
     return(.empty_terms(role))
@@ -103,30 +112,137 @@ find_terms <- function(query,
 }
 
 .search_nvs <- function(query, role) {
-  encoded <- utils::URLencode(query, reserved = TRUE)
-  # P01 (observables) and P06 (units); we query both
-  urls <- c(
-    paste0("https://vocab.nerc.ac.uk/search_nvs/P01/?q=", encoded, "&format=json"),
-    paste0("https://vocab.nerc.ac.uk/search_nvs/P06/?q=", encoded, "&format=json")
+  tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(query)), "\\s+")[[1]])
+  tokens <- tokens[nzchar(tokens)]
+  if (length(tokens) == 0) {
+    return(.empty_terms(role))
+  }
+
+  # NVS search_nvs endpoints are not reliable; use the SPARQL endpoint instead.
+
+  # Restrict to P01 (observables) and P06 (units).
+  # Use simple REGEX on prefLabel for speed (REGEX + OPTIONAL is too slow on P01).
+  pattern <- paste(tokens, collapse = ".*")
+  pattern <- gsub("\\\\", "\\\\\\\\", pattern)
+  pattern <- gsub("\"", "\\\\\"", pattern)
+
+  sparql <- paste0(
+    "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n",
+    "SELECT DISTINCT ?uri ?label ?definition WHERE {\n",
+    "  ?uri skos:prefLabel ?label .\n",
+    "  OPTIONAL { ?uri skos:definition ?definition . }\n",
+    "  FILTER(\n",
+    "    STRSTARTS(STR(?uri), \"http://vocab.nerc.ac.uk/collection/P01/\") ||\n",
+    "    STRSTARTS(STR(?uri), \"http://vocab.nerc.ac.uk/collection/P06/\")\n",
+    "  )\n",
+    "  FILTER(REGEX(LCASE(STR(?label)), \"", pattern, "\"))\n",
+    "}\n",
+    "LIMIT 50\n"
   )
 
-  rows <- purrr::map(urls, function(u) {
-    data <- .safe_json(u)
-    if (is.null(data) || is.null(data$results)) {
-      return(.empty_terms(role))
+  url <- paste0("https://vocab.nerc.ac.uk/sparql/?query=", utils::URLencode(sparql, reserved = TRUE))
+  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = 60)
+  bindings <- data$results$bindings %||% NULL
+  if (is.null(bindings) || !is.data.frame(bindings) || nrow(bindings) == 0) {
+    return(.empty_terms(role))
+  }
+
+  sparql_value <- function(var) {
+    flat <- paste0(var, ".value")
+    if (flat %in% names(bindings)) {
+      return(bindings[[flat]])
     }
+    if (var %in% names(bindings) && is.data.frame(bindings[[var]]) && "value" %in% names(bindings[[var]])) {
+      return(bindings[[var]]$value)
+    }
+    rep("", nrow(bindings))
+  }
+
+  iri <- sparql_value("uri")
+  label <- sparql_value("label")
+  definition <- sparql_value("definition")
+  definition <- ifelse(is.na(definition), "", definition)
+
+  ontology <- gsub("^http://vocab\\.nerc\\.ac\\.uk/collection/([^/]+)/.*$", "\\1", iri)
+  ontology <- ifelse(grepl("^http://vocab\\.nerc\\.ac\\.uk/collection/[^/]+/", iri), ontology, "")
+
+  tibble::tibble(
+    label = label,
+    iri = iri,
+    source = "nvs",
+    ontology = ontology,
+    role = role,
+    match_type = "concept",
+    definition = definition
+  ) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
+}
+
+.search_zooma <- function(query, role) {
+  encoded <- utils::URLencode(query, reserved = TRUE)
+  url <- paste0("https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=", encoded)
+  data <- .safe_json(url, headers = c(Accept = "application/json"), timeout_secs = 60)
+
+  if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
+    return(.empty_terms(role))
+  }
+
+  olslinks_list <- data$`_links`$olslinks %||% list()
+  if (length(olslinks_list) == 0) {
+    return(.empty_terms(role))
+  }
+
+  links_df <- purrr::map2_dfr(olslinks_list, data$confidence %||% rep(NA_character_, nrow(data)), function(links, conf) {
+    if (is.null(links) || !is.data.frame(links) || nrow(links) == 0) return(tibble::tibble())
+    tibble::as_tibble(links) %>%
+      dplyr::mutate(confidence = conf)
+  })
+
+  if (!all(c("href", "semanticTag") %in% names(links_df)) || nrow(links_df) == 0) {
+    return(.empty_terms(role))
+  }
+
+  hrefs <- unique(links_df$href)
+  hrefs <- hrefs[nzchar(hrefs)]
+  hrefs <- utils::head(hrefs, 25)
+
+  terms <- purrr::map_dfr(hrefs, function(href) {
+    term_data <- .safe_json(href)
+    terms_df <- term_data$`_embedded`$terms %||% NULL
+    if (is.null(terms_df) || !is.data.frame(terms_df) || nrow(terms_df) == 0) return(tibble::tibble())
+    defn <- terms_df$description[[1]] %||% character()
     tibble::tibble(
-      label = data$results$prefLabel %||% "",
-      iri = data$results$uri %||% "",
-      source = "nvs",
-      ontology = data$results$collection %||% "",
+      label = terms_df$label[[1]] %||% "",
+      iri = terms_df$iri[[1]] %||% "",
+      source = "zooma",
+      ontology = terms_df$ontology_name[[1]] %||% "",
       role = role,
-      match_type = data$results$type %||% "",
-      definition = data$results$definition %||% ""
+      match_type = "",
+      definition = if (length(defn) > 0) defn[[1]] else ""
     )
   })
 
-  dplyr::bind_rows(rows)
+  if (nrow(terms) == 0) {
+    return(.empty_terms(role))
+  }
+
+  match_tbl <- links_df %>%
+    dplyr::mutate(
+      iri = semanticTag,
+      match_type = paste0(
+        "zooma_",
+        tolower(dplyr::if_else(is.na(confidence) | confidence == "", "unknown", confidence))
+      )
+    ) %>%
+    dplyr::select(iri, match_type) %>%
+    dplyr::group_by(iri) %>%
+    dplyr::summarise(match_type = match_type[[1]], .groups = "drop")
+
+  terms %>%
+    dplyr::left_join(match_tbl, by = "iri", suffix = c("", ".zooma")) %>%
+    dplyr::mutate(match_type = match_type.zooma %||% match_type) %>%
+    dplyr::select(-match_type.zooma) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
 }
 
 .search_bioportal <- function(query, role) {
@@ -177,12 +293,12 @@ find_terms <- function(query,
     )
 }
 
-.score_and_rank_terms <- function(df, role, vocab_tbl) {
+.score_and_rank_terms <- function(df, role, vocab_tbl, query = NULL) {
   if (nrow(df) == 0) {
     return(df)
   }
 
-  base_source_weight <- c(ols = 0.3, nvs = 0.6, bioportal = 0.2)
+  base_source_weight <- c(ols = 0.3, nvs = 0.6, zooma = 0.5, bioportal = 0.2)
   role_boost <- list(
     unit = c(nvs = 1.2, ols = 0.4),
     property = c(nvs = 1.0, ols = 0.4),
@@ -200,6 +316,12 @@ find_terms <- function(query,
   label_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$label_tokens), collapse = "|") else ""
 
   df$score <- vapply(df$source, function(src) base_source_weight[[src]] %||% 0, numeric(1))
+
+  query_tokens <- character()
+  if (!is.null(query) && !is.na(query) && nzchar(query)) {
+    query_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(query)), "\\s+")[[1]])
+    query_tokens <- query_tokens[nzchar(query_tokens)]
+  }
 
   role_map <- role_boost[[role_key]] %||% numeric(0)
   if (length(role_map) > 0) {
@@ -219,7 +341,27 @@ find_terms <- function(query,
     df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), 0.5, 0)
   }
 
+  if (length(query_tokens) > 0) {
+    df$score <- df$score + vapply(df$label, function(lbl) {
+      lbl_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(lbl %||% "")), "\\s+")[[1]])
+      lbl_tokens <- lbl_tokens[nzchar(lbl_tokens)]
+      overlaps <- intersect(query_tokens, lbl_tokens)
+      length(overlaps) * 0.2
+    }, numeric(1))
+  }
+
   df[order(-df$score, df$source, df$ontology, df$label, df$iri), ]
 }
 
-utils::globalVariables(c("ttl_url", "label", "iri", "ontology", "match_type", "definition"))
+utils::globalVariables(c(
+  "ttl_url",
+  "label",
+  "iri",
+  "ontology",
+  "match_type",
+  "definition",
+  "confidence",
+  "href",
+  "semanticTag",
+  "match_type.zooma"
+))

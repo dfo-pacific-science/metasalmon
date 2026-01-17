@@ -60,6 +60,15 @@ reference:
       - github_raw_url
       - read_github_csv
 
+  - title: "ICES Vocabulary"
+    desc: "Access ICES reference codes and vocabulary"
+    contents:
+      - ices_vocab
+      - ices_code_types
+      - ices_codes
+      - ices_find_code_types
+      - ices_find_codes
+
 articles:
   - title: "Getting Started"
     navbar: ~

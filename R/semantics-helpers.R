@@ -40,16 +40,31 @@ suggest_semantics <- function(df,
   )
 
   is_missing <- function(x) is.null(x) || is.na(x) || x == ""
+  first_non_empty <- function(values) {
+    values <- values[!vapply(values, is_missing, logical(1))]
+    if (length(values) == 0) "" else values[[1]]
+  }
+  clean_query <- function(x) {
+    x <- gsub("[._]+", " ", x)
+    x <- gsub("\\s+", " ", x)
+    trimws(x)
+  }
 
   suggestions <- purrr::map_dfr(seq_len(nrow(dict)), function(i) {
     row <- dict[i, , drop = TRUE]
     if (!identical(row$column_role, "measurement")) return(tibble::tibble())
 
-    query <- row$column_label %||% row$column_description %||% row$column_name
+    query <- first_non_empty(list(row$column_description, row$column_label, row$column_name))
+    query <- clean_query(query)
     purrr::imap_dfr(roles, function(role_name, col_name) {
       if (!col_name %in% names(row)) return(tibble::tibble())
       if (!is_missing(row[[col_name]])) return(tibble::tibble())
-      res <- search_fn(query, role = role_name, sources = sources)
+      role_query <- query
+      if (role_name == "unit") {
+        role_query <- first_non_empty(list(row$unit_label, query))
+      }
+      if (!nzchar(role_query)) return(tibble::tibble())
+      res <- search_fn(role_query, role = role_name, sources = sources)
       if (nrow(res) == 0) return(tibble::tibble())
       res <- utils::head(res, max_per_role)
       res$column_name <- row$column_name
