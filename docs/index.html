@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -96,6 +96,11 @@ concept schemes) while preserving your original data structure.
 <h2 id="what-you-get">What You Get<a class="anchor" aria-label="anchor" href="#what-you-get"></a>
 </h2>
 <table class="table">
+<colgroup>
+<col width="31%">
+<col width="29%">
+<col width="39%">
+</colgroup>
 <thead><tr>
 <th>Your Data</th>
 <th>+ metasalmon</th>
@@ -123,7 +128,13 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
 </h2>
+<p>First, install the package from GitHub:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Install from GitHub (recommended)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<p>Then use it to create a data package:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load your escapement data</span></span>
@@ -169,8 +180,8 @@ concept schemes) while preserving your original data structure.
 </h2>
 <table class="table">
 <colgroup>
-<col width="55%">
-<col width="44%">
+<col width="34%">
+<col width="65%">
 </colgroup>
 <thead><tr>
 <th>If you are…</th>
@@ -209,7 +220,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -228,8 +239,30 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="key-features">Key Features<a class="anchor" aria-label="anchor" href="#key-features"></a>
 </h2>
-<p><strong>For everyday use:</strong> - Automatically generate data dictionaries from your data frames - Validate that your dictionary is complete and correct - Create shareable packages that work across R, Python, and other tools - Read CSVs directly from private GitHub repositories</p>
-<p><strong>For data stewards (optional):</strong> - Link columns to standard DFO Salmon Ontology terms - Add I-ADOPT measurement metadata (property, entity, unit, constraint) - Use AI assistance to help write descriptions</p>
+<p><strong>For everyday use:</strong></p>
+<ul>
+<li>Automatically generate data dictionaries from your data frames</li>
+<li>Validate that your dictionary is complete and correct</li>
+<li>Create shareable packages that work across R, Python, and other tools</li>
+<li>Read CSVs directly from private GitHub repositories</li>
+</ul>
+<p><strong>For data stewards (optional):</strong></p>
+<ul>
+<li>Link columns to standard DFO Salmon Ontology terms</li>
+<li>Add I-ADOPT measurement metadata (property, entity, unit, constraint)</li>
+<li>Use AI assistance to help write descriptions</li>
+<li>Suggest Darwin Core Data Package table/field mappings for biodiversity data</li>
+<li>Opt in to DwC-DP export hints via <code>suggest_semantics(..., include_dwc = TRUE)</code> while keeping the Salmon Data Package as the canonical deliverable.</li>
+<li>Role-aware vocabulary search with <code><a href="reference/find_terms.html">find_terms()</a></code> and <code><a href="reference/sources_for_role.html">sources_for_role()</a></code>:
+<ul>
+<li>Units: QUDT preferred, then NVS P06</li>
+<li>Entities/taxa: GBIF and WoRMS taxon resolvers</li>
+<li>Properties: STATO/OBA measurement ontologies</li>
+<li>Cross-source agreement boosting for high-confidence matches</li>
+</ul>
+</li>
+<li>Per-source diagnostics, scoring, and optional rerank explain why <code><a href="reference/find_terms.html">find_terms()</a></code> matches rank where they do and expose failures, so you can tune role-aware queries with confidence.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
@@ -295,7 +328,7 @@ flowchart LR
   Ontology["DFO Salmon Ontology and published vocabularies"] --&gt; Package["Salmon Data Package files + datapackage.json"]
   GPT["Salmon Data Standardizer GPT"] --&gt; Dict["column_dictionary.csv + codes.csv"]
   GPT["Salmon Data Standardizer GPT"] --&gt; Package["Salmon Data Package files + datapackage.json"]
-</textarea><p>This section now captures the complete workflow, so you can stay on this page and still understand how the specification, ontology, package creation, and GPT support each other before diving into the detailed guides.</p>
+</textarea>
 </div>
 <div class="section level2">
 <h2 id="for-developers">For Developers<a class="anchor" aria-label="anchor" href="#for-developers"></a>
@@ -305,7 +338,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -313,7 +346,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>

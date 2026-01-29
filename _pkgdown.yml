@@ -52,6 +52,13 @@ reference:
     contents:
       - suggest_semantics
       - find_terms
+      - sources_for_role
+
+  - title: "Darwin Core (DwC-DP)"
+    desc: "Darwin Core Data Package mapping and export helpers"
+    contents:
+      - suggest_dwc_mappings
+      - dwc_dp_build_descriptor
 
   - title: "GitHub Access"
     desc: "Authenticate once and read CSVs from private GitHub repositories"
@@ -59,6 +66,7 @@ reference:
       - ms_setup_github
       - github_raw_url
       - read_github_csv
+      - read_github_csv_dir
 
   - title: "ICES Vocabulary"
     desc: "Access ICES reference codes and vocabulary"

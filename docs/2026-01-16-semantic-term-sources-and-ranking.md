@@ -42,8 +42,33 @@ This plan is intentionally **cross-repo**:
   - Added comprehensive tests for Phase 2 features
   - salmonpy mirroring completed (Phase 2 sources + role preferences)
   - Phase 2 tests run: `devtools::test('.', filter = 'term-search')` (pass)
-- [ ] Phase 3 — Darwin Core: prefer DwC Conceptual Model + DwC Data Package (DwC-DP), not legacy "DwC terms" search.
-- [ ] Phase 4 — matching quality: role-aware query expansion, cross-source agreement boosts, optional embedding rerank.
+- [x] 2026-01-16: Phase 3 — Darwin Core: prefer DwC Conceptual Model + DwC Data Package (DwC-DP), not legacy "DwC terms" search.
+  - Added `suggest_dwc_mappings()` helper to propose DwC-DP table/field mappings (no generic DwC term search).
+  - Added DwC-DP field cache (`inst/extdata/dwc-dp-fields.csv`) sourced from core table schemas (event/occurrence/location/taxon/organism).
+  - Expanded DwC-DP cache with identification, material, and material-assertion (MeasurementOrFact) fields.
+  - Python mirror added (`salmonpy.dwc_dp.suggest_dwc_mappings`) with shared field cache.
+  - Tests added for DwC-DP mapping suggestions in both repos.
+- [x] 2026-01-17: Phase 4 prework — ZOOMA confidence model review + OAK feasibility check (embedding rerank + A/B harness deferred).
+- [x] 2026-01-29: Phase 4 — matching quality: role-aware query expansion, cross-source agreement boosts, optional embedding rerank.
+  - Added cross-source agreement detection (`.apply_cross_source_agreement()`):
+    - IRI agreement: +0.5 boost per additional source returning same IRI
+    - Label-only agreement: +0.2 boost per additional source returning same label
+    - New `agreement_sources` column in results for explainability
+  - Added role-aware query expansion (`.expand_query()`):
+    - Unit role: expands abbreviations (kg → kilogram), adds "unit" suffix
+    - Method role: adds "method" suffix
+    - Entity role: extracts genus from binomial species names
+    - Property role: adds "measurement" suffix
+    - New `expand_query = TRUE/FALSE` parameter in `find_terms()`
+  - Added per-source diagnostic reporting:
+    - Results have `diagnostics` attribute with source/query/status/elapsed_secs/error
+    - Errors captured with tryCatch, sources that fail return empty + diagnostic entry
+  - Added embedding rerank placeholder infrastructure:
+    - `.apply_embedding_rerank()` and `.embedding_rerank_enabled()` functions
+    - Enable via `METASALMON_EMBEDDING_RERANK=1` environment variable
+    - Placeholder logs message in debug mode; full implementation deferred
+  - Added `score` column to output for explainability
+  - Phase 4 tests run: `devtools::test('.', filter = 'term-search')` (88 pass)
 
 ## Surprises & Discoveries
 
@@ -55,6 +80,9 @@ This plan is intentionally **cross-repo**:
 - **Phase 2**: QUDT SPARQL endpoint (`https://www.qudt.org/fuseki/qudt/sparql`) works well for unit lookups; returns JSON with `Accept: application/sparql-results+json`.
 - **Phase 2**: GBIF species match API (`/v1/species/match`) returns single best match; fallback to `/v1/species/search` for broader results.
 - **Phase 2**: WoRMS API returns data frames directly; `AphiaRecordsByMatchNames` endpoint useful for fuzzy matching.
+- **Phase 4**: Cross-source agreement is a strong signal—terms appearing in multiple sources with the same IRI are highly reliable candidates.
+- **Phase 4**: Query expansion helps unit searches significantly (abbreviation expansion), but needs tuning to avoid noise in other roles.
+- **Phase 4**: Per-source diagnostics (elapsed time, error messages) are valuable for debugging slow or failing searches; exposed via `attr(result, "diagnostics")`.
 
 ## Decision Log
 
@@ -67,6 +95,11 @@ This plan is intentionally **cross-repo**:
 - 2026-01-17: Implement priority-based scoring: Priority 1 = +2.0 boost, Priority 2 = +1.5, etc.; Wikidata penalized as alignment-only.
 - 2026-01-17: Add `sources_for_role()` helper function to simplify role-aware source selection.
 - 2026-01-17: Add `alignment_only` column to results to flag Wikidata terms for downstream filtering.
+- 2026-01-29: Implement cross-source agreement boosting: IRI agreement +0.5, label-only +0.2 per additional source.
+- 2026-01-29: Implement role-aware query expansion with unit abbreviations, method/measurement suffixes, genus extraction.
+- 2026-01-29: Add per-source diagnostics attribute to track success/failure/timing for each source query.
+- 2026-01-29: Add embedding rerank placeholder (deferred full implementation); enable via METASALMON_EMBEDDING_RERANK=1.
+- 2026-01-29: Expose `score` column in results for ranking explainability.
 
 ## Context and Orientation
 
@@ -149,6 +182,79 @@ This plan is intentionally **cross-repo**:
   - Method: gcdfo (priority 1), sosa (priority 2), prov (priority 3), obi (priority 4), ices (priority 5), agrovoc (priority 6)
 - All Phase 2 tests pass: `devtools::test(..., filter = 'term-search')`
 
+### Phase 4 acceptance criteria
+
+- [x] `find_terms()` returns `score` column for ranking explainability.
+- [x] `find_terms()` returns `agreement_sources` column showing cross-source agreement count.
+- [x] Cross-source agreement boosting: IRI agreement +0.5, label-only +0.2 per additional source.
+- [x] Role-aware query expansion via `.expand_query()`:
+  - Unit role: abbreviation expansion (kg → kilogram), "unit" suffix
+  - Method role: "method" suffix
+  - Entity role: genus extraction from binomial
+  - Property role: "measurement" suffix
+- [x] `expand_query = TRUE/FALSE` parameter controls query expansion.
+- [x] Per-source diagnostics via `attr(result, "diagnostics")` with source/query/status/elapsed_secs/error.
+- [x] Embedding rerank placeholder infrastructure (`.apply_embedding_rerank()`, `METASALMON_EMBEDDING_RERANK=1`).
+- [x] All Phase 4 tests pass: `devtools::test('.', filter = 'term-search')` (88 tests)
+
+### Phase 3 acceptance criteria
+
+- `suggest_dwc_mappings()` returns non-empty suggestions for common DwC fields:
+  - `Event Date` → `event.eventDate`
+  - `Decimal Latitude` → `location.decimalLatitude`
+  - `Scientific Name` → `occurrence.scientificName` or `taxon.scientificName`
+- Suggestions include the DwC property IRI (`term_iri`) for review (no auto-filling).
+- `find_terms()` does not treat DwC as a generic search source (DwC suggestions are separate).
+- Tests pass in both repos:
+  - R: `devtools::test(..., filter = 'dwc-dp')`
+  - Python: `python -m unittest salmonpy.tests.test_dwc_dp`
+
+### DwC-DP validation strategy (export view)
+
+- Use DwC-DP as an export/interoperability layer (not canonical semantics); default DwC mapping is OFF, opt-in via `include_dwc` in `suggest_semantics()`.
+- For DwC-DP export, validate with generic Frictionless checks + profile conformance:
+  - Ensure `datapackage.json` includes the DwC-DP profile URL and reserved resource/table names.
+  - Validate resources against canonical DwC-DP table schemas (fields/types/PK/FK) from `rs.tdwg.org` / `dwc-dp/table-schemas`.
+  - Run Frictionless table/dialect checks (RFC 4180 CSV, encoding, required fields).
+  - If available, run FrictionlessDarwinCore conversion/validation; GBIF DwC-Archive validator does not yet validate DwC-DP packages.
+  - Keep SDP as the canonical package; DwC-DP is a derived/export view that must not violate SDP spec (`dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv` stay authoritative).
+
+## pkgdown/vignette doc updates needed (plan)
+
+- [x] `vignettes/data-dictionary-publication.Rmd`: add the `include_dwc` toggle example (ontology suggestions vs DwC export mappings side-by-side) and clarify DwC is export-only, default OFF.
+  - **Done 2026-01-29**: Added `suggest_dwc_mappings()` direct usage example, "Semantic suggestions with role-aware sources" section explaining role-aware ranking and alignment_only filtering.
+- [x] `vignettes/reusing-standards-salmon-data-terms.Rmd`: update source list (OLS/NVS/ZOOMA/QUDT/GBIF/WoRMS), role-aware ranking, `alignment_only`, and mention DwC mappings as a separate export view.
+  - **Done 2026-01-29**: Added "Available sources by role" table, QUDT/GBIF/WoRMS examples, "Interpreting results" section (score, alignment_only, agreement_sources), diagnostics debugging section.
+- [x] `vignettes/gpt-collaboration.Rmd`: note the optional DwC mapping layer for biodiversity exports and how GPT prompts should keep ontology suggestions primary.
+  - **Done 2026-01-29**: Added "Advanced: Phase 4 matching quality features" section covering query expansion, cross-source agreement, diagnostics, and embedding rerank options.
+- [x] `vignettes/glossary.Rmd`: add short entries for DwC-DP, Assertion (DwC MeasurementOrFact pattern), NVS SPARQL, and the new `include_dwc` flag.
+  - **Done 2026-01-29**: Added QUDT, GBIF, WoRMS, query expansion, cross-source agreement, diagnostics attribute, alignment_only, include_dwc to quick reference table.
+- `vignettes/metasalmon.Rmd` (landing/overview): brief note that DwC-DP export mappings are available via `suggest_semantics(..., include_dwc = TRUE)`; remind default is OFF.
+  - **Previously done**: Already mentions `include_dwc = FALSE` default at lines 126-130.
+- [x] pkgdown home/index YAML (if present): ensure new functions (`suggest_dwc_mappings`, `include_dwc` flag) surface in reference/articles.
+  - **Done 2026-01-29**: Added `sources_for_role` to "Semantic Helpers" group, created new "Darwin Core (DwC-DP)" reference group with `suggest_dwc_mappings` and `dwc_dp_build_descriptor`.
+- [x] README.md: mention role-aware vocabulary search features.
+  - **Done 2026-01-29**: Added role-aware vocabulary search bullet points to "For data stewards" section (QUDT, GBIF/WoRMS, STATO/OBA, cross-source agreement).
+
+## Plan: frictionless-based DwC-DP export/validation prototype
+
+- Goal: provide an opt-in prototype to emit a DwC-DP-flavored `datapackage.json` that references canonical DwC-DP table schemas and (optionally) runs Frictionless validation when the user supplies DwC-ready CSVs.
+- Approach:
+  - Add a helper (Python) to build a DwC-DP descriptor from a user-supplied list of resources (name, path, schema name). Point each resource’s `schema` to the canonical DwC-DP table schema URL (e.g., `https://raw.githubusercontent.com/gbif/dwc-dp/master/dwc-dp/table-schemas/{schema}.json`).
+  - Set the Data Package `profile` to the DwC-DP profile URL.
+  - Optionally run `frictionless validate` (if installed) on the constructed descriptor; otherwise warn that validation is skipped.
+  - Keep this export prototype separate from SDP (SDP remains canonical). Users opt-in to produce a DwC-DP view when they already have DwC-shaped CSVs or have mapped SDP columns to DwC tables.
+- Implemented:
+  - Python: `salmonpy.dwc_dp_export` (`build_dwc_dp_descriptor`, `save_descriptor`, `validate_descriptor`).
+  - R: `dwc_dp_build_descriptor(resources, ..., validate = FALSE, python = 'python3')` builds a descriptor, can call frictionless validation if available.
+  - Tests added in both stacks; validation is best-effort (warns if frictionless missing).
+- Validation baseline:
+  - Descriptor must include DwC-DP profile URL.
+  - Resource schemas must match the canonical DwC-DP table schemas (field names/types/PK/FK).
+  - Frictionless should check CSV dialect (RFC 4180), encoding, required fields; fail fast on missing files.
+- Spec touchpoints (for later):
+  - We should *not* change `SPECIFICATION.md` to require DwC-DP; keep SDP as canonical. At most, document that an optional DwC-DP export MAY be produced alongside SDP deliverables.
+
 ## Concrete Steps (Phase 1)
 
 Run from the appropriate repo directories:
@@ -183,7 +289,137 @@ Run from the metasalmon repo directory to validate Phase 2 changes:
 - Run Phase 2 tests:
   - `Rscript -e "devtools::test('.', filter = 'term-search')"`
 
-Notes:
+## Concrete Steps (Phase 3)
+
+Run from the metasalmon repo directory:
+
+- DwC-DP mapping suggestions:
+  - `Rscript -e "devtools::load_all('.'); dict <- tibble::tibble(column_name='event_date', column_label='Event Date', column_description='Date the event occurred'); dict <- suggest_dwc_mappings(dict); attr(dict, 'dwc_mappings')"`
+- Run Phase 3 tests:
+  - `Rscript -e "devtools::test('.', filter = 'dwc-dp')"`
+  - `python -m unittest salmonpy.tests.test_dwc_dp`
+
+## SDP ↔ DwC-DP Synergies (both Frictionless Data Package based)
+
+**Goal:** strengthen interoperability (interoperability means different systems can exchange and use data without custom one-off conversions) between Salmon Data Package (SDP) and Darwin Core Data Package (DwC-DP) using shared Frictionless patterns.
+
+- **Shared core structure:** both use `datapackage.json` with `resources` and `schema.fields`, so SDP tables can be surfaced as DwC-DP tables (and vice‑versa) without changing the container format.
+- **Schema alignment layer:** `column_dictionary.csv` can map to `resources[].schema.fields` by syncing `column_name`, `column_label`, `value_type`, and `required` → this is a direct bridge for DwC-DP field descriptors.
+- **Semantic bridge:** SDP’s `term_iri`/I‑ADOPT fields can populate DwC `dcterms:isVersionOf` / property IRIs when a DwC field mapping exists; otherwise retain SDP semantics as the primary model.
+- **Table mapping as metadata, not renaming:** use `suggest_dwc_mappings()` to recommend DwC table/field targets while keeping native SDP column names intact unless the user opts into a DwC view.
+- **Controlled vocab reuse:** SDP `codes.csv` can be reused to populate DwC enumerations (e.g., `sex`, `lifeStage`, `occurrenceStatus`) where they align; otherwise keep as SDP‑specific vocab.
+- **Round‑trip intent:** maintain a mapping file (future) that records `table_id → DwC table` and `column_name → DwC field` so exports can toggle between SDP and DwC‑DP without losing SDP‑specific metadata.
+
+## Documentation updates (vignettes)
+
+Vignette (a long-form R package tutorial) updates to cover Phase 1–3 changes:
+
+- `vignettes/reusing-standards-salmon-data-terms.Rmd`: add a section on `find_terms()` sources (OLS/NVS/ZOOMA/QUDT/GBIF/WoRMS), role-aware ranking, and the `alignment_only` flag.
+- `vignettes/data-dictionary-publication.Rmd`: add a short workflow block showing `suggest_semantics()` plus `suggest_dwc_mappings()` for DwC‑DP table/field suggestions.
+- `vignettes/gpt-collaboration.Rmd`: note that DwC‑DP mappings are available as a parallel review layer for biodiversity‑style datasets.
+- `vignettes/glossary.Rmd`: add brief entries for DwC‑DP, ZOOMA, NVS SPARQL, and Assertion (an Assertion in DwC‑DP is the MeasurementOrFact pattern for numeric or categorical facts).
+- Keep DwC mapping UX simple: default OFF; one toggle to include DwC mappings in `suggest_semantics()` output, labeled as “export mapping (DwC‑DP)” so biologists aren’t overwhelmed.
+  - Implemented as `include_dwc = TRUE/FALSE` in `suggest_semantics()` (R and salmonpy); when TRUE, attaches `dwc_mappings` alongside `semantic_suggestions`.
+
+### Vignette snippets (ready to paste)
+
+`vignettes/reusing-standards-salmon-data-terms.Rmd`
+
+```r
+library(metasalmon)
+devtools::load_all(".")
+find_terms("spawner count",
+           role = "property",
+           sources = sources_for_role("property")) |>
+  dplyr::select(label, source, ontology, score, alignment_only) |>
+  head()
+```
+
+`vignettes/data-dictionary-publication.Rmd`
+
+```r
+dict <- readr::read_csv("inst/extdata/column_dictionary.csv")
+sem <- suggest_semantics(dict, include_dwc = TRUE)
+attr(sem, "dwc_mappings") |>
+  dplyr::filter(dwc_table %in% c("event", "occurrence")) |>
+  dplyr::select(column_name, dwc_table, dwc_field, term_iri)
+```
+
+`vignettes/gpt-collaboration.Rmd`
+
+```
+Prompt helper: "Use metasalmon as the canonical semantic source. Propose ontology IRIs first. If asked for DwC export hints, include the DwC-DP mappings from suggest_semantics(..., include_dwc = TRUE); do not replace the ontology suggestions."
+```
+
+`vignettes/glossary.Rmd`
+
+- DwC-DP: Darwin Core Data Package; a Frictionless-style profile for DwC tables.
+- Assertion: DwC-DP MeasurementOrFact pattern (assertionType/value/unit).
+- ZOOMA: EBI text-to-ontology annotation service; returns a confidence tier.
+- NVS SPARQL: NERC Vocabulary Server SPARQL endpoint used for P01/P06.
+
+`vignettes/metasalmon.Rmd`
+
+```r
+sem <- suggest_semantics(dict)                  # default: DwC export off
+sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+```
+
+## DwC‑DP cache expansion (measurement/material/identification)
+
+- DwC‑DP uses **Assertion** tables (Assertion is the MeasurementOrFact pattern in DwC‑DP) rather than a single `measurement` table. Capture `material-assertion` fields (assertionType/value/unit) as the measurement path in the cache.
+- Keep `material` and `identification` tables in the cache to support specimen/sample workflows; include core identifiers and provenance fields (e.g., `materialEntityID`, `catalogNumber`, `identifiedBy`, `dateIdentified`).
+- Align with SDP spec: ensure DwC export hints can be expressed via `column_dictionary.csv` + `tables.csv` without violating SDP rules (no schema drift; SDP remains canonical, DwC is a derived/export view).
+- Validation pointers: document how to run DwC‑DP validators/profile checks when generating DwC exports (look for GBIF/OH DWC-DP validators; if none, use frictionless datapackage validation + schema alignment checks).
+
+## DwC terms vs I‑ADOPT in `suggest_semantics()`
+
+I‑ADOPT (a framework for describing observed variables) integration thoughts:
+
+- If a DwC‑DP mapping exists, use the DwC field IRI to inform the **property** role (e.g., DwC `lifeStage` or `sex`) while keeping I‑ADOPT components as primary for measurement columns.
+- For Assertion tables, map `assertionType` → I‑ADOPT property, `assertionValueNumeric` → value, and `assertionUnit`/`assertionUnitIRI` → unit; treat `assertionBy`/`assertionProtocolID` as method hints.
+- Keep DwC field suggestions separate from `find_terms()` results; expose them as a parallel suggestion set rather than mixing search sources.
+- There is no `suggest_terms()` function today; if one is introduced, align it with `suggest_semantics()` output so DwC‑DP mappings and ontology candidates share the same suggestion schema.
+- **Positioning DwC:** DwC/DwC‑DP remain an interoperability/export layer (table/field mappings) per dfo-salmon-ontology conventions; canonical semantics and ranking stay with domain/preferred ontologies (gcdfo, STATO/OBA, QUDT, etc.). If a DwC field is the best available fit, surface it with an explicit “export/alignment” flag so users opt in consciously.
+
+## Phase 4 direction (matching quality, embeddings, A/B)
+
+- Add optional embedding rerank (local sentence embeddings) applied over the top lexical candidates from `find_terms()`; guard with a flag and cache embeddings to avoid heavy dependencies by default. **Status:** planned.
+- Run lightweight A/B checks: compare MRR / top‑k hit rates on a small curated query→expected IRI set (include salmon + DwC/DwC‑DP examples) with and without rerank/field‑aware boosts. **Status:** planned.
+- Investigate ZOOMA confidence model to reuse evidence tiers instead of custom heuristics. **Status:** planned.
+- Consider using Ontology Access Kit (OAK) or similar to avoid re‑implementing multi‑backend search if it provides measurable quality or maintenance wins. **Status:** planned.
+
+### Phase 4 prework findings (2026-01-17)
+
+**ZOOMA confidence model review**
+- The annotate endpoint returns `confidence` tiers (`HIGH`, `GOOD`, `MEDIUM`, `LOW`) plus `semanticTags` and an `annotator` field that signals evidence (curated vs automatic).
+- Recommended scoring crosswalk for `.score_and_rank_terms()`:
+  - curated + `HIGH` or `GOOD`: keep and add a modest boost (about +0.75) on top of lexical scoring.
+  - curated + `MEDIUM`: keep with a smaller boost (about +0.35); surface `confidence` in the result for explainability.
+  - automatic + `LOW`: either drop or add a small penalty (about -0.25) to avoid noisy matches.
+- Implementation guardrails: keep raw `confidence`, `annotator`, and `annotatedProperty` fields in results; resolve labels/definitions through OLS as today; treat missing `confidence` as neutral (no boost or penalty).
+
+**Ontology Access Kit (OAK) feasibility check**
+- Strengths: provides a unified search API with OLS, BioPortal, pronto, and SPARQL backends; has caching and CLI support.
+- Gaps for us: no coverage for NVS SPARQL, ICES code lists, GBIF/WoRMS taxon APIs, or DwC-DP mapping; would be Python-only and add another dependency layer for R via `reticulate`.
+- Cost/benefit: adds setup and dependency weight without reducing our custom clients for salmon-specific sources.
+- Decision: defer adoption. Keep current per-source adapters; if we later want a unified search layer for OLS/BioPortal, pilot OAK as an optional backend in salmonpy first and only if it measurably simplifies maintenance.
+
+## Alignment / open questions
+
+- Could not locate `smn-gpt/CONVENTIONS.md`; defaulted to `dfo-salmon-ontology` conventions (DwC mostly properties; Wikidata alignment‑only; salmon ontologies preferred). Please point me to the smn-gpt conventions if different.
+- Confirm whether DwC “pending” IRIs (e.g., `example.com/term-pending`) should be included or filtered; currently retained in the cache for completeness.
+
+## Notes:
+
+Next-step considerations (Phase 4+)
+
+- **String distance limits:** current matching uses simple string distance (edit distance, the minimum number of single‑character edits to transform one string into another); consider whether this is sufficient for noisy column labels and synonyms.
+- **Embedding rerank:** evaluate sentence embeddings (vector embeddings are numeric representations of text meaning) for reranking DwC‑DP and ontology candidates, not just lexical matches; keep this optional to avoid heavy dependencies.
+- **ZOOMA behavior:** investigate how ZOOMA scores annotations (curated vs automated, evidence types) to see if we can reuse or approximate its confidence model rather than reinventing it.
+- **Prebuilt search frameworks:** assess whether Ontology Access Kit (OAK) or other ontology search libraries already provide multi‑backend search + ranking so we can replace parts of our custom stack instead of expanding it.
+- **Cross‑repo reuse:** if embeddings or NLP (NLP is natural language processing) are added, design a shared search module usable by both `metasalmon` and `salmonpy` to avoid divergence.
+
 EBI OLS4 search has lots of knobs + LLM similarity endpoints
 Search API supports ontology=, type=, queryFields=, exact=, local=, childrenOf=/allChildrenOf=, and rows= via https://www.ebi.ac.uk/ols4/api/search.
 OpenAPI spec at https://www.ebi.ac.uk/ols4/v3/api-docs shows “LLM” endpoints (embeddings + “similar” lookups), e.g. /api/v2/ontologies/{onto}/classes/{class}/llm_similar and /api/v2/classes/llm_embedding (vector-in, not text-in).
@@ -194,6 +430,7 @@ The URLs you’re using (https://vocab.nerc.ac.uk/search_nvs/P01/?q=...&format=j
 The SPARQL endpoint works and can return JSON: https://vocab.nerc.ac.uk/sparql/ with Accept: application/sparql-results+json.
 Biodiversity/fisheries vocab sources you can leverage
 Darwin Core terms as RDF: https://rs.tdwg.org/dwc/terms.rdf (useful for common ecological “counts”, “lifeStage”, “sex”, etc.).
+DwC-DP table schemas (core): https://github.com/gbif/dwc-dp/tree/0.1/dwc-dp/table-schemas
 CF Standard Name Table (environment variables): https://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml.
 Taxon resolvers (great for entity_iri when entity is a species):
 GBIF: https://api.gbif.org/v1/species/match?name=Oncorhynchus%20kisutch

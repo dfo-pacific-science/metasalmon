@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -230,11 +230,73 @@ tag or commit rather than a branch name. Branch names like
 </div>
 </div>
 <div class="section level2">
+<h2 id="reading-all-csvs-from-a-directory">Reading All CSVs from a Directory<a class="anchor" aria-label="anchor" href="#reading-all-csvs-from-a-directory"></a>
+</h2>
+<p>If you have multiple CSV files in a directory, you can read them all
+at once using <code><a href="../reference/read_github_csv_dir.html">read_github_csv_dir()</a></code>. This is similar to
+using <code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir()</a></code> with <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> for local files:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Read all CSV files from a directory</span></span>
+<span><span class="va">data_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv_dir.html">read_github_csv_dir</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"data/observations"</span>,</span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-repo"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Access individual data frames by name (file name without .csv extension)</span></span>
+<span><span class="va">observations</span> <span class="op">&lt;-</span> <span class="va">data_list</span><span class="op">$</span><span class="va">observations</span></span>
+<span><span class="va">metadata</span> <span class="op">&lt;-</span> <span class="va">data_list</span><span class="op">$</span><span class="va">metadata</span></span>
+<span></span>
+<span><span class="co"># List all available datasets</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data_list</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="filtering-files-with-patterns">Filtering Files with Patterns<a class="anchor" aria-label="anchor" href="#filtering-files-with-patterns"></a>
+</h3>
+<p>You can use a regular expression pattern to filter which files to
+read:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Only read files matching a pattern</span></span>
+<span><span class="va">subset</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv_dir.html">read_github_csv_dir</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"data"</span>,</span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-repo"</span>,</span>
+<span>  pattern <span class="op">=</span> <span class="st">"^obs_.*\\.csv$"</span>  <span class="co"># Files starting with "obs_" and ending in .csv</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="pinning-to-specific-versions">Pinning to Specific Versions<a class="anchor" aria-label="anchor" href="#pinning-to-specific-versions"></a>
+</h3>
+<p>Like <code><a href="../reference/read_github_csv.html">read_github_csv()</a></code>, you can pin to specific tags or
+commits:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Read all CSVs from a pinned version</span></span>
+<span><span class="va">data_v1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv_dir.html">read_github_csv_dir</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"data/observations"</span>,</span>
+<span>  ref <span class="op">=</span> <span class="st">"v1.0.0"</span>,</span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-repo"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="passing-options-to-read_csv-1">Passing Options to read_csv()<a class="anchor" aria-label="anchor" href="#passing-options-to-read_csv-1"></a>
+</h3>
+<p>Additional arguments are passed through to
+<code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code> for each file:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Apply the same read_csv options to all files</span></span>
+<span><span class="va">data_typed</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv_dir.html">read_github_csv_dir</a></span><span class="op">(</span></span>
+<span>  path <span class="op">=</span> <span class="st">"data/observations"</span>,</span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-repo"</span>,</span>
+<span>  col_types <span class="op">=</span> <span class="st">"ccin"</span>  <span class="co"># Applied to all CSV files</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>Note</strong>: The function returns a named list where names
+are the file names without the <code>.csv</code> extension. If no CSV
+files are found, it returns an empty list.</p>
+</div>
+</div>
+<div class="section level2">
 <h2 id="getting-raw-urls">Getting Raw URLs<a class="anchor" aria-label="anchor" href="#getting-raw-urls"></a>
 </h2>
 <p>Sometimes you need the raw GitHub URL rather than the data itself.
 Use <code><a href="../reference/github_raw_url.html">github_raw_url()</a></code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get the stable raw URL for a file</span></span>
 <span><span class="va">url</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/github_raw_url.html">github_raw_url</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"data/my-dataset.csv"</span>,</span>
@@ -260,7 +322,7 @@ authentication is handled separately via headers when you use
 </h2>
 <p>If you already have a GitHub URL (blob or raw), you can pass it
 directly:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># From a GitHub blob URL (the kind you see in the browser)</span></span>
 <span><span class="va">data1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv.html">read_github_csv</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"https://github.com/your-org/your-repo/blob/main/data/file.csv"</span></span>
@@ -278,7 +340,7 @@ specified.</p>
 <h2 id="example-workflow">Example Workflow<a class="anchor" aria-label="anchor" href="#example-workflow"></a>
 </h2>
 <p>Here’s a complete example workflow for a reproducible analysis:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># First time only: set up authentication</span></span>
@@ -329,6 +391,10 @@ for additional security</li>
 <h2 id="function-reference">Function Reference<a class="anchor" aria-label="anchor" href="#function-reference"></a>
 </h2>
 <table class="table">
+<colgroup>
+<col width="52%">
+<col width="47%">
+</colgroup>
 <thead><tr class="header">
 <th>Function</th>
 <th>Purpose</th>
@@ -343,6 +409,10 @@ for additional security</li>
 <td>Read a CSV file from GitHub into R</td>
 </tr>
 <tr class="odd">
+<td><code><a href="../reference/read_github_csv_dir.html">read_github_csv_dir()</a></code></td>
+<td>Read all CSV files from a GitHub directory into a named list</td>
+</tr>
+<tr class="even">
 <td><code><a href="../reference/github_raw_url.html">github_raw_url()</a></code></td>
 <td>Get the raw URL for a file (no data fetched)</td>
 </tr>
@@ -352,6 +422,7 @@ for additional security</li>
 <ul>
 <li><a href="../reference/ms_setup_github.html"><code>ms_setup_github()</code></a></li>
 <li><a href="../reference/read_github_csv.html"><code>read_github_csv()</code></a></li>
+<li><a href="../reference/read_github_csv_dir.html"><code>read_github_csv_dir()</code></a></li>
 <li><a href="../reference/github_raw_url.html"><code>github_raw_url()</code></a></li>
 </ul>
 </div>

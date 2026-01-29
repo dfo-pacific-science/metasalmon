@@ -88,6 +88,10 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   expect_true(all(c("dictionary_role", "column_name") %in% names(suggestions)))
   expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
   expect_true(all(suggestions$column_name == "value"))
+
+  res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
+  dwc_map <- attr(res_dwc, "dwc_mappings")
+  expect_true(is.data.frame(dwc_map))
 })
 
 test_that("suggest_semantics uses role-specific hints when available", {

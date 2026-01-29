@@ -156,6 +156,12 @@ Create a prompt that asks GPT to:
     - If categorical columns exist, return `codes.csv`; otherwise omit it.
     - Do not invent IRIs.
 
+**Prompt helper for DwC-DP exports**
+
+```
+Use metasalmon as the canonical semantic source. Propose ontology IRIs first. If asked for DwC export hints, include the DwC-DP mappings from suggest_semantics(..., include_dwc = TRUE); do not replace the ontology suggestions.
+```
+
 ### Step 3: Extract GPT’s Suggestions
 
 GPT will return enriched dictionary rows and possibly code lists. Save
@@ -401,6 +407,38 @@ suggestions <- attr(dict_suggested, "semantic_suggestions")
 ```
 
 This complements the GPT workflow by providing deterministic, reproducible suggestions that you can review and merge into your dictionary. See [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) for details on `find_terms()` and the I-ADOPT catalogue.
+
+### Advanced: Phase 4 matching quality features
+
+`find_terms()` includes several features that improve match quality:
+
+**Role-aware query expansion**: Queries are automatically expanded based on role context. For example, searching for "kg" with `role = "unit"` will also search for "kilogram". Disable with `expand_query = FALSE` if you need exact matching only.
+
+```r
+# With expansion (default)
+find_terms("kg", role = "unit", sources = sources_for_role("unit"))
+
+# Without expansion
+find_terms("kg", role = "unit", sources = sources_for_role("unit"), expand_query = FALSE)
+```
+
+**Cross-source agreement**: Terms appearing in multiple sources receive score boosts. Check the `agreement_sources` column to see how many sources returned the same term.
+
+```r
+results <- find_terms("salmon", sources = c("ols", "nvs", "zooma"))
+results[results$agreement_sources > 1, ]  # Terms with multi-source agreement
+```
+
+**Diagnostics for debugging**: When searches return unexpected results, inspect the diagnostics attribute:
+
+```r
+results <- find_terms("temperature", sources = c("ols", "nvs", "zooma"))
+diagnostics <- attr(results, "diagnostics")
+print(diagnostics)
+# Shows: source, query, status, count, elapsed_secs, error
+```
+
+**Optional embedding rerank**: For advanced users, enable experimental embedding-based reranking via the `METASALMON_EMBEDDING_RERANK=1` environment variable. This is a placeholder for future sentence-embedding reranking over lexical candidates.
 
 ## Example: Complete Workflow
 

@@ -13,17 +13,17 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [DFO Salmon Ontology](https://dfo-pacific-science.github.io/dfo-salmon-ontology/) and other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). For extra help, our custom [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.  
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [DFO Salmon Ontology](https://dfo-pacific-science.github.io/dfo-salmon-ontology/) and other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). For extra help, our custom [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.
 
 **Think of it like adding a detailed legend to your spreadsheet that never gets lost.**
 
 ## What You Get
 
-| Your Data | + metasalmon | = Data Package |
-|-----------|--------------|----------------|
-| Raw CSV files | Data dictionary | Self-documenting dataset |
-| Cryptic column names | Clear descriptions | Anyone can understand it |
-| Inconsistent codes | Linked to standards | Works with other datasets |
+| Your Data            | + metasalmon        | = Data Package            |
+| -------------------- | ------------------- | ------------------------- |
+| Raw CSV files        | Data dictionary     | Self-documenting dataset  |
+| Cryptic column names | Clear descriptions  | Anyone can understand it  |
+| Inconsistent codes   | Linked to standards | Works with other datasets |
 
 ## Quick Example
 
@@ -82,13 +82,13 @@ create_salmon_datapackage(
 
 ## Who Is This For?
 
-| If you are... | Start here |
-|---------------|------------|
-| A biologist who wants to share data | [5-Minute Quickstart](articles/metasalmon.html) |
-| Curious how it works | [How It Fits Together](#how-it-fits-together) |
-| A data steward standardizing datasets | [Data Dictionary & Publication](articles/data-dictionary-publication.html) |
-| Interested in AI-assisted documentation | [AI Assistance (Advanced)](articles/gpt-collaboration.html) |
-| Reading CSVs from private GitHub repos | [GitHub CSV Access](articles/github-csv-access.html) |
+| If you are...                           | Start here                                                                 |
+| --------------------------------------- | -------------------------------------------------------------------------- |
+| A biologist who wants to share data     | [5-Minute Quickstart](articles/metasalmon.html)                            |
+| Curious how it works                    | [How It Fits Together](#how-it-fits-together)                              |
+| A data steward standardizing datasets   | [Data Dictionary & Publication](articles/data-dictionary-publication.html) |
+| Interested in AI-assisted documentation | [AI Assistance (Advanced)](articles/gpt-collaboration.html)                |
+| Reading CSVs from private GitHub repos  | [GitHub CSV Access](articles/github-csv-access.html)                       |
 
 ## Video Walkthrough
 
@@ -121,15 +121,25 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 ## Key Features
 
 **For everyday use:**
+
 - Automatically generate data dictionaries from your data frames
 - Validate that your dictionary is complete and correct
 - Create shareable packages that work across R, Python, and other tools
 - Read CSVs directly from private GitHub repositories
 
 **For data stewards (optional):**
+
 - Link columns to standard DFO Salmon Ontology terms
 - Add I-ADOPT measurement metadata (property, entity, unit, constraint)
 - Use AI assistance to help write descriptions
+- Suggest Darwin Core Data Package table/field mappings for biodiversity data
+- Opt in to DwC-DP export hints via `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon Data Package as the canonical deliverable.
+- Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
+  - Units: QUDT preferred, then NVS P06
+  - Entities/taxa: GBIF and WoRMS taxon resolvers
+  - Properties: STATO/OBA measurement ontologies
+  - Cross-source agreement boosting for high-confidence matches
+- Per-source diagnostics, scoring, and optional rerank explain why `find_terms()` matches rank where they do and expose failures, so you can tune role-aware queries with confidence.
 
 ## Getting Help
 
@@ -190,8 +200,6 @@ flowchart LR
   GPT["Salmon Data Standardizer GPT"] --> Dict["column_dictionary.csv + codes.csv"]
   GPT["Salmon Data Standardizer GPT"] --> Package["Salmon Data Package files + datapackage.json"]
 </textarea>
-
-This section now captures the complete workflow, so you can stay on this page and still understand how the specification, ontology, package creation, and GPT support each other before diving into the detailed guides.
 
 ## For Developers
 

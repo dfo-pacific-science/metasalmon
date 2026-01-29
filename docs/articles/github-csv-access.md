@@ -146,6 +146,81 @@ partial_data <- read_github_csv(
 )
 ```
 
+## Reading All CSVs from a Directory
+
+If you have multiple CSV files in a directory, you can read them all at
+once using
+[`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md).
+This is similar to using
+[`dir()`](https://rdrr.io/r/base/list.files.html) with
+[`lapply()`](https://rdrr.io/r/base/lapply.html) for local files:
+
+``` r
+
+# Read all CSV files from a directory
+data_list <- read_github_csv_dir(
+  path = "data/observations",
+  repo = "your-org/your-repo"
+)
+
+# Access individual data frames by name (file name without .csv extension)
+observations <- data_list$observations
+metadata <- data_list$metadata
+
+# List all available datasets
+names(data_list)
+```
+
+### Filtering Files with Patterns
+
+You can use a regular expression pattern to filter which files to read:
+
+``` r
+
+# Only read files matching a pattern
+subset <- read_github_csv_dir(
+  path = "data",
+  repo = "your-org/your-repo",
+  pattern = "^obs_.*\\.csv$"  # Files starting with "obs_" and ending in .csv
+)
+```
+
+### Pinning to Specific Versions
+
+Like
+[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md),
+you can pin to specific tags or commits:
+
+``` r
+
+# Read all CSVs from a pinned version
+data_v1 <- read_github_csv_dir(
+  path = "data/observations",
+  ref = "v1.0.0",
+  repo = "your-org/your-repo"
+)
+```
+
+### Passing Options to read_csv()
+
+Additional arguments are passed through to
+[`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
+for each file:
+
+``` r
+
+# Apply the same read_csv options to all files
+data_typed <- read_github_csv_dir(
+  path = "data/observations",
+  repo = "your-org/your-repo",
+  col_types = "ccin"  # Applied to all CSV files
+)
+```
+
+**Note**: The function returns a named list where names are the file
+names without the `.csv` extension. If no CSV files are found, it
+returns an empty list.
+
 ## Getting Raw URLs
 
 Sometimes you need the raw GitHub URL rather than the data itself. Use
@@ -246,10 +321,12 @@ cat("Data source:", github_raw_url(
 |----|----|
 | [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md) | One-time authentication setup |
 | [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md) | Read a CSV file from GitHub into R |
+| [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md) | Read all CSV files from a GitHub directory into a named list |
 | [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md) | Get the raw URL for a file (no data fetched) |
 
 For detailed documentation, see:
 
 - [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
 - [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+- [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md)
 - [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)

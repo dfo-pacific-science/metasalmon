@@ -121,6 +121,14 @@ This will search standard ontologies and vocabularies to find matching terms for
 
 > **Want faster results?** Use the [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) to get AI-powered suggestions for terminology, descriptions, and metadata. Just upload your dictionary and data sample!
 
+```{r}
+# Optional: include DwC-DP export mappings alongside ontology suggestions
+sem <- suggest_semantics(dict)                  # default: DwC export off
+sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+```
+
+DwC-DP mappings stay optional; keep SDP columns as canonical and use the DwC view only when exporting to biodiversity tooling.
+
 ---
 
 ## Step 3: Check Your Dictionary

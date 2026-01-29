@@ -40,6 +40,18 @@ If your organization uses Single Sign-On (SSO), you may need to authorize
 your PAT for that organization at https://github.com/settings/tokens after
 creating it.
 }
+\examples{
+\dontrun{
+# Basic setup (verifies against default test repository)
+ms_setup_github()
+
+# Verify access to a specific private repository
+ms_setup_github(repo = "your-org/your-private-repo")
+
+# After setup, you can read CSVs from private repos
+data <- read_github_csv("path/to/file.csv", repo = "your-org/your-repo")
+}
+}
 \seealso{
 \code{\link[=read_github_csv]{read_github_csv()}} for reading CSV files from GitHub,
 \code{\link[=github_raw_url]{github_raw_url()}} for building raw GitHub URLs.

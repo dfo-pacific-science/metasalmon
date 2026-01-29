@@ -4,41 +4,73 @@
 \alias{find_terms}
 \title{Find candidate terms across external vocabularies}
 \usage{
-find_terms(query, role = NA_character_, sources = c("ols", "nvs"))
+find_terms(
+  query,
+  role = NA_character_,
+  sources = c("ols", "nvs"),
+  expand_query = TRUE
+)
 }
 \arguments{
 \item{query}{Character search string (e.g., \code{"spawner count"}, \code{"temperature"}).}
 
-\item{role}{Optional I-ADOPT role hint for ranking results. One of:
+\item{role}{Optional I-ADOPT role hint for ranking and source selection. One of:
 \code{"variable"} (compound term), \code{"property"} (characteristic),
-\code{"entity"} (thing measured), \code{"constraint"} (qualifier), or \code{"unit"}.
-Results matching the specified role are ranked higher.}
+\code{"entity"} (thing measured), \code{"constraint"} (qualifier), \code{"method"}, or \code{"unit"}.
+When specified, sources are optimized for the role and results are ranked higher
+when they match preferred ontologies for that role.}
 
-\item{sources}{Character vector of sources to query (\code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"bioportal"}).}
+\item{sources}{Character vector of vocabulary sources to query. Options:
+\code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
+Default is \code{c("ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
+
+\item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
+(Phase 4) to generate additional query variants based on the role context.
+For example, unit queries get abbreviation expansions, method queries get
+"method" suffix added. Set to \code{FALSE} to search only the exact query.}
 }
 \value{
 Tibble with columns: \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role},
-\code{match_type}, \code{definition}. Returns empty tibble if no matches found.
+\code{match_type}, \code{definition}, \code{score}, \code{alignment_only}, \code{agreement_sources},
+\code{zooma_confidence}, \code{zooma_annotator}. The \code{score} column shows the computed
+ranking score. The \code{alignment_only} column indicates terms from Wikidata
+(useful for crosswalks but not canonical modeling). The \code{agreement_sources}
+column indicates how many sources returned the same IRI or label (Phase 4
+cross-source agreement). Returns empty tibble if no matches found.
+
+The result has a \code{"diagnostics"} attribute (access via \code{attr(result, "diagnostics")})
+containing per-source/query diagnostic information: source, query, status
+(success/error), count, elapsed_secs, and error message if applicable. This
+helps explain empty results or slow queries.
 }
 \description{
-Lightweight meta-search helper for IRIs. Uses public APIs when available:
-\itemize{
-\item OLS (no key): broad cross-ontology search
-\item NERC NVS P01/P06 (via SPARQL endpoint)
-\item ZOOMA (no key): EBI text-to-term annotations (resolves to OLS term metadata)
-\item BioPortal (optional; requires API key via env \code{BIOPORTAL_APIKEY})
-}
+Lightweight meta-search helper for IRIs. Uses public APIs when available.
+Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 }
 \details{
 \strong{Supported sources:}
 \itemize{
 \item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 \item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
+\item \strong{ZOOMA} (EBI text-to-term annotations): Resolves to OLS term metadata
+\item \strong{QUDT} (Quantities, Units, Dimensions and Types): Preferred for unit role
+\item \strong{GBIF} (Global Biodiversity Information Facility): Taxon backbone for entity role
+\item \strong{WoRMS} (World Register of Marine Species): Marine taxa for entity role
 \item \strong{BioPortal}: Requires API key via \code{BIOPORTAL_APIKEY} environment variable
 }
 
-Results are scored using I-ADOPT vocabulary hints and ranked by relevance.
-Network calls are best-effort and return an empty tibble on failure.
+\strong{Role-based ontology preferences (Phase 2):}
+\itemize{
+\item \code{unit}: QUDT preferred, then NVS P06
+\item \code{property}: STATO/OBA measurement ontologies, NVS P01
+\item \code{entity}: gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
+\item \code{method}: gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
+\item Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
+}
+
+Results are scored using I-ADOPT vocabulary hints and role-based ontology
+preferences, then ranked by relevance. Network calls are best-effort and
+return an empty tibble on failure.
 }
 \examples{
 \dontrun{
@@ -49,6 +81,12 @@ head(results)
 # Search specifically for property terms
 property_terms <- find_terms("temperature", role = "property")
 
+# Search for units with QUDT preference
+unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+
+# Search for taxa using taxon resolvers
+taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
+
 # Search a specific source
 ols_results <- find_terms("salmon", sources = "ols")
 
@@ -58,4 +96,6 @@ all_results <- find_terms("escapement", sources = c("ols", "nvs"))
 }
 \seealso{
 \code{\link[=suggest_semantics]{suggest_semantics()}} for automated suggestions based on your dictionary.
+
+\code{\link[=sources_for_role]{sources_for_role()}} for role-optimized source selection.
 }

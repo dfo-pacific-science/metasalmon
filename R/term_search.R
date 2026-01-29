@@ -1,3 +1,73 @@
+#' Expand query based on role context (Phase 4)
+#'
+#' Generates additional query variants based on role-specific patterns.
+#' For example, unit queries get "unit" suffix, entity queries get species
+#' name variants.
+#'
+#' @param query Original query string
+#' @param role I-ADOPT role hint
+#' @return Character vector of query variants (original always first)
+#' @keywords internal
+.expand_query <- function(query, role) {
+  if (is.null(query) || is.na(query) || !nzchar(query)) {
+    return(character())
+  }
+
+  queries <- query  # Original always first
+
+  if (is.null(role) || is.na(role)) {
+    return(queries)
+  }
+
+  role <- tolower(role)
+
+  # Role-specific expansions
+  if (role == "unit") {
+    # Add "unit" suffix for unit searches if not already present
+    if (!grepl("unit", query, ignore.case = TRUE)) {
+      queries <- c(queries, paste(query, "unit"))
+    }
+    # Common unit abbreviation expansions
+    abbrevs <- list(
+      "kg" = "kilogram",
+      "m" = "meter",
+      "cm" = "centimeter",
+      "mm" = "millimeter",
+      "g" = "gram",
+      "l" = "liter",
+      "ml" = "milliliter",
+      "s" = "second",
+      "min" = "minute",
+      "h" = "hour",
+      "d" = "day"
+    )
+    q_lower <- tolower(trimws(query))
+    if (q_lower %in% names(abbrevs)) {
+      queries <- c(queries, abbrevs[[q_lower]])
+    }
+  } else if (role == "method") {
+    # Add method-related context terms
+    if (!grepl("method|protocol|procedure|technique", query, ignore.case = TRUE)) {
+      queries <- c(queries, paste(query, "method"))
+    }
+  } else if (role == "entity") {
+    # For species-like queries, try both exact and with common suffixes
+    # Check if it looks like a binomial (two capitalized words)
+    if (grepl("^[A-Z][a-z]+ [a-z]+$", query)) {
+      # Already looks like a species name, add genus-only variant
+      genus <- sub(" .*", "", query)
+      queries <- c(queries, genus)
+    }
+  } else if (role == "property") {
+    # Add "measurement" or "observation" context if not present
+    if (!grepl("measurement|observation|count|abundance|length|weight|size", query, ignore.case = TRUE)) {
+      queries <- c(queries, paste(query, "measurement"))
+    }
+  }
+
+  unique(queries)
+}
+
 #' Find candidate terms across external vocabularies
 #'
 #' Lightweight meta-search helper for IRIs. Uses public APIs when available.
@@ -32,11 +102,23 @@
 #' @param sources Character vector of vocabulary sources to query. Options:
 #'   `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
 #'   Default is `c("ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
+#' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
+#'   (Phase 4) to generate additional query variants based on the role context.
+#'   For example, unit queries get abbreviation expansions, method queries get
+#'   "method" suffix added. Set to `FALSE` to search only the exact query.
 #'
 #' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
-#'   `match_type`, `definition`, `alignment_only`. The `alignment_only` column
-#'   indicates terms from Wikidata (useful for crosswalks but not canonical modeling).
-#'   Returns empty tibble if no matches found.
+#'   `match_type`, `definition`, `score`, `alignment_only`, `agreement_sources`,
+#'   `zooma_confidence`, `zooma_annotator`. The `score` column shows the computed
+#'   ranking score. The `alignment_only` column indicates terms from Wikidata
+#'   (useful for crosswalks but not canonical modeling). The `agreement_sources`
+#'   column indicates how many sources returned the same IRI or label (Phase 4
+#'   cross-source agreement). Returns empty tibble if no matches found.
+#'
+#'   The result has a `"diagnostics"` attribute (access via `attr(result, "diagnostics")`)
+#'   containing per-source/query diagnostic information: source, query, status
+#'   (success/error), count, elapsed_secs, and error message if applicable. This
+#'   helps explain empty results or slow queries.
 #'
 #' @seealso [suggest_semantics()] for automated suggestions based on your dictionary.
 #' @seealso [sources_for_role()] for role-optimized source selection.
@@ -68,43 +150,114 @@
 #' }
 find_terms <- function(query,
                        role = NA_character_,
-                       sources = c("ols", "nvs")) {
+                       sources = c("ols", "nvs"),
+                       expand_query = TRUE) {
   if (length(sources) == 0 || is.na(query) || query == "") {
     return(.empty_terms(role))
   }
 
-  cache_key <- paste(query, role, paste(sort(sources), collapse = ","), sep = "::")
+  # Apply role-aware query expansion (Phase 4)
+  queries <- if (expand_query) .expand_query(query, role) else query
+
+  cache_key <- paste(paste(queries, collapse = "|"), role, paste(sort(sources), collapse = ","), sep = "::")
   if (.metasalmon_cache_enabled && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
     return(get(cache_key, envir = .metasalmon_cache))
   }
 
-  results <- purrr::map(sources, function(src) {
-    if (src == "ols") {
-      .search_ols(query, role)
-    } else if (src == "nvs") {
-      .search_nvs(query, role)
-    } else if (src == "zooma") {
-      .search_zooma(query, role)
-    } else if (src == "bioportal") {
-      .search_bioportal(query, role)
-    } else if (src == "qudt") {
-      .search_qudt(query, role)
-    } else if (src == "gbif") {
-      .search_gbif(query, role)
-    } else if (src == "worms") {
-      .search_worms(query, role)
-    } else {
-      .empty_terms(role)
-    }
+  # Run searches for all expanded queries with diagnostic tracking (Phase 4)
+  diagnostics <- list()
+
+  results <- purrr::map(queries, function(q) {
+    purrr::map(sources, function(src) {
+      start_time <- Sys.time()
+      result <- tryCatch(
+        {
+          res <- if (src == "ols") {
+            .search_ols(q, role)
+          } else if (src == "nvs") {
+            .search_nvs(q, role)
+          } else if (src == "zooma") {
+            .search_zooma(q, role)
+          } else if (src == "bioportal") {
+            .search_bioportal(q, role)
+          } else if (src == "qudt") {
+            .search_qudt(q, role)
+          } else if (src == "gbif") {
+            .search_gbif(q, role)
+          } else if (src == "worms") {
+            .search_worms(q, role)
+          } else {
+            .empty_terms(role)
+          }
+          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+          diagnostics[[length(diagnostics) + 1]] <<- list(
+            source = src,
+            query = q,
+            status = "success",
+            count = nrow(res),
+            elapsed_secs = round(elapsed, 2),
+            error = NA_character_
+          )
+          res
+        },
+        error = function(e) {
+          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
+          diagnostics[[length(diagnostics) + 1]] <<- list(
+            source = src,
+            query = q,
+            status = "error",
+            count = 0L,
+            elapsed_secs = round(elapsed, 2),
+            error = conditionMessage(e)
+          )
+          .empty_terms(role)
+        }
+      )
+      result
+    })
   })
 
+  # Flatten nested results and combine
+  results <- purrr::flatten(results)
   combined <- dplyr::bind_rows(results)
+
+  # Deduplicate by IRI (keep first occurrence, which has original query priority)
+  combined <- combined[!duplicated(combined$iri), ]
+
+  combined <- dplyr::bind_rows(combined)
+  if (!"zooma_confidence" %in% names(combined)) {
+    combined$zooma_confidence <- NA_character_
+  }
+  if (!"zooma_annotator" %in% names(combined)) {
+    combined$zooma_annotator <- NA_character_
+  }
   # Add alignment_only column if missing (for sources that don't set it)
   if (!"alignment_only" %in% names(combined)) {
     combined$alignment_only <- FALSE
   }
   ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab(), query)
-  ranked <- dplyr::select(ranked, label, iri, source, ontology, role, match_type, definition, alignment_only)
+  ranked <- dplyr::select(
+    ranked,
+    dplyr::all_of(c(
+      "label",
+      "iri",
+      "source",
+      "ontology",
+      "role",
+      "match_type",
+      "definition",
+      "score",
+      "alignment_only",
+      "agreement_sources",
+      "zooma_confidence",
+      "zooma_annotator"
+    ))
+  )
+
+  # Attach diagnostics as attribute (Phase 4)
+  diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
+  attr(ranked, "diagnostics") <- diag_df
+
   if (.metasalmon_cache_enabled) {
     assign(cache_key, ranked, envir = .metasalmon_cache)
   }
@@ -120,7 +273,9 @@ find_terms <- function(query,
     role = if (is.null(role)) NA_character_ else role,
     match_type = character(),
     definition = character(),
-    alignment_only = logical()
+    score = numeric(),
+    alignment_only = logical(),
+    agreement_sources = integer()
   )
 }
 
@@ -129,6 +284,9 @@ find_terms <- function(query,
 .metasalmon_user_agent <- httr::user_agent(
   sprintf("metasalmon/%s", utils::packageVersion("metasalmon"))
 )
+
+# Bindings for NSE columns used in dplyr pipelines
+alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NULL
 
 .safe_json <- function(url, headers = NULL, timeout_secs = 30) {
   tryCatch(
@@ -249,10 +407,12 @@ find_terms <- function(query,
     return(.empty_terms(role))
   }
 
-  links_df <- purrr::map2_dfr(olslinks_list, data$confidence %||% rep(NA_character_, nrow(data)), function(links, conf) {
+  links_df <- purrr::imap_dfr(olslinks_list, function(links, idx) {
+    conf <- data$confidence[[idx]] %||% NA_character_
+    annotator <- data$annotator[[idx]] %||% NA_character_
     if (is.null(links) || !is.data.frame(links) || nrow(links) == 0) return(tibble::tibble())
     tibble::as_tibble(links) %>%
-      dplyr::mutate(confidence = conf)
+      dplyr::mutate(confidence = conf, annotator = annotator)
   })
 
   if (!all(c("href", "semanticTag") %in% names(links_df)) || nrow(links_df) == 0) {
@@ -285,20 +445,31 @@ find_terms <- function(query,
 
   match_tbl <- links_df %>%
     dplyr::mutate(
-      iri = semanticTag,
+      iri = .data$semanticTag,
+      zooma_confidence = .data$confidence,
+      zooma_annotator = .data$annotator,
       match_type = paste0(
         "zooma_",
-        tolower(dplyr::if_else(is.na(confidence) | confidence == "", "unknown", confidence))
+        tolower(dplyr::if_else(is.na(.data$confidence) | .data$confidence == "", "unknown", .data$confidence))
       )
     ) %>%
-    dplyr::select(iri, match_type) %>%
-    dplyr::group_by(iri) %>%
-    dplyr::summarise(match_type = match_type[[1]], .groups = "drop")
+    dplyr::select(.data$iri, .data$match_type, .data$zooma_confidence, .data$zooma_annotator) %>%
+    dplyr::group_by(.data$iri) %>%
+    dplyr::summarise(
+      match_type = .data$match_type[[1]],
+      zooma_confidence = .data$zooma_confidence[[1]],
+      zooma_annotator = .data$zooma_annotator[[1]],
+      .groups = "drop"
+    )
 
   terms %>%
     dplyr::left_join(match_tbl, by = "iri", suffix = c("", ".zooma")) %>%
-    dplyr::mutate(match_type = match_type.zooma %||% match_type) %>%
-    dplyr::select(-match_type.zooma) %>%
+    dplyr::mutate(
+      match_type = dplyr::coalesce(.data$match_type.zooma, .data$match_type),
+      zooma_confidence = dplyr::coalesce(.data$zooma_confidence, NA_character_),
+      zooma_annotator = dplyr::coalesce(.data$zooma_annotator, NA_character_)
+    ) %>%
+    dplyr::select(-dplyr::any_of("match_type.zooma")) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }
 
@@ -610,6 +781,116 @@ sources_for_role <- function(role) {
   )
 }
 
+#' Embedding-based reranking (Phase 4 placeholder)
+#'
+#' Optional reranking of term candidates using sentence embeddings.
+#' When enabled via `METASALMON_EMBEDDING_RERANK=1`, applies cosine similarity
+#' reranking over the top lexical candidates.
+#'
+#' Current status: placeholder infrastructure. Full implementation requires:
+#' - Local embedding model (e.g., sentence-transformers via reticulate)
+#' - Embedding cache to avoid repeated computation
+#' - Configurable top-k for reranking (default: top 50 lexical candidates)
+#'
+#' @param df Data frame of term results with score column
+
+#' @param query Original search query
+#' @param top_k Number of top candidates to rerank (default 50)
+#' @return Data frame with optional embedding_score column
+#' @keywords internal
+.apply_embedding_rerank <- function(df, query, top_k = 50L) {
+  # Check if embedding rerank is enabled
+  if (!.embedding_rerank_enabled()) {
+    return(df)
+  }
+
+  if (nrow(df) == 0 || is.null(query) || is.na(query)) {
+    return(df)
+  }
+
+  # Placeholder: log that embedding rerank was requested but not yet implemented
+
+  # Full implementation would:
+  # 1. Take top-k candidates by lexical score
+  # 2. Embed query and candidate (label + definition) using sentence model
+  # 3. Compute cosine similarity
+  # 4. Add embedding_score column and optionally rerank
+
+  # For now, just add a placeholder column
+  df$embedding_score <- NA_real_
+
+  # Issue a one-time message if debug mode is on
+  if (tolower(Sys.getenv("METASALMON_DEBUG", unset = "")) %in% c("1", "true")) {
+    message("metasalmon: embedding rerank requested but not yet implemented (Phase 4 placeholder)")
+  }
+
+  df
+}
+
+#' Check if embedding rerank is enabled
+#' @keywords internal
+.embedding_rerank_enabled <- function() {
+  tolower(Sys.getenv("METASALMON_EMBEDDING_RERANK", unset = "")) %in% c("1", "true", "yes")
+}
+
+#' Apply cross-source agreement boosting (Phase 4)
+#'
+#' Boosts terms that appear from multiple sources, indicating higher confidence.
+#' IRI agreement (same IRI from different sources) gets higher boost than
+#' label-only agreement (same label, different IRIs).
+#'
+#' @param df Data frame of term results with score column
+#' @return Data frame with agreement boosts applied and agreement_sources column
+#' @keywords internal
+.apply_cross_source_agreement <- function(df) {
+  if (nrow(df) < 2) {
+    df$agreement_sources <- 1L
+    return(df)
+  }
+
+  # Normalize IRIs and labels for comparison
+  df$iri_norm <- tolower(trimws(df$iri))
+  df$label_norm <- tolower(trimws(df$label))
+
+  # Count sources per IRI (strong agreement)
+  iri_counts <- stats::aggregate(source ~ iri_norm, data = df, FUN = function(x) length(unique(x)))
+  names(iri_counts)[2] <- "iri_source_count"
+
+  # Count sources per label (weaker agreement - same label, possibly different IRIs)
+  label_counts <- stats::aggregate(source ~ label_norm, data = df, FUN = function(x) length(unique(x)))
+  names(label_counts)[2] <- "label_source_count"
+
+  # Merge counts back
+
+  df <- merge(df, iri_counts, by = "iri_norm", all.x = TRUE)
+  df <- merge(df, label_counts, by = "label_norm", all.x = TRUE)
+
+  # Apply boosts:
+  # - IRI agreement (2+ sources): +0.5 per additional source (strong signal)
+  # - Label-only agreement (2+ sources, no IRI match): +0.2 per additional source
+  df$score <- df$score + ifelse(
+    df$iri_source_count > 1,
+    (df$iri_source_count - 1) * 0.5,  # IRI agreement boost
+    ifelse(
+      df$label_source_count > 1,
+      (df$label_source_count - 1) * 0.2,  # Label-only agreement boost
+      0
+    )
+  )
+
+  # Record agreement for explainability
+
+  df$agreement_sources <- pmax(df$iri_source_count, df$label_source_count)
+
+  # Clean up temp columns
+  df$iri_norm <- NULL
+  df$label_norm <- NULL
+  df$iri_source_count <- NULL
+  df$label_source_count <- NULL
+
+  df
+}
+
 .score_and_rank_terms <- function(df, role, vocab_tbl, query = NULL) {
 if (nrow(df) == 0) {
     return(df)
@@ -666,7 +947,6 @@ if (nrow(df) == 0) {
       # Apply priority-based boost: higher priority (lower number) = bigger boost
       df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
         iri <- df$iri[i]
-        ontology <- df$ontology[i]
         boost <- 0
 
         for (j in seq_len(nrow(role_specific_prefs))) {
@@ -715,6 +995,29 @@ if (nrow(df) == 0) {
     }, numeric(1))
   }
 
+  # ZOOMA confidence weighting (Phase 4 prework)
+  if ("zooma_confidence" %in% names(df)) {
+    conf <- tolower(df$zooma_confidence %||% NA_character_) # nolint
+    annot <- tolower(df$zooma_annotator %||% NA_character_)
+    is_curated <- !is.na(annot) & grepl("curated|manual", annot)
+    is_automatic <- !is.na(annot) & !is_curated # nolint
+
+    df$score <- df$score + dplyr::case_when(
+      is_curated & conf %in% c("high", "good") ~ 0.75,
+      is_curated & conf %in% c("medium") ~ 0.35,
+      is_automatic & conf %in% c("low") ~ -0.25,
+      TRUE ~ 0
+    )
+  }
+
+  # Cross-source agreement boosting (Phase 4)
+  # Boost terms that appear from multiple sources (same IRI or same label)
+  df <- .apply_cross_source_agreement(df)
+
+  # Optional embedding-based reranking (Phase 4)
+  # Enabled via METASALMON_EMBEDDING_RERANK=1 environment variable
+  df <- .apply_embedding_rerank(df, query)
+
   # Add alignment_only flag for downstream filtering
   df$alignment_only <- vapply(df$iri, function(iri) {
     grepl("wikidata\\.org", iri, ignore.case = TRUE)
@@ -731,10 +1034,20 @@ utils::globalVariables(c(
   "match_type",
   "definition",
   "confidence",
+  "annotator",
+  "zooma_confidence",
+  "zooma_annotator",
   "href",
   "semanticTag",
   "match_type.zooma",
   "alignment_only",
   "priority",
-  "iri_pattern"
+  "iri_pattern",
+  "score",
+  "agreement_sources",
+  "iri_norm",
+  "label_norm",
+  "iri_source_count",
+  "label_source_count",
+  "embedding_score"
 ))

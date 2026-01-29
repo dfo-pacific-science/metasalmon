@@ -53,3 +53,18 @@ https://github.com/settings/tokens after creating it.
 for reading CSV files from GitHub,
 [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
 for building raw GitHub URLs.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Basic setup (verifies against default test repository)
+ms_setup_github()
+
+# Verify access to a specific private repository
+ms_setup_github(repo = "your-org/your-private-repo")
+
+# After setup, you can read CSVs from private repos
+data <- read_github_csv("path/to/file.csv", repo = "your-org/your-repo")
+} # }
+```

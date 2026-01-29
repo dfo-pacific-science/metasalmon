@@ -165,6 +165,18 @@ A standard format for data packages that works across different software and pro
 | Semantic | Data that carries its meaning with it |
 | I-ADOPT | Framework for describing observable properties (variable, property, entity, constraint) |
 | Frictionless | International data package standard |
+| DwC-DP | Darwin Core Data Package profile (Frictionless-based) |
+| Assertion (DwC-DP) | MeasurementOrFact pattern: assertionType/value/unit |
+| ZOOMA | EBI text-to-ontology annotator with confidence tiers |
+| NVS SPARQL | NERC Vocabulary Server SPARQL endpoint (P01/P06) |
+| QUDT | Quantities, Units, Dimensions and Types ontology (preferred for units) |
+| GBIF | Global Biodiversity Information Facility (taxon backbone) |
+| WoRMS | World Register of Marine Species (marine taxa resolver) |
+| Query expansion | Automatic expansion of search terms based on role context |
+| Cross-source agreement | Boost for terms appearing in multiple vocabulary sources |
+| Diagnostics attribute | Per-source search status/timing attached to `find_terms()` results |
+| `alignment_only` | Flag for Wikidata terms (useful for crosswalks, not canonical IRIs) |
+| `include_dwc` | Parameter to include optional DwC-DP mappings in suggestions |
 
 ## Still Confused?
 

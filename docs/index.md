@@ -40,6 +40,17 @@ never gets lost.**
 
 ## Quick Example
 
+First, install the package from GitHub:
+
+``` r
+
+# Install from GitHub (recommended)
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
+Then use it to create a data package:
+
 ``` r
 
 library(metasalmon)
@@ -127,14 +138,35 @@ future self - can immediately understand your data.
 
 ## Key Features
 
-**For everyday use:** - Automatically generate data dictionaries from
-your data frames - Validate that your dictionary is complete and
-correct - Create shareable packages that work across R, Python, and
-other tools - Read CSVs directly from private GitHub repositories
+**For everyday use:**
 
-**For data stewards (optional):** - Link columns to standard DFO Salmon
-Ontology terms - Add I-ADOPT measurement metadata (property, entity,
-unit, constraint) - Use AI assistance to help write descriptions
+- Automatically generate data dictionaries from your data frames
+- Validate that your dictionary is complete and correct
+- Create shareable packages that work across R, Python, and other tools
+- Read CSVs directly from private GitHub repositories
+
+**For data stewards (optional):**
+
+- Link columns to standard DFO Salmon Ontology terms
+- Add I-ADOPT measurement metadata (property, entity, unit, constraint)
+- Use AI assistance to help write descriptions
+- Suggest Darwin Core Data Package table/field mappings for biodiversity
+  data
+- Opt in to DwC-DP export hints via
+  `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon
+  Data Package as the canonical deliverable.
+- Role-aware vocabulary search with
+  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  and
+  [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md):
+  - Units: QUDT preferred, then NVS P06
+  - Entities/taxa: GBIF and WoRMS taxon resolvers
+  - Properties: STATO/OBA measurement ontologies
+  - Cross-source agreement boosting for high-confidence matches
+- Per-source diagnostics, scoring, and optional rerank explain why
+  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  matches rank where they do and expose failures, so you can tune
+  role-aware queries with confidence.
 
 ## Getting Help
 
@@ -175,11 +207,6 @@ The high-level flow is:
   consumes the metadata, dictionary, codes, and data to write the files
   in the Salmon Data Package format, while the GPT assistant helps
   polish the metadata and suggests vocabulary links.
-
-This section now captures the complete workflow, so you can stay on this
-page and still understand how the specification, ontology, package
-creation, and GPT support each other before diving into the detailed
-guides.
 
 ## For Developers
 

@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,7 +111,120 @@ up improvements later.</li>
 vocabularies.</li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"spawner count"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">load_all</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"spawner count"</span>,</span>
+<span>           role <span class="op">=</span> <span class="st">"property"</span>,</span>
+<span>           sources <span class="op">=</span> <span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"property"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">label</span>, <span class="va">source</span>, <span class="va">ontology</span>, <span class="va">score</span>, <span class="va">alignment_only</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>This example uses the role-aware source set and surfaces
+<code>alignment_only</code> so you can down-weight Wikidata crosswalks
+when reviewing candidates. The <code>score</code> column shows the
+computed ranking, which factors in ontology preferences, cross-source
+agreement, and ZOOMA confidence.</p>
+<div class="section level4">
+<h4 id="available-sources-by-role">Available sources by role<a class="anchor" aria-label="anchor" href="#available-sources-by-role"></a>
+</h4>
+<p><code><a href="../reference/find_terms.html">find_terms()</a></code> can query multiple vocabulary sources. Use
+<code><a href="../reference/sources_for_role.html">sources_for_role()</a></code> to get the recommended sources for each
+I-ADOPT role:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"unit"</span><span class="op">)</span></span>
+<span><span class="co"># Returns: c("qudt", "nvs", "ols")</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"entity"</span><span class="op">)</span></span>
+<span><span class="co"># Returns: c("gbif", "worms", "bioportal", "ols")</span></span></code></pre></div>
+<table class="table">
+<colgroup>
+<col width="17%">
+<col width="61%">
+<col width="20%">
+</colgroup>
+<thead><tr class="header">
+<th>Role</th>
+<th>Recommended Sources</th>
+<th>Notes</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>unit</code></td>
+<td>QUDT, NVS P06, OLS</td>
+<td>QUDT preferred for SI units</td>
+</tr>
+<tr class="even">
+<td><code>property</code></td>
+<td>NVS P01, OLS, ZOOMA</td>
+<td>Measurement ontologies like STATO/OBA</td>
+</tr>
+<tr class="odd">
+<td><code>entity</code></td>
+<td>GBIF, WoRMS, BioPortal, OLS</td>
+<td>Taxon resolvers for species</td>
+</tr>
+<tr class="even">
+<td><code>method</code></td>
+<td>BioPortal, OLS, ZOOMA</td>
+<td>gcdfo SKOS methods preferred</td>
+</tr>
+<tr class="odd">
+<td><code>variable</code></td>
+<td>NVS, OLS, ZOOMA</td>
+<td>Compound observables</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level4">
+<h4 id="searching-for-units-with-qudt">Searching for units with QUDT<a class="anchor" aria-label="anchor" href="#searching-for-units-with-qudt"></a>
+</h4>
+<p>For unit columns, QUDT provides authoritative unit IRIs:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"kilogram"</span>, role <span class="op">=</span> <span class="st">"unit"</span>, sources <span class="op">=</span> <span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"unit"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">label</span>, <span class="va">iri</span>, <span class="va">source</span>, <span class="va">score</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="searching-for-taxa-with-gbifworms">Searching for taxa with GBIF/WoRMS<a class="anchor" aria-label="anchor" href="#searching-for-taxa-with-gbifworms"></a>
+</h4>
+<p>For species or organism columns, use taxon resolvers:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"Oncorhynchus kisutch"</span>, role <span class="op">=</span> <span class="st">"entity"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gbif"</span>, <span class="st">"worms"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">label</span>, <span class="va">iri</span>, <span class="va">source</span>, <span class="va">ontology</span>, <span class="va">score</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="interpreting-results">Interpreting results<a class="anchor" aria-label="anchor" href="#interpreting-results"></a>
+</h4>
+<p>The results include several columns for transparency:</p>
+<ul>
+<li>
+<strong>score</strong>: Computed ranking incorporating source
+preferences, role boosts, and cross-source agreement</li>
+<li>
+<strong>alignment_only</strong>: <code>TRUE</code> for Wikidata
+terms (useful for crosswalks, not canonical modeling)</li>
+<li>
+<strong>agreement_sources</strong>: How many sources returned this
+term (higher = more confidence)</li>
+<li>
+<strong>zooma_confidence/zooma_annotator</strong>: ZOOMA annotation
+confidence when applicable</li>
+</ul>
+<p>Filter out alignment-only terms when selecting canonical IRIs:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">canonical</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">[</span><span class="op">!</span><span class="va">results</span><span class="op">$</span><span class="va">alignment_only</span>, <span class="op">]</span></span></code></pre></div>
+</div>
+<div class="section level4">
+<h4 id="debugging-slow-or-empty-searches">Debugging slow or empty searches<a class="anchor" aria-label="anchor" href="#debugging-slow-or-empty-searches"></a>
+</h4>
+<p>If a search returns unexpected results, check the diagnostics:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">diagnostics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">results</span>, <span class="st">"diagnostics"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diagnostics</span><span class="op">)</span></span>
+<span><span class="co"># Shows: source, query, status (success/error), count, elapsed_secs, error message</span></span></code></pre></div>
 <ol start="2" style="list-style-type: decimal">
 <li>
 <strong>Decide what kind of term it is</strong>:
@@ -129,7 +242,7 @@ each row is about).</li>
 not need to repeat the same URI in multiple columns unless they
 genuinely mean different things.</li>
 </ol>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
 <span>  <span class="va">df</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"my-dataset-2026"</span>,</span>
@@ -137,6 +250,7 @@ genuinely mean different things.</li>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWN_EST"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#NaturalSpawnerCount"</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level3">
 <h3 id="working-with-semantic-web-terms-plain-language">Working with semantic web terms (plain language)<a class="anchor" aria-label="anchor" href="#working-with-semantic-web-terms-plain-language"></a>
@@ -192,7 +306,7 @@ reviewers do not have to guess.</li>
 <p><code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> can look at your dictionary and
 offer <code>term_iri</code>, <code>entity_iri</code>, or I-ADOPT
 components based on the bundled catalog.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span></code></pre></div>

@@ -17,6 +17,9 @@
 #'   `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
 #'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
 #'   Default is `c("ols", "nvs")`.
+#' @param include_dwc Logical; if `TRUE`, also attach DwC-DP export mappings
+#'   (via `suggest_dwc_mappings()`) as a parallel attribute `dwc_mappings`.
+#'   Default is `FALSE` to keep the UI simple for non-DwC users.
 #' @param max_per_role Maximum number of suggestions to keep per I-ADOPT role
 #'   (variable, property, entity, unit, constraint) per column. Default is 3.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
@@ -44,6 +47,7 @@
 #' @seealso [find_terms()] for direct vocabulary searches, [infer_dictionary()]
 #'   for creating starter dictionaries, [validate_dictionary()] for checking
 #'   dictionary completeness.
+#' @importFrom metasalmon suggest_dwc_mappings
 #'
 #' @export
 #'
@@ -68,10 +72,14 @@
 suggest_semantics <- function(df,
                               dict,
                               sources = c("ols", "nvs"),
+                              include_dwc = FALSE,
                               max_per_role = 3,
                               search_fn = find_terms) {
   if (nrow(dict) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
+    if (isTRUE(include_dwc)) {
+      attr(dict, "dwc_mappings") <- tibble::tibble()
+    }
     return(dict)
   }
 
@@ -119,6 +127,10 @@ suggest_semantics <- function(df,
   })
 
   attr(dict, "semantic_suggestions") <- suggestions
+
+  if (isTRUE(include_dwc)) {
+    attr(dict, "dwc_mappings") <- metasalmon::suggest_dwc_mappings(dict) |> attr("dwc_mappings")
+  }
 
   if (nrow(suggestions) > 0) {
     cli::cli_inform("Semantic suggestions added (attr 'semantic_suggestions'); no fields were auto-filled.")

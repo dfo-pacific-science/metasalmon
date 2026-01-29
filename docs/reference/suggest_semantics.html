@@ -15,7 +15,7 @@ results by relevance."><meta property="og:image" content="https://dfo-pacific-sc
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,6 +63,7 @@ results by relevance.</p>
 <span>  <span class="va">df</span>,</span>
 <span>  <span class="va">dict</span>,</span>
 <span>  sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span>,</span>
+<span>  include_dwc <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  max_per_role <span class="op">=</span> <span class="fl">3</span>,</span>
 <span>  search_fn <span class="op">=</span> <span class="va">find_terms</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -86,6 +87,12 @@ incomplete semantic fields).</p></dd>
 <code>"ols"</code> (Ontology Lookup Service), <code>"nvs"</code> (NERC Vocabulary Server), and
 <code>"bioportal"</code> (requires <code>BIOPORTAL_APIKEY</code> environment variable).
 Default is <code>c("ols", "nvs")</code>.</p></dd>
+
+
+<dt id="arg-include-dwc">include_dwc<a class="anchor" aria-label="anchor" href="#arg-include-dwc"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, also attach DwC-DP export mappings
+(via <code><a href="suggest_dwc_mappings.html">suggest_dwc_mappings()</a></code>) as a parallel attribute <code>dwc_mappings</code>.
+Default is <code>FALSE</code> to keep the UI simple for non-DwC users.</p></dd>
 
 
 <dt id="arg-max-per-role">max_per_role<a class="anchor" aria-label="anchor" href="#arg-max-per-role"></a></dt>

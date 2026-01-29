@@ -27,7 +27,98 @@ discover terms without drowning in jargon.
 
 ``` r
 
-find_terms("spawner count", sources = c("ols", "nvs"))
+library(metasalmon)
+devtools::load_all(".")
+find_terms("spawner count",
+           role = "property",
+           sources = sources_for_role("property")) |>
+  dplyr::select(label, source, ontology, score, alignment_only) |>
+  head()
+```
+
+This example uses the role-aware source set and surfaces
+`alignment_only` so you can down-weight Wikidata crosswalks when
+reviewing candidates. The `score` column shows the computed ranking,
+which factors in ontology preferences, cross-source agreement, and ZOOMA
+confidence.
+
+#### Available sources by role
+
+[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+can query multiple vocabulary sources. Use
+[`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
+to get the recommended sources for each I-ADOPT role:
+
+``` r
+
+sources_for_role("unit")
+# Returns: c("qudt", "nvs", "ols")
+
+sources_for_role("entity")
+# Returns: c("gbif", "worms", "bioportal", "ols")
+```
+
+| Role | Recommended Sources | Notes |
+|----|----|----|
+| `unit` | QUDT, NVS P06, OLS | QUDT preferred for SI units |
+| `property` | NVS P01, OLS, ZOOMA | Measurement ontologies like STATO/OBA |
+| `entity` | GBIF, WoRMS, BioPortal, OLS | Taxon resolvers for species |
+| `method` | BioPortal, OLS, ZOOMA | gcdfo SKOS methods preferred |
+| `variable` | NVS, OLS, ZOOMA | Compound observables |
+
+#### Searching for units with QUDT
+
+For unit columns, QUDT provides authoritative unit IRIs:
+
+``` r
+
+find_terms("kilogram", role = "unit", sources = sources_for_role("unit")) |>
+  dplyr::select(label, iri, source, score) |>
+  head()
+```
+
+#### Searching for taxa with GBIF/WoRMS
+
+For species or organism columns, use taxon resolvers:
+
+``` r
+
+find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms")) |>
+  dplyr::select(label, iri, source, ontology, score) |>
+  head()
+```
+
+#### Interpreting results
+
+The results include several columns for transparency:
+
+- **score**: Computed ranking incorporating source preferences, role
+  boosts, and cross-source agreement
+- **alignment_only**: `TRUE` for Wikidata terms (useful for crosswalks,
+  not canonical modeling)
+- **agreement_sources**: How many sources returned this term (higher =
+  more confidence)
+- **zooma_confidence/zooma_annotator**: ZOOMA annotation confidence when
+  applicable
+
+Filter out alignment-only terms when selecting canonical IRIs:
+
+``` r
+
+results <- find_terms("salmon", sources = c("ols", "nvs"))
+canonical <- results[!results$alignment_only, ]
+```
+
+#### Debugging slow or empty searches
+
+If a search returns unexpected results, check the diagnostics:
+
+``` r
+
+results <- find_terms("temperature", sources = c("ols", "nvs", "zooma"))
+diagnostics <- attr(results, "diagnostics")
+print(diagnostics)
+# Shows: source, query, status (success/error), count, elapsed_secs, error message
 ```
 
 2.  **Decide what kind of term it is**:

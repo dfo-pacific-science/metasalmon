@@ -1,5 +1,16 @@
 # 5-Minute Quickstart
 
+## Installation
+
+First, install metasalmon from GitHub:
+
+``` r
+
+# Install from GitHub (recommended)
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
 ## What You’ll Learn
 
 By the end of this guide, you’ll be able to:
@@ -89,6 +100,47 @@ but you can (and should) review and improve the descriptions.
 
 > **Tip**: To see all columns in the dictionary, use `View(dict)` in
 > RStudio or `print(dict, width = Inf)`.
+
+### Need Help Finding Standard Terms?
+
+Not sure what the official salmon data standard term is for a column?
+The
+[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+function can automatically suggest standard terminology from scientific
+vocabularies:
+
+``` r
+
+# Get semantic suggestions for your dictionary
+dict_suggested <- suggest_semantics(
+  df,
+  dict,
+  sources = c("ols", "nvs")
+)
+
+# View the suggestions
+suggestions <- attr(dict_suggested, "semantic_suggestions")
+head(suggestions)
+```
+
+This will search standard ontologies and vocabularies to find matching
+terms for your columns, helping you link your data to recognized
+scientific standards.
+
+> **Want faster results?** Use the [Salmon Data Standardizer
+> GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)
+> to get AI-powered suggestions for terminology, descriptions, and
+> metadata. Just upload your dictionary and data sample!
+
+``` r
+
+# Optional: include DwC-DP export mappings alongside ontology suggestions
+sem <- suggest_semantics(dict)                  # default: DwC export off
+sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+```
+
+DwC-DP mappings stay optional; keep SDP columns as canonical and use the
+DwC view only when exporting to biodiversity tooling.
 
 ------------------------------------------------------------------------
 
@@ -245,6 +297,10 @@ head(pkg$resources$escapement)
 You’ve created your first Salmon Data Package! Here are some ways to go
 deeper:
 
+- **[Using AI to Document Your
+  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)** -
+  Use the Salmon Data Standardizer GPT to get AI-powered suggestions for
+  terminology, descriptions, and metadata
 - **[Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)** -
   More control over metadata and publishing

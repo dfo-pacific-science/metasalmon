@@ -104,6 +104,61 @@ list.files(pkg_path)
 
 This writes the CSV files plus `datapackage.json` that follow the Salmon Data Package specification. The folder is now ready for publication, archiving, or sharing with colleagues.
 
+## Optional: include DwC-DP export hints
+
+You can attach optional Darwin Core Data Package (DwC-DP) mappings when you need an export view for biodiversity tools. The default is OFF to keep SDP canonical.
+
+```{r}
+dict <- readr::read_csv("inst/extdata/column_dictionary.csv", show_col_types = FALSE)
+sem <- suggest_semantics(dict, include_dwc = TRUE)
+attr(sem, "dwc_mappings") |>
+  dplyr::filter(dwc_table %in% c("event", "occurrence")) |>
+  dplyr::select(column_name, dwc_table, dwc_field, term_iri)
+```
+
+Keep the SDP column names intact; use the DwC mappings only when exporting a DwC-DP view.
+
+### Using suggest_dwc_mappings() directly
+
+For more control over DwC-DP mapping suggestions, use `suggest_dwc_mappings()`:
+
+```{r}
+dict <- tibble::tibble(
+ column_name = c("event_date", "decimal_latitude", "scientific_name"),
+ column_label = c("Event Date", "Decimal Latitude", "Scientific Name"),
+ column_description = c("Date the event occurred", "Latitude in decimal degrees", "Species scientific name")
+)
+dict <- suggest_dwc_mappings(dict)
+attr(dict, "dwc_mappings")
+# Shows suggested DwC-DP table/field mappings with term IRIs
+```
+
+## Semantic suggestions with role-aware sources
+
+When using `suggest_semantics()`, the function automatically queries role-appropriate sources:
+
+```{r}
+# Default: ontology suggestions only (DwC mappings OFF)
+sem <- suggest_semantics(dict)
+
+# Include DwC-DP mappings alongside ontology suggestions
+sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+
+# View ontology suggestions
+suggestions <- attr(sem, "semantic_suggestions")
+
+# View DwC mappings (only when include_dwc = TRUE)
+dwc_maps <- attr(sem_with_dwc, "dwc_mappings")
+```
+
+The ontology suggestions use role-aware ranking (Phase 2) that prefers:
+- QUDT for units
+- GBIF/WoRMS for taxa/entities
+- STATO/OBA for properties
+- gcdfo patterns for methods
+
+Terms from Wikidata are flagged with `alignment_only = TRUE` and ranked lower.
+
 ## Validation before publication
 
 - Run `validate_dictionary(dict)` to ensure the dictionary has required columns and valid `column_role`/`value_type` combinations.

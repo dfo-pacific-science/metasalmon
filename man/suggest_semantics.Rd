@@ -8,6 +8,7 @@ suggest_semantics(
   df,
   dict,
   sources = c("ols", "nvs"),
+  include_dwc = FALSE,
   max_per_role = 3,
   search_fn = find_terms
 )
@@ -22,6 +23,10 @@ incomplete semantic fields).}
 \code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
 \code{"bioportal"} (requires \code{BIOPORTAL_APIKEY} environment variable).
 Default is \code{c("ols", "nvs")}.}
+
+\item{include_dwc}{Logical; if \code{TRUE}, also attach DwC-DP export mappings
+(via \code{suggest_dwc_mappings()}) as a parallel attribute \code{dwc_mappings}.
+Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 
 \item{max_per_role}{Maximum number of suggestions to keep per I-ADOPT role
 (variable, property, entity, unit, constraint) per column. Default is 3.}

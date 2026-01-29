@@ -1,5 +1,17 @@
 # Changelog
 
+## metasalmon 0.0.6
+
+- Added
+  [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md)
+  to read all CSV files from a GitHub directory into a named list,
+  similar to using [`dir()`](https://rdrr.io/r/base/list.files.html)
+  with [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files.
+- Supports pattern matching, version pinning, and passes options to
+  [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
+  for all files.
+- Added comprehensive test coverage for the new function.
+
 ## metasalmon 0.0.5
 
 - Renamed the GitHub CSV helpers to generic names:

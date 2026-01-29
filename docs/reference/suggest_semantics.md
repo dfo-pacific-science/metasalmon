@@ -13,6 +13,7 @@ suggest_semantics(
   df,
   dict,
   sources = c("ols", "nvs"),
+  include_dwc = FALSE,
   max_per_role = 3,
   search_fn = find_terms
 )
@@ -36,6 +37,13 @@ suggest_semantics(
   (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
   Default is `c("ols", "nvs")`.
+
+- include_dwc:
+
+  Logical; if `TRUE`, also attach DwC-DP export mappings (via
+  [`suggest_dwc_mappings()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_dwc_mappings.md))
+  as a parallel attribute `dwc_mappings`. Default is `FALSE` to keep the
+  UI simple for non-DwC users.
 
 - max_per_role:
 

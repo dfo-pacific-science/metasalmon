@@ -17,3 +17,7 @@ inst/extdata/\.gitkeep$
 ^doc$
 ^Meta$
 ^\\.tmp$
+^agent-guidance(/|$)
+^pkgdown(/|$)
+^scripts(/|$)
+^\\.claude(/|$)

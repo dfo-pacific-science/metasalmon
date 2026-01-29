@@ -323,3 +323,156 @@ test_that("Entity role preferences include ODO and taxon resolvers", {
   expect_true("gbif" %in% entity_prefs$ontology)
   expect_true("worms" %in% entity_prefs$ontology)
 })
+
+# ============================================================================
+# Phase 4 Tests: Matching Quality Features
+# ============================================================================
+
+test_that("cross-source agreement boosts identical IRIs", {
+  # Create mock results with same IRI from different sources
+  mock_df <- tibble::tibble(
+    label = c("temperature", "temperature", "salinity"),
+    iri = c("http://example.org/temp", "http://example.org/temp", "http://example.org/sal"),
+    source = c("ols", "nvs", "ols"),
+    ontology = c("envo", "p01", "envo"),
+    role = NA_character_,
+    match_type = c("label", "label", "label"),
+    definition = c("def1", "def2", "def3"),
+    score = c(1.0, 1.0, 1.0)
+  )
+
+  result <- metasalmon:::.apply_cross_source_agreement(mock_df)
+
+  # The IRI that appears in 2 sources should have higher agreement_sources
+  temp_rows <- result[result$iri == "http://example.org/temp", ]
+  sal_rows <- result[result$iri == "http://example.org/sal", ]
+
+  expect_equal(temp_rows$agreement_sources[[1]], 2L)
+  expect_equal(sal_rows$agreement_sources[[1]], 1L)
+
+  # Score boost should be applied for IRI agreement (+0.5 per additional source)
+  expect_gt(temp_rows$score[[1]], sal_rows$score[[1]])
+})
+
+test_that("cross-source agreement handles label-only matches", {
+  # Create mock results with same label but different IRIs
+  mock_df <- tibble::tibble(
+    label = c("count", "count", "abundance"),
+    iri = c("http://a.org/count", "http://b.org/count", "http://a.org/abund"),
+    source = c("ols", "nvs", "ols"),
+    ontology = c("ont1", "ont2", "ont1"),
+    role = NA_character_,
+    match_type = c("label", "label", "label"),
+    definition = c("def1", "def2", "def3"),
+    score = c(1.0, 1.0, 1.0)
+  )
+
+  result <- metasalmon:::.apply_cross_source_agreement(mock_df)
+
+  # Both "count" rows should have label agreement = 2
+  count_rows <- result[result$label == "count", ]
+  expect_equal(count_rows$agreement_sources[[1]], 2L)
+})
+
+test_that("query expansion adds role-specific variants for units", {
+  # Unit role should expand abbreviations
+  expanded <- metasalmon:::.expand_query("kg", "unit")
+  expect_true(length(expanded) >= 2)
+  expect_true("kg" %in% expanded)
+  expect_true("kilogram" %in% expanded)
+
+  # Should add "unit" suffix if not present
+  expanded2 <- metasalmon:::.expand_query("meter", "unit")
+  expect_true("meter unit" %in% expanded2)
+})
+
+test_that("query expansion adds method suffix for method role", {
+  expanded <- metasalmon:::.expand_query("visual survey", "method")
+  expect_true("visual survey" %in% expanded)
+  expect_true("visual survey method" %in% expanded)
+})
+
+test_that("query expansion extracts genus for entity role", {
+  # Species name should also search genus
+
+  expanded <- metasalmon:::.expand_query("Oncorhynchus kisutch", "entity")
+  expect_true("Oncorhynchus kisutch" %in% expanded)
+  expect_true("Oncorhynchus" %in% expanded)
+})
+
+test_that("query expansion returns original when role is NA", {
+  expanded <- metasalmon:::.expand_query("salmon", NA)
+  expect_equal(expanded, "salmon")
+})
+
+test_that("find_terms output includes score and agreement_sources columns", {
+  # Test that empty results still have the expected columns
+  result <- find_terms("", sources = "ols", expand_query = FALSE)
+  expect_true("score" %in% names(result))
+  expect_true("agreement_sources" %in% names(result))
+})
+
+test_that("score_and_rank_terms adds score and agreement columns", {
+  # Create a mock result dataframe that simulates raw search output
+  mock_df <- tibble::tibble(
+    label = c("temperature", "temperature measurement"),
+    iri = c("http://example.org/temp1", "http://example.org/temp2"),
+    source = c("ols", "ols"),
+    ontology = c("envo", "stato"),
+    role = c(NA_character_, NA_character_),
+    match_type = c("label", "label"),
+    definition = c("def1", "def2"),
+    zooma_confidence = c(NA_character_, NA_character_),
+    zooma_annotator = c(NA_character_, NA_character_)
+  )
+
+  # Load vocab table
+  vocab_tbl <- metasalmon:::.iadopt_vocab()
+
+  # Run scoring
+  result <- metasalmon:::.score_and_rank_terms(mock_df, NA_character_, vocab_tbl, "temperature")
+
+  expect_true("score" %in% names(result))
+  expect_true("agreement_sources" %in% names(result))
+  expect_true(all(is.numeric(result$score)))
+  expect_true(all(is.integer(result$agreement_sources)))
+})
+
+test_that("embedding rerank placeholder works when disabled", {
+  mock_df <- tibble::tibble(
+    label = "test",
+    iri = "http://example.org/test",
+    score = 1.0
+  )
+
+  # Should return unchanged when not enabled (no embedding_score column added)
+  result <- metasalmon:::.apply_embedding_rerank(mock_df, "test query")
+  expect_equal(nrow(result), 1)
+  # When disabled, no column added
+  expect_false("embedding_score" %in% names(result))
+})
+
+test_that("embedding_rerank_enabled checks env var", {
+  # Default should be FALSE
+  old_val <- Sys.getenv("METASALMON_EMBEDDING_RERANK", unset = NA)
+  on.exit({
+    if (is.na(old_val)) {
+      Sys.unsetenv("METASALMON_EMBEDDING_RERANK")
+    } else {
+      Sys.setenv(METASALMON_EMBEDDING_RERANK = old_val)
+    }
+  })
+
+  Sys.unsetenv("METASALMON_EMBEDDING_RERANK")
+  expect_false(metasalmon:::.embedding_rerank_enabled())
+
+  Sys.setenv(METASALMON_EMBEDDING_RERANK = "1")
+  expect_true(metasalmon:::.embedding_rerank_enabled())
+})
+
+test_that("expand_query returns original for disabled expansion", {
+  # Test the expand_query function directly
+  expanded <- metasalmon:::.expand_query("test", NA)
+  expect_equal(expanded, "test")
+  expect_equal(length(expanded), 1)
+})
