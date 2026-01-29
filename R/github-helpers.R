@@ -74,7 +74,7 @@ github_raw_url <- function(path, ref = "main", repo = NULL) {
 #' @export
 #'
 #' @examples
-#' \dontrun
+#' \dontrun{
 #' # Basic setup (verifies against default test repository)
 #' ms_setup_github()
 #'
@@ -244,6 +244,238 @@ read_github_csv <- function(
 
   httr2::resp_check_status(resp)
   readr::read_csv(I(httr2::resp_body_string(resp)), show_col_types = FALSE, ...)
+}
+
+#' Read all CSV files from a GitHub directory
+#'
+#' Lists all CSV files in a GitHub repository directory and reads them into a
+#' named list of tibbles. Similar to using `dir()` with `lapply()` to read
+#' multiple local CSV files.
+#'
+#' @param path Path to the directory inside the repository (e.g.,
+#'   `"data/observations"`), or a full GitHub URL pointing to a directory.
+#'   Trailing slashes are optional.
+#' @param ref Git reference: branch name, tag, or commit SHA. Defaults to
+#'   `"main"`. For reproducible analyses, prefer tags or commit SHAs.
+#'   Ignored when `path` is already a full URL with a ref embedded.
+#' @param repo Repository slug in `"owner/name"` form. Required when `path` is
+#'   a relative path; optional when `path` is a full URL.
+#' @param token Optional GitHub PAT override. If `NULL` (default), uses the
+#'   token from `gh::gh_token()`, which is typically set by `ms_setup_github()`.
+#' @param pattern Optional regular expression to filter CSV file names. Defaults
+#'   to `"\\.csv$"` (files ending in `.csv`). Set to `NULL` to match all files
+#'   in the directory (not just CSVs).
+#' @param ... Additional arguments passed to `readr::read_csv()` for each file,
+#'   such as `col_types`, `skip`, `n_max`, etc.
+#'
+#' @return A named list of tibbles, where names are the CSV file names (without
+#'   the `.csv` extension). Returns an empty list if no CSV files are found.
+#'
+#' @details
+#' This function uses the GitHub API to list directory contents, filters for CSV
+#' files, then reads each file using `read_github_csv()`. Authentication is
+#' required even for public repositories when using the API.
+#'
+#' Before using this function, run `ms_setup_github()` once to configure
+#' authentication. For private repositories, your PAT must have the `repo`
+#' scope.
+#'
+#' For reproducible analyses, pin to a specific tag or commit SHA rather than
+#' a branch name like `"main"`, since branch contents can change over time.
+#'
+#' **Manual alternative**: You can achieve the same result by using `gh::gh()`
+#' to list directory contents, filtering for CSV files, then looping through
+#' them with `read_github_csv()`. See the vignette for an example.
+#'
+#' @seealso [read_github_csv()] for reading a single CSV file,
+#'   [ms_setup_github()] for authentication setup.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # First, set up authentication (run once)
+#' ms_setup_github(repo = "myorg/myrepo")
+#'
+#' # Read all CSV files from a directory
+#' data_list <- read_github_csv_dir("data/observations", repo = "myorg/myrepo")
+#'
+#' # Access individual data frames by name
+#' observations <- data_list$observations
+#' metadata <- data_list$metadata
+#'
+#' # Pin to a release tag for reproducibility
+#' data_v1 <- read_github_csv_dir(
+#'   "data/observations",
+#'   ref = "v1.0.0",
+#'   repo = "myorg/myrepo"
+#' )
+#'
+#' # Custom pattern to match specific files
+#' subset <- read_github_csv_dir(
+#'   "data",
+#'   repo = "myorg/myrepo",
+#'   pattern = "^obs_.*\\.csv$"
+#' )
+#'
+#' # Pass arguments to read_csv for all files
+#' data_typed <- read_github_csv_dir(
+#'   "data/observations",
+#'   repo = "myorg/myrepo",
+#'   col_types = "ccin"
+#' )
+#' }
+read_github_csv_dir <- function(
+    path,
+    ref = "main",
+    repo = NULL,
+    token = NULL,
+    pattern = "\\.csv$",
+    ...
+) {
+  target <- ms_resolve_dir_path(path, ref = ref, repo = repo)
+  token <- if (is.null(token)) ms_current_token() else token
+
+  if (!nzchar(token)) {
+    cli::cli_abort("No GitHub PAT found. Run {.code metasalmon::ms_setup_github()} first.")
+  }
+
+  # List directory contents using GitHub API
+  if (target$path == "") {
+    api_path <- sprintf("/repos/%s/contents", target$repo)
+  } else {
+    api_path <- sprintf("/repos/%s/contents/%s", target$repo, target$path)
+  }
+  tryCatch(
+    {
+      contents <- gh::gh(api_path, .token = token, ref = target$ref)
+    },
+    error = function(e) {
+      if (grepl("404", conditionMessage(e))) {
+        cli::cli_abort(
+          "Directory {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}."
+        )
+      }
+      if (grepl("401|403", conditionMessage(e))) {
+        cli::cli_abort("GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT.")
+      }
+      cli::cli_abort("Unable to list directory contents: {conditionMessage(e)}")
+    }
+  )
+
+  # Handle single file response (API returns object, not array)
+  # When path is a file, API returns a single named list with $type = "file"
+  # When path is a dir, API returns a list of lists (array), where each element has $type
+  # Check: if contents$type exists and first element doesn't have $type, it's a single file
+  if (!is.null(contents$type) && contents$type == "file") {
+    # Check if first element exists and has its own $type (indicating it's an array)
+    first_elem_has_type <- tryCatch(
+      !is.null(contents[[1]]) && is.list(contents[[1]]) && !is.null(contents[[1]]$type),
+      error = function(e) FALSE
+    )
+    if (!first_elem_has_type) {
+      cli::cli_abort(
+        "Path {.path {target$path}} is a file, not a directory. Use {.code read_github_csv()} instead."
+      )
+    }
+  }
+
+  # Ensure contents is an array (list of objects)
+  if (!is.list(contents) || length(contents) == 0) {
+    cli::cli_alert_info("Directory {.path {target$path}} is empty.")
+    return(list())
+  }
+
+  # Filter for CSV files
+  if (!is.null(pattern)) {
+    csv_files <- Filter(
+      function(x) x$type == "file" && grepl(pattern, x$name, ignore.case = TRUE),
+      contents
+    )
+  } else {
+    csv_files <- Filter(function(x) x$type == "file", contents)
+  }
+
+  if (length(csv_files) == 0) {
+    cli::cli_alert_info("No CSV files found in {.path {target$path}}.")
+    return(list())
+  }
+
+  # Build full paths for each CSV file
+  csv_paths <- vapply(csv_files, function(x) {
+    if (target$path == "") {
+      x$name
+    } else {
+      paste(target$path, x$name, sep = "/")
+    }
+  }, character(1))
+
+  # Read each CSV file
+  cli::cli_alert_info("Reading {length(csv_paths)} CSV file{?s}...")
+  result <- lapply(csv_paths, function(csv_path) {
+    read_github_csv(csv_path, ref = target$ref, repo = target$repo, token = token, ...)
+  })
+
+  # Name the list with file names (without .csv extension)
+  names(result) <- sub("\\.csv$", "", basename(csv_paths), ignore.case = TRUE)
+
+  result
+}
+
+ms_resolve_dir_path <- function(path, ref, repo) {
+  # Reuse ms_resolve_path logic but handle directories
+  # Allow empty path for root directory access
+  if (!is.character(path) || length(path) != 1 || is.na(path)) {
+    cli::cli_abort("{.arg path} must be a character string path or URL.")
+  }
+
+  if (!is.character(ref) || length(ref) != 1 || is.na(ref) || !nzchar(ref)) {
+    cli::cli_abort("{.arg ref} must be a non-empty string reference.")
+  }
+  clean_ref <- ref
+  clean_repo <- if (!is.null(repo)) ms_normalize_repo(repo) else NULL
+
+  if (grepl("^https?://", path)) {
+    clean_url <- sub("\\?.*$", "", path)
+
+    # Handle blob URLs (directory)
+    blob_match <- regexec("^https?://github\\.com/([^/]+)/([^/]+)/(?:blob|tree)/([^/]+)/(.*)$", clean_url)
+    blob_parts <- regmatches(clean_url, blob_match)[[1]]
+    if (length(blob_parts) == 5) {
+      return(list(
+        repo = paste(blob_parts[2], blob_parts[3], sep = "/"),
+        ref = blob_parts[4],
+        path = blob_parts[5]
+      ))
+    }
+
+    # Handle raw URLs - extract directory path
+    raw_match <- regexec("^https?://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$", clean_url)
+    raw_parts <- regmatches(clean_url, raw_match)[[1]]
+    if (length(raw_parts) == 5) {
+      # Extract directory from file path
+      dir_path <- dirname(raw_parts[5])
+      return(list(
+        repo = paste(raw_parts[2], raw_parts[3], sep = "/"),
+        ref = raw_parts[4],
+        path = if (dir_path == ".") "" else dir_path
+      ))
+    }
+
+    cli::cli_abort("Unable to parse GitHub URL: {.val {path}}")
+  }
+
+  if (is.null(clean_repo)) {
+    cli::cli_abort("{.arg repo} is required when {.arg path} is not a full URL.")
+  }
+
+  clean_path <- sub("^/", "", path)
+  clean_path <- sub("/$", "", clean_path)  # Remove trailing slash
+  list(
+    repo = clean_repo,
+    ref = clean_ref,
+    path = clean_path
+  )
 }
 
 ms_current_token <- function() {

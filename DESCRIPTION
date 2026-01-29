@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Metasalmon: Salmon Data Utilities
-Version: 0.0.5
+Version: 0.0.6
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Description: Scaffolding for salmon data utilities. Functions and data
     will be added incrementally to standardize, validate, transform, summarize, and

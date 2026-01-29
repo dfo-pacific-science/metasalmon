@@ -1,3 +1,10 @@
+metasalmon 0.0.6
+----------------
+
+- Added `read_github_csv_dir()` to read all CSV files from a GitHub directory into a named list, similar to using `dir()` with `lapply()` for local files.
+- Supports pattern matching, version pinning, and passes options to `read_csv()` for all files.
+- Added comprehensive test coverage for the new function.
+
 metasalmon 0.0.5
 ----------------
 
