@@ -14,7 +14,7 @@ A tibble with suggested facet schemes and their member concepts
 }
 \description{
 Analyzes a proposed terms dataframe and suggests which facet schemes
-(AgeClassScheme, LifePhaseScheme, etc.) should be created instead of
+(age class, life phase, etc.) should be created instead of proliferating
 individual terms.
 }
 \examples{

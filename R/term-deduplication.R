@@ -77,17 +77,19 @@ if (nrow(proposed_terms) > warn_threshold) {
 
   # Normalize term_label for comparison
   df$label_normalized <- tolower(trimws(df$term_label))
+  # A pattern-friendly normalization (underscores/punctuation -> spaces) for regex detection.
+  df$label_pattern <- trimws(gsub("\\s+", " ", gsub("[^a-z0-9]+", " ", df$label_normalized)))
 
   # Detect age-stratified patterns (e.g., "Spawners Age 1", "Catch Age 3")
-  df$is_age_variant <- grepl("\\bage\\s*\\d+\\b", df$label_normalized, ignore.case = TRUE)
-  df$age_base_label <- gsub("\\s*age\\s*\\d+\\s*", " ", df$label_normalized, ignore.case = TRUE)
+  df$is_age_variant <- grepl("\\bage\\s*\\d+\\b", df$label_pattern, ignore.case = TRUE)
+  df$age_base_label <- gsub("\\s*age\\s*\\d+\\s*", " ", df$label_pattern, ignore.case = TRUE)
   df$age_base_label <- trimws(gsub("\\s+", " ", df$age_base_label))
 
   # Detect phase-stratified patterns (e.g., "Ocean Catch", "Terminal Run")
   phase_prefixes <- c("ocean", "terminal", "mainstem", "marine", "freshwater", "in[- ]?river")
   phase_pattern <- paste0("^(", paste(phase_prefixes, collapse = "|"), ")\\s+")
-  df$is_phase_variant <- grepl(phase_pattern, df$label_normalized, ignore.case = TRUE)
-  df$phase_base_label <- gsub(phase_pattern, "", df$label_normalized, ignore.case = TRUE)
+  df$is_phase_variant <- grepl(phase_pattern, df$label_pattern, ignore.case = TRUE)
+  df$phase_base_label <- gsub(phase_pattern, "", df$label_pattern, ignore.case = TRUE)
   df$phase_base_label <- trimws(df$phase_base_label)
 
   # Step 1: Remove exact duplicates by term_label (keep first occurrence)
@@ -164,9 +166,9 @@ if (nrow(proposed_terms) > warn_threshold) {
   # Add deduplication notes
   df$dedup_notes <- ""
   df$dedup_notes[df$needs_age_facet & df$is_base_term] <-
-    "Base term for age variants; use AgeClassScheme in constraint_iri"
+    "Base term for age variants; use an age-class constraint scheme (propose one if missing)"
   df$dedup_notes[df$needs_phase_facet & df$is_base_term & df$dedup_notes == ""] <-
-    "Base term for phase variants; use LifePhaseScheme in constraint_iri"
+    "Base term for phase variants; use a life-phase constraint scheme (propose one if missing)"
   df$dedup_notes[!df$is_base_term] <- "Collapsed into base term"
 
   # Filter to base terms only and clean up
@@ -212,7 +214,7 @@ if (nrow(proposed_terms) > warn_threshold) {
 #' Suggest facet schemes for proposed terms
 #'
 #' Analyzes a proposed terms dataframe and suggests which facet schemes
-#' (AgeClassScheme, LifePhaseScheme, etc.) should be created instead of
+#' (age class, life phase, etc.) should be created instead of proliferating
 #' individual terms.
 #'
 #' @param proposed_terms A data frame with term_label column
@@ -239,13 +241,17 @@ suggest_facet_schemes <- function(proposed_terms) {
   schemes <- list()
 
   # Check for age patterns
-  age_matches <- grep("\\bage\\s*\\d+\\b", labels, ignore.case = TRUE, value = TRUE)
+  age_matches <- grep("(\\bage\\s*\\d+\\b|\\bage\\d+class\\b|\\bage\\d+\\b)", labels, ignore.case = TRUE, value = TRUE)
   if (length(age_matches) >= 3) {
-    ages_found <- unique(as.integer(gsub(".*age\\s*(\\d+).*", "\\1", age_matches, ignore.case = TRUE)))
+    age_num_tokens <- unlist(regmatches(
+      age_matches,
+      gregexpr("age\\s*\\d+", age_matches, ignore.case = TRUE, perl = TRUE)
+    ))
+    ages_found <- sort(unique(as.integer(gsub("^age\\s*", "", age_num_tokens, ignore.case = TRUE))))
     schemes$AgeClassScheme <- list(
       scheme_name = "AgeClassScheme",
-      scheme_definition = "Age class facets for age-stratified salmon measurements (Age1Class through Age7Class)",
-      suggested_concepts = paste0("Age", sort(ages_found), "Class")
+      scheme_definition = "Proposed age-class facets for age-stratified salmon measurements (e.g., Age1Class through Age7Class)",
+      suggested_concepts = paste0("Age", ages_found, "Class")
     )
   }
 
@@ -253,32 +259,33 @@ suggest_facet_schemes <- function(proposed_terms) {
   phase_patterns <- c("ocean", "terminal", "mainstem", "marine", "freshwater")
   phases_found <- character()
   for (phase in phase_patterns) {
-    if (any(grepl(paste0("\\b", phase, "\\b"), labels, ignore.case = TRUE))) {
+    # Accept both "ocean" and "oceanphase" style tokens
+    if (any(grepl(paste0("\\b", phase, "(phase)?\\b"), labels, ignore.case = TRUE))) {
       phases_found <- c(phases_found, paste0(tools::toTitleCase(phase), "Phase"))
     }
   }
   if (length(phases_found) >= 2) {
     schemes$LifePhaseScheme <- list(
       scheme_name = "LifePhaseScheme",
-      scheme_definition = "Life phase facets for location/phase-stratified salmon measurements",
-      suggested_concepts = phases_found
+      scheme_definition = "Proposed life-phase facets for location/phase-stratified salmon measurements",
+      suggested_concepts = unique(phases_found)
     )
   }
 
-  # Check for benchmark patterns
-  benchmark_patterns <- c("lower.*benchmark", "upper.*benchmark", "bio.*benchmark", "wsp.*benchmark")
-  benchmarks_found <- character()
-  for (i in seq_along(benchmark_patterns)) {
-    if (any(grepl(benchmark_patterns[i], labels, ignore.case = TRUE))) {
-      names <- c("LowerBenchmark", "UpperBenchmark", "BioBenchmark", "WSPBenchmark")
-      benchmarks_found <- c(benchmarks_found, names[i])
-    }
+  # Check for benchmark level patterns (lower/upper).
+  # Prefer a generic facet scheme rather than CU-specific terms like CULowerBenchmark.
+  benchmark_levels <- character()
+  if (any(grepl("\\blowerbenchmark\\b|\\blower\\s+benchmark\\b", labels, ignore.case = TRUE))) {
+    benchmark_levels <- c(benchmark_levels, "LowerBenchmark")
   }
-  if (length(benchmarks_found) >= 2) {
-    schemes$BenchmarkTypeScheme <- list(
-      scheme_name = "BenchmarkTypeScheme",
-      scheme_definition = "Benchmark type facets for management reference points",
-      suggested_concepts = benchmarks_found
+  if (any(grepl("\\bupperbenchmark\\b|\\bupper\\s+benchmark\\b", labels, ignore.case = TRUE))) {
+    benchmark_levels <- c(benchmark_levels, "UpperBenchmark")
+  }
+  if (length(unique(benchmark_levels)) >= 2) {
+    schemes$BenchmarkLevelScheme <- list(
+      scheme_name = "BenchmarkLevelScheme",
+      scheme_definition = "Proposed benchmark-level facets (lower/upper) used to qualify benchmark values",
+      suggested_concepts = unique(benchmark_levels)
     )
   }
 
@@ -302,5 +309,5 @@ utils::globalVariables(c(
   "is_age_variant", "age_base_label", "is_phase_variant", "phase_base_label",
   "should_collapse_age", "should_collapse_phase", "is_base_term",
   "needs_age_facet", "needs_phase_facet", "collapsed_from", "dedup_notes",
-  "label_normalized"
+  "label_normalized", "label_pattern"
 ))
