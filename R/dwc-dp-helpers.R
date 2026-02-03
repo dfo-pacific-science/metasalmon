@@ -56,13 +56,13 @@ suggest_dwc_mappings <- function(dict, max_per_column = 3) {
       dplyr::slice_head(n = max_per_column) %>%
       dplyr::mutate(column_name = row$column_name) %>%
       dplyr::select(
-        .data$column_name,
-        .data$table_id,
-        .data$field_name,
-        .data$field_label,
-        .data$term_iri,
-        .data$match_score,
-        .data$match_basis
+        column_name,
+        table_id,
+        field_name,
+        field_label,
+        term_iri,
+        match_score,
+        match_basis
       )
 
     scored
