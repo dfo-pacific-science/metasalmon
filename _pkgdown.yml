@@ -53,6 +53,14 @@ reference:
       - suggest_semantics
       - find_terms
       - sources_for_role
+      - deduplicate_proposed_terms
+
+  - title: "Ontology + Validation"
+    desc: "Fetch the ontology and validate semantic coverage"
+    contents:
+      - fetch_salmon_ontology
+      - validate_semantics
+      - suggest_facet_schemes
 
   - title: "Darwin Core (DwC-DP)"
     desc: "Darwin Core Data Package mapping and export helpers"

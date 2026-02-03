@@ -37,8 +37,10 @@ authoritative format rules (CSV only).
 3.  **Extract**: Copy GPT’s suggested IRIs, descriptions, and codes into
     your dictionary.
 4.  **Validate**: Use
-    [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
-    to ensure everything is correct.
+    [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.html)
+    for structural checks and missing term_iri reporting (or
+    [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.html)
+    if you require full IRIs).
 5.  **Package**: Create your Salmon Data Package with enriched
     semantics.
 
@@ -98,7 +100,15 @@ If your GPT interface supports file uploads, consider uploading:
   the model draft issues in the expected format):  
   <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 
-### Step 2: Craft a GPT Prompt
+### Step 2: Fetch ontology (optional, cached)
+
+``` r
+
+onto_path <- fetch_salmon_ontology()
+onto_path
+```
+
+### Step 3: Craft a GPT Prompt
 
 Create a prompt that asks GPT to:
 

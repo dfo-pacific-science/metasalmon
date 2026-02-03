@@ -30,6 +30,19 @@ Semantic suggestion and vocabulary search capabilities
   : Find candidate terms across external vocabularies
 - [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
   : Get recommended sources for a given role
+- [`deduplicate_proposed_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
+  : Deduplicate proposed ontology terms
+
+## Ontology + Validation
+
+Fetch the ontology and validate semantic coverage
+
+- [`fetch_salmon_ontology()`](https://dfo-pacific-science.github.io/metasalmon/reference/fetch_salmon_ontology.md)
+  : Fetch the DFO Salmon Ontology with caching
+- [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+  : Validate semantics with graceful gap reporting
+- [`suggest_facet_schemes()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.md)
+  : Suggest facet schemes for proposed terms
 
 ## Darwin Core (DwC-DP)
 
