@@ -1,0 +1,9 @@
+AGENTS.md
+CLAUDE.md
+docs/adr/0001.md
+docs/plans/
+docs/entrypoints.md
+docs/tech-debt.md
+docs/todo-list.md
+.cursorignore
+.cursor/

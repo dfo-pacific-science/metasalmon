@@ -453,8 +453,8 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
         tolower(dplyr::if_else(is.na(.data$confidence) | .data$confidence == "", "unknown", .data$confidence))
       )
     ) %>%
-    dplyr::select(.data$iri, .data$match_type, .data$zooma_confidence, .data$zooma_annotator) %>%
-    dplyr::group_by(.data$iri) %>%
+    dplyr::select(iri, match_type, zooma_confidence, zooma_annotator) %>%
+    dplyr::group_by(iri) %>%
     dplyr::summarise(
       match_type = .data$match_type[[1]],
       zooma_confidence = .data$zooma_confidence[[1]],

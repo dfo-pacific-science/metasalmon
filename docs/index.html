@@ -174,6 +174,19 @@ concept schemes) while preserving your original data structure.
 <span>  path <span class="op">=</span> <span class="st">"my-data-package"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><strong>Result</strong>: A folder containing your data + documentation that anyone can understand.</p>
+<div class="section level3">
+<h3 id="semantic-validation-loop-new">Semantic validation loop (new)<a class="anchor" aria-label="anchor" href="#semantic-validation-loop-new"></a>
+</h3>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Fetch the latest DFO Salmon Ontology (content-negotiated, cached locally)</span></span>
+<span><span class="va">onto_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Run semantic validation and surface missing IRIs early</span></span>
+<span><span class="fu"><a href="reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># If GPT proposed many new terms, deduplicate before filing issues</span></span>
+<span><span class="va">deduped</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms</a></span><span class="op">(</span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="st">"gpt_proposed_terms.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
@@ -220,7 +233,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -262,6 +275,7 @@ concept schemes) while preserving your original data structure.
 </ul>
 </li>
 <li>Per-source diagnostics, scoring, and optional rerank explain why <code><a href="reference/find_terms.html">find_terms()</a></code> matches rank where they do and expose failures, so you can tune role-aware queries with confidence.</li>
+<li>End-to-end semantic QA loop with <code><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology()</a></code> + <code><a href="reference/validate_semantics.html">validate_semantics()</a></code>, plus <code><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms()</a></code> to prevent term proliferation before opening ontology issues.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -338,7 +352,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -346,7 +360,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>

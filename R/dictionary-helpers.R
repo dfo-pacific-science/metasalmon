@@ -218,7 +218,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   # Check for duplicate column names within same table
   dupes <- dict %>%
-    dplyr::group_by(.data$dataset_id, .data$table_id, .data$column_name) %>%
+    dplyr::group_by(dataset_id, table_id, column_name) %>%
     dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
     dplyr::filter(.data$n > 1)
 

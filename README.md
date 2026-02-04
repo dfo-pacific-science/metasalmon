@@ -80,6 +80,19 @@ create_salmon_datapackage(
 
 **Result**: A folder containing your data + documentation that anyone can understand.
 
+### Semantic validation loop (new)
+
+```r
+# Fetch the latest DFO Salmon Ontology (content-negotiated, cached locally)
+onto_path <- fetch_salmon_ontology()
+
+# Run semantic validation and surface missing IRIs early
+validate_semantics(dict)
+
+# If GPT proposed many new terms, deduplicate before filing issues
+deduped <- deduplicate_proposed_terms(readr::read_csv("gpt_proposed_terms.csv"))
+```
+
 ## Who Is This For?
 
 | If you are...                           | Start here                                                                 |
@@ -140,6 +153,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
   - Properties: STATO/OBA measurement ontologies
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why `find_terms()` matches rank where they do and expose failures, so you can tune role-aware queries with confidence.
+- End-to-end semantic QA loop with `fetch_salmon_ontology()` + `validate_semantics()`, plus `deduplicate_proposed_terms()` to prevent term proliferation before opening ontology issues.
 
 ## Getting Help
 
