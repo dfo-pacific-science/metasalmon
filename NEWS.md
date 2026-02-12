@@ -1,3 +1,26 @@
+metasalmon 0.0.7 (dev)
+----------------------
+
+### Ontology validation (hive-brain #18)
+
+- Added `parse_ontology_terms()` to extract term IRIs, labels, definitions, and
+  types from a Turtle (.ttl) file using lightweight regex parsing (no RDF library
+  required). Resolves `gcdfo:` and `:` prefixed local names via `@prefix`
+  declarations.
+- Added `validate_ontology_terms()` to check that IRI fields in a data
+ dictionary reference valid terms from the DFO Salmon Ontology. Produces a
+  structured validation report (`ms_validation_report`) with pass/warn/fail
+  status per IRI:
+  - **pass** — IRI found in ontology or uses an external namespace.
+  - **warn** — Empty IRI on a measurement column.
+  - **fail** — `gcdfo:` namespace IRI not present in the ontology (typo or
+    stale reference).
+- Added `print.ms_validation_report()` for CLI-formatted report output with
+  colour-coded status icons.
+- New tests in `test-ontology-validation.R` covering TTL parsing, valid/invalid
+  IRI detection, WSP-style mapping dictionaries, and a full fetch + parse +
+  validate integration test.
+
 metasalmon 0.0.6
 ----------------
 
