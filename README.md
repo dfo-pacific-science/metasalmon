@@ -40,8 +40,9 @@ Then use it to create a data package:
 ```r
 library(metasalmon)
 
-# Load your escapement data
-df <- read.csv("my-coho-data.csv")
+# Load the example NuSEDS Fraser Coho data included in metasalmon
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+df <- read.csv(data_path)
 
 # Generate a data dictionary automatically
 dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")

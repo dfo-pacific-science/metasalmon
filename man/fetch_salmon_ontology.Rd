@@ -18,6 +18,8 @@ fetch_salmon_ontology(
 \item{accept}{Accept header; defaults to turtle with RDF/XML fallback.}
 
 \item{cache_dir}{Directory to store cached ontology and headers.}
+
+\item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url} fails.}
 }
 \value{
 Path to the cached ontology file (character string).

@@ -6,6 +6,7 @@
 #' @param url Ontology URL. Default is the published TTL on GitHub Pages.
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
 #' @param cache_dir Directory to store cached ontology and headers.
+#' @param fallback_urls Optional fallback ontology URLs tried if the primary `url` fails.
 #' @return Path to the cached ontology file (character string).
 #' @export
 fetch_salmon_ontology <- function(
