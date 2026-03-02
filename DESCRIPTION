@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Metasalmon: Salmon Data Utilities
-Version: 0.0.6
+Version: 0.0.7
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Description: Scaffolding for salmon data utilities. Functions and data
     will be added incrementally to standardize, validate, transform, summarize, and
@@ -11,7 +11,7 @@ URL: https://dfo-pacific-science.github.io/metasalmon/
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-Depends: R (>= 4.4.0)
+Depends: R (>= 4.1.0)
 Imports:
     tibble,
     readr,
