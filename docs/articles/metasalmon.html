@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -276,7 +276,14 @@ whole - who created it, what it contains, and how others can use it.</p>
 <span>  license <span class="op">=</span> <span class="st">"Open Government License - Canada"</span>,</span>
 <span>  temporal_start <span class="op">=</span> <span class="st">"2001"</span>,</span>
 <span>  temporal_end <span class="op">=</span> <span class="st">"2024"</span>,</span>
-<span>  spatial_extent <span class="op">=</span> <span class="st">"PFMA 29, Fraser River watershed"</span></span>
+<span>  spatial_extent <span class="op">=</span> <span class="st">"PFMA 29, Fraser River watershed"</span>,</span>
+<span>  <span class="co"># Optional but useful for EDH/GeoNetwork-ready export</span></span>
+<span>  contact_org <span class="op">=</span> <span class="st">"Fisheries and Oceans Canada - Pacific Region Science Branch"</span>,</span>
+<span>  contact_position <span class="op">=</span> <span class="st">"Fishery and Assessment Data Section"</span>,</span>
+<span>  update_frequency <span class="op">=</span> <span class="st">"annually"</span>,</span>
+<span>  topic_categories <span class="op">=</span> <span class="st">"biota;oceans"</span>,</span>
+<span>  keywords <span class="op">=</span> <span class="st">"coho;escapement;Fraser River"</span>,</span>
+<span>  security_classification <span class="op">=</span> <span class="st">"unclassified"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Table-level metadata (describes this specific table)</span></span>
@@ -290,6 +297,10 @@ whole - who created it, what it contains, and how others can use it.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p><strong>What these fields mean</strong>:</p>
 <table class="table">
+<colgroup>
+<col width="43%">
+<col width="56%">
+</colgroup>
 <thead><tr class="header">
 <th>Field</th>
 <th>Purpose</th>
@@ -320,10 +331,19 @@ whole - who created it, what it contains, and how others can use it.</p>
 <td>How others can use the data</td>
 </tr>
 <tr class="odd">
+<td>
+<code>contact_org</code>, <code>contact_position</code>,
+<code>update_frequency</code>, <code>topic_categories</code>,
+<code>keywords</code>, <code>security_classification</code>
+</td>
+<td>Optional discovery/governance fields (recommended for EDH-ready
+export)</td>
+</tr>
+<tr class="even">
 <td><code>table_id</code></td>
 <td>Identifier for this table (matches <code>dict</code>)</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>file_name</code></td>
 <td>What to name the output CSV file</td>
 </tr>
@@ -380,6 +400,21 @@ whole - who created it, what it contains, and how others can use it.</p>
 <hr>
 </div>
 <div class="section level2">
+<h2 id="step-5b-optional-export-starter-edh-xml-metadata">Step 5b (Optional): Export starter EDH XML metadata<a class="anchor" aria-label="anchor" href="#step-5b-optional-export-starter-edh-xml-metadata"></a>
+</h2>
+<p>If your workflow includes DFO Enterprise Data Hub / GeoNetwork
+upload, you can export a starter ISO 19139 XML metadata file from
+<code>dataset_meta</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">edh_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_xml_path</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_xml_path</span><span class="op">)</span></span></code></pre></div>
+<p>This XML is intended as a starter export. Validate and enrich it
+against your local EDH profile before production upload.</p>
+<hr>
+</div>
+<div class="section level2">
 <h2 id="step-6-share-it">Step 6: Share It!<a class="anchor" aria-label="anchor" href="#step-6-share-it"></a>
 </h2>
 <p>Your data package is ready. You can:</p>
@@ -402,7 +437,7 @@ complete documentation explaining what every column means.</p>
 <h2 id="reading-a-package-back">Reading a Package Back<a class="anchor" aria-label="anchor" href="#reading-a-package-back"></a>
 </h2>
 <p>Later, you (or a colleague) can load the package back into R:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Read the package</span></span>
 <span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span></span>
@@ -456,7 +491,7 @@ troubleshooting</li>
 </h3>
 <p>This usually means a column type was guessed incorrectly. Check the
 error message and fix:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># See what types are valid</span></span>
 <span><span class="co"># string, integer, number, boolean, date, datetime</span></span>
 <span></span>
@@ -480,7 +515,7 @@ definitions of terms like “column_role”, “value_type”, etc.</p>
 <h3 id="i-want-to-add-better-descriptions">“I want to add better descriptions”<a class="anchor" aria-label="anchor" href="#i-want-to-add-better-descriptions"></a>
 </h3>
 <p>Edit the dictionary directly before creating the package:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># View and edit in RStudio</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>

@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Metasalmon: Salmon Data Utilities
-Version: 0.0.8
+Version: 0.0.9
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Description: Scaffolding for salmon data utilities. Functions and data
     will be added incrementally to standardize, validate, transform, summarize, and
@@ -24,7 +24,8 @@ Imports:
     gh,
     httr2,
     gitcreds,
-    usethis
+    usethis,
+    xml2
 Suggests:
     testthat (>= 3.2.1),
     knitr,

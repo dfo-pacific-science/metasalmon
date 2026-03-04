@@ -74,6 +74,11 @@ reference:
       - suggest_dwc_mappings
       - dwc_dp_build_descriptor
 
+  - title: "Enterprise Data Hub (EDH)"
+    desc: "Starter ISO 19139 XML export helper for EDH/GeoNetwork workflows"
+    contents:
+      - edh_build_iso19139_xml
+
   - title: "GitHub Access"
     desc: "Authenticate once and read CSVs from private GitHub repositories"
     contents:

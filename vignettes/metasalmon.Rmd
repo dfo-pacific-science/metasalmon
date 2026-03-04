@@ -177,7 +177,14 @@ dataset_meta <- tibble::tibble(
   license = "Open Government License - Canada",
   temporal_start = "2001",
   temporal_end = "2024",
-  spatial_extent = "PFMA 29, Fraser River watershed"
+  spatial_extent = "PFMA 29, Fraser River watershed",
+  # Optional but useful for EDH/GeoNetwork-ready export
+  contact_org = "Fisheries and Oceans Canada - Pacific Region Science Branch",
+  contact_position = "Fishery and Assessment Data Section",
+  update_frequency = "annually",
+  topic_categories = "biota;oceans",
+  keywords = "coho;escapement;Fraser River",
+  security_classification = "unclassified"
 )
 
 # Table-level metadata (describes this specific table)
@@ -201,6 +208,7 @@ table_meta <- tibble::tibble(
 | `creator` | Who created/collected the data |
 | `contact_name/email` | Who to contact with questions |
 | `license` | How others can use the data |
+| `contact_org`, `contact_position`, `update_frequency`, `topic_categories`, `keywords`, `security_classification` | Optional discovery/governance fields (recommended for EDH-ready export) |
 | `table_id` | Identifier for this table (matches `dict`) |
 | `file_name` | What to name the output CSV file |
 
@@ -233,6 +241,23 @@ list.files(pkg_path)
 | `datapackage.json` | Machine-readable metadata |
 | `dataset.csv` | Dataset-level information |
 | `tables.csv` | Table-level information |
+
+---
+
+## Step 5b (Optional): Export starter EDH XML metadata
+
+If your workflow includes DFO Enterprise Data Hub / GeoNetwork upload, you can
+export a starter ISO 19139 XML metadata file from `dataset_meta`.
+
+```{r}
+edh_xml_path <- file.path(pkg_path, "metadata-iso19139.xml")
+edh_build_iso19139_xml(dataset_meta, output_path = edh_xml_path)
+
+file.exists(edh_xml_path)
+```
+
+This XML is intended as a starter export. Validate and enrich it against your
+local EDH profile before production upload.
 
 ---
 

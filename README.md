@@ -58,7 +58,14 @@ dataset_meta <- tibble::tibble(
   creator = "Your Name",
   contact_name = "Your Name",
   contact_email = "your.email@dfo-mpo.gc.ca",
-  license = "Open Government License - Canada"
+  license = "Open Government License - Canada",
+  # Optional but useful for EDH/GeoNetwork-ready export:
+  contact_org = "Fisheries and Oceans Canada - Pacific Region Science Branch",
+  contact_position = "Fishery and Assessment Data Section",
+  update_frequency = "annually",
+  topic_categories = "biota;oceans",
+  keywords = "coho;escapement;Fraser River",
+  security_classification = "unclassified"
 )
 
 table_meta <- tibble::tibble(
@@ -76,6 +83,12 @@ create_salmon_datapackage(
   table_meta = table_meta,
   dict = dict,
   path = "my-data-package"
+)
+
+# Optional: generate starter ISO 19139 XML for EDH/GeoNetwork upload workflows
+edh_build_iso19139_xml(
+  dataset_meta,
+  output_path = "my-data-package/metadata-iso19139.xml"
 )
 ```
 
@@ -148,6 +161,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Use AI assistance to help write descriptions
 - Suggest Darwin Core Data Package table/field mappings for biodiversity data
 - Opt in to DwC-DP export hints via `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon Data Package as the canonical deliverable.
+- Generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub upload workflows via `edh_build_iso19139_xml()`.
 - Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
   - Units: QUDT preferred, then NVS P06
   - Entities/taxa: GBIF and WoRMS taxon resolvers

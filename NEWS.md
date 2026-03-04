@@ -1,3 +1,13 @@
+metasalmon 0.0.9
+----------------
+
+- Added `edh_build_iso19139_xml()` to generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub / GeoNetwork upload workflows.
+- Added tests and reference documentation for the EDH XML export helper.
+- Updated dataset metadata examples/templates to better support EDH workflows:
+  - Expanded `inst/extdata/dataset.csv` with `contact_org`, `contact_position`, `update_frequency`, `topic_categories`, `keywords`, and `security_classification`.
+  - Updated `inst/extdata/custom-gpt-prompt.md` to distinguish controlled `topic_categories` from free-text `keywords` and to note XML export support.
+  - Refreshed README and vignette examples to include EDH-ready optional metadata and XML export guidance.
+
 metasalmon 0.0.8
 ----------------
 

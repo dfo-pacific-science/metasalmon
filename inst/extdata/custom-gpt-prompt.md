@@ -48,10 +48,14 @@ Codes and code systems:
 Dataset metadata:
 
 - `dataset.csv` required fields are: `dataset_id`, `title`, `description`, `creator`, `contact_name`, `contact_email`, `license`.
+- Optional fields that are useful for EDH/GeoNetwork-ready export are: `contact_org`, `contact_position`, `update_frequency`, `topic_categories`, `keywords`, `security_classification`.
+- Keep `topic_categories` (controlled classification like `biota;oceans`) distinct from `keywords` (free-text discovery terms).
 - Minimum questions checklist (ask only if missing):
   - What should `dataset_id` be (DOI preferred; otherwise a stable local id)?
   - What is the `license` string or URL?
   - Who is the `contact_name` and `contact_email`?
+  - If EDH export is expected: what are `update_frequency`, `topic_categories`, and `security_classification`?
+- For XML delivery workflows, note that `edh_build_iso19139_xml()` can generate a starter ISO 19139 file from `dataset.csv` metadata.
 
 ## Output requirements
 

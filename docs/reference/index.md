@@ -62,6 +62,13 @@ Darwin Core Data Package mapping and export helpers
 - [`dwc_dp_build_descriptor()`](https://dfo-pacific-science.github.io/metasalmon/reference/dwc_dp_build_descriptor.md)
   : Build a DwC-DP datapackage descriptor (export helper)
 
+## Enterprise Data Hub (EDH)
+
+Starter ISO 19139 XML export helper for EDH/GeoNetwork workflows
+
+- [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  : Build ISO 19139 metadata XML for DFO Enterprise Data Hub export
+
 ## GitHub Access
 
 Authenticate once and read CSVs from private GitHub repositories

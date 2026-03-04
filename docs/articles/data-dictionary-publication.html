@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -193,12 +193,25 @@ to keep SDP canonical.</p>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">column_name</span>, <span class="va">dwc_table</span>, <span class="va">dwc_field</span>, <span class="va">term_iri</span><span class="op">)</span></span></code></pre></div>
 <p>Keep the SDP column names intact; use the DwC mappings only when
 exporting a DwC-DP view.</p>
+</div>
+<div class="section level3">
+<h3 id="optional-export-starter-edh-xml-metadata">Optional: export starter EDH XML metadata<a class="anchor" aria-label="anchor" href="#optional-export-starter-edh-xml-metadata"></a>
+</h3>
+<p>When your publication workflow includes DFO Enterprise Data Hub /
+GeoNetwork, you can generate a starter ISO 19139 XML metadata file from
+<code>dataset_meta</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">edh_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_xml</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_xml</span><span class="op">)</span></span></code></pre></div>
+<p>Validate and enrich the XML against your local EDH profile before
+production upload.</p>
 <div class="section level4">
 <h4 id="using-suggest_dwc_mappings-directly">Using suggest_dwc_mappings() directly<a class="anchor" aria-label="anchor" href="#using-suggest_dwc_mappings-directly"></a>
 </h4>
 <p>For more control over DwC-DP mapping suggestions, use
 <code><a href="../reference/suggest_dwc_mappings.html">suggest_dwc_mappings()</a></code>:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span> column_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"event_date"</span>, <span class="st">"decimal_latitude"</span>, <span class="st">"scientific_name"</span><span class="op">)</span>,</span>
 <span> column_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Event Date"</span>, <span class="st">"Decimal Latitude"</span>, <span class="st">"Scientific Name"</span><span class="op">)</span>,</span>
@@ -214,7 +227,7 @@ exporting a DwC-DP view.</p>
 </h3>
 <p>When using <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, the function
 automatically queries role-appropriate sources:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: ontology suggestions only (DwC mappings OFF)</span></span>
 <span><span class="va">sem</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>

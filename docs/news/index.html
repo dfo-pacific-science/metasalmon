@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,16 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.9" id="metasalmon-009">metasalmon 0.0.9<a class="anchor" aria-label="anchor" href="#metasalmon-009"></a></h2>
+<ul><li>Added <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> to generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub / GeoNetwork upload workflows.</li>
+<li>Added tests and reference documentation for the EDH XML export helper.</li>
+<li>Updated dataset metadata examples/templates to better support EDH workflows:
+<ul><li>Expanded <code>inst/extdata/dataset.csv</code> with <code>contact_org</code>, <code>contact_position</code>, <code>update_frequency</code>, <code>topic_categories</code>, <code>keywords</code>, and <code>security_classification</code>.</li>
+<li>Updated <code>inst/extdata/custom-gpt-prompt.md</code> to distinguish controlled <code>topic_categories</code> from free-text <code>keywords</code> and to note XML export support.</li>
+<li>Refreshed README and vignette examples to include EDH-ready optional metadata and XML export guidance.</li>
+</ul></li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.8" id="metasalmon-008">metasalmon 0.0.8<a class="anchor" aria-label="anchor" href="#metasalmon-008"></a></h2>
 <ul><li>Added and documented NuSEDS method crosswalk helpers:

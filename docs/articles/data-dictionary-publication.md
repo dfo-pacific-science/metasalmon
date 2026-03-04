@@ -130,6 +130,22 @@ attr(sem, "dwc_mappings") |>
 Keep the SDP column names intact; use the DwC mappings only when
 exporting a DwC-DP view.
 
+### Optional: export starter EDH XML metadata
+
+When your publication workflow includes DFO Enterprise Data Hub /
+GeoNetwork, you can generate a starter ISO 19139 XML metadata file from
+`dataset_meta`.
+
+``` r
+
+edh_xml <- file.path(pkg_path, "metadata-iso19139.xml")
+edh_build_iso19139_xml(dataset_meta, output_path = edh_xml)
+file.exists(edh_xml)
+```
+
+Validate and enrich the XML against your local EDH profile before
+production upload.
+
 #### Using suggest_dwc_mappings() directly
 
 For more control over DwC-DP mapping suggestions, use
