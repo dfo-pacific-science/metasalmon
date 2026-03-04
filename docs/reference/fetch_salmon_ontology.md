@@ -29,6 +29,10 @@ fetch_salmon_ontology(
 
   Directory to store cached ontology and headers.
 
+- fallback_urls:
+
+  Optional fallback ontology URLs tried if the primary `url` fails.
+
 ## Value
 
 Path to the cached ontology file (character string).

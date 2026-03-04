@@ -55,8 +55,9 @@ Then use it to create a data package:
 
 library(metasalmon)
 
-# Load your escapement data
-df <- read.csv("my-coho-data.csv")
+# Load the example NuSEDS Fraser Coho data included in metasalmon
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+df <- read.csv(data_path)
 
 # Generate a data dictionary automatically
 dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")
@@ -187,6 +188,11 @@ future self - can immediately understand your data.
   plus
   [`deduplicate_proposed_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
   to prevent term proliferation before opening ontology issues.
+- NuSEDS method crosswalk helpers:
+  [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  and
+  [`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+  for mapping legacy values to canonical method families.
 
 ## Getting Help
 

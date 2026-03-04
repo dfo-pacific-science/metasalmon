@@ -1,7 +1,7 @@
 # Suggest facet schemes for proposed terms
 
 Analyzes a proposed terms dataframe and suggests which facet schemes
-(AgeClassScheme, LifePhaseScheme, etc.) should be created instead of
+(age class, life phase, etc.) should be created instead of proliferating
 individual terms.
 
 ## Usage

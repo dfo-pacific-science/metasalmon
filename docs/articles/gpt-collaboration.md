@@ -97,7 +97,7 @@ If your GPT interface supports file uploads, consider uploading:
 - Any methods / codebook documents that define how fields were collected
   and what values mean
 - The ontology repository’s term request template (optional, but helps
-  the model draft issues in the expected format):  
+  the model draft issues in the expected format):\
   <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 
 ### Step 2: Fetch ontology (optional, cached)
@@ -394,7 +394,7 @@ When a specific term isn’t available:
     type”).
 - Include `definition_source_url` and `notes` when available.
 - Draft a GitHub issue for the ontology repository using the new-term
-  template:  
+  template:\
   <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 - Periodically refresh the ontology file in your Custom GPT so
   suggestions are based on the latest terms.

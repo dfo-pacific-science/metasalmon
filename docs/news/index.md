@@ -1,5 +1,14 @@
 # Changelog
 
+## metasalmon 0.0.8
+
+- Added and documented NuSEDS method crosswalk helpers:
+  - [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  - [`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+- Added reference documentation pages for both crosswalk helpers.
+- Refreshed README feature list to include the new NuSEDS crosswalk
+  utilities.
+
 ## metasalmon 0.0.6
 
 - Added

@@ -44,6 +44,15 @@ Fetch the ontology and validate semantic coverage
 - [`suggest_facet_schemes()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.md)
   : Suggest facet schemes for proposed terms
 
+## NuSEDS Helpers
+
+Crosswalk legacy NuSEDS method labels to canonical method families
+
+- [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  : NuSEDS enumeration method crosswalk
+- [`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+  : NuSEDS estimate method crosswalk
+
 ## Darwin Core (DwC-DP)
 
 Darwin Core Data Package mapping and export helpers

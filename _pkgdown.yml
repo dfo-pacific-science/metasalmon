@@ -62,6 +62,12 @@ reference:
       - validate_semantics
       - suggest_facet_schemes
 
+  - title: "NuSEDS Helpers"
+    desc: "Crosswalk legacy NuSEDS method labels to canonical method families"
+    contents:
+      - nuseds_enumeration_method_crosswalk
+      - nuseds_estimate_method_crosswalk
+
   - title: "Darwin Core (DwC-DP)"
     desc: "Darwin Core Data Package mapping and export helpers"
     contents:

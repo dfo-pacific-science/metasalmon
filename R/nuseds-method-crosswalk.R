@@ -108,7 +108,7 @@ nuseds_enumeration_method_crosswalk <- function() {
     check.names = FALSE
   )
 
-  data[order(data$method_family, data$nuseds_value), ]
+  tibble::as_tibble(data[order(data$method_family, data$nuseds_value), ])
 }
 
 
@@ -257,5 +257,5 @@ nuseds_estimate_method_crosswalk <- function() {
     check.names = FALSE
   )
 
-  data[order(data$method_family, data$nuseds_value), ]
+  tibble::as_tibble(data[order(data$method_family, data$nuseds_value), ])
 }
