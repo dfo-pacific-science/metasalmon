@@ -1,5 +1,32 @@
 # Changelog
 
+## metasalmon 0.0.13
+
+- Made
+  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  default to the richer North American Profile / HNAP-aware EDH export
+  while keeping `profile = "iso19139"` available as an explicit
+  fallback.
+- Expanded EDH export support for bilingual locale scaffolding,
+  deterministic identifiers, legal constraints, maintenance/status,
+  reference systems, bounding boxes, and distribution metadata, with
+  regression coverage against the confirmed EDH sample shape.
+- Added
+  [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+  for explicit opt-in merges of
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  results into dictionaries.
+- Restored canonical Salmon Data Package CSVs (`dataset.csv`,
+  `tables.csv`, `column_dictionary.csv`, optional `codes.csv`) as the
+  source of truth in
+  [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md),
+  treating `datapackage.json` as derived/interoperability metadata.
+- Refreshed README, vignettes, pkgdown reference metadata, and GPT
+  collaboration guidance to match the EDH default/export semantics and
+  explicit dictionary-application workflow.
+- Rebuilt package documentation, tests, source tarball, and pkgdown site
+  for the 0.0.13 release.
+
 ## metasalmon 0.0.12
 
 - Added a GCDFO-backed

@@ -1,8 +1,10 @@
 # Create a Salmon Data Package
 
-Assembles a Frictionless Data Package with salmon-specific semantic
-fields (IRIs, concept schemes, etc.) and writes resources plus
-`datapackage.json` to disk.
+Writes the canonical Salmon Data Package (SDP) CSV metadata files
+(`dataset.csv`, `tables.csv`, `column_dictionary.csv`, and optional
+`codes.csv`) plus the data resource files themselves. For
+interoperability with Frictionless-style tooling, the function also
+emits a derived `datapackage.json` descriptor.
 
 ## Usage
 
@@ -56,6 +58,11 @@ create_salmon_datapackage(
 ## Value
 
 Invisibly returns the path to the created package
+
+## Details
+
+The SDP CSV files remain the canonical package metadata.
+`datapackage.json` is a convenience export, not the source of truth.
 
 ## Examples
 

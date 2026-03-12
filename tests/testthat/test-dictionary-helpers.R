@@ -118,9 +118,11 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
   expect_equal(nrow(suggestions), 6) # variable/property/entity/unit/constraint/method
-  expect_true(all(c("dictionary_role", "column_name") %in% names(suggestions)))
+  expect_true(all(c("dataset_id", "table_id", "dictionary_role", "column_name") %in% names(suggestions)))
   expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
   expect_true(all(suggestions$column_name == "value"))
+  expect_true(all(suggestions$dataset_id == "d1"))
+  expect_true(all(suggestions$table_id == "t1"))
 
   res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
   dwc_map <- attr(res_dwc, "dwc_mappings")
@@ -162,6 +164,160 @@ test_that("suggest_semantics uses role-specific hints when available", {
   suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   unit_queries <- purrr::map_chr(queries, "query")
   expect_true(any(unit_queries == "fish"))
+})
+
+test_that("apply_semantic_suggestions matches by column_name and dictionary_role", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("count_a", "count_b"),
+    column_label = c("Count A", "Count B"),
+    column_description = c("Spawner count A", "Spawner count B"),
+    column_role = c("measurement", "measurement"),
+    value_type = c("number", "number"),
+    unit_label = c(NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    term_type = c(NA_character_, NA_character_),
+    required = c(FALSE, FALSE),
+    property_iri = c(NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_)
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("count_b", "count_a", "count_b", "count_a"),
+    dictionary_role = c("variable", "variable", "property", "property"),
+    iri = c(
+      "https://example.org/variable-b",
+      "https://example.org/variable-a",
+      "https://example.org/property-b",
+      "https://example.org/property-a"
+    ),
+    score = c(10, 9, 8, 7)
+  )
+
+  out <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
+
+  expect_equal(out$term_iri[out$column_name == "count_a"], "https://example.org/variable-a")
+  expect_equal(out$term_iri[out$column_name == "count_b"], "https://example.org/variable-b")
+  expect_equal(out$property_iri[out$column_name == "count_a"], "https://example.org/property-a")
+  expect_equal(out$property_iri[out$column_name == "count_b"], "https://example.org/property-b")
+})
+
+test_that("apply_semantic_suggestions fills only missing fields unless overwrite is TRUE", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Spawner count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = "https://example.org/existing-term",
+    term_type = NA_character_,
+    required = FALSE,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("count", "count"),
+    dictionary_role = c("variable", "property"),
+    iri = c("https://example.org/new-term", "https://example.org/property"),
+    score = c(10, 9)
+  )
+
+  out_safe <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
+  expect_equal(out_safe$term_iri, "https://example.org/existing-term")
+  expect_equal(out_safe$property_iri, "https://example.org/property")
+
+  out_overwrite <- apply_semantic_suggestions(dict, suggestions = suggestions, overwrite = TRUE, verbose = FALSE)
+  expect_equal(out_overwrite$term_iri, "https://example.org/new-term")
+  expect_equal(out_overwrite$property_iri, "https://example.org/property")
+})
+
+test_that("apply_semantic_suggestions can filter by score when available", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Spawner count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_,
+    required = FALSE,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("count", "count"),
+    dictionary_role = c("variable", "property"),
+    iri = c("https://example.org/term", "https://example.org/property"),
+    score = c(0.4, 0.9)
+  )
+
+  out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    min_score = 0.5,
+    verbose = FALSE
+  )
+
+  expect_true(is.na(out$term_iri))
+  expect_equal(out$property_iri, "https://example.org/property")
+})
+
+test_that("apply_semantic_suggestions errors when min_score is requested without score", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Spawner count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_,
+    required = FALSE,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    dictionary_role = "variable",
+    iri = "https://example.org/term"
+  )
+
+  expect_error(
+    apply_semantic_suggestions(dict, suggestions = suggestions, min_score = 0.5, verbose = FALSE),
+    "min_score"
+  )
 })
 
 test_that("validate_dictionary passes valid dictionary", {

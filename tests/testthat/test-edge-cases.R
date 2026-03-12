@@ -468,12 +468,12 @@ test_that("read_salmon_datapackage handles non-existent path", {
   )
 })
 
-test_that("read_salmon_datapackage handles path without datapackage.json", {
+test_that("read_salmon_datapackage errors when no package metadata exists", {
   temp_dir <- withr::local_tempdir()
 
   expect_error(
     read_salmon_datapackage(temp_dir),
-    "datapackage.json not found"
+    "No Salmon Data Package metadata found"
   )
 })
 

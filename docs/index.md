@@ -64,7 +64,7 @@ df <- readr::read_csv(data_path, show_col_types = FALSE)
 dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")
 validate_dictionary(dict)
 
-# Optional: attach semantic suggestions (no auto-commit to IRIs)
+# Optional: attach semantic suggestions (still no auto-commit to IRIs)
 dict <- infer_dictionary(
   df,
   dataset_id = "fraser-coho-2024",
@@ -73,6 +73,10 @@ dict <- infer_dictionary(
   seed_verbose = TRUE
 )
 attr(dict, "semantic_suggestions") |> head()
+
+# If the top-ranked suggestions look right, explicitly apply them.
+# By default this fills only missing fields and leaves existing IRIs alone.
+dict <- apply_semantic_suggestions(dict, columns = "NATURAL_SPAWNER_COUNT")
 ```
 
 To continue:
@@ -143,9 +147,10 @@ future self - can immediately understand your data.
 - Opt in to DwC-DP export hints via
   `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon
   Data Package as the canonical deliverable.
-- Generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub
+- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub
   upload workflows via
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md).
+  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  (with legacy ISO 19139 fallback still available).
 - Role-aware vocabulary search with
   [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
   and

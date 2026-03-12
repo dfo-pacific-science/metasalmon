@@ -54,6 +54,9 @@ test_that("create_salmon_datapackage creates valid package", {
   )
 
   expect_true(dir.exists(pkg_path))
+  expect_true(file.exists(file.path(pkg_path, "dataset.csv")))
+  expect_true(file.exists(file.path(pkg_path, "tables.csv")))
+  expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
   expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
   expect_true(file.exists(file.path(pkg_path, "main_table.csv")))
 })
@@ -127,6 +130,61 @@ test_that("read_salmon_datapackage reads package correctly", {
   expect_true("main_table" %in% names(pkg$resources))
   expect_equal(nrow(pkg$resources$main_table), 2)
   expect_equal(ncol(pkg$resources$main_table), 2)
+})
+
+test_that("read_salmon_datapackage prefers canonical CSV metadata when datapackage.json is absent", {
+  resources <- list(
+    main_table = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(100L, 200L)
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    title = "Test Dataset",
+    description = "A test dataset",
+    creator = "Test Author",
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = "MIT"
+  )
+
+  table_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    table_id = "main_table",
+    file_name = "main_table.csv",
+    table_label = "Main Table",
+    description = "Main data table"
+  )
+
+  dict <- infer_dictionary(
+    resources$main_table,
+    dataset_id = "test-1",
+    table_id = "main_table"
+  )
+  dict <- fill_measurement_components(dict)
+  validate_dictionary(dict)
+
+  temp_dir <- withr::local_tempdir()
+  create_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    format = "csv",
+    overwrite = TRUE
+  )
+
+  unlink(file.path(temp_dir, "datapackage.json"))
+
+  pkg <- read_salmon_datapackage(temp_dir)
+
+  expect_equal(pkg$dataset$dataset_id, "test-1")
+  expect_equal(pkg$tables$table_id, "main_table")
+  expect_equal(pkg$dictionary$column_name, c("species", "count"))
+  expect_true("main_table" %in% names(pkg$resources))
 })
 
 test_that("create_salmon_datapackage round-trip preserves data", {

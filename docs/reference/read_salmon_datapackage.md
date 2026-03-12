@@ -1,7 +1,10 @@
 # Read a Salmon Data Package
 
-Loads a Salmon Data Package from disk, reading `datapackage.json` and
-associated resource files, returning tibbles and metadata for analysis.
+Loads a Salmon Data Package from disk. When canonical SDP CSV metadata
+files are present, those are treated as the source of truth. If they are
+missing, the function falls back to reconstructing metadata from
+`datapackage.json` for backwards compatibility with older `metasalmon`
+outputs.
 
 ## Usage
 
@@ -13,7 +16,7 @@ read_salmon_datapackage(path)
 
 - path:
 
-  Character; path to directory containing `datapackage.json`
+  Character; path to directory containing Salmon Data Package files
 
 ## Value
 
@@ -23,7 +26,7 @@ A list with components:
 
 - `tables`: Table metadata tibble
 
-- `dictionary`: Dictionary tibble (reconstructed from schema)
+- `dictionary`: Dictionary tibble
 
 - `codes`: Codes tibble (if available)
 

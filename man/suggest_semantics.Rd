@@ -37,8 +37,10 @@ Can be replaced for testing or custom search strategies.}
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes columns: \code{column_name}, \code{dictionary_role} (which IRI field the
-suggestion is for), \code{label}, \code{iri}, \code{source}, \code{ontology}, and \code{definition}.
+includes \code{dataset_id}, \code{table_id}, \code{column_name}, \code{dictionary_role}
+(which dictionary field the suggestion targets), \code{label}, \code{iri}, \code{source},
+\code{ontology}, and \code{definition}. If the underlying search results include a
+\code{score} column, it is preserved for downstream filtering.
 }
 \description{
 Searches external vocabularies to suggest IRIs for measurement columns that
@@ -52,17 +54,18 @@ The function uses the column's label or description as the search query and
 returns suggestions as an attribute on the dictionary tibble. This allows
 you to review candidates before accepting them into your dictionary.
 
-Only columns with `column_role == "measurement"
-are processed, since I-ADOPT components are primarily relevant for
-measurement metadata. Columns with existing IRIs in a field are skipped
-for that field.
+Only columns with \code{column_role == "measurement"} are processed, since
+I-ADOPT components are primarily relevant for measurement metadata. Columns
+with existing IRIs in a field are skipped for that field.
 
 After calling this function, access suggestions with:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{suggestions <- attr(result, "semantic_suggestions")
 }\if{html}{\out{</div>}}
 
-Then manually review and copy desired IRIs into your dictionary.
+Suggestions stay separate by default. Review them first, then use
+\code{\link[=apply_semantic_suggestions]{apply_semantic_suggestions()}} for an explicit opt-in merge, or copy values
+manually when you need finer control.
 }
 \examples{
 \dontrun{
@@ -79,12 +82,14 @@ print(suggestions)
 # Filter suggestions for a specific column
 spawner_suggestions <- suggestions[suggestions$column_name == "SPAWNER_COUNT", ]
 
-# Accept a suggestion by copying the IRI into your dictionary
-dict$term_iri[dict$column_name == "SPAWNER_COUNT"] <- spawner_suggestions$iri[1]
+# Explicitly apply the top suggestion for one column without overwriting
+# any existing IRIs in the dictionary
+dict <- apply_semantic_suggestions(dict_with_suggestions, columns = "SPAWNER_COUNT")
 }
 }
 \seealso{
 \code{\link[=find_terms]{find_terms()}} for direct vocabulary searches, \code{\link[=infer_dictionary]{infer_dictionary()}}
-for creating starter dictionaries, \code{\link[=validate_dictionary]{validate_dictionary()}} for checking
-dictionary completeness.
+for creating starter dictionaries, \code{\link[=apply_semantic_suggestions]{apply_semantic_suggestions()}} for
+explicitly filling selected IRI fields, \code{\link[=validate_dictionary]{validate_dictionary()}} for
+checking dictionary completeness.
 }

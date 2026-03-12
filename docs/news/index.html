@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,15 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.13" id="metasalmon-0013">metasalmon 0.0.13<a class="anchor" aria-label="anchor" href="#metasalmon-0013"></a></h2>
+<ul><li>Made <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> default to the richer North American Profile / HNAP-aware EDH export while keeping <code>profile = "iso19139"</code> available as an explicit fallback.</li>
+<li>Expanded EDH export support for bilingual locale scaffolding, deterministic identifiers, legal constraints, maintenance/status, reference systems, bounding boxes, and distribution metadata, with regression coverage against the confirmed EDH sample shape.</li>
+<li>Added <code><a href="../reference/apply_semantic_suggestions.html">apply_semantic_suggestions()</a></code> for explicit opt-in merges of <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> results into dictionaries.</li>
+<li>Restored canonical Salmon Data Package CSVs (<code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, optional <code>codes.csv</code>) as the source of truth in <code><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage()</a></code>, treating <code>datapackage.json</code> as derived/interoperability metadata.</li>
+<li>Refreshed README, vignettes, pkgdown reference metadata, and GPT collaboration guidance to match the EDH default/export semantics and explicit dictionary-application workflow.</li>
+<li>Rebuilt package documentation, tests, source tarball, and pkgdown site for the 0.0.13 release.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.12" id="metasalmon-0012">metasalmon 0.0.12<a class="anchor" aria-label="anchor" href="#metasalmon-0012"></a></h2>
 <ul><li>Added a GCDFO-backed <code><a href="../reference/find_terms.html">find_terms()</a></code> search backend that queries the DFO Salmon Ontology first via content negotiation against <code>https://w3id.org/gcdfo/salmon</code>.</li>

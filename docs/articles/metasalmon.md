@@ -260,22 +260,40 @@ list.files(pkg_path)
 
 ------------------------------------------------------------------------
 
-## Step 5b (Optional): Export starter EDH XML metadata
+## Step 5b (Optional): Export EDH XML metadata
 
 If your workflow includes DFO Enterprise Data Hub / GeoNetwork upload,
-you can export a starter ISO 19139 XML metadata file from
-`dataset_meta`.
+the default
+[`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+path now writes the richer HNAP-aware EDH XML export from
+`dataset_meta`. The older compact ISO 19139 shape is still available as
+an explicit fallback.
 
 ``` r
 
-edh_xml_path <- file.path(pkg_path, "metadata-iso19139.xml")
-edh_build_iso19139_xml(dataset_meta, output_path = edh_xml_path)
+edh_hnap_xml_path <- file.path(pkg_path, "metadata-edh-hnap.xml")
+edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml_path)
 
-file.exists(edh_xml_path)
+edh_iso_xml_path <- file.path(pkg_path, "metadata-iso19139.xml")
+edh_build_iso19139_xml(
+  dataset_meta,
+  output_path = edh_iso_xml_path,
+  profile = "iso19139"
+)
+
+file.exists(edh_hnap_xml_path)
+file.exists(edh_iso_xml_path)
 ```
 
-This XML is intended as a starter export. Validate and enrich it against
-your local EDH profile before production upload.
+The default HNAP-aware path adds EDH-oriented structure like
+maintenance/status, legal constraints, optional download/distribution
+metadata, reference system info, bounding boxes, deterministic
+identifiers, and bilingual locale scaffolding. Use
+`profile = "iso19139"` only when you specifically need that smaller
+fallback export.
+
+Validate and enrich either XML output against your local EDH profile
+before production upload.
 
 ------------------------------------------------------------------------
 

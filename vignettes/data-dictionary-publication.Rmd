@@ -129,18 +129,34 @@ attr(sem, "dwc_mappings") |>
 
 Keep the SDP column names intact; use the DwC mappings only when exporting a DwC-DP view.
 
-## Optional: export starter EDH XML metadata
+## Optional: export EDH XML metadata
 
 When your publication workflow includes DFO Enterprise Data Hub / GeoNetwork,
-you can generate a starter ISO 19139 XML metadata file from `dataset_meta`.
+`edh_build_iso19139_xml()` now defaults to the richer HNAP-aware EDH export and
+still offers the older compact ISO 19139 path as an explicit fallback.
 
 ```{r}
-edh_xml <- file.path(pkg_path, "metadata-iso19139.xml")
-edh_build_iso19139_xml(dataset_meta, output_path = edh_xml)
-file.exists(edh_xml)
+edh_hnap_xml <- file.path(pkg_path, "metadata-edh-hnap.xml")
+edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml)
+
+edh_iso_xml <- file.path(pkg_path, "metadata-iso19139.xml")
+edh_build_iso19139_xml(
+  dataset_meta,
+  output_path = edh_iso_xml,
+  profile = "iso19139"
+)
+
+file.exists(edh_hnap_xml)
+file.exists(edh_iso_xml)
 ```
 
-Validate and enrich the XML against your local EDH profile before production upload.
+The default HNAP-aware path recognizes extra optional columns when present,
+including `created`, `modified`, `status`, `distribution_url`,
+`reference_system`, `bbox_*`, and localized fields like `title_fr` /
+`description_fr`.
+
+Validate and enrich either XML output against your local EDH profile before
+production upload.
 
 ### Using suggest_dwc_mappings() directly
 

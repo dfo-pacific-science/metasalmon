@@ -2,44 +2,62 @@
 % Please edit documentation in R/edh-xml-export.R
 \name{edh_build_iso19139_xml}
 \alias{edh_build_iso19139_xml}
-\title{Build ISO 19139 metadata XML for DFO Enterprise Data Hub export}
+\title{Build ISO 19139 or HNAP-aware metadata XML for DFO Enterprise Data Hub export}
 \usage{
 edh_build_iso19139_xml(
   dataset_meta,
   output_path = NULL,
   file_identifier = NULL,
   language = "eng",
-  date_stamp = Sys.Date()
+  date_stamp = Sys.Date(),
+  profile = c("dfo_edh_hnap", "iso19139")
 )
 }
 \arguments{
 \item{dataset_meta}{Data frame/tibble with exactly one row of
 dataset-level metadata.
 Required columns: \code{dataset_id}, \code{title}, \code{description}.
-Optional columns include: \code{creator}, \code{contact_name}, \code{contact_email},
+Common optional columns include: \code{creator}, \code{contact_name}, \code{contact_email},
 \code{contact_org}, \code{contact_position}, \code{license}, \code{source_citation},
 \code{temporal_start}, \code{temporal_end}, \code{spatial_extent}, \code{update_frequency},
-\code{topic_categories}, \code{keywords}, and \code{security_classification}.}
+\code{topic_categories}, \code{keywords}, \code{security_classification}, \code{created},
+\code{modified}, \code{provenance_note}, \code{status}, \code{distribution_url}, \code{download_url},
+\code{reference_system}, \code{bbox_west}, \code{bbox_east}, \code{bbox_south}, \code{bbox_north},
+plus optional French-localized fields such as \code{title_fr} and
+\code{description_fr}.}
 
 \item{output_path}{Optional file path to write XML.}
 
 \item{file_identifier}{Optional metadata file identifier.
-Defaults to \code{dataset_id}.}
+For the default \code{profile = "dfo_edh_hnap"}, non-UUID identifiers are
+converted to a deterministic UUID-like value and the original \code{dataset_id}
+is preserved in \code{gmd:dataSetURI} / citation identifiers. For
+\code{profile = "iso19139"}, this defaults to \code{dataset_id}.}
 
-\item{language}{ISO 639-2/T language code (default: \code{"eng"}).}
+\item{language}{ISO 639-2/T language code for the primary metadata language
+(default: \code{"eng"}).}
 
-\item{date_stamp}{Metadata date stamp (default: \code{Sys.Date()}).}
+\item{date_stamp}{Metadata date stamp (default: \code{Sys.Date()}). When
+\code{dataset_meta$modified} is present, that value is preferred.}
+
+\item{profile}{Metadata export profile. \code{"dfo_edh_hnap"} (the default)
+returns the richer HNAP/EDH-oriented structure; \code{"iso19139"} keeps the
+original lightweight fallback export.}
 }
 \value{
 Invisible list with elements \code{xml} (string) and \code{path}.
 }
 \description{
-Generates a compact ISO 19139-style metadata XML document from
-\code{dataset_meta}. This is intended as a starter export for DFO Enterprise
-Data Hub / GeoNetwork workflows.
+Generates metadata XML from \code{dataset_meta} for DFO Enterprise Data Hub /
+GeoNetwork workflows. The default \code{"dfo_edh_hnap"} profile now emits the
+more practical North American Profile / EDH-oriented structure with
+deterministic file identifiers, maintenance/status, legal constraints,
+optional distribution info, reference system support, bilingual locale
+scaffolding, and richer contact metadata when available. The legacy
+\code{"iso19139"} profile remains available as a compact fallback export.
 }
 \details{
-The produced XML should be validated and enriched against your local EDH
+The produced XML should still be validated and enriched against your local EDH
 profile before production upload.
 }
 \examples{
@@ -57,4 +75,11 @@ dataset_meta <- tibble::tibble(
 
 out <- tempfile(fileext = ".xml")
 edh_build_iso19139_xml(dataset_meta, output_path = out)
+
+out_iso <- tempfile(fileext = ".xml")
+edh_build_iso19139_xml(
+  dataset_meta,
+  output_path = out_iso,
+  profile = "iso19139"
+)
 }

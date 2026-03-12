@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -398,18 +398,34 @@ export)</td>
 <hr>
 </div>
 <div class="section level2">
-<h2 id="step-5b-optional-export-starter-edh-xml-metadata">Step 5b (Optional): Export starter EDH XML metadata<a class="anchor" aria-label="anchor" href="#step-5b-optional-export-starter-edh-xml-metadata"></a>
+<h2 id="step-5b-optional-export-edh-xml-metadata">Step 5b (Optional): Export EDH XML metadata<a class="anchor" aria-label="anchor" href="#step-5b-optional-export-edh-xml-metadata"></a>
 </h2>
 <p>If your workflow includes DFO Enterprise Data Hub / GeoNetwork
-upload, you can export a starter ISO 19139 XML metadata file from
-<code>dataset_meta</code>.</p>
+upload, the default <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> path now
+writes the richer HNAP-aware EDH XML export from
+<code>dataset_meta</code>. The older compact ISO 19139 shape is still
+available as an explicit fallback.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">edh_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_xml_path</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">edh_hnap_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml_path</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_xml_path</span><span class="op">)</span></span></code></pre></div>
-<p>This XML is intended as a starter export. Validate and enrich it
-against your local EDH profile before production upload.</p>
+<span><span class="va">edh_iso_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span></span>
+<span>  <span class="va">dataset_meta</span>,</span>
+<span>  output_path <span class="op">=</span> <span class="va">edh_iso_xml_path</span>,</span>
+<span>  profile <span class="op">=</span> <span class="st">"iso19139"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_hnap_xml_path</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_iso_xml_path</span><span class="op">)</span></span></code></pre></div>
+<p>The default HNAP-aware path adds EDH-oriented structure like
+maintenance/status, legal constraints, optional download/distribution
+metadata, reference system info, bounding boxes, deterministic
+identifiers, and bilingual locale scaffolding. Use
+<code>profile = "iso19139"</code> only when you specifically need that
+smaller fallback export.</p>
+<p>Validate and enrich either XML output against your local EDH profile
+before production upload.</p>
 <hr>
 </div>
 <div class="section level2">

@@ -10,6 +10,8 @@ Infer, validate, and apply semantic data dictionaries
   : Validate a salmon data dictionary
 - [`apply_salmon_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_salmon_dictionary.md)
   : Apply a salmon dictionary to a data frame
+- [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+  : Apply semantic suggestions into a dictionary
 
 ## Package Functions
 
@@ -64,10 +66,11 @@ Darwin Core Data Package mapping and export helpers
 
 ## Enterprise Data Hub (EDH)
 
-Starter ISO 19139 XML export helper for EDH/GeoNetwork workflows
+HNAP-aware EDH XML export helper with legacy ISO 19139 fallback
 
 - [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
-  : Build ISO 19139 metadata XML for DFO Enterprise Data Hub export
+  : Build ISO 19139 or HNAP-aware metadata XML for DFO Enterprise Data
+  Hub export
 
 ## GitHub Access
 

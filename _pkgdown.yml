@@ -40,6 +40,7 @@ reference:
       - infer_dictionary
       - validate_dictionary
       - apply_salmon_dictionary
+      - apply_semantic_suggestions
 
   - title: "Package Functions"
     desc: "Create and read Salmon Data Packages"
@@ -75,7 +76,7 @@ reference:
       - dwc_dp_build_descriptor
 
   - title: "Enterprise Data Hub (EDH)"
-    desc: "Starter ISO 19139 XML export helper for EDH/GeoNetwork workflows"
+    desc: "HNAP-aware EDH XML export helper with legacy ISO 19139 fallback"
     contents:
       - edh_build_iso19139_xml
 

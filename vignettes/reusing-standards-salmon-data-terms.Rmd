@@ -147,9 +147,13 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)
+
+# Optional explicit merge step: fills only missing fields unless overwrite = TRUE
+# and matches suggestions by both column_name and dictionary_role.
+dict <- apply_semantic_suggestions(dict_suggested, columns = "SPAWN_EST")
 ```
 
-It is safe to accept suggestions as a starting point, then tweak the term labels to match your domain-specific language.
+Treat the suggestions as a starting point, not gospel. The helper above is just a safe accelerator; you should still review the picked IRIs and tweak anything that misses your domain nuance.
 
 ## Next steps
 

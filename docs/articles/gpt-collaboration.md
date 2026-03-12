@@ -230,16 +230,20 @@ dict_suggested <- suggest_semantics(
 )
 
 suggestions <- attr(dict_suggested, "semantic_suggestions")
-# Inspect by role
-dplyr::count(suggestions, dictionary_role)
-head(suggestions)
+# Inspect suggestions for the specific measurement column you care about
+nat_suggestions <- suggestions |>
+  dplyr::filter(column_name == "NATURAL_SPAWNERS_TOTAL")
 
-# Manually accept the top-ranked picks per role for a measurement column
-nat_row <- dict$column_name == "NATURAL_SPAWNERS_TOTAL"
-dict$term_iri[nat_row]      <- suggestions$iri[suggestions$dictionary_role == "variable"][1]
-dict$property_iri[nat_row]  <- suggestions$iri[suggestions$dictionary_role == "property"][1]
-dict$entity_iri[nat_row]    <- suggestions$iri[suggestions$dictionary_role == "entity"][1]
-dict$unit_iri[nat_row]      <- suggestions$iri[suggestions$dictionary_role == "unit"][1]
+dplyr::count(nat_suggestions, dictionary_role)
+head(nat_suggestions)
+
+# Safest path: explicitly apply the top-ranked suggestions for that column.
+# This matches by both column_name and dictionary_role, and by default it
+# fills only missing fields (no silent overwrite).
+dict <- apply_semantic_suggestions(
+  dict_suggested,
+  columns = "NATURAL_SPAWNERS_TOTAL"
+)
 ```
 
 `smn-gpt` uses the same I-ADOPT catalogue (symlinked into the repo) and

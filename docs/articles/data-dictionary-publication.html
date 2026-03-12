@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -199,17 +199,32 @@ to keep SDP canonical.</p>
 exporting a DwC-DP view.</p>
 </div>
 <div class="section level3">
-<h3 id="optional-export-starter-edh-xml-metadata">Optional: export starter EDH XML metadata<a class="anchor" aria-label="anchor" href="#optional-export-starter-edh-xml-metadata"></a>
+<h3 id="optional-export-edh-xml-metadata">Optional: export EDH XML metadata<a class="anchor" aria-label="anchor" href="#optional-export-edh-xml-metadata"></a>
 </h3>
 <p>When your publication workflow includes DFO Enterprise Data Hub /
-GeoNetwork, you can generate a starter ISO 19139 XML metadata file from
-<code>dataset_meta</code>.</p>
+GeoNetwork, <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> now defaults to the
+richer HNAP-aware EDH export and still offers the older compact ISO
+19139 path as an explicit fallback.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">edh_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_xml</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_xml</span><span class="op">)</span></span></code></pre></div>
-<p>Validate and enrich the XML against your local EDH profile before
-production upload.</p>
+<code class="sourceCode R"><span><span class="va">edh_hnap_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">edh_iso_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span></span>
+<span>  <span class="va">dataset_meta</span>,</span>
+<span>  output_path <span class="op">=</span> <span class="va">edh_iso_xml</span>,</span>
+<span>  profile <span class="op">=</span> <span class="st">"iso19139"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_hnap_xml</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_iso_xml</span><span class="op">)</span></span></code></pre></div>
+<p>The default HNAP-aware path recognizes extra optional columns when
+present, including <code>created</code>, <code>modified</code>,
+<code>status</code>, <code>distribution_url</code>,
+<code>reference_system</code>, <code>bbox_*</code>, and localized fields
+like <code>title_fr</code> / <code>description_fr</code>.</p>
+<p>Validate and enrich either XML output against your local EDH profile
+before production upload.</p>
 <div class="section level4">
 <h4 id="using-suggest_dwc_mappings-directly">Using suggest_dwc_mappings() directly<a class="anchor" aria-label="anchor" href="#using-suggest_dwc_mappings-directly"></a>
 </h4>

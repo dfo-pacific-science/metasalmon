@@ -15,7 +15,7 @@ results by relevance, with GCDFO queried first for salmon-domain roles."><meta p
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -109,27 +109,31 @@ Can be replaced for testing or custom search strategies.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>The dictionary tibble (unchanged) with a <code>semantic_suggestions</code>
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes columns: <code>column_name</code>, <code>dictionary_role</code> (which IRI field the
-suggestion is for), <code>label</code>, <code>iri</code>, <code>source</code>, <code>ontology</code>, and <code>definition</code>.</p>
+includes <code>dataset_id</code>, <code>table_id</code>, <code>column_name</code>, <code>dictionary_role</code>
+(which dictionary field the suggestion targets), <code>label</code>, <code>iri</code>, <code>source</code>,
+<code>ontology</code>, and <code>definition</code>. If the underlying search results include a
+<code>score</code> column, it is preserved for downstream filtering.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function uses the column's label or description as the search query and
 returns suggestions as an attribute on the dictionary tibble. This allows
 you to review candidates before accepting them into your dictionary.</p>
-<p>Only columns with `column_role == "measurement"
-are processed, since I-ADOPT components are primarily relevant for
-measurement metadata. Columns with existing IRIs in a field are skipped
-for that field.</p>
+<p>Only columns with <code>column_role == "measurement"</code> are processed, since
+I-ADOPT components are primarily relevant for measurement metadata. Columns
+with existing IRIs in a field are skipped for that field.</p>
 <p>After calling this function, access suggestions with:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>suggestions <span class="ot">&lt;-</span> <span class="fu">attr</span>(result, <span class="st">"semantic_suggestions"</span>)</span></code></pre><p></p></div>
-<p>Then manually review and copy desired IRIs into your dictionary.</p>
+<p>Suggestions stay separate by default. Review them first, then use
+<code><a href="apply_semantic_suggestions.html">apply_semantic_suggestions()</a></code> for an explicit opt-in merge, or copy values
+manually when you need finer control.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="find_terms.html">find_terms()</a></code> for direct vocabulary searches, <code><a href="infer_dictionary.html">infer_dictionary()</a></code>
-for creating starter dictionaries, <code><a href="validate_dictionary.html">validate_dictionary()</a></code> for checking
-dictionary completeness.</p></div>
+for creating starter dictionaries, <code><a href="apply_semantic_suggestions.html">apply_semantic_suggestions()</a></code> for
+explicitly filling selected IRI fields, <code><a href="validate_dictionary.html">validate_dictionary()</a></code> for
+checking dictionary completeness.</p></div>
     </div>
 
     <div class="section level2">
@@ -148,8 +152,9 @@ dictionary completeness.</p></div>
 <span class="r-in"><span><span class="co"># Filter suggestions for a specific column</span></span></span>
 <span class="r-in"><span><span class="va">spawner_suggestions</span> <span class="op">&lt;-</span> <span class="va">suggestions</span><span class="op">[</span><span class="va">suggestions</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span>, <span class="op">]</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Accept a suggestion by copying the IRI into your dictionary</span></span></span>
-<span class="r-in"><span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">spawner_suggestions</span><span class="op">$</span><span class="va">iri</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span></span>
+<span class="r-in"><span><span class="co"># Explicitly apply the top suggestion for one column without overwriting</span></span></span>
+<span class="r-in"><span><span class="co"># any existing IRIs in the dictionary</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, columns <span class="op">=</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>
     </div>

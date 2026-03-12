@@ -27,6 +27,6 @@ sources_for_role("unit")
 # Returns: c("qudt", "nvs", "ols")
 
 sources_for_role("entity")
-#> [1] "gbif"      "worms"     "bioportal" "ols"      
+#> [1] "gcdfo"     "gbif"      "worms"     "bioportal" "ols"      
 # Returns: c("gcdfo", "gbif", "worms", "bioportal", "ols")
 ```

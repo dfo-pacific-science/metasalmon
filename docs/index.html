@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -145,7 +145,7 @@ concept schemes) while preserving your original data structure.
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Optional: attach semantic suggestions (no auto-commit to IRIs)</span></span>
+<span><span class="co"># Optional: attach semantic suggestions (still no auto-commit to IRIs)</span></span>
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
 <span>  <span class="va">df</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
@@ -153,7 +153,11 @@ concept schemes) while preserving your original data structure.
 <span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># If the top-ranked suggestions look right, explicitly apply them.</span></span>
+<span><span class="co"># By default this fills only missing fields and leaves existing IRIs alone.</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict</span>, columns <span class="op">=</span> <span class="st">"NATURAL_SPAWNER_COUNT"</span><span class="op">)</span></span></code></pre></div>
 <p>To continue:</p>
 <ul>
 <li>
@@ -241,7 +245,7 @@ concept schemes) while preserving your original data structure.
 <li>Use AI assistance to help write descriptions</li>
 <li>Suggest Darwin Core Data Package table/field mappings for biodiversity data</li>
 <li>Opt in to DwC-DP export hints via <code>suggest_semantics(..., include_dwc = TRUE)</code> while keeping the Salmon Data Package as the canonical deliverable.</li>
-<li>Generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub upload workflows via <code><a href="reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code>.</li>
+<li>Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via <code><a href="reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> (with legacy ISO 19139 fallback still available).</li>
 <li>Role-aware vocabulary search with <code><a href="reference/find_terms.html">find_terms()</a></code> and <code><a href="reference/sources_for_role.html">sources_for_role()</a></code>:
 <ul>
 <li>Units: QUDT preferred, then NVS P06</li>

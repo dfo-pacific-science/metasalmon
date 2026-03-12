@@ -62,9 +62,10 @@ suggest_semantics(
 
 The dictionary tibble (unchanged) with a `semantic_suggestions`
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes columns: `column_name`, `dictionary_role` (which IRI field the
-suggestion is for), `label`, `iri`, `source`, `ontology`, and
-`definition`.
+includes `dataset_id`, `table_id`, `column_name`, `dictionary_role`
+(which dictionary field the suggestion targets), `label`, `iri`,
+`source`, `ontology`, and `definition`. If the underlying search results
+include a `score` column, it is preserved for downstream filtering.
 
 ## Details
 
@@ -73,7 +74,7 @@ and returns suggestions as an attribute on the dictionary tibble. This
 allows you to review candidates before accepting them into your
 dictionary.
 
-Only columns with \`column_role == "measurement" are processed, since
+Only columns with `column_role == "measurement"` are processed, since
 I-ADOPT components are primarily relevant for measurement metadata.
 Columns with existing IRIs in a field are skipped for that field.
 
@@ -81,7 +82,10 @@ After calling this function, access suggestions with:
 
     suggestions <- attr(result, "semantic_suggestions")
 
-Then manually review and copy desired IRIs into your dictionary.
+Suggestions stay separate by default. Review them first, then use
+[`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+for an explicit opt-in merge, or copy values manually when you need
+finer control.
 
 ## See also
 
@@ -89,6 +93,8 @@ Then manually review and copy desired IRIs into your dictionary.
 for direct vocabulary searches,
 [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
 for creating starter dictionaries,
+[`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+for explicitly filling selected IRI fields,
 [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
 for checking dictionary completeness.
 
@@ -109,7 +115,8 @@ print(suggestions)
 # Filter suggestions for a specific column
 spawner_suggestions <- suggestions[suggestions$column_name == "SPAWNER_COUNT", ]
 
-# Accept a suggestion by copying the IRI into your dictionary
-dict$term_iri[dict$column_name == "SPAWNER_COUNT"] <- spawner_suggestions$iri[1]
+# Explicitly apply the top suggestion for one column without overwriting
+# any existing IRIs in the dictionary
+dict <- apply_semantic_suggestions(dict_with_suggestions, columns = "SPAWNER_COUNT")
 } # }
 ```
