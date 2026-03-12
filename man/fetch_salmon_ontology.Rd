@@ -5,11 +5,11 @@
 \title{Fetch the DFO Salmon Ontology with caching}
 \usage{
 fetch_salmon_ontology(
-  url =
-    "https://dfo-pacific-science.github.io/dfo-salmon-ontology/ontology/dfo-salmon.ttl",
+  url = "https://w3id.org/gcdfo/salmon",
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-  fallback_urls = c("https://w3id.org/gcdfo/salmon")
+  fallback_urls = c("https://w3id.org/gcdfo/salmon/",
+    "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")
 )
 }
 \arguments{

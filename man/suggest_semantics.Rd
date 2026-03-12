@@ -7,7 +7,7 @@
 suggest_semantics(
   df,
   dict,
-  sources = c("ols", "nvs"),
+  sources = c("gcdfo", "ols", "nvs"),
   include_dwc = FALSE,
   max_per_role = 3,
   search_fn = find_terms
@@ -20,9 +20,9 @@ suggest_semantics(
 incomplete semantic fields).}
 
 \item{sources}{Character vector of vocabulary sources to search. Options are
-\code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
+\code{"gcdfo"} (DFO Salmon Ontology via content negotiation), \code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
 \code{"bioportal"} (requires \code{BIOPORTAL_APIKEY} environment variable).
-Default is \code{c("ols", "nvs")}.}
+Default is \code{c("gcdfo", "ols", "nvs")}.}
 
 \item{include_dwc}{Logical; if \code{TRUE}, also attach DwC-DP export mappings
 (via \code{suggest_dwc_mappings()}) as a parallel attribute \code{dwc_mappings}.

@@ -10,10 +10,10 @@
 #' @return Path to the cached ontology file (character string).
 #' @export
 fetch_salmon_ontology <- function(
-    url = "https://dfo-pacific-science.github.io/dfo-salmon-ontology/ontology/dfo-salmon.ttl",
+    url = "https://w3id.org/gcdfo/salmon",
     accept = "text/turtle, application/rdf+xml;q=0.8",
     cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-    fallback_urls = c("https://w3id.org/gcdfo/salmon")) {
+    fallback_urls = c("https://w3id.org/gcdfo/salmon/", "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")) {
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
   ttl_file <- file.path(cache_dir, "dfo-salmon.ttl")

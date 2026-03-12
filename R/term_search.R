@@ -74,6 +74,7 @@
 #' Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 #'
 #' **Supported sources:**
+#' - **GCDFO** (DFO Salmon Ontology): direct salmon-domain search via HTTP content negotiation against the Widoco-published ontology
 #' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 #' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
 #' - **ZOOMA** (EBI text-to-term annotations): Resolves to OLS term metadata
@@ -100,8 +101,8 @@
 #'   When specified, sources are optimized for the role and results are ranked higher
 #'   when they match preferred ontologies for that role.
 #' @param sources Character vector of vocabulary sources to query. Options:
-#'   `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
-#'   Default is `c("ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
+#'   `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
+#'   Default is `c("gcdfo", "ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
 #' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
@@ -146,11 +147,11 @@
 #' ols_results <- find_terms("salmon", sources = "ols")
 #'
 #' # Search multiple sources
-#' all_results <- find_terms("escapement", sources = c("ols", "nvs"))
+#' all_results <- find_terms("escapement", sources = c("gcdfo", "ols", "nvs"))
 #' }
 find_terms <- function(query,
                        role = NA_character_,
-                       sources = c("ols", "nvs"),
+                       sources = c("gcdfo", "ols", "nvs"),
                        expand_query = TRUE) {
   if (length(sources) == 0 || is.na(query) || query == "") {
     return(.empty_terms(role))
@@ -168,11 +169,13 @@ find_terms <- function(query,
   diagnostics <- list()
 
   results <- purrr::map(queries, function(q) {
-    purrr::map(sources, function(src) {
+    run_source <- function(src) {
       start_time <- Sys.time()
-      result <- tryCatch(
+      tryCatch(
         {
-          res <- if (src == "ols") {
+          res <- if (src == "gcdfo") {
+            .search_gcdfo(q, role)
+          } else if (src == "ols") {
             .search_ols(q, role)
           } else if (src == "nvs") {
             .search_nvs(q, role)
@@ -213,8 +216,24 @@ find_terms <- function(query,
           .empty_terms(role)
         }
       )
-      result
-    })
+    }
+
+    query_results <- list()
+
+    if ("gcdfo" %in% sources) {
+      gcdfo_res <- run_source("gcdfo")
+      query_results[[length(query_results) + 1]] <- gcdfo_res
+      gcdfo_good_hit <- nrow(gcdfo_res) > 0 && any(gcdfo_res$match_type %in% c("label_exact", "label_partial"))
+      if (gcdfo_good_hit) {
+        return(query_results)
+      }
+    }
+
+    for (src in setdiff(sources, "gcdfo")) {
+      query_results[[length(query_results) + 1]] <- run_source(src)
+    }
+
+    query_results
   })
 
   # Flatten nested results and combine
@@ -708,6 +727,254 @@ pattern <- paste(tokens, collapse = ".*")
     dplyr::distinct(iri, .keep_all = TRUE)
 }
 
+.gcdfo_index_cache <- new.env(parent = emptyenv())
+
+.local_name <- function(x) {
+  ifelse(is.na(x) | !nzchar(x), "", sub("^.*[#/]", "", x))
+}
+
+.camel_words <- function(x) {
+  x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
+  trimws(gsub("[_-]+", " ", x))
+}
+
+.query_tokens <- function(x) {
+  tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(x)), "\\s+")[[1]])
+  tokens[nzchar(tokens)]
+}
+
+.first_non_empty_chr <- function(x) {
+  x <- x[!is.na(x)]
+  x <- trimws(x)
+  x <- x[nzchar(x)]
+  if (length(x) == 0) "" else x[[1]]
+}
+
+.xml_text_values <- function(node, xpath, ns) {
+  vals <- xml2::xml_text(xml2::xml_find_all(node, xpath, ns = ns))
+  vals <- trimws(vals)
+  vals[nzchar(vals)]
+}
+
+.xml_resource_values <- function(node, xpath, ns) {
+  vals <- xml2::xml_attr(xml2::xml_find_all(node, xpath, ns = ns), "resource")
+  vals <- vals[!is.na(vals)]
+  vals[nzchar(vals)]
+}
+
+.parse_gcdfo_rdfxml <- function(doc) {
+  ns <- xml2::xml_ns(doc)
+  nodes <- xml2::xml_find_all(doc, "/*/*[@rdf:about][not(self::owl:Ontology)]", ns = ns)
+  if (length(nodes) == 0) {
+    return(tibble::tibble())
+  }
+
+  rows <- purrr::map_dfr(nodes, function(node) {
+    iri <- xml2::xml_attr(node, "about") %||% ""
+    label <- .first_non_empty_chr(c(
+      .xml_text_values(node, "./skos:prefLabel", ns),
+      .xml_text_values(node, "./rdfs:label", ns)
+    ))
+    definition <- .first_non_empty_chr(c(
+      .xml_text_values(node, "./skos:definition", ns),
+      .xml_text_values(node, "./obo:IAO_0000115", ns),
+      .xml_text_values(node, "./rdfs:comment", ns),
+      .xml_text_values(node, "./dcterms:description", ns)
+    ))
+    alt_labels <- .xml_text_values(node, "./skos:altLabel", ns)
+    in_scheme <- .xml_resource_values(node, "./skos:inScheme", ns)
+    rdf_types <- .xml_resource_values(node, "./rdf:type", ns)
+    parents <- unique(c(
+      .xml_resource_values(node, "./skos:broader", ns),
+      .xml_resource_values(node, "./rdfs:subClassOf", ns)
+    ))
+    iadopt_property <- .xml_resource_values(node, "./gcdfo:iadoptProperty", ns)
+    iadopt_entity <- .xml_resource_values(node, "./gcdfo:iadoptEntity", ns)
+    iadopt_constraint <- .xml_resource_values(node, "./gcdfo:iadoptConstraint", ns)
+    used_procedure <- .xml_resource_values(node, "./gcdfo:usedProcedure", ns)
+    iri_local <- .local_name(iri)
+    label_fallback <- if (nzchar(label)) label else .camel_words(iri_local)
+    search_text <- paste(
+      c(
+        label_fallback,
+        alt_labels,
+        .camel_words(iri_local),
+        .camel_words(.local_name(in_scheme)),
+        .camel_words(.local_name(rdf_types)),
+        definition
+      ),
+      collapse = " "
+    )
+
+    tibble::tibble(
+      iri = iri,
+      label = label_fallback,
+      alt_labels = paste(alt_labels, collapse = " | "),
+      definition = definition,
+      resource_kind = xml2::xml_name(node),
+      in_scheme = paste(in_scheme, collapse = " | "),
+      parent_iris = paste(parents, collapse = " | "),
+      type_iris = paste(rdf_types, collapse = " | "),
+      search_text = tolower(search_text),
+      is_variable = length(c(iadopt_property, iadopt_entity, iadopt_constraint)) > 0,
+      iadopt_property_targets = list(iadopt_property),
+      iadopt_entity_targets = list(iadopt_entity),
+      iadopt_constraint_targets = list(iadopt_constraint),
+      used_procedure_targets = list(used_procedure)
+    )
+  })
+
+  rows <- dplyr::filter(rows, grepl("^https?://w3id\\.org/gcdfo/salmon(#|/)", .data$iri))
+
+  property_targets <- unique(unlist(rows$iadopt_property_targets, use.names = FALSE))
+  entity_targets <- unique(unlist(rows$iadopt_entity_targets, use.names = FALSE))
+  constraint_targets <- unique(unlist(rows$iadopt_constraint_targets, use.names = FALSE))
+  method_targets <- unique(unlist(rows$used_procedure_targets, use.names = FALSE))
+
+  rows %>%
+    dplyr::mutate(
+      is_property = .data$iri %in% property_targets,
+      is_entity = .data$iri %in% entity_targets,
+      is_constraint = .data$iri %in% constraint_targets,
+      is_method = .data$iri %in% method_targets | grepl("method|procedure|enumeration", tolower(.data$in_scheme)),
+      role_hints = purrr::pmap_chr(
+        list(.data$is_variable, .data$is_property, .data$is_entity, .data$is_constraint, .data$is_method),
+        function(variable, property, entity, constraint, method) {
+          hints <- c(
+            if (isTRUE(variable)) "variable",
+            if (isTRUE(property)) "property",
+            if (isTRUE(entity)) "entity",
+            if (isTRUE(constraint)) "constraint",
+            if (isTRUE(method)) "method"
+          )
+          paste(hints, collapse = "|")
+        }
+      )
+    ) %>%
+    dplyr::select(-dplyr::ends_with("_targets"))
+}
+
+.gcdfo_term_index <- function(refresh = FALSE) {
+  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache")
+  path <- fetch_salmon_ontology(
+    url = "https://w3id.org/gcdfo/salmon",
+    accept = "application/rdf+xml",
+    cache_dir = cache_dir,
+    fallback_urls = c(
+      "https://w3id.org/gcdfo/salmon/",
+      "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.owl"
+    )
+  )
+
+  stamp <- paste(path, file.info(path)$mtime, file.info(path)$size)
+  if (!refresh && exists("stamp", envir = .gcdfo_index_cache, inherits = FALSE) &&
+      exists("index", envir = .gcdfo_index_cache, inherits = FALSE) &&
+      identical(get("stamp", envir = .gcdfo_index_cache), stamp)) {
+    return(get("index", envir = .gcdfo_index_cache))
+  }
+
+  doc <- xml2::read_xml(path)
+  index <- .parse_gcdfo_rdfxml(doc)
+  assign("stamp", stamp, envir = .gcdfo_index_cache)
+  assign("index", index, envir = .gcdfo_index_cache)
+  index
+}
+
+.gcdfo_filter_for_role <- function(index, role) {
+  if (nrow(index) == 0 || is.null(role) || is.na(role) || role == "") {
+    return(index)
+  }
+
+  role <- tolower(role)
+  scheme_text <- tolower(paste(index$in_scheme, index$label, index$role_hints))
+  keep <- switch(role,
+    unit = rep(FALSE, nrow(index)),
+    variable = index$is_variable | grepl("count|rate|abundance|estimate|escapement|spawner|recruit|run", index$search_text),
+    property = index$is_property | grepl("abundance|count|rate|length|weight|size|status|confidence|level|phase", index$search_text),
+    entity = index$is_entity | (
+      tolower(index$resource_kind) %in% c("class", "namedindividual") &
+        !grepl("theme|scheme", tolower(paste(index$label, index$iri, index$in_scheme)))
+    ),
+    constraint = index$is_constraint | grepl("criteria|context|origin|phase|zone|basis|dimension|notation|framework|confidence|level", scheme_text),
+    method = index$is_method | grepl("method|procedure|enumeration", scheme_text),
+    rep(TRUE, nrow(index))
+  )
+
+  index[keep, , drop = FALSE]
+}
+
+.gcdfo_match_terms <- function(index, query) {
+  if (nrow(index) == 0) {
+    return(index[0, , drop = FALSE])
+  }
+
+  tokens <- .query_tokens(query)
+  if (length(tokens) == 0) {
+    return(index[0, , drop = FALSE])
+  }
+
+  q_lower <- tolower(trimws(query))
+  primary_label <- trimws(tolower(index$label))
+  label_text <- trimws(tolower(paste(index$label, index$alt_labels)))
+  exact_label <- primary_label == q_lower
+  phrase_label <- grepl(q_lower, primary_label, fixed = TRUE) | grepl(q_lower, label_text, fixed = TRUE)
+  phrase_text <- grepl(q_lower, index$search_text, fixed = TRUE)
+  token_hits <- vapply(index$search_text, function(txt) {
+    sum(vapply(tokens, function(tok) grepl(tok, txt, fixed = TRUE), logical(1)))
+  }, numeric(1))
+  all_tokens <- vapply(index$search_text, function(txt) {
+    all(vapply(tokens, function(tok) grepl(tok, txt, fixed = TRUE), logical(1)))
+  }, logical(1))
+
+  score <- token_hits +
+    ifelse(phrase_text, 1.5, 0) +
+    ifelse(phrase_label, 2.0, 0) +
+    ifelse(exact_label, 3.0, 0) +
+    ifelse(all_tokens, 1.0, 0)
+
+  keep <- score > 0
+  if (!any(keep)) {
+    return(index[0, , drop = FALSE])
+  }
+
+  index <- index[keep, , drop = FALSE]
+  score <- score[keep]
+  label_text <- label_text[keep]
+  phrase_label <- phrase_label[keep]
+  exact_label <- exact_label[keep]
+  phrase_text <- phrase_text[keep]
+
+  match_type <- ifelse(
+    exact_label, "label_exact",
+    ifelse(phrase_label, "label_partial", ifelse(phrase_text, "definition", tolower(index$resource_kind)))
+  )
+
+  index$backend_score <- score
+  index$match_type <- match_type
+  index[order(-index$backend_score, index$label, index$iri), , drop = FALSE]
+}
+
+.search_gcdfo <- function(query, role) {
+  index <- .gcdfo_term_index()
+  index <- .gcdfo_filter_for_role(index, role)
+  index <- .gcdfo_match_terms(index, query)
+  if (nrow(index) == 0) {
+    return(.empty_terms(role))
+  }
+
+  tibble::tibble(
+    label = index$label,
+    iri = index$iri,
+    source = "gcdfo",
+    ontology = "gcdfo",
+    role = role,
+    match_type = index$match_type,
+    definition = index$definition,
+    backend_score = index$backend_score
+  ) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
+}
+
 .iadopt_vocab <- function() {
   path <- system.file("extdata", "iadopt-terminologies.csv", package = "metasalmon", mustWork = TRUE)
   if (!file.exists(path)) {
@@ -764,20 +1031,20 @@ pattern <- paste(tokens, collapse = ".*")
 #' # Returns: c("qudt", "nvs", "ols")
 #'
 #' sources_for_role("entity")
-#' # Returns: c("gbif", "worms", "ols")
+#' # Returns: c("gcdfo", "gbif", "worms", "bioportal", "ols")
 sources_for_role <- function(role) {
   if (is.null(role) || is.na(role) || role == "") {
-    return(c("ols", "nvs"))
+    return(c("gcdfo", "ols", "nvs"))
   }
   role <- tolower(role)
   switch(role,
     unit = c("qudt", "nvs", "ols"),
-    property = c("nvs", "ols", "zooma"),
-    entity = c("gbif", "worms", "bioportal", "ols"),
-    method = c("bioportal", "ols", "zooma"),
-    variable = c("nvs", "ols", "zooma"),
-    constraint = c("ols"),
-    c("ols", "nvs")
+    property = c("gcdfo", "nvs", "ols", "zooma"),
+    entity = c("gcdfo", "gbif", "worms", "bioportal", "ols"),
+    method = c("gcdfo", "bioportal", "ols", "zooma"),
+    variable = c("gcdfo", "nvs", "ols", "zooma"),
+    constraint = c("gcdfo", "ols"),
+    c("gcdfo", "ols", "nvs")
   )
 }
 
@@ -901,6 +1168,7 @@ if (nrow(df) == 0) {
 
   # Base source weights - updated for new sources
   base_source_weight <- c(
+    gcdfo = 0.9,
     ols = 0.3,
     nvs = 0.6,
     zooma = 0.5,
@@ -913,11 +1181,11 @@ if (nrow(df) == 0) {
   # Role-specific source boosts (Phase 2: ontology preferences by role)
   role_boost <- list(
     unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
-    property = c(nvs = 1.0, ols = 0.5, zooma = 0.4),
-    variable = c(nvs = 1.0, ols = 0.4, zooma = 0.4),
-    entity = c(gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
-    constraint = c(ols = 0.5),
-    method = c(bioportal = 0.4, ols = 0.5, zooma = 0.4)
+    property = c(gcdfo = 0.8, nvs = 1.0, ols = 0.5, zooma = 0.4),
+    variable = c(gcdfo = 1.5, nvs = 1.0, ols = 0.4, zooma = 0.4),
+    entity = c(gcdfo = 1.5, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
+    constraint = c(gcdfo = 1.2, ols = 0.5),
+    method = c(gcdfo = 1.5, bioportal = 0.4, ols = 0.5, zooma = 0.4)
   )
 
   role_key <- if (is.null(role) || is.na(role)) NA_character_ else role
@@ -928,6 +1196,9 @@ if (nrow(df) == 0) {
   label_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$label_tokens), collapse = "|") else ""
 
   df$score <- vapply(df$source, function(src) base_source_weight[[src]] %||% 0.1, numeric(1))
+  if ("backend_score" %in% names(df)) {
+    df$score <- df$score + dplyr::coalesce(df$backend_score, 0)
+  }
 
   query_tokens <- character()
   if (!is.null(query) && !is.na(query) && nzchar(query)) {

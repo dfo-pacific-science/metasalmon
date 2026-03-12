@@ -10,7 +10,7 @@
 #' @param seed_semantics Logical; if `TRUE`, run `suggest_semantics()` and attach
 #'   the resulting `semantic_suggestions` attribute to the returned dictionary.
 #' @param semantic_sources Character vector of vocabulary sources passed to
-#'   `suggest_semantics()` when `seed_semantics = TRUE`. Default: `c("ols", "nvs")`.
+#'   `suggest_semantics()` when `seed_semantics = TRUE`. Default: `c("gcdfo", "ols", "nvs")`.
 #' @param semantic_max_per_role Maximum number of suggestions retained per I-ADOPT
 #'   role when seeding suggestions. Default: `1`.
 #' @param seed_verbose Logical; if TRUE, print a short progress message while
@@ -34,11 +34,11 @@
 #' dict <- infer_dictionary(df)
 #'
 #' # Optional: seed semantic suggestions from vocabulary services
-#' dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("ols", "nvs"))
+#' dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("gcdfo", "ols", "nvs"))
 #' suggestions <- attr(dict, "semantic_suggestions")
 #' }
 infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1",
-                            seed_semantics = FALSE, semantic_sources = c("ols", "nvs"), semantic_max_per_role = 1,
+                            seed_semantics = FALSE, semantic_sources = c("gcdfo", "ols", "nvs"), semantic_max_per_role = 1,
                             seed_verbose = TRUE) {
   if (!inherits(df, "data.frame")) {
     cli::cli_abort("{.arg df} must be a data frame or tibble")

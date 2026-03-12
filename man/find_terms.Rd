@@ -7,7 +7,7 @@
 find_terms(
   query,
   role = NA_character_,
-  sources = c("ols", "nvs"),
+  sources = c("gcdfo", "ols", "nvs"),
   expand_query = TRUE
 )
 }
@@ -21,8 +21,8 @@ When specified, sources are optimized for the role and results are ranked higher
 when they match preferred ontologies for that role.}
 
 \item{sources}{Character vector of vocabulary sources to query. Options:
-\code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
-Default is \code{c("ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
+\code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
+Default is \code{c("gcdfo", "ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
 
 \item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
 (Phase 4) to generate additional query variants based on the role context.
@@ -50,6 +50,7 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 \details{
 \strong{Supported sources:}
 \itemize{
+\item \strong{GCDFO} (DFO Salmon Ontology): direct salmon-domain search via HTTP content negotiation against the Widoco-published ontology
 \item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 \item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
 \item \strong{ZOOMA} (EBI text-to-term annotations): Resolves to OLS term metadata
@@ -91,7 +92,7 @@ taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", 
 ols_results <- find_terms("salmon", sources = "ols")
 
 # Search multiple sources
-all_results <- find_terms("escapement", sources = c("ols", "nvs"))
+all_results <- find_terms("escapement", sources = c("gcdfo", "ols", "nvs"))
 }
 }
 \seealso{

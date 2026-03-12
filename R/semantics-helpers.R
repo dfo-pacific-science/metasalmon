@@ -14,9 +14,9 @@
 #' @param dict A dictionary tibble created by `infer_dictionary()` (may have
 #'   incomplete semantic fields).
 #' @param sources Character vector of vocabulary sources to search. Options are
-#'   `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
+#'   `"gcdfo"` (DFO Salmon Ontology via content negotiation), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
 #'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
-#'   Default is `c("ols", "nvs")`.
+#'   Default is `c("gcdfo", "ols", "nvs")`.
 #' @param include_dwc Logical; if `TRUE`, also attach DwC-DP export mappings
 #'   (via `suggest_dwc_mappings()`) as a parallel attribute `dwc_mappings`.
 #'   Default is `FALSE` to keep the UI simple for non-DwC users.
@@ -71,7 +71,7 @@
 #' }
 suggest_semantics <- function(df,
                               dict,
-                              sources = c("ols", "nvs"),
+                              sources = c("gcdfo", "ols", "nvs"),
                               include_dwc = FALSE,
                               max_per_role = 3,
                               search_fn = find_terms) {

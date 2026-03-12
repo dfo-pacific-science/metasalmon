@@ -97,6 +97,72 @@ test_that("find_terms uses ZOOMA annotations and resolves OLS term metadata", {
   expect_equal(res$match_type[[1]], "zooma_medium")
 })
 
+test_that("find_terms uses gcdfo ontology backend", {
+  mock_index <- tibble::tibble(
+    iri = c(
+      "https://w3id.org/gcdfo/salmon#NaturalSpawnerCount",
+      "https://w3id.org/gcdfo/salmon#Stock"
+    ),
+    label = c("Natural spawner count", "Stock"),
+    alt_labels = c("Spawner count", ""),
+    definition = c("Count of natural spawners.", "A salmon stock entity."),
+    resource_kind = c("NamedIndividual", "Class"),
+    in_scheme = c("https://w3id.org/gcdfo/salmon#EstimateTypeScheme", ""),
+    parent_iris = c("", ""),
+    type_iris = c("http://www.w3.org/2004/02/skos/core#Concept", "http://www.w3.org/2002/07/owl#Class"),
+    search_text = c(
+      "natural spawner count spawner count estimate type count of natural spawners",
+      "stock salmon stock entity"
+    ),
+    is_variable = c(TRUE, FALSE),
+    is_property = c(FALSE, FALSE),
+    is_entity = c(FALSE, TRUE),
+    is_constraint = c(FALSE, FALSE),
+    is_method = c(FALSE, FALSE),
+    role_hints = c("variable", "entity")
+  )
+
+  res <- with_mocked_bindings(
+    .gcdfo_term_index = function(refresh = FALSE) mock_index,
+    find_terms("spawner count", role = "variable", sources = "gcdfo", expand_query = FALSE)
+  )
+
+  expect_gte(nrow(res), 1)
+  expect_equal(res$source[[1]], "gcdfo")
+  expect_match(res$iri[[1]], "NaturalSpawnerCount")
+})
+
+test_that("find_terms short-circuits fallback when gcdfo has a good hit", {
+  mock_index <- tibble::tibble(
+    iri = "https://w3id.org/gcdfo/salmon#Stock",
+    label = "Stock",
+    alt_labels = "",
+    definition = "A salmon stock entity.",
+    resource_kind = "Class",
+    in_scheme = "",
+    parent_iris = "",
+    type_iris = "http://www.w3.org/2002/07/owl#Class",
+    search_text = "stock salmon stock entity",
+    is_variable = FALSE,
+    is_property = FALSE,
+    is_entity = TRUE,
+    is_constraint = FALSE,
+    is_method = FALSE,
+    role_hints = "entity"
+  )
+
+  res <- with_mocked_bindings(
+    .gcdfo_term_index = function(refresh = FALSE) mock_index,
+    .safe_json = function(url, headers = NULL, timeout_secs = 30) {
+      stop("fallback should not run when gcdfo already matched")
+    },
+    find_terms("stock", role = "entity", sources = c("gcdfo", "ols", "nvs"), expand_query = FALSE)
+  )
+
+  expect_equal(res$source[[1]], "gcdfo")
+  expect_equal(res$label[[1]], "Stock")
+})
+
 test_that("score_and_rank_terms boosts label overlap with query tokens", {
   df <- tibble::tibble(
     label = c("Spawner count", "Natural killer cell"),
@@ -154,14 +220,14 @@ test_that("score_and_rank_terms is deterministic on ties", {
 
 test_that("sources_for_role returns appropriate sources for each role", {
   expect_equal(sources_for_role("unit"), c("qudt", "nvs", "ols"))
-  expect_equal(sources_for_role("entity"), c("gbif", "worms", "bioportal", "ols"))
-  expect_equal(sources_for_role("property"), c("nvs", "ols", "zooma"))
-  expect_equal(sources_for_role("method"), c("bioportal", "ols", "zooma"))
-  expect_equal(sources_for_role("variable"), c("nvs", "ols", "zooma"))
-  expect_equal(sources_for_role("constraint"), c("ols"))
+  expect_equal(sources_for_role("entity"), c("gcdfo", "gbif", "worms", "bioportal", "ols"))
+  expect_equal(sources_for_role("property"), c("gcdfo", "nvs", "ols", "zooma"))
+  expect_equal(sources_for_role("method"), c("gcdfo", "bioportal", "ols", "zooma"))
+  expect_equal(sources_for_role("variable"), c("gcdfo", "nvs", "ols", "zooma"))
+  expect_equal(sources_for_role("constraint"), c("gcdfo", "ols"))
   # Default fallback
-  expect_equal(sources_for_role(NA), c("ols", "nvs"))
-  expect_equal(sources_for_role(""), c("ols", "nvs"))
+  expect_equal(sources_for_role(NA), c("gcdfo", "ols", "nvs"))
+  expect_equal(sources_for_role(""), c("gcdfo", "ols", "nvs"))
 })
 
 test_that("find_terms uses QUDT SPARQL endpoint for units", {
