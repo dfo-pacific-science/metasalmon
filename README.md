@@ -49,7 +49,19 @@ df <- read.csv(data_path)
 # Generate a data dictionary automatically
 dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")
 
-# Check that it looks right
+# Optional: add a small starter set of semantic IRIs (hardcoded values keep this example explicit)
+dict$term_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#AbsoluteSpawnerAbundance"
+dict$property_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://qudt.org/vocab/quantitykind/NumberOfOrganisms"
+dict$entity_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#ConservationUnit"
+dict$unit_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://qudt.org/vocab/unit/Each"
+
+# Optional: if you want assisted lookup, run suggest_semantics(...)
+# and then manually apply suggestions only to the columns you trust.
+# For guidance on choosing IRIs and field roles, see:
+# https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html
+
+# Check that the dictionary is structurally valid
+# (non-strict mode now warns rather than failing if semantic fields are still missing)
 validate_dictionary(dict)
 
 # Add metadata about your dataset

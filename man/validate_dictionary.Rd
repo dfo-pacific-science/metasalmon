@@ -9,9 +9,10 @@ validate_dictionary(dict, require_iris = FALSE)
 \arguments{
 \item{dict}{A tibble or data.frame with dictionary schema columns}
 
-\item{require_iris}{Logical; if \code{TRUE}, requires non-empty IRIs for semantic
-fields (default: \code{FALSE}). Measurement columns always require \code{term_iri},
-\code{property_iri}, \code{entity_iri}, and \code{unit_iri}.}
+\item{require_iris}{Logical; if \code{TRUE}, requires non-empty semantic IRIs for
+measurement columns (\code{term_iri}, \code{property_iri}, \code{entity_iri}, and \code{unit_iri}).
+With the default \code{FALSE}, those fields are optional; missing values emit a strong
+warning so validation stays unblocked while you finish semantic fill-in.}
 }
 \value{
 Invisibly returns the normalized dictionary if valid; otherwise

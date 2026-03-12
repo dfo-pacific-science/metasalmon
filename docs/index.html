@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -144,7 +144,19 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># Generate a data dictionary automatically</span></span>
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Check that it looks right</span></span>
+<span><span class="co"># Optional: add a small starter set of semantic IRIs (hardcoded values keep this example explicit)</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#AbsoluteSpawnerAbundance"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">property_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://qudt.org/vocab/quantitykind/NumberOfOrganisms"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">entity_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#ConservationUnit"</span></span>
+<span><span class="va">dict</span><span class="op">$</span><span class="va">unit_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://qudt.org/vocab/unit/Each"</span></span>
+<span></span>
+<span><span class="co"># Optional: if you want assisted lookup, run suggest_semantics(...)</span></span>
+<span><span class="co"># and then manually apply suggestions only to the columns you trust.</span></span>
+<span><span class="co"># For guidance on choosing IRIs and field roles, see:</span></span>
+<span><span class="co"># https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html</span></span>
+<span></span>
+<span><span class="co"># Check that the dictionary is structurally valid</span></span>
+<span><span class="co"># (non-strict mode now warns rather than failing if semantic fields are still missing)</span></span>
 <span><span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Add metadata about your dataset</span></span>

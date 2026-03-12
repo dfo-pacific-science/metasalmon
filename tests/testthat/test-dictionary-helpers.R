@@ -178,6 +178,39 @@ test_that("validate_dictionary catches duplicate column names", {
   )
 })
 
+test_that("validate_dictionary warns when measurement semantic fields are missing (non-strict)", {
+  df <- data.frame(count = c(10L, 20L), species = c("Coho", "Chinook"))
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+  dict <- dplyr::mutate(
+    dict,
+    term_iri = "https://example.org/term",
+    property_iri = "https://example.org/property",
+    entity_iri = "https://example.org/entity",
+    unit_iri = "https://example.org/unit"
+  )
+
+  # Make the known measurement field incomplete in all semantic columns
+  dict$term_iri[dict$column_name == "count"] <- NA_character_
+  dict$property_iri[dict$column_name == "count"] <- NA_character_
+  dict$entity_iri[dict$column_name == "count"] <- NA_character_
+  dict$unit_iri[dict$column_name == "count"] <- NA_character_
+
+  expect_warning(
+    expect_invisible(validate_dictionary(dict)),
+    "Hey, you definitely should fill those out before publishing"
+  )
+})
+
+test_that("validate_dictionary can require semantic fields in strict mode", {
+  df <- data.frame(count = c(10L, 20L), species = c("Coho", "Chinook"))
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_error(
+    validate_dictionary(dict, require_iris = TRUE),
+    "Measurement columns require"
+  )
+})
+
 test_that("apply_salmon_dictionary renames columns", {
   df <- data.frame(
     species = c("Coho", "Chinook"),

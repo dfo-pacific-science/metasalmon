@@ -115,15 +115,23 @@ test_that("validate_dictionary handles very long strings", {
 test_that("validate_dictionary requires_iris flag works", {
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
-  dict <- fill_measurement_components(dict)
+  # force a measurement row so strict checks are exercised
+  dict$column_role[1] <- "measurement"
+  dict$term_iri <- NA_character_
+  dict$property_iri <- NA_character_
+  dict$entity_iri <- NA_character_
+  dict$unit_iri <- NA_character_
 
-  # Without IRIs, should pass with require_iris = FALSE
-  expect_invisible(validate_dictionary(dict, require_iris = FALSE))
+  # Without IRIs, should pass with require_iris = FALSE (warning only)
+  expect_warning(
+    expect_invisible(validate_dictionary(dict, require_iris = FALSE)),
+    "Hey, you definitely should fill those out before publishing"
+  )
 
   # Should fail with require_iris = TRUE
   expect_error(
     validate_dictionary(dict, require_iris = TRUE),
-    "Missing required.*iri"
+    "Measurement columns require"
   )
 })
 

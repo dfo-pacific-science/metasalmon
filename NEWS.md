@@ -1,3 +1,14 @@
+metasalmon 0.0.10
+----------------
+
+- Changed `validate_dictionary()` and `validate_semantics()` non-strict semantics:
+  - missing `term_iri`, `property_iri`, `entity_iri`, and `unit_iri` on
+    `column_role == "measurement"` no longer block package creation by default;
+  - missing fields now trigger a strong warning that calls out next steps and points to `suggest_semantics()` plus the standards guide.
+- Preserved strict validation when `require_iris = TRUE` so CI/high-assurance flows can still enforce full semantic coverage.
+- Updated `README`, man pages, and tests to document and verify the new behavior.
+- Added `metasalmon` package release metadata for version 0.0.10.
+
 metasalmon 0.0.9
 ----------------
 

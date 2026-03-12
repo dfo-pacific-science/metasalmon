@@ -14,7 +14,9 @@ validate_semantics(
 \arguments{
 \item{dict}{Dictionary tibble/data frame.}
 
-\item{require_iris}{Logical; if TRUE, require IRIs in all semantic fields.}
+\item{require_iris}{Logical; if TRUE, require non-empty semantic fields
+(\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri}) for measurement
+rows.}
 
 \item{entity_defaults}{Optional data frame with \code{table_prefix} and \code{entity_iri}
 (not applied automatically here but reserved for future use).}
@@ -31,6 +33,7 @@ A list with elements:
 }
 \description{
 Ensures structural requirements, adds a \code{required} column if missing,
-runs \code{validate_dictionary()}, and reports missing \code{term_iri} for
-measurement columns without aborting the entire run.
+runs \code{validate_dictionary()}, and reports measurement rows missing
+\code{term_iri}. In non-strict mode (\code{require_iris = FALSE}), semantic gaps
+emit warnings but do not fail the overall call.
 }

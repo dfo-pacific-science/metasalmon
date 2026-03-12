@@ -131,9 +131,10 @@ infer_column_role <- function(col_name, col) {
 #' validates IRIs. Reports issues using `cli` messaging.
 #'
 #' @param dict A tibble or data.frame with dictionary schema columns
-#' @param require_iris Logical; if `TRUE`, requires non-empty IRIs for semantic
-#'   fields (default: `FALSE`). Measurement columns always require `term_iri`,
-#'   `property_iri`, `entity_iri`, and `unit_iri`.
+#' @param require_iris Logical; if `TRUE`, requires non-empty semantic IRIs for
+#'   measurement columns (`term_iri`, `property_iri`, `entity_iri`, and `unit_iri`).
+#'   With the default `FALSE`, those fields are optional; missing values emit a strong
+#'   warning so validation stays unblocked while you finish semantic fill-in.
 #'
 #' @return Invisibly returns the normalized dictionary if valid; otherwise
 #'   raises errors with clear messages
@@ -203,16 +204,52 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
     cli::cli_abort("{.field required} must be logical (TRUE/FALSE)")
   }
 
-  # Measurement columns require I-ADOPT components and units
+  # Measurement columns are allowed to proceed without I-ADOPT identifiers in non-strict
+  # mode; still surface a high-signal warning because missing fields reduce package quality.
   measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
-  required_measurement_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
-  for (field in required_measurement_fields) {
-    missing_field <- measurement_rows & (is.na(dict[[field]]) | dict[[field]] == "")
-    if (any(missing_field, na.rm = TRUE)) {
-      bad_rows <- which(missing_field)
-      cli::cli_abort(
-        "Measurement columns require {.field {field}}; missing in rows {bad_rows}."
-      )
+  semantic_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
+
+  if (!require_iris) {
+    missing_fields <- lapply(semantic_fields, function(field) {
+      measurement_rows & (is.na(dict[[field]]) | dict[[field]] == "")
+    })
+    names(missing_fields) <- semantic_fields
+
+    any_missing <- Reduce(`|`, missing_fields)
+    if (any(any_missing, na.rm = TRUE)) {
+      missing_summary <- character(0)
+      for (field in names(missing_fields)) {
+        rows <- which(missing_fields[[field]])
+        if (length(rows) == 0) {
+          next
+        }
+        fields <- dict$column_name[rows]
+        missing_summary <- c(
+          missing_summary,
+          sprintf("%s: %s", field, paste0(sprintf("%s (rows %s)", fields, rows), collapse = ", "))
+        )
+      }
+
+      cli::cli_warn(c(
+        "Hey, you definitely should fill those out before publishing.",
+        "x" = "Missing semantic fields for measurement columns:",
+        " " = paste("  ", missing_summary, collapse = "\n"),
+        "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
+        "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
+      ))
+    }
+  }
+
+  required_measurement_fields <- semantic_fields
+  if (require_iris) {
+    for (field in required_measurement_fields) {
+      missing_field <- measurement_rows & (is.na(dict[[field]]) | dict[[field]] == "")
+      if (any(missing_field, na.rm = TRUE)) {
+        bad_rows <- which(missing_field)
+        cli::cli_abort(
+          "Measurement columns require {.field {field}}; missing in rows {bad_rows}."
+        )
+      }
     }
   }
 
@@ -226,17 +263,6 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
     cli::cli_abort(
       "Duplicate column names found in dictionary: {.field {dupes$column_name}}"
     )
-  }
-
-  # Optionally require IRIs
-  if (require_iris) {
-    missing_semantic_iri <- is.na(dict$term_iri) | dict$term_iri == ""
-    if (any(missing_semantic_iri)) {
-      bad_rows <- which(missing_semantic_iri)
-      cli::cli_abort(
-        "Missing required {.field term_iri} in rows {bad_rows}"
-      )
-    }
   }
 
   cli::cli_alert_success("Dictionary validation passed")
