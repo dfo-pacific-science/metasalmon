@@ -2,13 +2,15 @@
 
 ## Overview
 
-This guide walks through the parts of a Salmon Data Package you need to
-polish before sharing it. That includes the dictionary that documents
-every column, the dataset and table metadata that describe the package,
-and the optional codes lists you include when columns use controlled
-values. When all of the pieces are ready, `metasalmon` writes the files
-that match the Salmon Data Package specification so you can upload or
-hand the folder to someone else with confidence.
+This guide follows the 5-Minute Quickstart and focuses on the
+**publishing hardening** steps. If you have not yet generated a starter
+dictionary yet, start with the [5-Minute
+Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
+first.
+
+When all of the pieces are ready, `metasalmon` writes files matching the
+Salmon Data Package specification so you can upload or hand the folder
+to someone else with confidence.
 
 ### 1) Start with your data
 
@@ -21,10 +23,17 @@ library(readr)
 df <- read_csv("my-table.csv")
 ```
 
-Keep working copies of your data frame handy so you can re-run these
+If you already have a dictionary and metadata from the quickstart, skip
+directly to [Describe the dataset and
+tables](#id_3-describe-the-dataset-and-tables).
+
+Keep a working copy of your data frame handy so you can re-run these
 steps whenever the source data changes.
 
 ### 2) Build a starter column dictionary
+
+If you already ran the quickstart and already have `dict`, skip this
+section.
 
 ``` r
 

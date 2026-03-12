@@ -1,8 +1,7 @@
 # Infer a starter dictionary from a data frame
 
 Proposes a starter dictionary (column dictionary schema) from raw data
-by guessing column types, roles, and basic metadata. IRIs and semantic
-fields are left blank for manual or GPT-assisted completion.
+by guessing column types, roles, and basic metadata.
 
 ## Usage
 
@@ -11,7 +10,11 @@ infer_dictionary(
   df,
   guess_types = TRUE,
   dataset_id = "dataset-1",
-  table_id = "table-1"
+  table_id = "table-1",
+  seed_semantics = FALSE,
+  semantic_sources = c("ols", "nvs"),
+  semantic_max_per_role = 1,
+  seed_verbose = TRUE
 )
 ```
 
@@ -19,19 +22,42 @@ infer_dictionary(
 
 - df:
 
-  A data frame or tibble to analyze
+  A data frame or tibble to analyze.
 
 - guess_types:
 
-  Logical; if `TRUE` (default), infer value types from data
+  Logical; if `TRUE` (default), infer value types from data.
 
 - dataset_id:
 
-  Character; dataset identifier (default: "dataset-1")
+  Character; dataset identifier (default: "dataset-1").
 
 - table_id:
 
-  Character; table identifier (default: "table-1")
+  Character; table identifier (default: "table-1").
+
+- seed_semantics:
+
+  Logical; if `TRUE`, run
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  and attach the resulting `semantic_suggestions` attribute to the
+  returned dictionary.
+
+- semantic_sources:
+
+  Character vector of vocabulary sources passed to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  when `seed_semantics = TRUE`. Default: `c("ols", "nvs")`.
+
+- semantic_max_per_role:
+
+  Maximum number of suggestions retained per I-ADOPT role when seeding
+  suggestions. Default: `1`.
+
+- seed_verbose:
+
+  Logical; if TRUE, print a short progress message while seeding
+  semantic suggestions.
 
 ## Value
 
@@ -51,5 +77,9 @@ df <- data.frame(
   date = as.Date(c("2024-01-01", "2024-01-02"))
 )
 dict <- infer_dictionary(df)
+
+# Optional: seed semantic suggestions from vocabulary services
+dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("ols", "nvs"))
+suggestions <- attr(dict, "semantic_suggestions")
 } # }
 ```

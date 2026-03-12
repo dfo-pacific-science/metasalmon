@@ -29,97 +29,39 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
-First, install the package from GitHub:
+Install, infer a dictionary, and validate. Then jump to the 5-minute quickstart for the full publishing workflow.
 
 ```r
 # Install from GitHub (recommended)
-install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
-```
+# install.packages("remotes")
+# remotes::install_github("dfo-pacific-science/metasalmon")
 
-Then use it to create a data package:
-
-```r
 library(metasalmon)
 
 # Load the example NuSEDS Fraser Coho data included in metasalmon
 data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-df <- read.csv(data_path)
+df <- readr::read_csv(data_path, show_col_types = FALSE)
 
-# Generate a data dictionary automatically
+# Generate starter dictionary
 dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")
-
-# Optional: add a small starter set of semantic IRIs (hardcoded values keep this example explicit)
-dict$term_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#AbsoluteSpawnerAbundance"
-dict$property_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://qudt.org/vocab/quantitykind/NumberOfOrganisms"
-dict$entity_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://w3id.org/gcdfo/salmon#ConservationUnit"
-dict$unit_iri[dict$column_name == "NATURAL_SPAWNERS_TOTAL"] <- "https://qudt.org/vocab/unit/Each"
-
-# Optional: if you want assisted lookup, run suggest_semantics(...)
-# and then manually apply suggestions only to the columns you trust.
-# For guidance on choosing IRIs and field roles, see:
-# https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html
-
-# Check that the dictionary is structurally valid
-# (non-strict mode now warns rather than failing if semantic fields are still missing)
 validate_dictionary(dict)
 
-# Add metadata about your dataset
-dataset_meta <- tibble::tibble(
-  dataset_id = "fraser-coho-2024",
-  title = "Fraser River Coho Escapement Data",
-  description = "Escapement monitoring data for coho salmon",
-  creator = "Your Name",
-  contact_name = "Your Name",
-  contact_email = "your.email@dfo-mpo.gc.ca",
-  license = "Open Government License - Canada",
-  # Optional but useful for EDH/GeoNetwork-ready export:
-  contact_org = "Fisheries and Oceans Canada - Pacific Region Science Branch",
-  contact_position = "Fishery and Assessment Data Section",
-  update_frequency = "annually",
-  topic_categories = "biota;oceans",
-  keywords = "coho;escapement;Fraser River",
-  security_classification = "unclassified"
-)
-
-table_meta <- tibble::tibble(
+# Optional: attach semantic suggestions (no auto-commit to IRIs)
+dict <- infer_dictionary(
+  df,
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  file_name = "escapement.csv",
-  table_label = "Escapement Data",
-  description = "Coho escapement counts by population and year"
+  seed_semantics = TRUE,
+  seed_verbose = TRUE
 )
-
-# Create a shareable package
-create_salmon_datapackage(
-  resources = list(escapement = df),
-  dataset_meta = dataset_meta,
-  table_meta = table_meta,
-  dict = dict,
-  path = "my-data-package"
-)
-
-# Optional: generate starter ISO 19139 XML for EDH/GeoNetwork upload workflows
-edh_build_iso19139_xml(
-  dataset_meta,
-  output_path = "my-data-package/metadata-iso19139.xml"
-)
+attr(dict, "semantic_suggestions") |> head()
 ```
 
-**Result**: A folder containing your data + documentation that anyone can understand.
+To continue:
 
-### Semantic validation loop (new)
-
-```r
-# Fetch the latest DFO Salmon Ontology (content-negotiated, cached locally)
-onto_path <- fetch_salmon_ontology()
-
-# Run semantic validation and surface missing IRIs early
-validate_semantics(dict)
-
-# If GPT proposed many new terms, deduplicate before filing issues
-deduped <- deduplicate_proposed_terms(readr::read_csv("gpt_proposed_terms.csv"))
-```
+- [5-Minute Quickstart](articles/metasalmon.html) — create the full package with metadata and export it.
+- [Publishing Data Packages](articles/data-dictionary-publication.html) — end-to-end publication checklist.
+- [Linking to Standard Vocabularies](articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
 ## Who Is This For?
 
@@ -132,8 +74,6 @@ deduped <- deduplicate_proposed_terms(readr::read_csv("gpt_proposed_terms.csv"))
 | Reading CSVs from private GitHub repos  | [GitHub CSV Access](articles/github-csv-access.html)                       |
 
 ## Video Walkthrough
-
-[![Watch: Creating Your First Data Package](man/figures/video-thumbnail.png)](https://www.example.com/metasalmon-intro-video)
 
 [Watch: Creating Your First Data Package (3 min)](https://www.example.com/metasalmon-intro-video)
 

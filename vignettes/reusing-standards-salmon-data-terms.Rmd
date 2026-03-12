@@ -17,6 +17,10 @@ knitr::opts_chunk$set(
 
 # Overview
 
+This article is the deep-dive for vocabulary mapping. Start with the
+[5-Minute Quickstart](metasalmon.html) for the baseline infer/validate/package flow,
+then come back here to map columns to standard terms.
+
 When you reuse published salmon data terms, your dictionary becomes easier for other scientists and machines to understand. This guide explains when to reuse an existing term, how to point to it, and how to discover terms without drowning in jargon.
 
 ## Why reuse shared terms?

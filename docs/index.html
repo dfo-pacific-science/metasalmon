@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.10</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,6 +90,7 @@ concept schemes) while preserving your original data structure.
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
 <p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://dfo-pacific-science.github.io/dfo-salmon-ontology/" class="external-link">DFO Salmon Ontology</a> and other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
+<p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
 <div class="section level2">
@@ -128,91 +129,40 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
 </h2>
-<p>First, install the package from GitHub:</p>
+<p>Install, infer a dictionary, and validate. Then jump to the 5-minute quickstart for the full publishing workflow.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub (recommended)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
-<p>Then use it to create a data package:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="co"># remotes::install_github("dfo-pacific-science/metasalmon")</span></span>
+<span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Load the example NuSEDS Fraser Coho data included in metasalmon</span></span>
 <span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="va">data_path</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Generate a data dictionary automatically</span></span>
+<span><span class="co"># Generate starter dictionary</span></span>
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Optional: add a small starter set of semantic IRIs (hardcoded values keep this example explicit)</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#AbsoluteSpawnerAbundance"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">property_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://qudt.org/vocab/quantitykind/NumberOfOrganisms"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">entity_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://w3id.org/gcdfo/salmon#ConservationUnit"</span></span>
-<span><span class="va">dict</span><span class="op">$</span><span class="va">unit_iri</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"NATURAL_SPAWNERS_TOTAL"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"https://qudt.org/vocab/unit/Each"</span></span>
-<span></span>
-<span><span class="co"># Optional: if you want assisted lookup, run suggest_semantics(...)</span></span>
-<span><span class="co"># and then manually apply suggestions only to the columns you trust.</span></span>
-<span><span class="co"># For guidance on choosing IRIs and field roles, see:</span></span>
-<span><span class="co"># https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html</span></span>
-<span></span>
-<span><span class="co"># Check that the dictionary is structurally valid</span></span>
-<span><span class="co"># (non-strict mode now warns rather than failing if semantic fields are still missing)</span></span>
 <span><span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Add metadata about your dataset</span></span>
-<span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
-<span>  title <span class="op">=</span> <span class="st">"Fraser River Coho Escapement Data"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"Escapement monitoring data for coho salmon"</span>,</span>
-<span>  creator <span class="op">=</span> <span class="st">"Your Name"</span>,</span>
-<span>  contact_name <span class="op">=</span> <span class="st">"Your Name"</span>,</span>
-<span>  contact_email <span class="op">=</span> <span class="st">"your.email@dfo-mpo.gc.ca"</span>,</span>
-<span>  license <span class="op">=</span> <span class="st">"Open Government License - Canada"</span>,</span>
-<span>  <span class="co"># Optional but useful for EDH/GeoNetwork-ready export:</span></span>
-<span>  contact_org <span class="op">=</span> <span class="st">"Fisheries and Oceans Canada - Pacific Region Science Branch"</span>,</span>
-<span>  contact_position <span class="op">=</span> <span class="st">"Fishery and Assessment Data Section"</span>,</span>
-<span>  update_frequency <span class="op">=</span> <span class="st">"annually"</span>,</span>
-<span>  topic_categories <span class="op">=</span> <span class="st">"biota;oceans"</span>,</span>
-<span>  keywords <span class="op">=</span> <span class="st">"coho;escapement;Fraser River"</span>,</span>
-<span>  security_classification <span class="op">=</span> <span class="st">"unclassified"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span><span class="co"># Optional: attach semantic suggestions (no auto-commit to IRIs)</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
+<span>  <span class="va">df</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  file_name <span class="op">=</span> <span class="st">"escapement.csv"</span>,</span>
-<span>  table_label <span class="op">=</span> <span class="st">"Escapement Data"</span>,</span>
-<span>  description <span class="op">=</span> <span class="st">"Coho escapement counts by population and year"</span></span>
+<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Create a shareable package</span></span>
-<span><span class="fu"><a href="reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
-<span>  resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">df</span><span class="op">)</span>,</span>
-<span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
-<span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
-<span>  dict <span class="op">=</span> <span class="va">dict</span>,</span>
-<span>  path <span class="op">=</span> <span class="st">"my-data-package"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Optional: generate starter ISO 19139 XML for EDH/GeoNetwork upload workflows</span></span>
-<span><span class="fu"><a href="reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span></span>
-<span>  <span class="va">dataset_meta</span>,</span>
-<span>  output_path <span class="op">=</span> <span class="st">"my-data-package/metadata-iso19139.xml"</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p><strong>Result</strong>: A folder containing your data + documentation that anyone can understand.</p>
-<div class="section level3">
-<h3 id="semantic-validation-loop-new">Semantic validation loop (new)<a class="anchor" aria-label="anchor" href="#semantic-validation-loop-new"></a>
-</h3>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Fetch the latest DFO Salmon Ontology (content-negotiated, cached locally)</span></span>
-<span><span class="va">onto_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Run semantic validation and surface missing IRIs early</span></span>
-<span><span class="fu"><a href="reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># If GPT proposed many new terms, deduplicate before filing issues</span></span>
-<span><span class="va">deduped</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms</a></span><span class="op">(</span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="st">"gpt_proposed_terms.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-</div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>To continue:</p>
+<ul>
+<li>
+<a href="articles/metasalmon.html">5-Minute Quickstart</a> — create the full package with metadata and export it.</li>
+<li>
+<a href="articles/data-dictionary-publication.html">Publishing Data Packages</a> — end-to-end publication checklist.</li>
+<li>
+<a href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
@@ -253,13 +203,12 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="video-walkthrough">Video Walkthrough<a class="anchor" aria-label="anchor" href="#video-walkthrough"></a>
 </h2>
-<p><a href="https://www.example.com/metasalmon-intro-video" class="external-link"><img src="reference/figures/video-thumbnail.png" alt="Watch: Creating Your First Data Package"></a></p>
 <p><a href="https://www.example.com/metasalmon-intro-video" class="external-link">Watch: Creating Your First Data Package (3 min)</a></p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -380,7 +329,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -388,7 +337,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>

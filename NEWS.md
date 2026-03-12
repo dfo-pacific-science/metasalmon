@@ -1,3 +1,17 @@
+metasalmon 0.0.11
+----------------
+
+- Added optional semantic seeding to `infer_dictionary()` via
+  `seed_semantics = TRUE`, with optional source/max-per-role controls
+  (`semantic_sources`, `semantic_max_per_role`).
+  - This returns dictionary suggestions via
+    `attr(dict, "semantic_suggestions")` without changing existing defaults.
+- Added guidance at the package README quick example that keeps the home-page flow
+  short and links to 5-minute Quickstart + dedicated deep-dive articles.
+- Marked related vignettes as workflow-specific to avoid duplicating the Quickstart
+  path; `data-dictionary-publication` and `reusing-standards-salmon-data-terms`
+  now orient users to post-Quickstart use.
+
 metasalmon 0.0.10
 ----------------
 

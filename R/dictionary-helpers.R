@@ -1,13 +1,20 @@
 #' Infer a starter dictionary from a data frame
 #'
 #' Proposes a starter dictionary (column dictionary schema) from raw data by
-#' guessing column types, roles, and basic metadata. IRIs and semantic fields
-#' are left blank for manual or GPT-assisted completion.
+#' guessing column types, roles, and basic metadata.
 #'
-#' @param df A data frame or tibble to analyze
-#' @param guess_types Logical; if `TRUE` (default), infer value types from data
-#' @param dataset_id Character; dataset identifier (default: "dataset-1")
-#' @param table_id Character; table identifier (default: "table-1")
+#' @param df A data frame or tibble to analyze.
+#' @param guess_types Logical; if `TRUE` (default), infer value types from data.
+#' @param dataset_id Character; dataset identifier (default: "dataset-1").
+#' @param table_id Character; table identifier (default: "table-1").
+#' @param seed_semantics Logical; if `TRUE`, run `suggest_semantics()` and attach
+#'   the resulting `semantic_suggestions` attribute to the returned dictionary.
+#' @param semantic_sources Character vector of vocabulary sources passed to
+#'   `suggest_semantics()` when `seed_semantics = TRUE`. Default: `c("ols", "nvs")`.
+#' @param semantic_max_per_role Maximum number of suggestions retained per I-ADOPT
+#'   role when seeding suggestions. Default: `1`.
+#' @param seed_verbose Logical; if TRUE, print a short progress message while
+#'   seeding semantic suggestions.
 #'
 #' @return A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 #'   `column_name`, `column_label`, `column_description`, `column_role`,
@@ -25,8 +32,14 @@
 #'   date = as.Date(c("2024-01-01", "2024-01-02"))
 #' )
 #' dict <- infer_dictionary(df)
+#'
+#' # Optional: seed semantic suggestions from vocabulary services
+#' dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("ols", "nvs"))
+#' suggestions <- attr(dict, "semantic_suggestions")
 #' }
-infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1") {
+infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1",
+                            seed_semantics = FALSE, semantic_sources = c("ols", "nvs"), semantic_max_per_role = 1,
+                            seed_verbose = TRUE) {
   if (!inherits(df, "data.frame")) {
     cli::cli_abort("{.arg df} must be a data frame or tibble")
   }
@@ -61,6 +74,18 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       dict$value_type[i] <- infer_value_type(col)
       dict$column_role[i] <- infer_column_role(col_names[i], col)
     }
+  }
+
+  if (isTRUE(seed_semantics)) {
+    if (seed_verbose) {
+      cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
+    }
+    dict <- suggest_semantics(
+      df = df,
+      dict = dict,
+      sources = semantic_sources,
+      max_per_role = semantic_max_per_role
+    )
   }
 
   dict

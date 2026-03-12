@@ -27,6 +27,39 @@ test_that("infer_dictionary creates valid structure", {
   expect_equal(dict$value_type[dict$column_name == "is_active"], "boolean")
 })
 
+test_that("infer_dictionary can seed semantic suggestions", {
+  fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE, ...) {
+    expect_equal(sources, c("ols", "nvs", "qudt"))
+    expect_equal(max_per_role, 1)
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = c("count"),
+      dictionary_role = c("variable"),
+      label = c("Count"),
+      iri = c("https://example.org/count"),
+      source = c("ols"),
+      ontology = c("demo"),
+      definition = c(NA_character_)
+    )
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      dict <- infer_dictionary(
+        data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+        seed_semantics = TRUE,
+        semantic_sources = c("ols", "nvs", "qudt"),
+        seed_verbose = FALSE
+      )
+      sugg <- attr(dict, "semantic_suggestions")
+      expect_s3_class(sugg, "tbl_df")
+      expect_equal(nrow(sugg), 1)
+      expect_equal(sugg$iri, "https://example.org/count")
+    }
+  )
+})
+
 test_that("suggest_semantics attaches empty suggestions when sources disabled", {
   dict <- tibble::tibble(
     dataset_id = "test",

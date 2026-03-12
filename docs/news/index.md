@@ -1,5 +1,22 @@
 # Changelog
 
+## metasalmon 0.0.11
+
+- Added optional semantic seeding to
+  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+  via `seed_semantics = TRUE`, with optional source/max-per-role
+  controls (`semantic_sources`, `semantic_max_per_role`).
+  - This returns dictionary suggestions via
+    `attr(dict, "semantic_suggestions")` without changing existing
+    defaults.
+- Added guidance at the package README quick example that keeps the
+  home-page flow short and links to 5-minute Quickstart + dedicated
+  deep-dive articles.
+- Marked related vignettes as workflow-specific to avoid duplicating the
+  Quickstart path; `data-dictionary-publication` and
+  `reusing-standards-salmon-data-terms` now orient users to
+  post-Quickstart use.
+
 ## metasalmon 0.0.10
 
 - Changed
@@ -10,28 +27,15 @@
   - missing `term_iri`, `property_iri`, `entity_iri`, and `unit_iri` on
     `column_role == "measurement"` no longer block package creation by
     default;
-  - a strong console warning now advises completing semantic fields and
-    points to documentation +
+  - missing fields now trigger a strong warning that calls out next
+    steps and points to
     [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-    as next steps.
-- Preserved strict validation when `require_iris = TRUE` so CI and
-  high-assurance flows can still enforce complete semantic coverage.
-- Updated `README` and `tests` to document and verify the warning-first
+    plus the standards guide.
+- Preserved strict validation when `require_iris = TRUE` so
+  CI/high-assurance flows can still enforce full semantic coverage.
+- Updated `README`, man pages, and tests to document and verify the new
   behavior.
-
-## metasalmon 0.0.10
-
-- Updated dictionary validation to not fail package creation when
-  measurement columns are missing `term_iri`, `property_iri`,
-  `entity_iri`, or `unit_iri` in non-strict mode.
-  - Missing semantic fields now emit a prominent warning with next-step
-    guidance and link to the standards article.
-  - `validate_dictionary(dict, require_iris = TRUE)` still enforces full
-    semantic coverage for strict validation.
-- Added/updated tests for warning-first and strict-mode behavior for
-  measurement semantic fields.
-- Updated Quick Start guidance and validation docs to reflect the new
-  non-blocking default workflow.
+- Added `metasalmon` package release metadata for version 0.0.10.
 
 ## metasalmon 0.0.9
 
