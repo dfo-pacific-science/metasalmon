@@ -3,8 +3,9 @@
 Ensures structural requirements, adds a `required` column if missing,
 runs
 [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md),
-and reports missing `term_iri` for measurement columns without aborting
-the entire run.
+and reports measurement rows missing `term_iri`. In non-strict mode
+(`require_iris = FALSE`), semantic gaps emit warnings but do not fail
+the overall call.
 
 ## Usage
 
@@ -25,7 +26,8 @@ validate_semantics(
 
 - require_iris:
 
-  Logical; if TRUE, require IRIs in all semantic fields.
+  Logical; if TRUE, require non-empty semantic fields (`term_iri`,
+  `property_iri`, `entity_iri`, `unit_iri`) for measurement rows.
 
 - entity_defaults:
 

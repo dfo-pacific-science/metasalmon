@@ -11,7 +11,7 @@ validates IRIs. Reports issues using cli messaging."><meta property="og:image" c
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,9 +65,10 @@ validates IRIs. Reports issues using <code>cli</code> messaging.</p>
 
 
 <dt id="arg-require-iris">require_iris<a class="anchor" aria-label="anchor" href="#arg-require-iris"></a></dt>
-<dd><p>Logical; if <code>TRUE</code>, requires non-empty IRIs for semantic
-fields (default: <code>FALSE</code>). Measurement columns always require <code>term_iri</code>,
-<code>property_iri</code>, <code>entity_iri</code>, and <code>unit_iri</code>.</p></dd>
+<dd><p>Logical; if <code>TRUE</code>, requires non-empty semantic IRIs for
+measurement columns (<code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>, and <code>unit_iri</code>).
+With the default <code>FALSE</code>, those fields are optional; missing values emit a strong
+warning so validation stays unblocked while you finish semantic fill-in.</p></dd>
 
 </dl></div>
     <div class="section level2">

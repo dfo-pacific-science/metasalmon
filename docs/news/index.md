@@ -1,5 +1,38 @@
 # Changelog
 
+## metasalmon 0.0.10
+
+- Changed
+  [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
+  and
+  [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+  non-strict semantics:
+  - missing `term_iri`, `property_iri`, `entity_iri`, and `unit_iri` on
+    `column_role == "measurement"` no longer block package creation by
+    default;
+  - a strong console warning now advises completing semantic fields and
+    points to documentation +
+    [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+    as next steps.
+- Preserved strict validation when `require_iris = TRUE` so CI and
+  high-assurance flows can still enforce complete semantic coverage.
+- Updated `README` and `tests` to document and verify the warning-first
+  behavior.
+
+## metasalmon 0.0.10
+
+- Updated dictionary validation to not fail package creation when
+  measurement columns are missing `term_iri`, `property_iri`,
+  `entity_iri`, or `unit_iri` in non-strict mode.
+  - Missing semantic fields now emit a prominent warning with next-step
+    guidance and link to the standards article.
+  - `validate_dictionary(dict, require_iris = TRUE)` still enforces full
+    semantic coverage for strict validation.
+- Added/updated tests for warning-first and strict-mode behavior for
+  measurement semantic fields.
+- Updated Quick Start guidance and validation docs to reflect the new
+  non-blocking default workflow.
+
 ## metasalmon 0.0.9
 
 - Added

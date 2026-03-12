@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.9</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.10</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,25 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.10" id="metasalmon-0010">metasalmon 0.0.10<a class="anchor" aria-label="anchor" href="#metasalmon-0010"></a></h2>
+<ul><li>Changed <code><a href="../reference/validate_dictionary.html">validate_dictionary()</a></code> and <code><a href="../reference/validate_semantics.html">validate_semantics()</a></code> non-strict semantics:
+<ul><li>missing <code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>, and <code>unit_iri</code> on <code>column_role == "measurement"</code> no longer block package creation by default;</li>
+<li>a strong console warning now advises completing semantic fields and points to documentation + <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> as next steps.</li>
+</ul></li>
+<li>Preserved strict validation when <code>require_iris = TRUE</code> so CI and high-assurance flows can still enforce complete semantic coverage.</li>
+<li>Updated <code>README</code> and <code>tests</code> to document and verify the warning-first behavior.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.10" id="metasalmon-0010-1">metasalmon 0.0.10<a class="anchor" aria-label="anchor" href="#metasalmon-0010-1"></a></h2>
+<ul><li>Updated dictionary validation to not fail package creation when measurement columns are missing <code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>, or <code>unit_iri</code> in non-strict mode.
+<ul><li>Missing semantic fields now emit a prominent warning with next-step guidance and link to the standards article.</li>
+<li>
+<code>validate_dictionary(dict, require_iris = TRUE)</code> still enforces full semantic coverage for strict validation.</li>
+</ul></li>
+<li>Added/updated tests for warning-first and strict-mode behavior for measurement semantic fields.</li>
+<li>Updated Quick Start guidance and validation docs to reflect the new non-blocking default workflow.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.9" id="metasalmon-009">metasalmon 0.0.9<a class="anchor" aria-label="anchor" href="#metasalmon-009"></a></h2>
 <ul><li>Added <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> to generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub / GeoNetwork upload workflows.</li>
