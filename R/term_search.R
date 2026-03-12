@@ -91,8 +91,10 @@
 #' - Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
 #'
 #' Results are scored using I-ADOPT vocabulary hints and role-based ontology
-#' preferences, then ranked by relevance. Network calls are best-effort and
-#' return an empty tibble on failure.
+#' preferences, then ranked by relevance. When `"gcdfo"` is included in
+#' `sources`, the salmon-domain ontology search runs first and external fallback
+#' sources are skipped when GCDFO returns a good label match. Network calls are
+#' best-effort and return an empty tibble on failure.
 #'
 #' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
 #' @param role Optional I-ADOPT role hint for ranking and source selection. One of:

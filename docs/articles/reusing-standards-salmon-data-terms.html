@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -217,7 +217,7 @@ confidence when applicable</li>
 </ul>
 <p>Filter out alignment-only terms when selecting canonical IRIs:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, role <span class="op">=</span> <span class="st">"entity"</span>, sources <span class="op">=</span> <span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"entity"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">canonical</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">[</span><span class="op">!</span><span class="va">results</span><span class="op">$</span><span class="va">alignment_only</span>, <span class="op">]</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -225,7 +225,7 @@ confidence when applicable</li>
 </h4>
 <p>If a search returns unexpected results, check the diagnostics:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, role <span class="op">=</span> <span class="st">"property"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">diagnostics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">results</span>, <span class="st">"diagnostics"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diagnostics</span><span class="op">)</span></span>
 <span><span class="co"># Shows: source, query, status (success/error), count, elapsed_secs, error message</span></span></code></pre></div>
@@ -311,7 +311,7 @@ reviewers do not have to guess.</li>
 offer <code>term_iri</code>, <code>entity_iri</code>, or I-ADOPT
 components based on the bundled catalog.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span><span class="op">)</span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span></code></pre></div>
 <p>It is safe to accept suggestions as a starting point, then tweak the

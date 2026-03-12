@@ -45,7 +45,7 @@ Searches external vocabularies to suggest IRIs for measurement columns that
 are missing semantic annotations. For each measurement column with missing
 I-ADOPT component fields (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri},
 \code{constraint_iri}), this function queries vocabulary services and ranks
-results by relevance.
+results by relevance, with GCDFO queried first for salmon-domain roles.
 }
 \details{
 The function uses the column's label or description as the search query and

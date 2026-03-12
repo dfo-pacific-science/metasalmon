@@ -57,6 +57,7 @@ df <- data.frame(
 dict <- infer_dictionary(df)
 
 # Optional: seed semantic suggestions from vocabulary services
+# (GCDFO is queried first for salmon-domain roles)
 dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("gcdfo", "ols", "nvs"))
 suggestions <- attr(dict, "semantic_suggestions")
 }

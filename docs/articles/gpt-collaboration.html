@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -303,11 +303,11 @@ catalogue)<a class="anchor" aria-label="anchor" href="#step-3b-pull-role-aware-s
 <p>Before (or alongside) GPT, you can ask <code>metasalmon</code> to
 propose candidates using the bundled I-ADOPT terminology catalogue:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Role-aware suggestions; no network keys needed for OLS/NVS</span></span>
+<code class="sourceCode R"><span><span class="co"># Role-aware suggestions; GCDFO is queried first for salmon-domain roles,</span></span>
+<span><span class="co"># with OLS/NVS used as fallback sources.</span></span>
 <span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
 <span>  df <span class="op">=</span> <span class="va">df</span>,</span>
-<span>  dict <span class="op">=</span> <span class="va">dict</span>,</span>
-<span>  sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span></span>
+<span>  dict <span class="op">=</span> <span class="va">dict</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
@@ -525,10 +525,10 @@ leave it blank and draft a term request (don’t invent IRIs).</li>
 </h2>
 <p>The <a href="https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md"><code>suggest_semantics()</code></a>
 function provides role-aware IRI suggestions using the bundled I-ADOPT
-terminology catalogue and external ontology services (OLS, NVS,
-BioPortal):</p>
+terminology catalogue and external ontology services (GCDFO first for
+salmon-domain roles, then OLS/NVS/BioPortal as needed):</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span><span class="op">)</span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></code></pre></div>
 <p>This complements the GPT workflow by providing deterministic,
 reproducible suggestions that you can review and merge into your
@@ -555,12 +555,12 @@ matching only.</p>
 sources receive score boosts. Check the <code>agreement_sources</code>
 column to see how many sources returned the same term.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, role <span class="op">=</span> <span class="st">"entity"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">results</span><span class="op">[</span><span class="va">results</span><span class="op">$</span><span class="va">agreement_sources</span> <span class="op">&gt;</span> <span class="fl">1</span>, <span class="op">]</span>  <span class="co"># Terms with multi-source agreement</span></span></code></pre></div>
 <p><strong>Diagnostics for debugging</strong>: When searches return
 unexpected results, inspect the diagnostics attribute:</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, role <span class="op">=</span> <span class="st">"property"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">diagnostics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">results</span>, <span class="st">"diagnostics"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diagnostics</span><span class="op">)</span></span>
 <span><span class="co"># Shows: source, query, status, count, elapsed_secs, error</span></span></code></pre></div>

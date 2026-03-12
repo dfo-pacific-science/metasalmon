@@ -70,8 +70,10 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 }
 
 Results are scored using I-ADOPT vocabulary hints and role-based ontology
-preferences, then ranked by relevance. Network calls are best-effort and
-return an empty tibble on failure.
+preferences, then ranked by relevance. When \code{"gcdfo"} is included in
+\code{sources}, the salmon-domain ontology search runs first and external fallback
+sources are skipped when GCDFO returns a good label match. Network calls are
+best-effort and return an empty tibble on failure.
 }
 \examples{
 \dontrun{

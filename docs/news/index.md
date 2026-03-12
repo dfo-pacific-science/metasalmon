@@ -1,5 +1,22 @@
 # Changelog
 
+## metasalmon 0.0.12
+
+- Added a GCDFO-backed
+  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  search backend that queries the DFO Salmon Ontology first via content
+  negotiation against `https://w3id.org/gcdfo/salmon`.
+- For salmon-domain roles,
+  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  now prioritizes GCDFO results and only falls back to OLS/NVS when
+  GCDFO returns no good label hit.
+- Updated
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md),
+  `infer_dictionary(seed_semantics = TRUE)`, man pages, and vignettes to
+  reflect the new GCDFO-first search behavior.
+- Rebuilt package documentation, tests, source tarball, and pkgdown site
+  for the 0.0.12 release.
+
 ## metasalmon 0.0.11
 
 - Added optional semantic seeding to

@@ -112,20 +112,18 @@ vocabularies:
 ``` r
 
 # Get semantic suggestions for your dictionary
-dict_suggested <- suggest_semantics(
-  df,
-  dict,
-  sources = c("ols", "nvs")
-)
+# For salmon-domain roles, GCDFO is queried first and OLS/NVS are fallback sources.
+dict_suggested <- suggest_semantics(df, dict)
 
 # View the suggestions
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)
 ```
 
-This will search standard ontologies and vocabularies to find matching
+This searches standard ontologies and vocabularies to find matching
 terms for your columns, helping you link your data to recognized
-scientific standards.
+scientific standards without making OLS/NVS the first stop for
+salmon-domain matches.
 
 > **Want faster results?** Use the [Salmon Data Standardizer
 > GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)

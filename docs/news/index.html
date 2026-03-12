@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,13 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.12" id="metasalmon-0012">metasalmon 0.0.12<a class="anchor" aria-label="anchor" href="#metasalmon-0012"></a></h2>
+<ul><li>Added a GCDFO-backed <code><a href="../reference/find_terms.html">find_terms()</a></code> search backend that queries the DFO Salmon Ontology first via content negotiation against <code>https://w3id.org/gcdfo/salmon</code>.</li>
+<li>For salmon-domain roles, <code><a href="../reference/find_terms.html">find_terms()</a></code> now prioritizes GCDFO results and only falls back to OLS/NVS when GCDFO returns no good label hit.</li>
+<li>Updated <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, <code>infer_dictionary(seed_semantics = TRUE)</code>, man pages, and vignettes to reflect the new GCDFO-first search behavior.</li>
+<li>Rebuilt package documentation, tests, source tarball, and pkgdown site for the 0.0.12 release.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.11" id="metasalmon-0011">metasalmon 0.0.11<a class="anchor" aria-label="anchor" href="#metasalmon-0011"></a></h2>
 <ul><li>Added optional semantic seeding to <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code> via <code>seed_semantics = TRUE</code>, with optional source/max-per-role controls (<code>semantic_sources</code>, <code>semantic_max_per_role</code>).

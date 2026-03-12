@@ -222,11 +222,11 @@ candidates using the bundled I-ADOPT terminology catalogue:
 
 ``` r
 
-# Role-aware suggestions; no network keys needed for OLS/NVS
+# Role-aware suggestions; GCDFO is queried first for salmon-domain roles,
+# with OLS/NVS used as fallback sources.
 dict_suggested <- suggest_semantics(
   df = df,
-  dict = dict,
-  sources = c("ols", "nvs")
+  dict = dict
 )
 
 suggestions <- attr(dict_suggested, "semantic_suggestions")
@@ -425,12 +425,12 @@ When a specific term isn’t available:
 The
 [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
 function provides role-aware IRI suggestions using the bundled I-ADOPT
-terminology catalogue and external ontology services (OLS, NVS,
-BioPortal):
+terminology catalogue and external ontology services (GCDFO first for
+salmon-domain roles, then OLS/NVS/BioPortal as needed):
 
 ``` r
 
-dict_suggested <- suggest_semantics(df, dict, sources = c("ols", "nvs"))
+dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 ```
 
@@ -467,7 +467,7 @@ sources returned the same term.
 
 ``` r
 
-results <- find_terms("salmon", sources = c("ols", "nvs", "zooma"))
+results <- find_terms("salmon", role = "entity", sources = c("gcdfo", "ols", "nvs", "zooma"))
 results[results$agreement_sources > 1, ]  # Terms with multi-source agreement
 ```
 
@@ -476,7 +476,7 @@ inspect the diagnostics attribute:
 
 ``` r
 
-results <- find_terms("temperature", sources = c("ols", "nvs", "zooma"))
+results <- find_terms("temperature", role = "property", sources = c("gcdfo", "ols", "nvs", "zooma"))
 diagnostics <- attr(results, "diagnostics")
 print(diagnostics)
 # Shows: source, query, status, count, elapsed_secs, error

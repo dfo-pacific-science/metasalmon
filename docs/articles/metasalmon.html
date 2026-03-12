@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -201,18 +201,16 @@ The <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a><
 standard terminology from scientific vocabularies:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get semantic suggestions for your dictionary</span></span>
-<span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
-<span>  <span class="va">df</span>,</span>
-<span>  <span class="va">dict</span>,</span>
-<span>  sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<span><span class="co"># For salmon-domain roles, GCDFO is queried first and OLS/NVS are fallback sources.</span></span>
+<span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># View the suggestions</span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span></code></pre></div>
-<p>This will search standard ontologies and vocabularies to find
-matching terms for your columns, helping you link your data to
-recognized scientific standards.</p>
+<p>This searches standard ontologies and vocabularies to find matching
+terms for your columns, helping you link your data to recognized
+scientific standards without making OLS/NVS the first stop for
+salmon-domain matches.</p>
 <blockquote>
 <p><strong>Want faster results?</strong> Use the <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon
 Data Standardizer GPT</a> to get AI-powered suggestions for terminology,

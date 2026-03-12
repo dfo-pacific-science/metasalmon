@@ -111,7 +111,7 @@ Filter out alignment-only terms when selecting canonical IRIs:
 
 ``` r
 
-results <- find_terms("salmon", sources = c("ols", "nvs"))
+results <- find_terms("salmon", role = "entity", sources = sources_for_role("entity"))
 canonical <- results[!results$alignment_only, ]
 ```
 
@@ -121,7 +121,7 @@ If a search returns unexpected results, check the diagnostics:
 
 ``` r
 
-results <- find_terms("temperature", sources = c("ols", "nvs", "zooma"))
+results <- find_terms("temperature", role = "property", sources = c("gcdfo", "ols", "nvs", "zooma"))
 diagnostics <- attr(results, "diagnostics")
 print(diagnostics)
 # Shows: source, query, status (success/error), count, elapsed_secs, error message
@@ -189,7 +189,7 @@ I-ADOPT components based on the bundled catalog.
 
 ``` r
 
-dict_suggested <- suggest_semantics(df, dict, sources = c("ols", "nvs"))
+dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)
 ```

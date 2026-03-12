@@ -10,7 +10,7 @@ dfo-salmon-ontology CONVENTIONS.
 find_terms(
   query,
   role = NA_character_,
-  sources = c("ols", "nvs"),
+  sources = c("gcdfo", "ols", "nvs"),
   expand_query = TRUE
 )
 ```
@@ -32,9 +32,9 @@ find_terms(
 
 - sources:
 
-  Character vector of vocabulary sources to query. Options: `"ols"`,
-  `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
-  Default is `c("ols", "nvs")`. Use
+  Character vector of vocabulary sources to query. Options: `"gcdfo"`,
+  `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`,
+  `"bioportal"`. Default is `c("gcdfo", "ols", "nvs")`. Use
   [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
   to get role-optimized sources.
 
@@ -66,6 +66,9 @@ slow queries.
 ## Details
 
 **Supported sources:**
+
+- **GCDFO** (DFO Salmon Ontology): direct salmon-domain search via HTTP
+  content negotiation against the Widoco-published ontology
 
 - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API
   key needed
@@ -102,8 +105,11 @@ slow queries.
   crosswalks/reconciliation)
 
 Results are scored using I-ADOPT vocabulary hints and role-based
-ontology preferences, then ranked by relevance. Network calls are
-best-effort and return an empty tibble on failure.
+ontology preferences, then ranked by relevance. When `"gcdfo"` is
+included in `sources`, the salmon-domain ontology search runs first and
+external fallback sources are skipped when GCDFO returns a good label
+match. Network calls are best-effort and return an empty tibble on
+failure.
 
 ## See also
 
@@ -134,6 +140,6 @@ taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", 
 ols_results <- find_terms("salmon", sources = "ols")
 
 # Search multiple sources
-all_results <- find_terms("escapement", sources = c("ols", "nvs"))
+all_results <- find_terms("escapement", sources = c("gcdfo", "ols", "nvs"))
 } # }
 ```

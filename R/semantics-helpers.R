@@ -4,7 +4,7 @@
 #' are missing semantic annotations. For each measurement column with missing
 #' I-ADOPT component fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
 #' `constraint_iri`), this function queries vocabulary services and ranks
-#' results by relevance.
+#' results by relevance, with GCDFO queried first for salmon-domain roles.
 #'
 #' The function uses the column's label or description as the search query and
 #' returns suggestions as an attribute on the dictionary tibble. This allows
