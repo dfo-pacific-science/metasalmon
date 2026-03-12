@@ -98,7 +98,7 @@ If your GPT interface supports file uploads, consider uploading:
   and what values mean
 - The ontology repository’s term request template (optional, but helps
   the model draft issues in the expected format):\
-  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 
 ### Step 2: Fetch ontology (optional, cached)
 
@@ -395,7 +395,7 @@ When a specific term isn’t available:
 - Include `definition_source_url` and `notes` when available.
 - Draft a GitHub issue for the ontology repository using the new-term
   template:\
-  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 - Periodically refresh the ontology file in your Custom GPT so
   suggestions are based on the latest terms.
 
@@ -511,11 +511,12 @@ create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 
 ## Resources
 
-- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon>
+- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon/>
   - Key classes: `ConservationUnit`, `Stock`, `BroodYear`, `CatchYear`
   - Key schemes: `WSPMetricScheme`, `WSPBiologicalStatusZoneScheme`,
     `SalmonOriginScheme`, `EnumerationMethodScheme`
-  - Repository: <https://github.com/dfo-pacific-science/salmon-ontology>
+  - Repository:
+    <https://github.com/dfo-pacific-science/dfo-salmon-ontology>
 - **Frictionless Data Package spec**:
   <https://specs.frictionlessdata.io/data-package/>
 - **Schemas to upload to GPT** (included with the package):

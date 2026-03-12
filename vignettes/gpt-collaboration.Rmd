@@ -104,7 +104,7 @@ If your GPT interface supports file uploads, consider uploading:
 - Any other vocabularies you rely on (e.g., units)
 - Any methods / codebook documents that define how fields were collected and what values mean
 - The ontology repository’s term request template (optional, but helps the model draft issues in the expected format):  
-  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 
 ### Step 2: Fetch ontology (optional, cached)
 
@@ -386,7 +386,7 @@ When a specific term isn't available:
   - For OWL classes, use a superclass (superclass means "a more general type").
 - Include `definition_source_url` and `notes` when available.
 - Draft a GitHub issue for the ontology repository using the new-term template:  
-  <https://github.com/dfo-pacific-science/salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 - Periodically refresh the ontology file in your Custom GPT so suggestions are based on the latest terms.
 
 ## Tips for Effective GPT Collaboration
@@ -472,11 +472,11 @@ create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 
 ## Resources
 
-- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon>
+- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon/>
   - Key classes: `ConservationUnit`, `Stock`, `BroodYear`, `CatchYear`
   - Key schemes: `WSPMetricScheme`, `WSPBiologicalStatusZoneScheme`,
     `SalmonOriginScheme`, `EnumerationMethodScheme`
-  - Repository: <https://github.com/dfo-pacific-science/salmon-ontology>
+  - Repository: <https://github.com/dfo-pacific-science/dfo-salmon-ontology>
 - **Frictionless Data Package spec**:
   <https://specs.frictionlessdata.io/data-package/>
 - **Schemas to upload to GPT** (included with the package): `system.file("extdata", "dataset.csv", package = "metasalmon")`, `system.file("extdata", "tables.csv", package = "metasalmon")`, `system.file("extdata", "column_dictionary.csv", package = "metasalmon")`, `system.file("extdata", "codes.csv", package = "metasalmon")`

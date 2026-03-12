@@ -75,7 +75,7 @@ To continue:
 
 ## Video Walkthrough
 
-[Watch: Creating Your First Data Package (3 min)](https://www.example.com/metasalmon-intro-video)
+[Watch: Creating Your First Data Package](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 
 ## Installation
 
@@ -131,7 +131,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - [Glossary of Terms](articles/glossary.html)
 - [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
-- [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon)
+- [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/)
 - [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md)
 
 ## How It Fits Together
@@ -218,7 +218,7 @@ pkgdown::build_site()
 
 ### DFO Salmon Ontology
 
-This package can optionally link your data to the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon). You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
+This package can optionally link your data to the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/). You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
 
 See the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide for details.
 
