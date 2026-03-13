@@ -14,8 +14,8 @@ Returns the ranked allowlist of preferred ontologies per I-ADOPT role.
 Based on dfo-salmon-ontology CONVENTIONS.md:
 \itemize{
 \item unit: QUDT + NVS P06 preferred
-\item method: gcdfo: SKOS + SOSA/PROV patterns
-\item entity: gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
+\item method: smn first, then gcdfo: SKOS + SOSA/PROV patterns
+\item entity: smn first, then gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
 \item property: STATO/OBA measurement ontologies
 \item Wikidata is alignment-only
 }

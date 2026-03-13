@@ -56,7 +56,7 @@ guessing column types, roles, and basic metadata.</p>
 <span>  dataset_id <span class="op">=</span> <span class="st">"dataset-1"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"table-1"</span>,</span>
 <span>  seed_semantics <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span>,</span>
+<span>  semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span>,</span>
 <span>  semantic_max_per_role <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -89,7 +89,7 @@ the resulting <code>semantic_suggestions</code> attribute to the returned dictio
 
 <dt id="arg-semantic-sources">semantic_sources<a class="anchor" aria-label="anchor" href="#arg-semantic-sources"></a></dt>
 <dd><p>Character vector of vocabulary sources passed to
-<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>. Default: <code>c("gcdfo", "ols", "nvs")</code>.</p></dd>
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>. Default: <code>c("smn", "gcdfo", "ols", "nvs")</code>.</p></dd>
 
 
 <dt id="arg-semantic-max-per-role">semantic_max_per_role<a class="anchor" aria-label="anchor" href="#arg-semantic-max-per-role"></a></dt>
@@ -122,8 +122,8 @@ and I-ADOPT component fields (<code>property_iri</code>, <code>entity_iri</code>
 <span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Optional: seed semantic suggestions from vocabulary services</span></span></span>
-<span class="r-in"><span><span class="co"># (GCDFO is queried first for salmon-domain roles)</span></span></span>
-<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span><span class="va">df</span>, seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>, semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># (SMN is queried first; GCDFO is DFO-specific fallback)</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span><span class="va">df</span>, seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>, semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
 </code></pre></div>

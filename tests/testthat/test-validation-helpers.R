@@ -23,8 +23,8 @@ test_that("validate_semantics adds required column and reports missing term_iri"
 })
 
 test_that("fetch_salmon_ontology returns a ttl path", {
-  testthat::skip_if_offline("dfo-pacific-science.github.io")
+  testthat::skip_if_offline("w3id.org")
   path <- fetch_salmon_ontology()
   expect_true(file.exists(path))
-  expect_match(path, "dfo-salmon.ttl")
+  expect_match(path, "salmon-ontology\\.ttl$")
 })
