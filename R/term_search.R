@@ -74,7 +74,8 @@
 #' Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 #'
 #' **Supported sources:**
-#' - **GCDFO** (DFO Salmon Ontology): direct salmon-domain search via HTTP content negotiation against the Widoco-published ontology
+#' - **SMN** (Salmon Domain Ontology): shared salmon-domain search via HTTP content negotiation from `https://w3id.org/smn/`
+#' - **GCDFO** (DFO-specific fallback): bridge/fallback search for DFO-specific terms
 #' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 #' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
 #' - **ZOOMA** (EBI text-to-term annotations): Resolves to OLS term metadata
@@ -86,14 +87,15 @@
 #' **Role-based ontology preferences (Phase 2):**
 #' - `unit`: QUDT preferred, then NVS P06
 #' - `property`: STATO/OBA measurement ontologies, NVS P01
-#' - `entity`: gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
-#' - `method`: gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
+#' - `entity`: smn first, then gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
+#' - `method`: smn first, then gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
 #' - Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
 #'
 #' Results are scored using I-ADOPT vocabulary hints and role-based ontology
-#' preferences, then ranked by relevance. When `"gcdfo"` is included in
-#' `sources`, the salmon-domain ontology search runs first and external fallback
-#' sources are skipped when GCDFO returns a good label match. Network calls are
+#' preferences, then ranked by relevance. When `"smn"` is included in
+#' `sources`, shared salmon-domain ontology search runs first; `"gcdfo"` is used
+#' as a deterministic DFO fallback before external sources. External fallback
+#' sources are skipped when SMN or GCDFO returns a good label match. Network calls are
 #' best-effort and return an empty tibble on failure.
 #'
 #' @param query Character search string (e.g., `"spawner count"`, `"temperature"`).
@@ -103,8 +105,8 @@
 #'   When specified, sources are optimized for the role and results are ranked higher
 #'   when they match preferred ontologies for that role.
 #' @param sources Character vector of vocabulary sources to query. Options:
-#'   `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
-#'   Default is `c("gcdfo", "ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
+#'   `"smn"`, `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`, `"bioportal"`.
+#'   Default is `c("smn", "gcdfo", "ols", "nvs")`. Use [sources_for_role()] to get role-optimized sources.
 #' @param expand_query Logical. If `TRUE` (default), applies role-aware query expansion
 #'   (Phase 4) to generate additional query variants based on the role context.
 #'   For example, unit queries get abbreviation expansions, method queries get
@@ -149,11 +151,11 @@
 #' ols_results <- find_terms("salmon", sources = "ols")
 #'
 #' # Search multiple sources
-#' all_results <- find_terms("escapement", sources = c("gcdfo", "ols", "nvs"))
+#' all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
 #' }
 find_terms <- function(query,
                        role = NA_character_,
-                       sources = c("gcdfo", "ols", "nvs"),
+                       sources = c("smn", "gcdfo", "ols", "nvs"),
                        expand_query = TRUE) {
   if (length(sources) == 0 || is.na(query) || query == "") {
     return(.empty_terms(role))
@@ -175,7 +177,9 @@ find_terms <- function(query,
       start_time <- Sys.time()
       tryCatch(
         {
-          res <- if (src == "gcdfo") {
+          res <- if (src == "smn") {
+            .search_smn(q, role)
+          } else if (src == "gcdfo") {
             .search_gcdfo(q, role)
           } else if (src == "ols") {
             .search_ols(q, role)
@@ -222,16 +226,19 @@ find_terms <- function(query,
 
     query_results <- list()
 
-    if ("gcdfo" %in% sources) {
-      gcdfo_res <- run_source("gcdfo")
-      query_results[[length(query_results) + 1]] <- gcdfo_res
-      gcdfo_good_hit <- nrow(gcdfo_res) > 0 && any(gcdfo_res$match_type %in% c("label_exact", "label_partial"))
-      if (gcdfo_good_hit) {
-        return(query_results)
+    local_pref_sources <- intersect(c("smn", "gcdfo"), sources)
+    if (length(local_pref_sources) > 0) {
+      for (local_src in local_pref_sources) {
+        local_res <- run_source(local_src)
+        query_results[[length(query_results) + 1]] <- local_res
+        local_good_hit <- nrow(local_res) > 0 && any(local_res$match_type %in% c("label_exact", "label_partial"))
+        if (local_good_hit) {
+          return(query_results)
+        }
       }
     }
 
-    for (src in setdiff(sources, "gcdfo")) {
+    for (src in setdiff(sources, c("smn", "gcdfo"))) {
       query_results[[length(query_results) + 1]] <- run_source(src)
     }
 
@@ -730,6 +737,7 @@ pattern <- paste(tokens, collapse = ".*")
 }
 
 .gcdfo_index_cache <- new.env(parent = emptyenv())
+.smn_index_cache <- new.env(parent = emptyenv())
 
 .local_name <- function(x) {
   ifelse(is.na(x) | !nzchar(x), "", sub("^.*[#/]", "", x))
@@ -764,7 +772,7 @@ pattern <- paste(tokens, collapse = ".*")
   vals[nzchar(vals)]
 }
 
-.parse_gcdfo_rdfxml <- function(doc) {
+.parse_salmon_rdfxml <- function(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)") {
   ns <- xml2::xml_ns(doc)
   nodes <- xml2::xml_find_all(doc, "/*/*[@rdf:about][not(self::owl:Ontology)]", ns = ns)
   if (length(nodes) == 0) {
@@ -790,10 +798,10 @@ pattern <- paste(tokens, collapse = ".*")
       .xml_resource_values(node, "./skos:broader", ns),
       .xml_resource_values(node, "./rdfs:subClassOf", ns)
     ))
-    iadopt_property <- .xml_resource_values(node, "./gcdfo:iadoptProperty", ns)
-    iadopt_entity <- .xml_resource_values(node, "./gcdfo:iadoptEntity", ns)
-    iadopt_constraint <- .xml_resource_values(node, "./gcdfo:iadoptConstraint", ns)
-    used_procedure <- .xml_resource_values(node, "./gcdfo:usedProcedure", ns)
+    iadopt_property <- .xml_resource_values(node, "./*[local-name()='iadoptProperty']", ns)
+    iadopt_entity <- .xml_resource_values(node, "./*[local-name()='iadoptEntity']", ns)
+    iadopt_constraint <- .xml_resource_values(node, "./*[local-name()='iadoptConstraint']", ns)
+    used_procedure <- .xml_resource_values(node, "./*[local-name()='usedProcedure']", ns)
     iri_local <- .local_name(iri)
     label_fallback <- if (nzchar(label)) label else .camel_words(iri_local)
     search_text <- paste(
@@ -826,7 +834,7 @@ pattern <- paste(tokens, collapse = ".*")
     )
   })
 
-  rows <- dplyr::filter(rows, grepl("^https?://w3id\\.org/gcdfo/salmon(#|/)", .data$iri))
+  rows <- dplyr::filter(rows, grepl(iri_pattern, .data$iri))
 
   property_targets <- unique(unlist(rows$iadopt_property_targets, use.names = FALSE))
   entity_targets <- unique(unlist(rows$iadopt_entity_targets, use.names = FALSE))
@@ -856,6 +864,29 @@ pattern <- paste(tokens, collapse = ".*")
     dplyr::select(-dplyr::ends_with("_targets"))
 }
 
+.smn_term_index <- function(refresh = FALSE) {
+  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache")
+  path <- fetch_salmon_ontology(
+    url = "https://w3id.org/smn/",
+    accept = "application/rdf+xml",
+    cache_dir = cache_dir,
+    fallback_urls = c("https://w3id.org/smn")
+  )
+
+  stamp <- paste(path, file.info(path)$mtime, file.info(path)$size)
+  if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
+      exists("index", envir = .smn_index_cache, inherits = FALSE) &&
+      identical(get("stamp", envir = .smn_index_cache), stamp)) {
+    return(get("index", envir = .smn_index_cache))
+  }
+
+  doc <- xml2::read_xml(path)
+  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)")
+  assign("stamp", stamp, envir = .smn_index_cache)
+  assign("index", index, envir = .smn_index_cache)
+  index
+}
+
 .gcdfo_term_index <- function(refresh = FALSE) {
   cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache")
   path <- fetch_salmon_ontology(
@@ -876,7 +907,7 @@ pattern <- paste(tokens, collapse = ".*")
   }
 
   doc <- xml2::read_xml(path)
-  index <- .parse_gcdfo_rdfxml(doc)
+  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/gcdfo/salmon(#|/)")
   assign("stamp", stamp, envir = .gcdfo_index_cache)
   assign("index", index, envir = .gcdfo_index_cache)
   index
@@ -956,6 +987,27 @@ pattern <- paste(tokens, collapse = ".*")
   index[order(-index$backend_score, index$label, index$iri), , drop = FALSE]
 }
 
+.search_smn <- function(query, role) {
+  index <- .smn_term_index()
+  index <- .gcdfo_filter_for_role(index, role)
+  index <- .gcdfo_match_terms(index, query)
+  if (nrow(index) == 0) {
+    return(.empty_terms(role))
+  }
+
+  tibble::tibble(
+    label = index$label,
+    iri = index$iri,
+    source = "smn",
+    ontology = "smn",
+    role = role,
+    match_type = index$match_type,
+    definition = index$definition,
+    backend_score = index$backend_score
+  ) %>%
+    dplyr::distinct(iri, .keep_all = TRUE)
+}
+
 .search_gcdfo <- function(query, role) {
   index <- .gcdfo_term_index()
   index <- .gcdfo_filter_for_role(index, role)
@@ -996,8 +1048,8 @@ pattern <- paste(tokens, collapse = ".*")
 #' Returns the ranked allowlist of preferred ontologies per I-ADOPT role.
 #' Based on dfo-salmon-ontology CONVENTIONS.md:
 #' - unit: QUDT + NVS P06 preferred
-#' - method: gcdfo: SKOS + SOSA/PROV patterns
-#' - entity: gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
+#' - method: smn first, then gcdfo: SKOS + SOSA/PROV patterns
+#' - entity: smn first, then gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
 #' - property: STATO/OBA measurement ontologies
 #' - Wikidata is alignment-only
 #'
@@ -1033,20 +1085,20 @@ pattern <- paste(tokens, collapse = ".*")
 #' # Returns: c("qudt", "nvs", "ols")
 #'
 #' sources_for_role("entity")
-#' # Returns: c("gcdfo", "gbif", "worms", "bioportal", "ols")
+#' # Returns: c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols")
 sources_for_role <- function(role) {
   if (is.null(role) || is.na(role) || role == "") {
-    return(c("gcdfo", "ols", "nvs"))
+    return(c("smn", "gcdfo", "ols", "nvs"))
   }
   role <- tolower(role)
   switch(role,
     unit = c("qudt", "nvs", "ols"),
-    property = c("gcdfo", "nvs", "ols", "zooma"),
-    entity = c("gcdfo", "gbif", "worms", "bioportal", "ols"),
-    method = c("gcdfo", "bioportal", "ols", "zooma"),
-    variable = c("gcdfo", "nvs", "ols", "zooma"),
-    constraint = c("gcdfo", "ols"),
-    c("gcdfo", "ols", "nvs")
+    property = c("smn", "gcdfo", "nvs", "ols", "zooma"),
+    entity = c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols"),
+    method = c("smn", "gcdfo", "bioportal", "ols", "zooma"),
+    variable = c("smn", "gcdfo", "nvs", "ols", "zooma"),
+    constraint = c("smn", "gcdfo", "ols"),
+    c("smn", "gcdfo", "ols", "nvs")
   )
 }
 
@@ -1170,6 +1222,7 @@ if (nrow(df) == 0) {
 
   # Base source weights - updated for new sources
   base_source_weight <- c(
+    smn = 1.0,
     gcdfo = 0.9,
     ols = 0.3,
     nvs = 0.6,
@@ -1183,11 +1236,11 @@ if (nrow(df) == 0) {
   # Role-specific source boosts (Phase 2: ontology preferences by role)
   role_boost <- list(
     unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
-    property = c(gcdfo = 0.8, nvs = 1.0, ols = 0.5, zooma = 0.4),
-    variable = c(gcdfo = 1.5, nvs = 1.0, ols = 0.4, zooma = 0.4),
-    entity = c(gcdfo = 1.5, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
-    constraint = c(gcdfo = 1.2, ols = 0.5),
-    method = c(gcdfo = 1.5, bioportal = 0.4, ols = 0.5, zooma = 0.4)
+    property = c(smn = 1.6, gcdfo = 1.0, nvs = 1.0, ols = 0.5, zooma = 0.4),
+    variable = c(smn = 1.7, gcdfo = 1.3, nvs = 1.0, ols = 0.4, zooma = 0.4),
+    entity = c(smn = 1.7, gcdfo = 1.3, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
+    constraint = c(smn = 1.4, gcdfo = 1.0, ols = 0.5),
+    method = c(smn = 1.7, gcdfo = 1.3, bioportal = 0.4, ols = 0.5, zooma = 0.4)
   )
 
   role_key <- if (is.null(role) || is.na(role)) NA_character_ else role

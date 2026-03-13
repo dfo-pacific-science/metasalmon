@@ -4,7 +4,8 @@
 #' are missing semantic annotations. For each measurement column with missing
 #' I-ADOPT component fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
 #' `constraint_iri`), this function queries vocabulary services and ranks
-#' results by relevance, with GCDFO queried first for salmon-domain roles.
+#' results by relevance, with SMN queried first for salmon-domain roles and
+#' GCDFO retained as a DFO-specific fallback.
 #'
 #' The function uses the column's label or description as the search query and
 #' returns suggestions as an attribute on the dictionary tibble. This allows
@@ -14,9 +15,9 @@
 #' @param dict A dictionary tibble created by `infer_dictionary()` (may have
 #'   incomplete semantic fields).
 #' @param sources Character vector of vocabulary sources to search. Options are
-#'   `"gcdfo"` (DFO Salmon Ontology via content negotiation), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
+#'   `"smn"` (Salmon Domain Ontology via content negotiation), `"gcdfo"` (DFO-specific fallback), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
 #'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
-#'   Default is `c("gcdfo", "ols", "nvs")`.
+#'   Default is `c("smn", "gcdfo", "ols", "nvs")`.
 #' @param include_dwc Logical; if `TRUE`, also attach DwC-DP export mappings
 #'   (via `suggest_dwc_mappings()`) as a parallel attribute `dwc_mappings`.
 #'   Default is `FALSE` to keep the UI simple for non-DwC users.
@@ -75,7 +76,7 @@
 #' }
 suggest_semantics <- function(df,
                               dict,
-                              sources = c("gcdfo", "ols", "nvs"),
+                              sources = c("smn", "gcdfo", "ols", "nvs"),
                               include_dwc = FALSE,
                               max_per_role = 3,
                               search_fn = find_terms) {

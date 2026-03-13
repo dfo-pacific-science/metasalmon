@@ -13,7 +13,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [DFO Salmon Ontology](https://dfo-pacific-science.github.io/dfo-salmon-ontology/) and other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). For extra help, our custom [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) first (with DFO Salmon Ontology bridge/fallback support where needed) and other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). For extra help, our custom [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.
 
 **Integration context:** See the Salmon Data Integration System overview page (https://br-johnson.github.io/salmon-data-integration-system/) and walkthrough video (https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH).
 
@@ -135,18 +135,18 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - [Glossary of Terms](articles/glossary.html)
 - [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
-- [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/)
+- [Salmon Domain Ontology](https://w3id.org/smn/)
 - [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md)
 
 ## How It Fits Together
 
-`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the DFO Salmon Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.
+`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.
 
 The high-level flow is:
 
 - **Raw tables** lead into `column_dictionary.csv` (and `codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
-- **The DFO Salmon Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
+- **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
 - **`create_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.
 
 <script>
@@ -183,8 +183,8 @@ flowchart LR
   Dataset["dataset.csv + tables.csv"] --> Package["Salmon Data Package files + datapackage.json"]
   Dataset["dataset.csv + tables.csv"] --> Spec["Salmon Data Package specification"]
   Spec["Salmon Data Package specification"] --> Package["Salmon Data Package files + datapackage.json"]
-  Ontology["DFO Salmon Ontology and published vocabularies"] --> Dict["column_dictionary.csv + codes.csv"]
-  Ontology["DFO Salmon Ontology and published vocabularies"] --> Package["Salmon Data Package files + datapackage.json"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --> Dict["column_dictionary.csv + codes.csv"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --> Package["Salmon Data Package files + datapackage.json"]
   GPT["Salmon Data Standardizer GPT"] --> Dict["column_dictionary.csv + codes.csv"]
   GPT["Salmon Data Standardizer GPT"] --> Package["Salmon Data Package files + datapackage.json"]
 </textarea>
@@ -220,9 +220,9 @@ pkgdown::build_site()
 - `vignettes/`: Long-form documentation
 - `docs/`: pkgdown site output
 
-### DFO Salmon Ontology
+### Salmon Domain Ontology
 
-This package can optionally link your data to the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/). You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
+This package can optionally link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) first, with [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed. You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
 
 See the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide for details.
 

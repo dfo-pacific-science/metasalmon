@@ -46,7 +46,7 @@ validate_semantics <- function(dict,
     dplyr::mutate(term_label = tools::toTitleCase(gsub("_", " ", .data$column_name)),
                   term_definition = dplyr::coalesce(.data$column_description, ""),
                   term_type = "skos_concept",
-                  suggested_parent_iri = "https://w3id.org/gcdfo/salmon#TargetOrLimitRateOrAbundance",
+                  suggested_parent_iri = "https://w3id.org/smn/TargetOrLimitRateOrAbundance",
                   notes = paste0("Derived from ", .data$column_name,
                                  " in ", .data$table_id,
                                  " (constraints: ", dplyr::coalesce(.data$constraint_iri, ""), ")")) %>%

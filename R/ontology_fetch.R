@@ -1,22 +1,27 @@
-#' Fetch the DFO Salmon Ontology with caching
+#' Fetch the Salmon Domain Ontology with caching
 #'
-#' Downloads the DFO Salmon Ontology using HTTP content negotiation and caches
+#' Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
 #' the response using ETag / Last-Modified headers when available.
 #'
-#' @param url Ontology URL. Default is the published TTL on GitHub Pages.
+#' @param url Ontology URL. Default is the canonical SMN namespace root.
 #' @param accept Accept header; defaults to turtle with RDF/XML fallback.
 #' @param cache_dir Directory to store cached ontology and headers.
 #' @param fallback_urls Optional fallback ontology URLs tried if the primary `url` fails.
 #' @return Path to the cached ontology file (character string).
 #' @export
 fetch_salmon_ontology <- function(
-    url = "https://w3id.org/gcdfo/salmon",
+    url = "https://w3id.org/smn/",
     accept = "text/turtle, application/rdf+xml;q=0.8",
     cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-    fallback_urls = c("https://w3id.org/gcdfo/salmon/", "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")) {
+    fallback_urls = c(
+      "https://w3id.org/smn",
+      "https://w3id.org/gcdfo/salmon",
+      "https://w3id.org/gcdfo/salmon/",
+      "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl"
+    )) {
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
-  ttl_file <- file.path(cache_dir, "dfo-salmon.ttl")
+  ttl_file <- file.path(cache_dir, "salmon-ontology.ttl")
   etag_file <- file.path(cache_dir, "etag.txt")
   lastmod_file <- file.path(cache_dir, "last_modified.txt")
 
