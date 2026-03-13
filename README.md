@@ -122,8 +122,9 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via `edh_build_iso19139_xml()` (with legacy ISO 19139 fallback still available).
 - Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
   - Units: QUDT preferred, then NVS P06
-  - Entities/taxa: GBIF and WoRMS taxon resolvers
-  - Properties: STATO/OBA measurement ontologies
+  - Salmon-domain roles: shared SMN terms first, then GCDFO bridge/fallback where needed
+  - Entities/taxa: SMN and GCDFO first, then GBIF and WoRMS taxon resolvers
+  - Properties/variables/methods: shared salmon-domain terms first, then broader ontology fallbacks
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why `find_terms()` matches rank where they do and expose failures, so you can tune role-aware queries with confidence.
 - End-to-end semantic QA loop with `fetch_salmon_ontology()` + `validate_semantics()`, plus `deduplicate_proposed_terms()` to prevent term proliferation before opening ontology issues.
@@ -222,7 +223,7 @@ pkgdown::build_site()
 
 ### Salmon Domain Ontology
 
-This package can optionally link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) first, with [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed. You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
+This package can optionally link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) first, with [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed. The shared reusable term IRIs themselves use the `salmon:` namespace (for example `http://w3id.org/salmon/Stock`). You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
 
 See the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide for details.
 

@@ -74,7 +74,7 @@
 #' Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 #'
 #' **Supported sources:**
-#' - **SMN** (Salmon Domain Ontology): shared salmon-domain search via HTTP content negotiation from `https://w3id.org/smn/`
+#' - **SMN** (Salmon Domain Ontology): shared salmon-domain search from `https://w3id.org/smn/` (shared term IRIs use the `salmon:` namespace, e.g. `http://w3id.org/salmon/Stock`)
 #' - **GCDFO** (DFO-specific fallback): bridge/fallback search for DFO-specific terms
 #' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 #' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
@@ -865,30 +865,30 @@ pattern <- paste(tokens, collapse = ".*")
 }
 
 .smn_term_index <- function(refresh = FALSE) {
-  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache")
-  path <- fetch_salmon_ontology(
-    url = "https://w3id.org/smn/",
-    accept = "application/rdf+xml",
-    cache_dir = cache_dir,
-    fallback_urls = c("https://w3id.org/smn")
-  )
+  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "smn")
+  paths <- vapply(.smn_module_urls(), .smn_fetch_module_path, character(1), cache_dir = cache_dir)
 
-  stamp <- paste(path, file.info(path)$mtime, file.info(path)$size)
+  info <- file.info(paths)
+  stamp <- paste(
+    paste(paths, collapse = "|"),
+    paste(info$mtime, collapse = "|"),
+    paste(info$size, collapse = "|"),
+    sep = "||"
+  )
   if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
       exists("index", envir = .smn_index_cache, inherits = FALSE) &&
       identical(get("stamp", envir = .smn_index_cache), stamp)) {
     return(get("index", envir = .smn_index_cache))
   }
 
-  doc <- xml2::read_xml(path)
-  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)")
+  index <- .parse_smn_ttl_modules(paths)
   assign("stamp", stamp, envir = .smn_index_cache)
   assign("index", index, envir = .smn_index_cache)
   index
 }
 
 .gcdfo_term_index <- function(refresh = FALSE) {
-  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache")
+  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "gcdfo")
   path <- fetch_salmon_ontology(
     url = "https://w3id.org/gcdfo/salmon",
     accept = "application/rdf+xml",
@@ -922,11 +922,18 @@ pattern <- paste(tokens, collapse = ".*")
   scheme_text <- tolower(paste(index$in_scheme, index$label, index$role_hints))
   keep <- switch(role,
     unit = rep(FALSE, nrow(index)),
-    variable = index$is_variable | grepl("count|rate|abundance|estimate|escapement|spawner|recruit|run", index$search_text),
-    property = index$is_property | grepl("abundance|count|rate|length|weight|size|status|confidence|level|phase", index$search_text),
+    variable = index$is_variable | (
+      grepl("count|rate|abundance|estimate|escapement|spawner|recruit|run", index$search_text) &
+        !grepl("context|scheme|method|procedure", scheme_text)
+    ),
+    property = index$is_property | (
+      grepl("abundance|count|rate|length|weight|size|status|confidence|level|phase", index$search_text) &
+        !grepl("context|scheme|method|procedure", scheme_text)
+    ),
     entity = index$is_entity | (
       tolower(index$resource_kind) %in% c("class", "namedindividual") &
-        !grepl("theme|scheme", tolower(paste(index$label, index$iri, index$in_scheme)))
+        !grepl("theme|scheme|measurement|assessment|benchmark|reference point|procedure|method|property|characteristic|context",
+               tolower(paste(index$label, index$iri, index$in_scheme)))
     ),
     constraint = index$is_constraint | grepl("criteria|context|origin|phase|zone|basis|dimension|notation|framework|confidence|level", scheme_text),
     method = index$is_method | grepl("method|procedure|enumeration", scheme_text),

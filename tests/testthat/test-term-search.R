@@ -135,14 +135,14 @@ test_that("find_terms uses gcdfo ontology backend", {
 test_that("find_terms uses smn ontology backend", {
   mock_index <- tibble::tibble(
     iri = c(
-      "https://w3id.org/smn/NaturalSpawnerCount",
-      "https://w3id.org/smn/Stock"
+      "http://w3id.org/salmon/NaturalSpawnerCount",
+      "http://w3id.org/salmon/Stock"
     ),
     label = c("Natural spawner count", "Stock"),
     alt_labels = c("Spawner count", ""),
     definition = c("Count of natural spawners.", "A salmon stock entity."),
     resource_kind = c("NamedIndividual", "Class"),
-    in_scheme = c("https://w3id.org/smn/EstimateTypeScheme", ""),
+    in_scheme = c("http://w3id.org/salmon/EstimateTypeScheme", ""),
     parent_iris = c("", ""),
     type_iris = c("http://www.w3.org/2004/02/skos/core#Concept", "http://www.w3.org/2002/07/owl#Class"),
     search_text = c(
@@ -169,7 +169,7 @@ test_that("find_terms uses smn ontology backend", {
 
 test_that("find_terms short-circuits fallback when smn has a good hit", {
   mock_index <- tibble::tibble(
-    iri = "https://w3id.org/smn/Stock",
+    iri = "http://w3id.org/salmon/Stock",
     label = "Stock",
     alt_labels = "",
     definition = "A salmon stock entity.",

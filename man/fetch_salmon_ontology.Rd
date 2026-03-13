@@ -2,18 +2,19 @@
 % Please edit documentation in R/ontology_fetch.R
 \name{fetch_salmon_ontology}
 \alias{fetch_salmon_ontology}
-\title{Fetch the DFO Salmon Ontology with caching}
+\title{Fetch the Salmon Domain Ontology with caching}
 \usage{
 fetch_salmon_ontology(
-  url = "https://w3id.org/gcdfo/salmon",
+  url = "https://w3id.org/smn/",
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-  fallback_urls = c("https://w3id.org/gcdfo/salmon/",
+  fallback_urls = c("https://w3id.org/smn", "https://w3id.org/gcdfo/salmon",
+    "https://w3id.org/gcdfo/salmon/",
     "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")
 )
 }
 \arguments{
-\item{url}{Ontology URL. Default is the published TTL on GitHub Pages.}
+\item{url}{Ontology URL. Default is the canonical SMN namespace root.}
 
 \item{accept}{Accept header; defaults to turtle with RDF/XML fallback.}
 
@@ -25,6 +26,6 @@ fetch_salmon_ontology(
 Path to the cached ontology file (character string).
 }
 \description{
-Downloads the DFO Salmon Ontology using HTTP content negotiation and caches
+Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
 the response using ETag / Last-Modified headers when available.
 }

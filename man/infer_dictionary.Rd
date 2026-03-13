@@ -10,7 +10,7 @@ infer_dictionary(
   dataset_id = "dataset-1",
   table_id = "table-1",
   seed_semantics = FALSE,
-  semantic_sources = c("gcdfo", "ols", "nvs"),
+  semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
   semantic_max_per_role = 1,
   seed_verbose = TRUE
 )
@@ -28,7 +28,7 @@ infer_dictionary(
 the resulting \code{semantic_suggestions} attribute to the returned dictionary.}
 
 \item{semantic_sources}{Character vector of vocabulary sources passed to
-\code{suggest_semantics()} when \code{seed_semantics = TRUE}. Default: \code{c("gcdfo", "ols", "nvs")}.}
+\code{suggest_semantics()} when \code{seed_semantics = TRUE}. Default: \code{c("smn", "gcdfo", "ols", "nvs")}.}
 
 \item{semantic_max_per_role}{Maximum number of suggestions retained per I-ADOPT
 role when seeding suggestions. Default: \code{1}.}
@@ -57,8 +57,12 @@ df <- data.frame(
 dict <- infer_dictionary(df)
 
 # Optional: seed semantic suggestions from vocabulary services
-# (GCDFO is queried first for salmon-domain roles)
-dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("gcdfo", "ols", "nvs"))
+# (SMN is queried first; GCDFO is DFO-specific fallback)
+dict <- infer_dictionary(
+  df,
+  seed_semantics = TRUE,
+  semantic_sources = c("smn", "gcdfo", "ols", "nvs")
+)
 suggestions <- attr(dict, "semantic_suggestions")
 }
 }

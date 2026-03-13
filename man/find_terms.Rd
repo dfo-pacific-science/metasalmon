@@ -7,7 +7,7 @@
 find_terms(
   query,
   role = NA_character_,
-  sources = c("gcdfo", "ols", "nvs"),
+  sources = c("smn", "gcdfo", "ols", "nvs"),
   expand_query = TRUE
 )
 }
@@ -21,8 +21,8 @@ When specified, sources are optimized for the role and results are ranked higher
 when they match preferred ontologies for that role.}
 
 \item{sources}{Character vector of vocabulary sources to query. Options:
-\code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
-Default is \code{c("gcdfo", "ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
+\code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
+Default is \code{c("smn", "gcdfo", "ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
 
 \item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
 (Phase 4) to generate additional query variants based on the role context.
@@ -50,7 +50,8 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 \details{
 \strong{Supported sources:}
 \itemize{
-\item \strong{GCDFO} (DFO Salmon Ontology): direct salmon-domain search via HTTP content negotiation against the Widoco-published ontology
+\item \strong{SMN} (Salmon Domain Ontology): shared salmon-domain search from \verb{https://w3id.org/smn/} (shared term IRIs use the \verb{salmon:} namespace, e.g. \verb{http://w3id.org/salmon/Stock})
+\item \strong{GCDFO} (DFO-specific fallback): bridge/fallback search for DFO-specific terms
 \item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 \item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
 \item \strong{ZOOMA} (EBI text-to-term annotations): Resolves to OLS term metadata
@@ -64,15 +65,16 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 \itemize{
 \item \code{unit}: QUDT preferred, then NVS P06
 \item \code{property}: STATO/OBA measurement ontologies, NVS P01
-\item \code{entity}: gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
-\item \code{method}: gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
+\item \code{entity}: smn first, then gcdfo + NCEAS Salmon (ODO), GBIF/WoRMS for taxa
+\item \code{method}: smn first, then gcdfo: SKOS + SOSA/PROV patterns, plus AGROVOC
 \item Wikidata is alignment-only (lower ranking for crosswalks/reconciliation)
 }
 
 Results are scored using I-ADOPT vocabulary hints and role-based ontology
-preferences, then ranked by relevance. When \code{"gcdfo"} is included in
-\code{sources}, the salmon-domain ontology search runs first and external fallback
-sources are skipped when GCDFO returns a good label match. Network calls are
+preferences, then ranked by relevance. When \code{"smn"} is included in
+\code{sources}, shared salmon-domain ontology search runs first; \code{"gcdfo"} is used
+as a deterministic DFO fallback before external sources. External fallback
+sources are skipped when SMN or GCDFO returns a good label match. Network calls are
 best-effort and return an empty tibble on failure.
 }
 \examples{
@@ -94,7 +96,7 @@ taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", 
 ols_results <- find_terms("salmon", sources = "ols")
 
 # Search multiple sources
-all_results <- find_terms("escapement", sources = c("gcdfo", "ols", "nvs"))
+all_results <- find_terms("escapement", sources = c("smn", "gcdfo", "ols", "nvs"))
 }
 }
 \seealso{

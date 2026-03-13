@@ -138,7 +138,12 @@ I-ADOPT role:</p>
 <span><span class="co"># Returns: c("qudt", "nvs", "ols")</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"entity"</span><span class="op">)</span></span>
-<span><span class="co"># Returns: c("gbif", "worms", "bioportal", "ols")</span></span></code></pre></div>
+<span><span class="co"># Returns: c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols")</span></span></code></pre></div>
+<p>The shared <strong>Salmon Domain Ontology</strong> is queried first
+for salmon-domain roles. Its reusable shared terms use the
+<code>salmon:</code> namespace (for example
+<code>http://w3id.org/salmon/Stock</code>), while <code>gcdfo</code>
+remains the DFO-specific bridge/fallback source.</p>
 <table class="table">
 <colgroup>
 <col width="17%">
@@ -158,23 +163,28 @@ I-ADOPT role:</p>
 </tr>
 <tr class="even">
 <td><code>property</code></td>
-<td>NVS P01, OLS, ZOOMA</td>
-<td>Measurement ontologies like STATO/OBA</td>
+<td>SMN, GCDFO, NVS P01, OLS, ZOOMA</td>
+<td>Shared salmon-domain properties first; broader fallbacks after</td>
 </tr>
 <tr class="odd">
 <td><code>entity</code></td>
-<td>GBIF, WoRMS, BioPortal, OLS</td>
-<td>Taxon resolvers for species</td>
+<td>SMN, GCDFO, GBIF, WoRMS, BioPortal, OLS</td>
+<td>Shared salmon-domain entities first; taxon resolvers after</td>
 </tr>
 <tr class="even">
 <td><code>method</code></td>
-<td>BioPortal, OLS, ZOOMA</td>
-<td>gcdfo SKOS methods preferred</td>
+<td>SMN, GCDFO, BioPortal, OLS, ZOOMA</td>
+<td>Shared/domain method semantics first</td>
 </tr>
 <tr class="odd">
 <td><code>variable</code></td>
-<td>NVS, OLS, ZOOMA</td>
-<td>Compound observables</td>
+<td>SMN, GCDFO, NVS, OLS, ZOOMA</td>
+<td>Shared salmon-domain variables first</td>
+</tr>
+<tr class="even">
+<td><code>constraint</code></td>
+<td>SMN, GCDFO, OLS</td>
+<td>Shared/context vocabularies first</td>
 </tr>
 </tbody>
 </table>

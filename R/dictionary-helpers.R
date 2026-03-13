@@ -35,7 +35,11 @@
 #'
 #' # Optional: seed semantic suggestions from vocabulary services
 #' # (SMN is queried first; GCDFO is DFO-specific fallback)
-#' dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("smn", "gcdfo", "ols", "nvs"))
+#' dict <- infer_dictionary(
+#'   df,
+#'   seed_semantics = TRUE,
+#'   semantic_sources = c("smn", "gcdfo", "ols", "nvs")
+#' )
 #' suggestions <- attr(dict, "semantic_suggestions")
 #' }
 infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1",
