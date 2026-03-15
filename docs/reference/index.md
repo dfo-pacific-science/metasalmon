@@ -40,7 +40,7 @@ Semantic suggestion and vocabulary search capabilities
 Fetch the ontology and validate semantic coverage
 
 - [`fetch_salmon_ontology()`](https://dfo-pacific-science.github.io/metasalmon/reference/fetch_salmon_ontology.md)
-  : Fetch the DFO Salmon Ontology with caching
+  : Fetch the Salmon Domain Ontology with caching
 - [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
   : Validate semantics with graceful gap reporting
 - [`suggest_facet_schemes()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.md)

@@ -61,16 +61,22 @@ sources_for_role("unit")
 # Returns: c("qudt", "nvs", "ols")
 
 sources_for_role("entity")
-# Returns: c("gbif", "worms", "bioportal", "ols")
+# Returns: c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols")
 ```
+
+The shared **Salmon Domain Ontology** is queried first for salmon-domain
+roles. Its reusable shared terms use the `salmon:` namespace (for
+example `http://w3id.org/salmon/Stock`), while `gcdfo` remains the
+DFO-specific bridge/fallback source.
 
 | Role | Recommended Sources | Notes |
 |----|----|----|
 | `unit` | QUDT, NVS P06, OLS | QUDT preferred for SI units |
-| `property` | NVS P01, OLS, ZOOMA | Measurement ontologies like STATO/OBA |
-| `entity` | GBIF, WoRMS, BioPortal, OLS | Taxon resolvers for species |
-| `method` | BioPortal, OLS, ZOOMA | gcdfo SKOS methods preferred |
-| `variable` | NVS, OLS, ZOOMA | Compound observables |
+| `property` | SMN, GCDFO, NVS P01, OLS, ZOOMA | Shared salmon-domain properties first; broader fallbacks after |
+| `entity` | SMN, GCDFO, GBIF, WoRMS, BioPortal, OLS | Shared salmon-domain entities first; taxon resolvers after |
+| `method` | SMN, GCDFO, BioPortal, OLS, ZOOMA | Shared/domain method semantics first |
+| `variable` | SMN, GCDFO, NVS, OLS, ZOOMA | Shared salmon-domain variables first |
+| `constraint` | SMN, GCDFO, OLS | Shared/context vocabularies first |
 
 #### Searching for units with QUDT
 

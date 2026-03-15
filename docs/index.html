@@ -89,7 +89,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
-<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://dfo-pacific-science.github.io/dfo-salmon-ontology/" class="external-link">DFO Salmon Ontology</a> and other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
+<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> first (with DFO Salmon Ontology bridge/fallback support where needed) and other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
 <p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
@@ -249,8 +249,9 @@ concept schemes) while preserving your original data structure.
 <li>Role-aware vocabulary search with <code><a href="reference/find_terms.html">find_terms()</a></code> and <code><a href="reference/sources_for_role.html">sources_for_role()</a></code>:
 <ul>
 <li>Units: QUDT preferred, then NVS P06</li>
-<li>Entities/taxa: GBIF and WoRMS taxon resolvers</li>
-<li>Properties: STATO/OBA measurement ontologies</li>
+<li>Salmon-domain roles: shared SMN terms first, then GCDFO bridge/fallback where needed</li>
+<li>Entities/taxa: SMN and GCDFO first, then GBIF and WoRMS taxon resolvers</li>
+<li>Properties/variables/methods: shared salmon-domain terms first, then broader ontology fallbacks</li>
 <li>Cross-source agreement boosting for high-confidence matches</li>
 </ul>
 </li>
@@ -267,14 +268,14 @@ concept schemes) while preserving your original data structure.
 <li><a href="articles/glossary.html">Glossary of Terms</a></li>
 <li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Report a bug</a></li>
 <li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Request a feature</a></li>
-<li><a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a></li>
+<li><a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a></li>
 <li><a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a></li>
 </ul>
 </div>
 <div class="section level2">
 <h2 id="how-it-fits-together">How It Fits Together<a class="anchor" aria-label="anchor" href="#how-it-fits-together"></a>
 </h2>
-<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the DFO Salmon Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.</p>
+<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.</p>
 <p>The high-level flow is:</p>
 <ul>
 <li>
@@ -282,7 +283,7 @@ concept schemes) while preserving your original data structure.
 <li>
 <strong>Dataset/table metadata</strong> fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.</li>
 <li>
-<strong>The DFO Salmon Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
+<strong>The Salmon Domain Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
 <li>
 <strong><code><a href="reference/create_salmon_datapackage.html">create_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.</li>
 </ul>
@@ -319,8 +320,8 @@ flowchart LR
   Dataset["dataset.csv + tables.csv"] --&gt; Package["Salmon Data Package files + datapackage.json"]
   Dataset["dataset.csv + tables.csv"] --&gt; Spec["Salmon Data Package specification"]
   Spec["Salmon Data Package specification"] --&gt; Package["Salmon Data Package files + datapackage.json"]
-  Ontology["DFO Salmon Ontology and published vocabularies"] --&gt; Dict["column_dictionary.csv + codes.csv"]
-  Ontology["DFO Salmon Ontology and published vocabularies"] --&gt; Package["Salmon Data Package files + datapackage.json"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --&gt; Dict["column_dictionary.csv + codes.csv"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --&gt; Package["Salmon Data Package files + datapackage.json"]
   GPT["Salmon Data Standardizer GPT"] --&gt; Dict["column_dictionary.csv + codes.csv"]
   GPT["Salmon Data Standardizer GPT"] --&gt; Package["Salmon Data Package files + datapackage.json"]
 </textarea>
@@ -365,9 +366,9 @@ Development setup and package structure
 </ul>
 </div>
 <div class="section level3">
-<h3 id="dfo-salmon-ontology">DFO Salmon Ontology<a class="anchor" aria-label="anchor" href="#dfo-salmon-ontology"></a>
+<h3 id="salmon-domain-ontology">Salmon Domain Ontology<a class="anchor" aria-label="anchor" href="#salmon-domain-ontology"></a>
 </h3>
-<p>This package can optionally link your data to the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a>. You don’t need to understand ontologies to use metasalmon - this is handled automatically for users who want it.</p>
+<p>This package can optionally link your data to the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> first, with <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> fallback support where needed. The shared reusable term IRIs themselves use the <code>salmon:</code> namespace (for example <code>http://w3id.org/salmon/Stock</code>). You don’t need to understand ontologies to use metasalmon - this is handled automatically for users who want it.</p>
 <p>See the <a href="articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a> guide for details.</p>
 
 </div>
