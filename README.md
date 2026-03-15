@@ -38,27 +38,42 @@ Install, infer a dictionary, and validate. Then jump to the 5-minute quickstart 
 
 library(metasalmon)
 
-# Load the example NuSEDS Fraser Coho data included in metasalmon
-data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-df <- readr::read_csv(data_path, show_col_types = FALSE)
-
-# Generate starter dictionary
-dict <- infer_dictionary(df, dataset_id = "fraser-coho-2024", table_id = "escapement")
-validate_dictionary(dict)
-
-# Optional: attach semantic suggestions (still no auto-commit to IRIs)
-dict <- infer_dictionary(
-  df,
-  dataset_id = "fraser-coho-2024",
-  table_id = "escapement",
-  seed_semantics = TRUE,
-  seed_verbose = TRUE
+resources <- list(
+  catches = tibble::tibble(
+    station_id = c(1L, 2L),
+    species = c("Coho", "Chinook"),
+    count = c(10L, 20L),
+    sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+  ),
+  stations = tibble::tibble(
+    station_id = c(1L, 2L),
+    habitat = c("estu", "river"),
+    lat = c(50.1, 50.3),
+    lon = c(-125.4, -125.6)
+  )
 )
-attr(dict, "semantic_suggestions") |> head()
+
+artifacts <- infer_salmon_datapackage_artifacts(
+  resources,
+  dataset_id = "fraser-coho-2024",
+  seed_semantics = TRUE,
+  seed_verbose = FALSE
+)
+
+# Extract artifact tables
+
+dict <- artifacts$dict
+codes <- artifacts$codes
+table_meta <- artifacts$table_meta
+dataset_meta <- artifacts$dataset_meta
+
+validate_dictionary(dict)
 
 # If the top-ranked suggestions look right, explicitly apply them.
 # By default this fills only missing fields and leaves existing IRIs alone.
-dict <- apply_semantic_suggestions(dict, columns = "NATURAL_SPAWNER_COUNT")
+if (!is.null(artifacts$semantic_suggestions)) {
+  dict <- apply_semantic_suggestions(dict, columns = "count")
+}
 ```
 
 To continue:

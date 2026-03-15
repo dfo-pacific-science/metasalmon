@@ -23,6 +23,28 @@ library(readr)
 df <- read_csv("my-table.csv")
 ```
 
+If you already have multiple tables, use a named resource list and keep the
+same names through `table_meta` and `create_salmon_datapackage()`:
+
+``` r
+
+resources <- list(main = df)
+# e.g. resources <- list(main = df_main, stations = df_stations)
+```
+
+For a one-shot start-to-finish metadata path, you can skip directly to
+`infer_salmon_datapackage_artifacts()`:
+
+``` r
+
+artifacts <- infer_salmon_datapackage_artifacts(
+  resources,
+  dataset_id = "my-dataset-2026",
+  seed_semantics = TRUE
+)
+```
+
+
 If you already have a dictionary and metadata from the quickstart, skip
 directly to [Describe the dataset and
 tables](#id_3-describe-the-dataset-and-tables).

@@ -231,6 +231,166 @@ create_salmon_datapackage <- function(
   invisible(path)
 }
 
+#' Infer Salmon Data Package artifacts from resource tables
+#'
+#' Infers column dictionaries, table metadata, candidate code lists, and
+#' dataset-level metadata in a single step from one or more raw data tables.
+#'
+#' This is a convenience helper for biologists who want to get from raw
+#' data frames to package-ready metadata artifacts with one call.
+#'
+#' @param resources Either a named list of data frames (one per resource table)
+#'   or a single data frame (converted internally to a one-table list).
+#' @param dataset_id Dataset identifier applied to all inferred metadata.
+#' @param table_id Name used when `resources` is a single data frame.
+#' @param guess_types Logical; if `TRUE` (default), infer `value_type` for each
+#'   dictionary column.
+#' @param seed_semantics Logical; if `TRUE`, run
+#'   `suggest_semantics()` and attach semantic suggestions to the returned
+#'   dictionary.
+#' @param semantic_sources Vector of vocabulary sources passed to
+#'   `suggest_semantics()`.
+#' @param semantic_max_per_role Maximum number of suggestions retained per I-ADOPT
+#'   role.
+#' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
+#'   semantic suggestions.
+#' @param seed_codes Optional `codes.csv`-style seed metadata.
+#' @param seed_table_meta Optional `tables.csv`-style seed metadata.
+#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
+#'
+#' @return A named list with the following components:
+#'   - `resources`: Named list of input tables
+#'   - `dict`: Inferred dictionary tibble
+#'   - `table_meta`: Inferred table metadata tibble
+#'   - `codes`: Inferred candidate codes tibble
+#'   - `dataset_meta`: Inferred dataset metadata one-row tibble
+#'   - `semantic_suggestions`: Semantic suggestion tibble (or `NULL`)
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' resources <- list(
+#'   catches = data.frame(
+#'     station_id = c("A", "B"),
+#'     species = c("Coho", "Chinook"),
+#'     count = c(10L, 20L),
+#'     sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+#'   ),
+#'   stations = data.frame(
+#'     station_id = c("A", "B"),
+#'     latitude = c(49.8, 49.9),
+#'     longitude = c(-124.4, -124.5)
+#'   )
+#' )
+#'
+#' artifacts <- infer_salmon_datapackage_artifacts(
+#'   resources,
+#'   dataset_id = "demo-1",
+#'   seed_semantics = TRUE,
+#'   seed_verbose = TRUE
+#' )
+#'
+#' dict <- artifacts$dict
+#' table_meta <- artifacts$table_meta
+#' codes <- artifacts$codes
+#' dataset_meta <- artifacts$dataset_meta
+#' }
+infer_salmon_datapackage_artifacts <- function(
+    resources,
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    guess_types = TRUE,
+    seed_semantics = TRUE,
+    semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
+    semantic_max_per_role = 1,
+    seed_verbose = TRUE,
+    seed_codes = NULL,
+    seed_table_meta = NULL,
+    seed_dataset_meta = NULL
+) {
+  if (inherits(resources, "data.frame")) {
+    resources <- list(resources)
+    names(resources) <- table_id
+  }
+
+  if (!is.list(resources) || is.null(names(resources)) || any(!nzchar(names(resources)))) {
+    cli::cli_abort("{.arg resources} must be a data frame or a named list of data frames")
+  }
+  if (anyDuplicated(names(resources)) > 0) {
+    cli::cli_abort("{.arg resources} names must be unique")
+  }
+  if (length(resources) == 0) {
+    cli::cli_abort("{.arg resources} cannot be empty")
+  }
+
+  bad_rows <- which(vapply(resources, function(x) !inherits(x, "data.frame"), logical(1L)))
+  if (length(bad_rows) > 0) {
+    cli::cli_abort("All entries in {.arg resources} must be data frames. Invalid entries at: {.val {bad_rows}}")
+  }
+
+  dict <- infer_dictionary(
+    df = resources,
+    guess_types = guess_types,
+    dataset_id = dataset_id,
+    table_id = table_id,
+    seed_semantics = FALSE,
+    semantic_sources = semantic_sources,
+    semantic_max_per_role = semantic_max_per_role,
+    seed_verbose = seed_verbose,
+    seed_codes = NULL,
+    seed_table_meta = NULL,
+    seed_dataset_meta = NULL
+  )
+
+  table_meta <- if (is.null(seed_table_meta)) {
+    infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
+  } else {
+    .ms_normalize_table_meta(seed_table_meta)
+  }
+
+  codes <- if (is.null(seed_codes)) {
+    infer_codes_from_resources(resources, dataset_id = dataset_id)
+  } else {
+    .ms_normalize_codes(seed_codes)
+  }
+
+  dataset_meta <- if (is.null(seed_dataset_meta)) {
+    infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
+  } else {
+    .ms_normalize_dataset_meta(seed_dataset_meta)
+  }
+
+  semantic_suggestions <- NULL
+  if (isTRUE(seed_semantics)) {
+    if (seed_verbose) {
+      cli::cli_alert_info("Seeding semantic suggestions during infer_salmon_datapackage_artifacts().")
+    }
+
+    dict <- suggest_semantics(
+      df = resources[[1L]],
+      dict = dict,
+      sources = semantic_sources,
+      max_per_role = semantic_max_per_role,
+      include_dwc = FALSE,
+      codes = codes,
+      table_meta = table_meta,
+      dataset_meta = dataset_meta
+    )
+
+    semantic_suggestions <- attr(dict, "semantic_suggestions", exact = TRUE)
+  }
+
+  list(
+    resources = resources,
+    dataset_id = dataset_id,
+    dict = dict,
+    table_meta = table_meta,
+    codes = codes,
+    dataset_meta = dataset_meta,
+    semantic_suggestions = semantic_suggestions
+  )
+}
+
 #' Read a Salmon Data Package
 #'
 #' Loads a Salmon Data Package from disk. When canonical SDP CSV metadata files

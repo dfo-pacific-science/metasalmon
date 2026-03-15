@@ -746,3 +746,78 @@ test_that("apply_salmon_dictionary applies factor levels from codes", {
   expect_s3_class(result[[dict$column_label[1]]], "factor")
   expect_equal(levels(result[[dict$column_label[1]]]), c("Coho Salmon", "Chinook Salmon"))
 })
+
+test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts", {
+  resources <- list(
+    catches = tibble::tibble(
+      station_id = c(1L, 2L),
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L),
+      observation_date = as.Date(c("2024-01-01", "2024-01-02"))
+    ),
+    stations = tibble::tibble(
+      station_id = c(1L, 2L),
+      lat = c(50.12, 50.34),
+      lon = c(-125.5, -125.6),
+      habitat = c("estu", "river")
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"), max_per_role = 1,
+                           include_dwc = FALSE, codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
+    expect_true(all(c("catches", "stations") %in% table_meta$table_id))
+    expect_true("dataset_id" %in% names(dataset_meta))
+    expect_true("keywords" %in% names(dataset_meta))
+    expect_true(!is.null(codes))
+    expect_equal(sources, c("smn", "gcdfo", "ols", "nvs"))
+
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = c("count", "observation_date"),
+      dictionary_role = c("variable", "property"),
+      table_id = c("catches", "catches"),
+      dataset_id = c("dataset-1", "dataset-1"),
+      target_scope = c("column", "column"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
+      target_sdp_field = c("term_iri", "entity_iri"),
+      target_row_key = as.character(NA),
+      target_label = c("count", "observation_date"),
+      target_description = c(NA_character_, NA_character_),
+      search_query = c("count", "observation_date"),
+      column_label = c("count", "observation_date"),
+      column_description = c(NA_character_, NA_character_),
+      code_value = as.character(NA),
+      code_label = as.character(NA),
+      code_description = as.character(NA),
+      label = c("Catch count", "Observation date"),
+      iri = c("https://example.org/count", "https://example.org/date"),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      definition = c(NA_character_, NA_character_)
+    )
+
+    dict
+  }
+
+  artifacts <- with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_salmon_datapackage_artifacts(
+        resources,
+        dataset_id = "dataset-1",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_type(artifacts$resources, "list")
+  expect_equal(sort(names(artifacts$resources)), c("catches", "stations"))
+  expect_equal(artifacts$dataset_id, "dataset-1")
+  expect_s3_class(artifacts$dict, "tbl_df")
+  expect_s3_class(artifacts$table_meta, "tbl_df")
+  expect_true(all(c("catches", "stations") %in% artifacts$table_meta$table_id))
+  expect_true(nrow(artifacts$codes) > 0)
+  expect_equal(artifacts$dataset_meta$dataset_id[[1]], "dataset-1")
+  expect_true(is.null(artifacts$semantic_suggestions) || is.data.frame(artifacts$semantic_suggestions))
+})
+

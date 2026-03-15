@@ -34,72 +34,73 @@ walkthrough](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 
 ## Step 1: Load Your Data
 
-First, let’s load the metasalmon package and some example data. We’ll
-use a sample of NuSEDS escapement data for Fraser River coho that comes
-with the package.
+For the one-shot workflow, keep your inputs in a **named list** of data
+frames (one per table):
 
 ``` r
 
 library(metasalmon)
+library(readr)
 
-# Load the example data included with the package
-data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv",
-                          package = "metasalmon")
-df <- readr::read_csv(data_path, show_col_types = FALSE)
+# Replace with your own CSVs or tables
+catches <- read_csv("catches.csv", show_col_types = FALSE)
+stations <- read_csv("stations.csv", show_col_types = FALSE)
 
-# Take a look at what we have
-head(df)
+# Named resource list for the package
+resources <- list(
+  catches = catches,
+  stations = stations
+)
+
+head(resources$catches)
+head(resources$stations)
 ```
 
-**What you see**: A table with columns like `POP_ID`, `SPECIES`,
-`ANALYSIS_YR`, `MAX_ESTIMATE`, etc.
-
-**The problem**: What does `POP_ID` mean? What are the valid values for
-`SPECIES`? If you shared this CSV with a colleague, they’d have
-questions.
-
-> **Using your own data?** Just replace the `data_path` line with your
-> file path:
->
-> ``` r
->
-> df <- readr::read_csv("path/to/your-data.csv", show_col_types = FALSE)
-> ```
+> **Using your own data?** Keep the same names for each table’s key, and add
+> as many tables as you need.
 
 ------------------------------------------------------------------------
 
-## Step 2: Generate a Data Dictionary
+## Step 2: Infer all metadata artifacts in one pass
 
-metasalmon can look at your data and create a starter dictionary - a
-table that describes each column.
+`metasalmon` can infer multiple package artifacts from your tables at once:
+
+- `dict` (`column_dictionary.csv` rows)
+- `table_meta` (`tables.csv` rows)
+- `codes` (`codes.csv` rows)
+- `dataset_meta` (`dataset.csv` row)
+- Semantic suggestions (optional, via `seed_semantics`)
 
 ``` r
 
-dict <- infer_dictionary(
-  df,
+artifacts <- infer_salmon_datapackage_artifacts(
+  resources,
   dataset_id = "fraser-coho-2024",
-  table_id = "escapement"
+  seed_semantics = TRUE,
+  seed_verbose = TRUE
 )
 
-# See what it created
+dict <- artifacts$dict
+table_meta <- artifacts$table_meta
+codes <- artifacts$codes
+dataset_meta <- artifacts$dataset_meta
+suggestions <- artifacts$semantic_suggestions
+
+# Review what it created
 print(dict)
+head(suggestions)
 ```
 
-**What you get**: A table with one row per column in your data,
-describing:
+What you get:
 
-| Field | What it means |
-|----|----|
-| `column_name` | The column name from your data |
-| `column_label` | A human-readable label (you can edit this) |
-| `value_type` | Is it text (`string`), a number (`integer`, `number`), a date? |
-| `column_role` | Is this an ID, a measurement, a category, or a date? |
+- `dict`: one row per column, with inferred `column_name`, `value_type`, and
+  `column_role`
+- `table_meta`: one row per input table
+- `codes`: categorical terms inferred from character/factor columns
+- `dataset_meta`: dataset-level row (including temporal/spatial keyword candidates)
 
-The dictionary is a starting point - metasalmon makes educated guesses,
-but you can (and should) review and improve the descriptions.
-
-> **Tip**: To see all columns in the dictionary, use `View(dict)` in
-> RStudio or `print(dict, width = Inf)`.
+The dictionary is still a starting point - review and refine it before
+publishing.
 
 ### Need Help Finding Standard Terms?
 
@@ -114,7 +115,10 @@ vocabularies:
 # Get semantic suggestions for your dictionary
 # For salmon-domain roles, SMN shared terms are queried first, then GCDFO as a
 # distinct DFO-specific source before OLS/NVS fallback sources.
-dict_suggested <- suggest_semantics(df, dict)
+dict_suggested <- suggest_semantics(
+  df = resources[["catches"]],
+  dict = dict
+)
 
 # View the suggestions
 suggestions <- attr(dict_suggested, "semantic_suggestions")
@@ -134,8 +138,8 @@ salmon-domain matches.
 ``` r
 
 # Optional: include DwC-DP export mappings alongside ontology suggestions
-sem <- suggest_semantics(dict)                  # default: DwC export off
-sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+sem <- suggest_semantics(df = resources[["catches"]], dict)
+sem_with_dwc <- suggest_semantics(df = resources[["catches"]], dict, include_dwc = TRUE)
 ```
 
 DwC-DP mappings stay optional; keep SDP columns as canonical and use the
@@ -175,72 +179,47 @@ validate_dictionary(dict)
 
 ------------------------------------------------------------------------
 
-## Step 4: Describe Your Dataset
+## Step 4: Describe Your Dataset (and tables)
 
-Now we need to add some basic information about the dataset as a whole -
-who created it, what it contains, and how others can use it.
+You already have a full starting metadata set in
+`artifacts$dataset_meta` and `artifacts$table_meta`; review and refine
+before packaging.
 
 ``` r
 
-# Dataset-level metadata (describes the overall dataset)
-dataset_meta <- tibble::tibble(
-  dataset_id = "fraser-coho-2024",
-  title = "Fraser River Coho Escapement Data",
-  description = "Sample escapement monitoring data for coho salmon in PFMA 29",
-  creator = "DFO Pacific Science",
-  contact_name = "Your Name",
-  contact_email = "your.email@dfo-mpo.gc.ca",
-  license = "Open Government License - Canada",
-  temporal_start = "2001",
-  temporal_end = "2024",
-  spatial_extent = "PFMA 29, Fraser River watershed",
-  # Optional but useful for EDH/GeoNetwork-ready export
-  contact_org = "Fisheries and Oceans Canada - Pacific Region Science Branch",
-  contact_position = "Fishery and Assessment Data Section",
-  update_frequency = "annually",
-  topic_categories = "biota;oceans",
-  keywords = "coho;escapement;Fraser River",
-  security_classification = "unclassified"
-)
+# Existing inferred metadata
+print(dataset_meta)
+print(table_meta)
 
-# Table-level metadata (describes this specific table)
-table_meta <- tibble::tibble(
-  dataset_id = "fraser-coho-2024",
-  table_id = "escapement",
-  file_name = "escapement.csv",
-  table_label = "Escapement Data",
-  description = "Coho escapement counts by population and year",
-  primary_key = "POP_ID"
-)
+# Edit fields that are still too vague or missing
+# For example:
+
+dataset_meta$title <- "Fraser River Coho Escapement Data"
+dataset_meta$description <- "Sample escapement monitoring data for coho salmon in PFMA 29"
+dataset_meta$contact_name <- "Your Name"
+dataset_meta$contact_email <- "your.email@dfo-mpo.gc.ca"
+dataset_meta$license <- "Open Government License - Canada"
+
+# Table metadata is still one row per table id
+# Set explicit labels or file names if needed.
+table_meta$file_name <- c("catches.csv", "stations.csv")
+table_meta$table_label <- c("Catches", "Station Lookups")
 ```
-
-**What these fields mean**:
-
-| Field | Purpose |
-|----|----|
-| `dataset_id` | A short identifier (letters, numbers, hyphens) |
-| `title` | Human-readable title for the dataset |
-| `description` | What the data contains |
-| `creator` | Who created/collected the data |
-| `contact_name/email` | Who to contact with questions |
-| `license` | How others can use the data |
-| `contact_org`, `contact_position`, `update_frequency`, `topic_categories`, `keywords`, `security_classification` | Optional discovery/governance fields (recommended for EDH-ready export) |
-| `table_id` | Identifier for this table (matches `dict`) |
-| `file_name` | What to name the output CSV file |
 
 ------------------------------------------------------------------------
 
 ## Step 5: Create Your Data Package
 
-Now let’s bundle everything together into a shareable package:
+Bundle everything together into a shareable folder:
 
 ``` r
 
 pkg_path <- create_salmon_datapackage(
-  resources = list(escapement = df),
+  resources = resources,
   dataset_meta = dataset_meta,
   table_meta = table_meta,
   dict = dict,
+  codes = codes,
   path = "my-first-package",
   overwrite = TRUE
 )
@@ -253,13 +232,14 @@ list.files(pkg_path)
 
 | File                    | Purpose                   |
 |-------------------------|---------------------------|
-| `escapement.csv`        | Your data                 |
+| `catches.csv`, `stations.csv` | Your source tables        |
 | `column_dictionary.csv` | What each column means    |
-| `datapackage.json`      | Machine-readable metadata |
+| `tables.csv`            | Table-level metadata      |
+| `codes.csv`             | Candidate code label mappings |
 | `dataset.csv`           | Dataset-level information |
-| `tables.csv`            | Table-level information   |
+| `datapackage.json`      | Machine-readable metadata |
 
-------------------------------------------------------------------------
+
 
 ## Step 5b (Optional): Export EDH XML metadata
 
