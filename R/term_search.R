@@ -74,7 +74,7 @@
 #' Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 #'
 #' **Supported sources:**
-#' - **SMN** (Salmon Domain Ontology): shared salmon-domain search from `https://w3id.org/smn/` (shared term IRIs use the `salmon:` namespace, e.g. `http://w3id.org/salmon/Stock`)
+#' - **SMN** (Salmon Domain Ontology): shared salmon-domain search from `https://w3id.org/smn/` (shared term IRIs are canonically served under `smn` namespace, e.g. `https://w3id.org/smn/Stock`)
 #' - **GCDFO** (DFO-specific fallback): bridge/fallback search for DFO-specific terms
 #' - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 #' - **NVS** (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
@@ -249,9 +249,14 @@ find_terms <- function(query,
   results <- purrr::flatten(results)
   combined <- dplyr::bind_rows(results)
 
-  # Deduplicate by IRI (keep first occurrence, which has original query priority)
-  combined <- combined[!duplicated(combined$iri), ]
-
+  # Deduplicate by canonical IRI (unifies old/new SMN namespace forms)
+  combined <- dplyr::mutate(
+    combined,
+    iri = .normalize_smn_namespace_iri(.data$iri),
+    .iri_canonical = .normalize_smn_namespace_iri(.data$iri)
+  )
+  combined <- combined[!duplicated(combined$.iri_canonical), ]
+  combined <- dplyr::select(combined, -dplyr::all_of(".iri_canonical"))
   combined <- dplyr::bind_rows(combined)
   if (!"zooma_confidence" %in% names(combined)) {
     combined$zooma_confidence <- NA_character_
@@ -743,6 +748,16 @@ pattern <- paste(tokens, collapse = ".*")
   ifelse(is.na(x) | !nzchar(x), "", sub("^.*[#/]", "", x))
 }
 
+
+.normalize_smn_namespace_iri <- function(iri) {
+  canonical <- ifelse(
+    grepl("^https?://w3id\\.org/(smn|salmon)/", iri),
+    sub("^https?://w3id\\.org/(?:smn|salmon)/", "https://w3id.org/smn/", iri),
+    iri
+  )
+  canonical
+}
+
 .camel_words <- function(x) {
   x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
   trimws(gsub("[_-]+", " ", x))
@@ -907,7 +922,7 @@ pattern <- paste(tokens, collapse = ".*")
   }
 
   doc <- xml2::read_xml(path)
-  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/gcdfo/salmon(#|/)")
+  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/(gcdfo/salmon|smn|salmon)(#|/)")
   assign("stamp", stamp, envir = .gcdfo_index_cache)
   assign("index", index, envir = .gcdfo_index_cache)
   index

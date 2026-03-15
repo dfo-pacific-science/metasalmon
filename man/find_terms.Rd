@@ -50,7 +50,7 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 \details{
 \strong{Supported sources:}
 \itemize{
-\item \strong{SMN} (Salmon Domain Ontology): shared salmon-domain search from \verb{https://w3id.org/smn/} (shared term IRIs use the \verb{salmon:} namespace, e.g. \verb{http://w3id.org/salmon/Stock})
+\item \strong{SMN} (Salmon Domain Ontology): shared salmon-domain search from \verb{https://w3id.org/smn/} (shared term IRIs are canonically served under \code{smn} namespace, e.g. \verb{https://w3id.org/smn/Stock})
 \item \strong{GCDFO} (DFO-specific fallback): bridge/fallback search for DFO-specific terms
 \item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 \item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)

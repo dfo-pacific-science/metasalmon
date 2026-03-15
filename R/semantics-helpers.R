@@ -124,6 +124,8 @@ suggest_semantics <- function(df,
       if (!nzchar(role_query)) return(tibble::tibble())
       res <- search_fn(role_query, role = role_name, sources = sources)
       if (nrow(res) == 0) return(tibble::tibble())
+      res$iri <- .normalize_smn_namespace_iri(res$iri)
+      res <- res[!duplicated(res$iri), , drop = FALSE]
       res <- utils::head(res, max_per_role)
       res$dataset_id <- row$dataset_id
       res$table_id <- row$table_id

@@ -166,6 +166,53 @@ test_that("suggest_semantics uses role-specific hints when available", {
   expect_true(any(unit_queries == "fish"))
 })
 
+test_that("suggest_semantics deduplicates namespace variants", {
+  dict <- tibble::tibble(
+    dataset_id = "d",
+    table_id = "t",
+    column_name = "MEAS",
+    column_label = "Stock",
+    column_description = "Stock count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources = NULL) {
+    role_suffix <- if (role == "entity") "entity" else role
+    tibble::tibble(
+      label = "Stock",
+      iri = c(
+        "http://w3id.org/salmon/Stock",
+        "https://w3id.org/smn/Stock"
+      ),
+      source = c("smn", "smn"),
+      ontology = c(role_suffix, role_suffix),
+      role = role,
+      match_type = "label",
+      definition = "",
+      score = c(10, 9)
+    )
+  }
+
+  res <- suggest_semantics(NULL, dict, sources = "smn", max_per_role = 2, search_fn = fake_search)
+  suggestions <- attr(res, "semantic_suggestions")
+
+  # Expect deduplicated canonical namespace output for variable/property/entity roles
+  entity_rows <- suggestions[suggestions$dictionary_role == "entity", , drop = FALSE]
+  var_rows <- suggestions[suggestions$dictionary_role == "variable", , drop = FALSE]
+  expect_equal(nrow(entity_rows), 1)
+  expect_equal(nrow(var_rows), 1)
+  expect_equal(unique(entity_rows$iri), "https://w3id.org/smn/Stock")
+  expect_equal(unique(var_rows$iri), "https://w3id.org/smn/Stock")
+})
+
 test_that("apply_semantic_suggestions matches by column_name and dictionary_role", {
   dict <- tibble::tibble(
     dataset_id = c("d1", "d1"),

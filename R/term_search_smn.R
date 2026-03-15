@@ -200,12 +200,12 @@
       }
 
       subject <- sub("\\s.*$", "", collapsed)
-      if (!grepl("^salmon:", subject)) {
+      if (!grepl("^(salmon|smn):", subject)) {
         next
       }
 
       iri <- .smn_expand_curie(subject, prefixes)
-      if (!grepl("^http://w3id\\.org/salmon/", iri)) {
+      if (!grepl("^https?://w3id\\.org/(salmon|smn)/", iri)) {
         next
       }
 

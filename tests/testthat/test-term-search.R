@@ -167,6 +167,40 @@ test_that("find_terms uses smn ontology backend", {
   expect_match(res$iri[[1]], "NaturalSpawnerCount")
 })
 
+test_that("find_terms normalizes shared SMN namespace variants", {
+  mock_index <- tibble::tibble(
+    iri = c(
+      "http://w3id.org/salmon/Stock",
+      "https://w3id.org/smn/Stock"
+    ),
+    label = c("Stock", "Stock"),
+    alt_labels = c("", ""),
+    definition = c("Legacy namespace stock term", "Canonical namespace stock term"),
+    resource_kind = c("Class", "Class"),
+    in_scheme = c("", ""),
+    parent_iris = c("", ""),
+    type_iris = c(
+      "http://www.w3.org/2002/07/owl#Class",
+      "http://www.w3.org/2002/07/owl#Class"
+    ),
+    search_text = c("stock legacy namespace", "stock canonical namespace"),
+    is_variable = c(FALSE, FALSE),
+    is_property = c(FALSE, FALSE),
+    is_entity = c(TRUE, TRUE),
+    is_constraint = c(FALSE, FALSE),
+    is_method = c(FALSE, FALSE),
+    role_hints = c("entity", "entity")
+  )
+
+  res <- with_mocked_bindings(
+    .smn_term_index = function(refresh = FALSE) mock_index,
+    find_terms("stock", role = "entity", sources = "smn", expand_query = FALSE)
+  )
+
+  expect_equal(nrow(res), 1)
+  expect_equal(res$iri[[1]], "https://w3id.org/smn/Stock")
+})
+
 test_that("find_terms short-circuits fallback when smn has a good hit", {
   mock_index <- tibble::tibble(
     iri = "http://w3id.org/salmon/Stock",
