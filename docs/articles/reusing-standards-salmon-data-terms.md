@@ -65,9 +65,10 @@ sources_for_role("entity")
 ```
 
 The shared **Salmon Domain Ontology** is queried first for salmon-domain
-roles. Its reusable shared terms use the `salmon:` namespace (for
-example `http://w3id.org/salmon/Stock`), while `gcdfo` remains the
-DFO-specific bridge/fallback source.
+roles. Its reusable shared terms are now canonically served under the
+`smn` namespace (for example `https://w3id.org/smn/Stock`), while
+`gcdfo` remains the DFO-specific bridge/fallback source. metasalmon
+still normalizes older `salmon:`-namespace variants when they appear.
 
 | Role | Recommended Sources | Notes |
 |----|----|----|

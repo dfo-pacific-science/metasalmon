@@ -68,8 +68,8 @@ slow queries.
 **Supported sources:**
 
 - **SMN** (Salmon Domain Ontology): shared salmon-domain search from
-  `https://w3id.org/smn/` (shared term IRIs use the `salmon:` namespace,
-  e.g. `http://w3id.org/salmon/Stock`)
+  `https://w3id.org/smn/` (shared term IRIs are canonically served under
+  `smn` namespace, e.g. `https://w3id.org/smn/Stock`)
 
 - **GCDFO** (DFO-specific fallback): bridge/fallback search for
   DFO-specific terms

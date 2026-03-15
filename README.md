@@ -223,7 +223,7 @@ pkgdown::build_site()
 
 ### Salmon Domain Ontology
 
-This package can optionally link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) first, with [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed. The shared reusable term IRIs themselves use the `salmon:` namespace (for example `http://w3id.org/salmon/Stock`). You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
+This package can optionally link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) first, with [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed. Shared reusable SMN terms are now canonically served under the `smn` namespace (for example `https://w3id.org/smn/Stock`), though metasalmon normalizes older `salmon:`-namespace variants when they appear. You don't need to understand ontologies to use metasalmon - this is handled automatically for users who want it.
 
 See the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide for details.
 
