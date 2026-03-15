@@ -25,6 +25,13 @@
 #'   (variable, property, entity, unit, constraint) per column. Default is 3.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
+#' @param codes Optional `codes.csv`-like tibble. When provided, suggestions are
+#'   also generated for missing `codes.csv$term_iri` targets.
+#' @param table_meta Optional `tables.csv`-like tibble. When provided,
+#'   suggestions are generated for missing `tables.csv$observation_unit_iri`.
+#' @param dataset_meta Optional `dataset.csv`-like tibble. When provided,
+#'   suggestions are generated for missing `dataset.csv$keywords` as candidate
+#'   semantic keywords (IRIs intended for keyword curation).
 #'
 #' @return The dictionary tibble (unchanged) with a `semantic_suggestions`
 #'   attribute containing a tibble of suggested IRIs. The suggestions tibble
@@ -36,21 +43,24 @@
 #'   `search_query`, `column_label`, `column_description`, `label`, `iri`,
 #'   `source`, `ontology`, and `definition`. If the underlying search results
 #'   include a `score` column, it is preserved for downstream filtering.
+#'   For non-column targets, the tibble also includes explicit destination
+#'   context (`target_row_key`, `target_label`, `target_description`,
+#'   `code_value`, `code_label`, `code_description`) so table-, dataset-, and
+#'   code-level rows are inspectable without extra joins.
 #'
 #' @details
-#' Only columns with `column_role == "measurement"` are processed, since
-#' I-ADOPT components are primarily relevant for measurement metadata. Columns
-#' with existing IRIs in a field are skipped for that field. Current
-#' `seed_semantics` suggestions are column-level suggestions, so
-#' `target_sdp_file` is `"column_dictionary.csv"`; the explicit target columns
-#' are included to make future dataset/table/code-level suggestion layers less
-#' ambiguous.
+#' Column targets keep the existing behavior: only columns with
+#' `column_role == "measurement"` are processed for missing I-ADOPT fields.
+#' When `codes`, `table_meta`, or `dataset_meta` are supplied, additional
+#' target rows are generated for `codes.csv`, `tables.csv`, and `dataset.csv`
+#' respectively.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
 #' In that case, `match_type` still describes lexical match quality, while
 #' `target_sdp_field` tells you where that suggestion would be written in the
-#' package.
+#' package. The output adds `role_collision` and `role_collision_note` so
+#' variable-vs-property collisions stay explicit and destination-aware.
 #'
 #' After calling this function, access suggestions with:
 #' ```
@@ -93,8 +103,16 @@ suggest_semantics <- function(df,
                               sources = c("smn", "gcdfo", "ols", "nvs"),
                               include_dwc = FALSE,
                               max_per_role = 3,
-                              search_fn = find_terms) {
-  if (nrow(dict) == 0) {
+                              search_fn = find_terms,
+                              codes = NULL,
+                              table_meta = NULL,
+                              dataset_meta = NULL) {
+  dict <- tibble::as_tibble(dict)
+  codes <- if (is.null(codes)) tibble::tibble() else tibble::as_tibble(codes)
+  table_meta <- if (is.null(table_meta)) tibble::tibble() else tibble::as_tibble(table_meta)
+  dataset_meta <- if (is.null(dataset_meta)) tibble::tibble() else tibble::as_tibble(dataset_meta)
+
+  if (nrow(dict) == 0 && nrow(codes) == 0 && nrow(table_meta) == 0 && nrow(dataset_meta) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
     if (isTRUE(include_dwc)) {
       attr(dict, "dwc_mappings") <- tibble::tibble()
@@ -115,15 +133,25 @@ suggest_semantics <- function(df,
     "dictionary_role",
     "table_id",
     "dataset_id",
+    "target_row_key",
+    "target_label",
+    "target_description",
     "target_scope",
     "target_sdp_file",
     "target_sdp_field",
     "search_query",
     "column_label",
-    "column_description"
+    "column_description",
+    "code_value",
+    "code_label",
+    "code_description"
   )
 
-  is_missing <- function(x) is.null(x) || is.na(x) || x == ""
+  is_missing <- function(x) {
+    if (is.null(x) || length(x) == 0) return(TRUE)
+    all(is.na(x) | as.character(x) == "")
+  }
+  is_present <- function(x) !is_missing(x)
   first_non_empty <- function(values) {
     values <- values[!vapply(values, is_missing, logical(1))]
     if (length(values) == 0) "" else values[[1]]
@@ -133,48 +161,278 @@ suggest_semantics <- function(df,
     x <- gsub("\\s+", " ", x)
     trimws(x)
   }
+  split_role_hints <- function(x) {
+    if (is_missing(x)) return(character())
+    hints <- trimws(unlist(strsplit(as.character(x), "\\|", fixed = FALSE)))
+    hints[nzchar(hints)]
+  }
+  role_hint_status <- function(role, role_hints) {
+    hints <- split_role_hints(role_hints)
+    if (length(hints) == 0) return("unknown")
+    if (role %in% hints) return("match")
+    if (identical(role, "variable") && "property" %in% hints) return("mismatch_property")
+    if (identical(role, "property") && "variable" %in% hints) return("mismatch_variable")
+    "unknown"
+  }
+  role_hint_bonus <- function(status) {
+    switch(status,
+      match = 0.35,
+      mismatch_property = -0.35,
+      mismatch_variable = -0.35,
+      0
+    )
+  }
+  role_hint_explanation <- function(status, role) {
+    switch(status,
+      match = paste0("Candidate carries a ", role, " role hint."),
+      mismatch_property = "Candidate carries a property hint; kept lower for variable destination.",
+      mismatch_variable = "Candidate carries a variable hint; kept lower for property destination.",
+      NA_character_
+    )
+  }
+  targets <- tibble::tibble()
 
-  suggestions <- purrr::map_dfr(seq_len(nrow(dict)), function(i) {
-    row <- dict[i, , drop = TRUE]
-    if (!identical(row$column_role, "measurement")) return(tibble::tibble())
+  if (nrow(dict) > 0) {
+    column_targets <- purrr::map_dfr(seq_len(nrow(dict)), function(i) {
+      row <- dict[i, , drop = FALSE]
+      if (!identical(row$column_role[[1]], "measurement")) return(tibble::tibble())
 
-    query <- first_non_empty(list(row$column_description, row$column_label, row$column_name))
-    query <- clean_query(query)
-    purrr::imap_dfr(roles, function(role_name, col_name) {
-      if (!col_name %in% names(row)) return(tibble::tibble())
-      if (!is_missing(row[[col_name]])) return(tibble::tibble())
-      role_query <- query
-      if (role_name == "unit") {
-        role_query <- first_non_empty(list(row$unit_label, query))
-      }
-      if (!nzchar(role_query)) return(tibble::tibble())
-      res <- search_fn(role_query, role = role_name, sources = sources)
-      if (nrow(res) == 0) return(tibble::tibble())
-      res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
-      res <- utils::head(res, max_per_role)
-      res$column_name <- row$column_name
-      res$dictionary_role <- role_name
-      res$table_id <- row$table_id
-      res$dataset_id <- row$dataset_id
-      res$target_scope <- "column"
-      res$target_sdp_file <- "column_dictionary.csv"
-      res$target_sdp_field <- col_name
-      res$search_query <- role_query
-      res$column_label <- row$column_label
-      res$column_description <- row$column_description
-      optional_cols <- intersect(
-        c("score", "alignment_only", "agreement_sources", "zooma_confidence", "zooma_annotator"),
-        names(res)
-      )
-      res <- dplyr::select(
-        res,
-        dplyr::all_of(c(suggestion_leading_cols, "label", "iri", "source", "ontology", "role", "match_type", "definition")),
-        dplyr::all_of(optional_cols),
-        dplyr::everything()
-      )
-      res
+      query <- clean_query(first_non_empty(list(row$column_description[[1]], row$column_label[[1]], row$column_name[[1]])))
+      purrr::imap_dfr(roles, function(role_name, col_name) {
+        if (!col_name %in% names(row)) return(tibble::tibble())
+        if (is_present(row[[col_name]][[1]])) return(tibble::tibble())
+        role_query <- query
+        if (identical(role_name, "unit")) {
+          role_query <- clean_query(first_non_empty(list(row$unit_label[[1]], query)))
+        }
+        if (!nzchar(role_query)) return(tibble::tibble())
+        tibble::tibble(
+          dataset_id = row$dataset_id[[1]],
+          table_id = row$table_id[[1]],
+          column_name = row$column_name[[1]],
+          code_value = NA_character_,
+          dictionary_role = role_name,
+          target_scope = "column",
+          target_sdp_file = "column_dictionary.csv",
+          target_sdp_field = col_name,
+          target_row_key = paste(row$dataset_id[[1]], row$table_id[[1]], row$column_name[[1]], sep = "/"),
+          target_label = row$column_label[[1]],
+          target_description = row$column_description[[1]],
+          search_query = role_query,
+          column_label = row$column_label[[1]],
+          column_description = row$column_description[[1]],
+          code_label = NA_character_,
+          code_description = NA_character_
+        )
+      })
     })
+    targets <- dplyr::bind_rows(targets, column_targets)
+  }
+
+  if (nrow(codes) > 0) {
+    code_targets <- purrr::map_dfr(seq_len(nrow(codes)), function(i) {
+      row <- codes[i, , drop = FALSE]
+      term_iri <- if ("term_iri" %in% names(row)) row$term_iri[[1]] else NA_character_
+      if (is_present(term_iri)) return(tibble::tibble())
+
+      dataset_id <- if ("dataset_id" %in% names(row)) row$dataset_id[[1]] else NA_character_
+      table_id <- if ("table_id" %in% names(row)) row$table_id[[1]] else NA_character_
+      column_name <- if ("column_name" %in% names(row)) row$column_name[[1]] else NA_character_
+      code_value <- if ("code_value" %in% names(row)) row$code_value[[1]] else NA_character_
+      code_label <- if ("code_label" %in% names(row)) row$code_label[[1]] else NA_character_
+      code_description <- if ("code_description" %in% names(row)) row$code_description[[1]] else NA_character_
+
+      parent_row <- dict[dict$dataset_id == dataset_id & dict$table_id == table_id & dict$column_name == column_name, , drop = FALSE]
+      parent_role <- if (nrow(parent_row) > 0 && "column_role" %in% names(parent_row)) parent_row$column_role[[1]] else NA_character_
+      parent_label <- if (nrow(parent_row) > 0 && "column_label" %in% names(parent_row)) parent_row$column_label[[1]] else column_name
+      parent_description <- if (nrow(parent_row) > 0 && "column_description" %in% names(parent_row)) parent_row$column_description[[1]] else NA_character_
+
+      role_set <- if (identical(parent_role, "measurement")) c("constraint", "entity", "method") else c("entity")
+      query <- clean_query(first_non_empty(list(code_description, code_label, code_value, parent_description, parent_label, column_name)))
+      if (!nzchar(query)) return(tibble::tibble())
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        table_id = table_id,
+        column_name = column_name,
+        code_value = code_value,
+        dictionary_role = role_set,
+        target_scope = "code",
+        target_sdp_file = "codes.csv",
+        target_sdp_field = "term_iri",
+        target_row_key = paste(dataset_id, table_id, column_name, code_value, sep = "/"),
+        target_label = first_non_empty(list(code_label, code_value)),
+        target_description = code_description,
+        search_query = query,
+        column_label = parent_label,
+        column_description = parent_description,
+        code_label = code_label,
+        code_description = code_description
+      )
+    })
+    targets <- dplyr::bind_rows(targets, code_targets)
+  }
+
+  if (nrow(table_meta) > 0) {
+    table_targets <- purrr::map_dfr(seq_len(nrow(table_meta)), function(i) {
+      row <- table_meta[i, , drop = FALSE]
+      observation_unit_iri <- if ("observation_unit_iri" %in% names(row)) row$observation_unit_iri[[1]] else NA_character_
+      if (is_present(observation_unit_iri)) return(tibble::tibble())
+
+      dataset_id <- if ("dataset_id" %in% names(row)) row$dataset_id[[1]] else NA_character_
+      table_id <- if ("table_id" %in% names(row)) row$table_id[[1]] else NA_character_
+      table_label <- if ("table_label" %in% names(row)) row$table_label[[1]] else table_id
+      table_description <- if ("description" %in% names(row)) row$description[[1]] else NA_character_
+      observation_unit <- if ("observation_unit" %in% names(row)) row$observation_unit[[1]] else NA_character_
+      query <- clean_query(first_non_empty(list(observation_unit, table_description, table_label, table_id)))
+      if (!nzchar(query)) return(tibble::tibble())
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        table_id = table_id,
+        column_name = NA_character_,
+        code_value = NA_character_,
+        dictionary_role = "entity",
+        target_scope = "table",
+        target_sdp_file = "tables.csv",
+        target_sdp_field = "observation_unit_iri",
+        target_row_key = paste(dataset_id, table_id, sep = "/"),
+        target_label = table_label,
+        target_description = table_description,
+        search_query = query,
+        column_label = NA_character_,
+        column_description = NA_character_,
+        code_label = NA_character_,
+        code_description = NA_character_
+      )
+    })
+    targets <- dplyr::bind_rows(targets, table_targets)
+  }
+
+  if (nrow(dataset_meta) > 0) {
+    dataset_targets <- purrr::map_dfr(seq_len(nrow(dataset_meta)), function(i) {
+      row <- dataset_meta[i, , drop = FALSE]
+      keywords <- if ("keywords" %in% names(row)) row$keywords[[1]] else NA_character_
+      if (is_present(keywords)) return(tibble::tibble())
+
+      dataset_id <- if ("dataset_id" %in% names(row)) row$dataset_id[[1]] else NA_character_
+      title <- if ("title" %in% names(row)) row$title[[1]] else dataset_id
+      description <- if ("description" %in% names(row)) row$description[[1]] else NA_character_
+      query <- clean_query(first_non_empty(list(description, title, dataset_id)))
+      if (!nzchar(query)) return(tibble::tibble())
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        table_id = NA_character_,
+        column_name = NA_character_,
+        code_value = NA_character_,
+        dictionary_role = "entity",
+        target_scope = "dataset",
+        target_sdp_file = "dataset.csv",
+        target_sdp_field = "keywords",
+        target_row_key = dataset_id,
+        target_label = title,
+        target_description = description,
+        search_query = query,
+        column_label = NA_character_,
+        column_description = NA_character_,
+        code_label = NA_character_,
+        code_description = NA_character_
+      )
+    })
+    targets <- dplyr::bind_rows(targets, dataset_targets)
+  }
+
+  suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
+    target <- targets[i, , drop = FALSE]
+    res <- search_fn(target$search_query[[1]], role = target$dictionary_role[[1]], sources = sources)
+    if (nrow(res) == 0) return(tibble::tibble())
+    res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
+    if (!"role_hints" %in% names(res)) {
+      res$role_hints <- NA_character_
+    }
+    res$role_hint_status <- vapply(
+      res$role_hints,
+      function(h) role_hint_status(target$dictionary_role[[1]], h),
+      character(1)
+    )
+    res$role_hint_bonus <- vapply(res$role_hint_status, role_hint_bonus, numeric(1))
+    res$role_hint_explanation <- vapply(
+      res$role_hint_status,
+      function(s) role_hint_explanation(s, target$dictionary_role[[1]]),
+      character(1)
+    )
+    if ("score" %in% names(res)) {
+      res$score <- res$score + res$role_hint_bonus
+      res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+    } else {
+      res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+    }
+    res <- utils::head(res, max_per_role)
+
+    for (nm in names(target)) {
+      res[[nm]] <- target[[nm]][[1]]
+    }
+
+    optional_cols <- intersect(
+      c("score", "alignment_only", "agreement_sources", "zooma_confidence", "zooma_annotator", "role_hints", "role_hint_status", "role_hint_bonus", "role_hint_explanation"),
+      names(res)
+    )
+    dplyr::select(
+      res,
+      dplyr::all_of(c(suggestion_leading_cols, "label", "iri", "source", "ontology", "role", "match_type", "definition")),
+      dplyr::all_of(optional_cols),
+      dplyr::everything()
+    )
   })
+
+  if (nrow(suggestions) > 0) {
+    suggestions$candidate_label_norm <- tolower(trimws(suggestions$label %||% ""))
+    grouped <- suggestions %>%
+      dplyr::group_by(
+        .data$dataset_id,
+        .data$table_id,
+        .data$column_name,
+        .data$code_value,
+        .data$target_scope,
+        .data$target_sdp_file,
+        .data$candidate_label_norm
+      ) %>%
+      dplyr::summarise(
+        collision_roles = paste(sort(unique(.data$dictionary_role)), collapse = "|"),
+        role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
+        .groups = "drop"
+      )
+    suggestions <- suggestions %>%
+      dplyr::left_join(
+        grouped,
+        by = c(
+          "dataset_id",
+          "table_id",
+          "column_name",
+          "code_value",
+          "target_scope",
+          "target_sdp_file",
+          "candidate_label_norm"
+        )
+      ) %>%
+      dplyr::mutate(
+        role_collision_note = dplyr::case_when(
+          .data$role_collision & .data$dictionary_role == "variable" ~ paste0(
+            "Label appears for variable and property candidates; this row targets variable semantics for ",
+            .data$target_sdp_field,
+            "."
+          ),
+          .data$role_collision & .data$dictionary_role == "property" ~ paste0(
+            "Label appears for variable and property candidates; this row targets property semantics for ",
+            .data$target_sdp_field,
+            "."
+          ),
+          TRUE ~ NA_character_
+        )
+      ) %>%
+      dplyr::select(-dplyr::any_of("candidate_label_norm"))
+  }
 
   attr(dict, "semantic_suggestions") <- suggestions
 
@@ -199,7 +457,9 @@ suggest_semantics <- function(df,
 #'
 #' Matching is done by both `column_name` and `dictionary_role`. When the
 #' suggestions tibble also includes `dataset_id` and `table_id`, those keys are
-#' honored too.
+#' honored too. Suggestions that target non-column destinations (for example
+#' `codes.csv`, `tables.csv`, or `dataset.csv`) are ignored by this helper and
+#' remain review-only.
 #'
 #' @param dict A dictionary tibble, typically returned by [infer_dictionary()] or
 #'   [suggest_semantics()].
@@ -310,6 +570,27 @@ apply_semantic_suggestions <- function(dict,
 
   suggestions$.row_id <- seq_len(nrow(suggestions))
   suggestions <- suggestions[!is.na(suggestions$iri) & suggestions$iri != "", , drop = FALSE]
+
+  if ("target_scope" %in% names(suggestions)) {
+    keep <- is.na(suggestions$target_scope) | suggestions$target_scope == "column"
+    dropped <- sum(!keep)
+    suggestions <- suggestions[keep, , drop = FALSE]
+    if (isTRUE(verbose) && dropped > 0) {
+      cli::cli_inform(
+        "{dropped} suggestion{?s} target non-column scopes and were left as review-only metadata."
+      )
+    }
+  }
+  if ("target_sdp_file" %in% names(suggestions)) {
+    keep <- is.na(suggestions$target_sdp_file) | suggestions$target_sdp_file == "column_dictionary.csv"
+    dropped <- sum(!keep)
+    suggestions <- suggestions[keep, , drop = FALSE]
+    if (isTRUE(verbose) && dropped > 0) {
+      cli::cli_inform(
+        "{dropped} suggestion{?s} target non-dictionary files and were not auto-applied."
+      )
+    }
+  }
 
   if (!is.null(columns)) {
     suggestions <- suggestions[suggestions$column_name %in% columns, , drop = FALSE]

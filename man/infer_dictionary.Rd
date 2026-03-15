@@ -12,7 +12,10 @@ infer_dictionary(
   seed_semantics = FALSE,
   semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
   semantic_max_per_role = 1,
-  seed_verbose = TRUE
+  seed_verbose = TRUE,
+  seed_codes = NULL,
+  seed_table_meta = NULL,
+  seed_dataset_meta = NULL
 )
 }
 \arguments{
@@ -35,6 +38,15 @@ role when seeding suggestions. Default: \code{1}.}
 
 \item{seed_verbose}{Logical; if TRUE, print a short progress message while
 seeding semantic suggestions.}
+
+\item{seed_codes}{Optional \code{codes.csv}-style tibble forwarded to
+\code{suggest_semantics()} when \code{seed_semantics = TRUE}.}
+
+\item{seed_table_meta}{Optional \code{tables.csv}-style tibble forwarded to
+\code{suggest_semantics()} when \code{seed_semantics = TRUE}.}
+
+\item{seed_dataset_meta}{Optional \code{dataset.csv}-style tibble forwarded to
+\code{suggest_semantics()} when \code{seed_semantics = TRUE}.}
 }
 \value{
 A tibble with dictionary schema columns: \code{dataset_id}, \code{table_id},

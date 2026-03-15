@@ -32,6 +32,7 @@ For example, unit queries get abbreviation expansions, method queries get
 \value{
 Tibble with columns: \code{label}, \code{iri}, \code{source}, \code{ontology}, \code{role},
 \code{match_type}, \code{definition}, \code{score}, \code{alignment_only}, \code{agreement_sources},
+\code{role_hints},
 \code{zooma_confidence}, \code{zooma_annotator}. The \code{score} column shows the computed
 ranking score. The \code{alignment_only} column indicates terms from Wikidata
 (useful for crosswalks but not canonical modeling). The \code{agreement_sources}

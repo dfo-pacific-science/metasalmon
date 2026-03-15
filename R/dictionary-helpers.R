@@ -15,6 +15,12 @@
 #'   role when seeding suggestions. Default: `1`.
 #' @param seed_verbose Logical; if TRUE, print a short progress message while
 #'   seeding semantic suggestions.
+#' @param seed_codes Optional `codes.csv`-style tibble forwarded to
+#'   `suggest_semantics()` when `seed_semantics = TRUE`.
+#' @param seed_table_meta Optional `tables.csv`-style tibble forwarded to
+#'   `suggest_semantics()` when `seed_semantics = TRUE`.
+#' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
+#'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #'
 #' @return A tibble with dictionary schema columns: `dataset_id`, `table_id`,
 #'   `column_name`, `column_label`, `column_description`, `column_role`,
@@ -44,7 +50,10 @@
 #' }
 infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1",
                             seed_semantics = FALSE, semantic_sources = c("smn", "gcdfo", "ols", "nvs"), semantic_max_per_role = 1,
-                            seed_verbose = TRUE) {
+                            seed_verbose = TRUE,
+                            seed_codes = NULL,
+                            seed_table_meta = NULL,
+                            seed_dataset_meta = NULL) {
   if (!inherits(df, "data.frame")) {
     cli::cli_abort("{.arg df} must be a data frame or tibble")
   }
@@ -89,7 +98,10 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       df = df,
       dict = dict,
       sources = semantic_sources,
-      max_per_role = semantic_max_per_role
+      max_per_role = semantic_max_per_role,
+      codes = seed_codes,
+      table_meta = seed_table_meta,
+      dataset_meta = seed_dataset_meta
     )
   }
 

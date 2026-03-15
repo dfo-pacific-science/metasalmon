@@ -28,9 +28,13 @@ test_that("infer_dictionary creates valid structure", {
 })
 
 test_that("infer_dictionary can seed semantic suggestions", {
-  fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE, ...) {
+  fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
+                           codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
     expect_equal(sources, c("ols", "nvs", "qudt"))
     expect_equal(max_per_role, 1)
+    expect_null(codes)
+    expect_null(table_meta)
+    expect_null(dataset_meta)
     attr(dict, "semantic_suggestions") <- tibble::tibble(
       column_name = c("count"),
       dictionary_role = c("variable"),
@@ -146,6 +150,125 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
   dwc_map <- attr(res_dwc, "dwc_mappings")
   expect_true(is.data.frame(dwc_map))
+})
+
+test_that("suggest_semantics supports code, table, and dataset targets", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "species_code",
+    column_label = "Species code",
+    column_description = "Species code used in the counts table",
+    column_role = "measurement",
+    value_type = "string",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+  codes <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "species_code",
+    code_value = "CO",
+    code_label = "Coho",
+    code_description = "Coho salmon code",
+    vocabulary_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    file_name = "t1.csv",
+    table_label = "Main table",
+    description = "Fish observations",
+    observation_unit = "salmon population",
+    observation_unit_iri = NA_character_,
+    primary_key = "species_code"
+  )
+  dataset_meta <- tibble::tibble(
+    dataset_id = "d1",
+    title = "Fraser salmon observations",
+    description = "Monitoring dataset for salmon runs",
+    keywords = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      role_hints = role,
+      match_type = "label_partial",
+      definition = "",
+      score = 1
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    codes = codes,
+    table_meta = table_meta,
+    dataset_meta = dataset_meta
+  )
+  suggestions <- attr(res, "semantic_suggestions")
+
+  expect_true(all(c("target_scope", "target_sdp_file", "target_sdp_field", "target_row_key") %in% names(suggestions)))
+  expect_true(all(c("column", "code", "table", "dataset") %in% unique(suggestions$target_scope)))
+  expect_true(all(c("column_dictionary.csv", "codes.csv", "tables.csv", "dataset.csv") %in% unique(suggestions$target_sdp_file)))
+  expect_true(any(suggestions$target_scope == "code" & suggestions$target_sdp_field == "term_iri"))
+  expect_true(any(suggestions$target_scope == "table" & suggestions$target_sdp_field == "observation_unit_iri"))
+  expect_true(any(suggestions$target_scope == "dataset" & suggestions$target_sdp_field == "keywords"))
+})
+
+test_that("suggest_semantics marks variable vs property collisions with destination notes", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "value",
+    column_label = "Spawner abundance",
+    column_description = "Spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = "Spawner abundance",
+      iri = paste0("https://example.org/", role),
+      source = "smn",
+      ontology = "demo",
+      role = role,
+      role_hints = if (role == "variable") "variable|property" else if (role == "property") "variable|property" else role,
+      match_type = "label_exact",
+      definition = "",
+      score = 1
+    )
+  }
+
+  res <- suggest_semantics(NULL, dict, sources = "smn", max_per_role = 1, search_fn = fake_search)
+  suggestions <- attr(res, "semantic_suggestions")
+  vp <- suggestions[suggestions$dictionary_role %in% c("variable", "property"), , drop = FALSE]
+
+  expect_true(all(vp$role_collision))
+  expect_true(all(grepl("targets", vp$role_collision_note)))
 })
 
 test_that("suggest_semantics uses role-specific hints when available", {
@@ -351,6 +474,41 @@ test_that("apply_semantic_suggestions can filter by score when available", {
 
   expect_true(is.na(out$term_iri))
   expect_equal(out$property_iri, "https://example.org/property")
+})
+
+test_that("apply_semantic_suggestions ignores non-column targets", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Spawner count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_,
+    required = FALSE,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", NA_character_),
+    column_name = c("count", NA_character_),
+    dictionary_role = c("variable", "entity"),
+    target_scope = c("column", "dataset"),
+    target_sdp_file = c("column_dictionary.csv", "dataset.csv"),
+    target_sdp_field = c("term_iri", "keywords"),
+    iri = c("https://example.org/term", "https://example.org/dataset-keyword")
+  )
+
+  out <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
+  expect_equal(out$term_iri, "https://example.org/term")
 })
 
 test_that("apply_semantic_suggestions errors when min_score is requested without score", {

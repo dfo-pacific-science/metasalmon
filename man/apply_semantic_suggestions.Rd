@@ -52,7 +52,9 @@ you an explicit merge step when you decide the top candidates are good enough.
 \details{
 Matching is done by both \code{column_name} and \code{dictionary_role}. When the
 suggestions tibble also includes \code{dataset_id} and \code{table_id}, those keys are
-honored too.
+honored too. Suggestions that target non-column destinations (for example
+\code{codes.csv}, \code{tables.csv}, or \code{dataset.csv}) are ignored by this helper and
+remain review-only.
 }
 \examples{
 \dontrun{

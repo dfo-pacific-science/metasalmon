@@ -114,6 +114,7 @@
 #'
 #' @return Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
 #'   `match_type`, `definition`, `score`, `alignment_only`, `agreement_sources`,
+#'   `role_hints`,
 #'   `zooma_confidence`, `zooma_annotator`. The `score` column shows the computed
 #'   ranking score. The `alignment_only` column indicates terms from Wikidata
 #'   (useful for crosswalks but not canonical modeling). The `agreement_sources`
@@ -262,6 +263,9 @@ find_terms <- function(query,
     combined$alignment_only <- FALSE
   }
   ranked <- .score_and_rank_terms(combined, role, .iadopt_vocab(), query)
+  if (!"role_hints" %in% names(ranked)) {
+    ranked$role_hints <- NA_character_
+  }
   ranked <- dplyr::select(
     ranked,
     dplyr::all_of(c(
@@ -275,6 +279,7 @@ find_terms <- function(query,
       "score",
       "alignment_only",
       "agreement_sources",
+      "role_hints",
       "zooma_confidence",
       "zooma_annotator"
     ))
@@ -301,7 +306,8 @@ find_terms <- function(query,
     definition = character(),
     score = numeric(),
     alignment_only = logical(),
-    agreement_sources = integer()
+    agreement_sources = integer(),
+    role_hints = character()
   )
 }
 
@@ -1009,7 +1015,8 @@ pattern <- paste(tokens, collapse = ".*")
     role = role,
     match_type = index$match_type,
     definition = index$definition,
-    backend_score = index$backend_score
+    backend_score = index$backend_score,
+    role_hints = index$role_hints
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }
@@ -1030,7 +1037,8 @@ pattern <- paste(tokens, collapse = ".*")
     role = role,
     match_type = index$match_type,
     definition = index$definition,
-    backend_score = index$backend_score
+    backend_score = index$backend_score,
+    role_hints = index$role_hints
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }

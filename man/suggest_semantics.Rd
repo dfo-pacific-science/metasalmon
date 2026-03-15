@@ -10,7 +10,10 @@ suggest_semantics(
   sources = c("smn", "gcdfo", "ols", "nvs"),
   include_dwc = FALSE,
   max_per_role = 3,
-  search_fn = find_terms
+  search_fn = find_terms,
+  codes = NULL,
+  table_meta = NULL,
+  dataset_meta = NULL
 )
 }
 \arguments{
@@ -33,6 +36,16 @@ Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 
 \item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
 Can be replaced for testing or custom search strategies.}
+
+\item{codes}{Optional \code{codes.csv}-like tibble. When provided, suggestions are
+also generated for missing \code{codes.csv$term_iri} targets.}
+
+\item{table_meta}{Optional \code{tables.csv}-like tibble. When provided,
+suggestions are generated for missing \code{tables.csv$observation_unit_iri}.}
+
+\item{dataset_meta}{Optional \code{dataset.csv}-like tibble. When provided,
+suggestions are generated for missing \code{dataset.csv$keywords} as candidate
+semantic keywords (IRIs intended for keyword curation).}
 }
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
@@ -45,6 +58,10 @@ would land in the Salmon Data Package. Additional columns include
 \code{search_query}, \code{column_label}, \code{column_description}, \code{label}, \code{iri},
 \code{source}, \code{ontology}, and \code{definition}. If the underlying search results
 include a \code{score} column, it is preserved for downstream filtering.
+For non-column targets, the tibble also includes explicit destination
+context (\code{target_row_key}, \code{target_label}, \code{target_description},
+\code{code_value}, \code{code_label}, \code{code_description}) so table-, dataset-, and
+code-level rows are inspectable without extra joins.
 }
 \description{
 Searches external vocabularies to suggest IRIs for measurement columns that
@@ -59,19 +76,18 @@ The function uses the column's label or description as the search query and
 returns suggestions as an attribute on the dictionary tibble. This allows
 you to review candidates before accepting them into your dictionary.
 
-Only columns with \code{column_role == "measurement"} are processed, since
-I-ADOPT components are primarily relevant for measurement metadata. Columns
-with existing IRIs in a field are skipped for that field. Current
-\code{seed_semantics} suggestions are column-level suggestions, so
-\code{target_sdp_file} is \code{"column_dictionary.csv"}; the explicit target columns
-are included to make future dataset/table/code-level suggestion layers less
-ambiguous.
+Column targets keep the existing behavior: only columns with
+\code{column_role == "measurement"} are processed for missing I-ADOPT fields.
+When \code{codes}, \code{table_meta}, or \code{dataset_meta} are supplied, additional
+target rows are generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv}
+respectively.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).
 In that case, \code{match_type} still describes lexical match quality, while
 \code{target_sdp_field} tells you where that suggestion would be written in the
-package.
+package. The output adds \code{role_collision} and \code{role_collision_note} so
+variable-vs-property collisions stay explicit and destination-aware.
 
 After calling this function, access suggestions with:
 
