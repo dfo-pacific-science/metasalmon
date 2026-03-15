@@ -1,16 +1,17 @@
-# Fetch the DFO Salmon Ontology with caching
+# Fetch the Salmon Domain Ontology with caching
 
-Downloads the DFO Salmon Ontology using HTTP content negotiation and
+Downloads the Salmon Domain Ontology using HTTP content negotiation and
 caches the response using ETag / Last-Modified headers when available.
 
 ## Usage
 
 ``` r
 fetch_salmon_ontology(
-  url = "https://w3id.org/gcdfo/salmon",
+  url = "https://w3id.org/smn/",
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-  fallback_urls = c("https://w3id.org/gcdfo/salmon/",
+  fallback_urls = c("https://w3id.org/smn", "https://w3id.org/gcdfo/salmon",
+    "https://w3id.org/gcdfo/salmon/",
     "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")
 )
 ```
@@ -19,7 +20,7 @@ fetch_salmon_ontology(
 
 - url:
 
-  Ontology URL. Default is the published TTL on GitHub Pages.
+  Ontology URL. Default is the canonical SMN namespace root.
 
 - accept:
 

@@ -16,11 +16,11 @@ You’ve spent years collecting salmon data. But when you try to share it:
 
 `metasalmon` wraps your salmon data with a **data dictionary** that
 travels with it—explaining every column, every code, and linking to
-standard scientific definitions. These definitions come from the [DFO
-Salmon
-Ontology](https://dfo-pacific-science.github.io/dfo-salmon-ontology/)
-and other published controlled vocabularies, and the data is packaged
-according to the [Salmon Data Package
+standard scientific definitions. These definitions come from the [Salmon
+Domain Ontology](https://w3id.org/smn/) first (with DFO Salmon Ontology
+bridge/fallback support where needed) and other published controlled
+vocabularies, and the data is packaged according to the [Salmon Data
+Package
 Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md).
 For extra help, our custom [Salmon Data Standardizer
 GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)
@@ -156,8 +156,12 @@ future self - can immediately understand your data.
   and
   [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md):
   - Units: QUDT preferred, then NVS P06
-  - Entities/taxa: GBIF and WoRMS taxon resolvers
-  - Properties: STATO/OBA measurement ontologies
+  - Salmon-domain roles: shared SMN terms first, then GCDFO
+    bridge/fallback where needed
+  - Entities/taxa: SMN and GCDFO first, then GBIF and WoRMS taxon
+    resolvers
+  - Properties/variables/methods: shared salmon-domain terms first, then
+    broader ontology fallbacks
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why
   [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
@@ -185,20 +189,20 @@ future self - can immediately understand your data.
   bug](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Request a
   feature](https://github.com/dfo-pacific-science/metasalmon/issues)
-- [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/)
+- [Salmon Domain Ontology](https://w3id.org/smn/)
 - [Salmon Data Package
   Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md)
 
 ## How It Fits Together
 
 `metasalmon` brings together four pieces: your raw data, the Salmon Data
-Package specification, the DFO Salmon Ontology (and other vocabularies),
-and the Salmon Data Standardizer GPT. When you finish the workflow, the
-dictionary, dataset/table metadata, and optional code lists are already
-aligned with the specification, which makes the package ready to
-publish. The ontology keeps the column meanings consistent, and the GPT
-assistant helps draft descriptions and term choices so you can close the
-loop without juggling multiple tools.
+Package specification, the Salmon Domain Ontology (and other
+vocabularies), and the Salmon Data Standardizer GPT. When you finish the
+workflow, the dictionary, dataset/table metadata, and optional code
+lists are already aligned with the specification, which makes the
+package ready to publish. The ontology keeps the column meanings
+consistent, and the GPT assistant helps draft descriptions and term
+choices so you can close the loop without juggling multiple tools.
 
 The high-level flow is:
 
@@ -207,7 +211,7 @@ The high-level flow is:
 - **Dataset/table metadata** fill the required specification fields
   (title, description, creator, contact, etc.), so the package folder
   can be shared or uploaded.
-- **The DFO Salmon Ontology and published vocabularies** supply
+- **The Salmon Domain Ontology and published vocabularies** supply
   `term_iri`/`entity_iri` links that describe what each column and row
   represents.
 - **[`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)**
@@ -247,12 +251,15 @@ pkgdown::build_site()
 - `vignettes/`: Long-form documentation
 - `docs/`: pkgdown site output
 
-### DFO Salmon Ontology
+### Salmon Domain Ontology
 
-This package can optionally link your data to the [DFO Salmon
-Ontology](https://w3id.org/gcdfo/salmon/). You don’t need to understand
-ontologies to use metasalmon - this is handled automatically for users
-who want it.
+This package can optionally link your data to the [Salmon Domain
+Ontology](https://w3id.org/smn/) first, with [DFO Salmon
+Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed.
+The shared reusable term IRIs themselves use the `salmon:` namespace
+(for example `http://w3id.org/salmon/Stock`). You don’t need to
+understand ontologies to use metasalmon - this is handled automatically
+for users who want it.
 
 See the [Reusing Standards for Salmon Data
 Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
@@ -300,7 +307,7 @@ Semantic suggestion and vocabulary search capabilities
 Fetch the ontology and validate semantic coverage
 
 - [`fetch_salmon_ontology()`](https://dfo-pacific-science.github.io/metasalmon/reference/fetch_salmon_ontology.md)
-  : Fetch the DFO Salmon Ontology with caching
+  : Fetch the Salmon Domain Ontology with caching
 - [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
   : Validate semantics with graceful gap reporting
 - [`suggest_facet_schemes()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.md)

@@ -5,9 +5,10 @@ Based on dfo-salmon-ontology CONVENTIONS.md:
 
 - unit: QUDT + NVS P06 preferred
 
-- method: gcdfo: SKOS + SOSA/PROV patterns
+- method: smn first, then gcdfo: SKOS + SOSA/PROV patterns
 
-- entity: gcdfo salmon domain + taxa resolvers (GBIF/WoRMS)
+- entity: smn first, then gcdfo salmon domain + taxa resolvers
+  (GBIF/WoRMS)
 
 - property: STATO/OBA measurement ontologies
 

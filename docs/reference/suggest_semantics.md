@@ -4,8 +4,9 @@ Searches external vocabularies to suggest IRIs for measurement columns
 that are missing semantic annotations. For each measurement column with
 missing I-ADOPT component fields (`term_iri`, `property_iri`,
 `entity_iri`, `unit_iri`, `constraint_iri`), this function queries
-vocabulary services and ranks results by relevance, with GCDFO queried
-first for salmon-domain roles.
+vocabulary services and ranks results by relevance, with SMN queried
+first for salmon-domain roles and GCDFO retained as a DFO-specific
+fallback.
 
 ## Usage
 
@@ -13,7 +14,7 @@ first for salmon-domain roles.
 suggest_semantics(
   df,
   dict,
-  sources = c("gcdfo", "ols", "nvs"),
+  sources = c("smn", "gcdfo", "ols", "nvs"),
   include_dwc = FALSE,
   max_per_role = 3,
   search_fn = find_terms
@@ -34,11 +35,12 @@ suggest_semantics(
 
 - sources:
 
-  Character vector of vocabulary sources to search. Options are
-  `"gcdfo"` (DFO Salmon Ontology via content negotiation), `"ols"`
-  (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
-  `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
-  Default is `c("gcdfo", "ols", "nvs")`.
+  Character vector of vocabulary sources to search. Options are `"smn"`
+  (Salmon Domain Ontology via content negotiation), `"gcdfo"`
+  (DFO-specific fallback), `"ols"` (Ontology Lookup Service), `"nvs"`
+  (NERC Vocabulary Server), and `"bioportal"` (requires
+  `BIOPORTAL_APIKEY` environment variable). Default is
+  `c("smn", "gcdfo", "ols", "nvs")`.
 
 - include_dwc:
 

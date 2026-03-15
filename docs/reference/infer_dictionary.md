@@ -12,7 +12,7 @@ infer_dictionary(
   dataset_id = "dataset-1",
   table_id = "table-1",
   seed_semantics = FALSE,
-  semantic_sources = c("gcdfo", "ols", "nvs"),
+  semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
   semantic_max_per_role = 1,
   seed_verbose = TRUE
 )
@@ -47,7 +47,8 @@ infer_dictionary(
 
   Character vector of vocabulary sources passed to
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-  when `seed_semantics = TRUE`. Default: `c("gcdfo", "ols", "nvs")`.
+  when `seed_semantics = TRUE`. Default:
+  `c("smn", "gcdfo", "ols", "nvs")`.
 
 - semantic_max_per_role:
 
@@ -79,8 +80,12 @@ df <- data.frame(
 dict <- infer_dictionary(df)
 
 # Optional: seed semantic suggestions from vocabulary services
-# (GCDFO is queried first for salmon-domain roles)
-dict <- infer_dictionary(df, seed_semantics = TRUE, semantic_sources = c("gcdfo", "ols", "nvs"))
+# (SMN is queried first; GCDFO is DFO-specific fallback)
+dict <- infer_dictionary(
+  df,
+  seed_semantics = TRUE,
+  semantic_sources = c("smn", "gcdfo", "ols", "nvs")
+)
 suggestions <- attr(dict, "semantic_suggestions")
 } # }
 ```

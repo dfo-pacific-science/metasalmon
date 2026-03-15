@@ -18,38 +18,37 @@
 .Rapp.history
 *.swp
 *.tmp
-
 # Knit and vignette intermediates (retain final rendered docs in pkgdown)
 vignettes/*.utf8.md
 vignettes/*.knit.md
 vignettes/*.html
 vignettes/*.R
-
 # renv (if enabled; keep lockfile tracked)
 renv/library/
 renv/staging/
 renv/.cache/
-
 # Nix / devenv
 .devenv/
 .devenv.flake.nix
 devenv.local.nix
 .direnv/
 result*
-
-AGENTS.md
 agent-config/
 .cursor/
 project-specific-instructions.md
-docs/plans/
-.cursorignore
 /doc/
 /Meta/
 pkgdown/
+agent-guidance/
+.claude
+.local-backup/
+.cursorignore
+docs/AGENTS.html
+/docs/AGENTS.html
+AGENTS.md
+CLAUDE.md
+docs/plans/
 docs/adr/0001.md
 docs/entrypoints.md
 docs/tech-debt.md
 docs/todo-list.md
-CLAUDE.md
-agent-guidance/
-.claude
