@@ -355,17 +355,54 @@ export)</td>
 </h2>
 <p>Now let’s bundle everything together into a shareable package:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
-<span>  resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">df</span><span class="op">)</span>,</span>
-<span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
-<span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
-<span>  dict <span class="op">=</span> <span class="va">dict</span>,</span>
+<code class="sourceCode R"><span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  escapement <span class="op">=</span> <span class="va">df</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Recommended for fast first-pass bootstrap</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage_from_data.html">create_salmon_datapackage_from_data</a></span><span class="op">(</span></span>
+<span>  resources <span class="op">=</span> <span class="va">resources</span>,</span>
 <span>  path <span class="op">=</span> <span class="st">"my-first-package"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># See what was created</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<blockquote>
+<p><strong>Bootstrap note:</strong>
+<code><a href="../reference/create_salmon_datapackage_from_data.html">create_salmon_datapackage_from_data()</a></code> is for fast
+first-pass output, not final publication. Before sharing, run the full
+validation + explicit semantic workflow: 1)
+<code><a href="../reference/validate_dictionary.html">validate_dictionary()</a></code> and <code><a href="../reference/validate_semantics.html">validate_semantics()</a></code>
+2) <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> 3)
+<code><a href="../reference/apply_semantic_suggestions.html">apply_semantic_suggestions()</a></code> 4)
+<code><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage()</a></code></p>
+</blockquote>
+<p>For full control or staged review, use the explicit workflow in the
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing
+Data Packages</a> guide.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Optional explicit control (no bootstrap assumptions):</span></span>
+<span><span class="co"># artifacts &lt;- infer_salmon_datapackage_artifacts(</span></span>
+<span><span class="co">#   resources,</span></span>
+<span><span class="co">#   dataset_id = "fraser-coho-2024",</span></span>
+<span><span class="co">#   seed_semantics = TRUE</span></span>
+<span><span class="co"># )</span></span>
+<span><span class="co">#</span></span>
+<span><span class="co"># validate_dictionary(artifacts$dict)</span></span>
+<span><span class="co"># validate_semantics(artifacts$dict)</span></span>
+<span><span class="co"># dict &lt;- apply_semantic_suggestions(artifacts$dict, max_per_role = 3)</span></span>
+<span><span class="co"># pkg_path &lt;- create_salmon_datapackage(</span></span>
+<span><span class="co">#   resources = resources,</span></span>
+<span><span class="co">#   dataset_meta = artifacts$dataset_meta,</span></span>
+<span><span class="co">#   table_meta = artifacts$table_meta,</span></span>
+<span><span class="co">#   dict = dict,</span></span>
+<span><span class="co">#   codes = artifacts$codes,</span></span>
+<span><span class="co">#   path = "my-first-package",</span></span>
+<span><span class="co">#   overwrite = TRUE</span></span>
+<span><span class="co"># )</span></span></code></pre></div>
 <p><strong>What you get</strong>: A folder called
 <code>my-first-package/</code> containing:</p>
 <table class="table">
@@ -406,7 +443,7 @@ upload, the default <code><a href="../reference/edh_build_iso19139_xml.html">edh
 writes the richer HNAP-aware EDH XML export from
 <code>dataset_meta</code>. The older compact ISO 19139 shape is still
 available as an explicit fallback.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">edh_hnap_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml_path</span><span class="op">)</span></span>
 <span></span>
@@ -452,7 +489,7 @@ complete documentation explaining what every column means.</p>
 <h2 id="reading-a-package-back">Reading a Package Back<a class="anchor" aria-label="anchor" href="#reading-a-package-back"></a>
 </h2>
 <p>Later, you (or a colleague) can load the package back into R:</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Read the package</span></span>
 <span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span></span>
@@ -506,7 +543,7 @@ troubleshooting</li>
 </h3>
 <p>This usually means a column type was guessed incorrectly. Check the
 error message and fix:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># See what types are valid</span></span>
 <span><span class="co"># string, integer, number, boolean, date, datetime</span></span>
 <span></span>
@@ -530,7 +567,7 @@ definitions of terms like “column_role”, “value_type”, etc.</p>
 <h3 id="i-want-to-add-better-descriptions">“I want to add better descriptions”<a class="anchor" aria-label="anchor" href="#i-want-to-add-better-descriptions"></a>
 </h3>
 <p>Edit the dictionary directly before creating the package:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># View and edit in RStudio</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>

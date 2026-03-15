@@ -236,17 +236,54 @@ Now let’s bundle everything together into a shareable package:
 
 ``` r
 
-pkg_path <- create_salmon_datapackage(
-  resources = list(escapement = df),
-  dataset_meta = dataset_meta,
-  table_meta = table_meta,
-  dict = dict,
+resources <- list(
+  escapement = df
+)
+
+# Recommended for fast first-pass bootstrap
+pkg_path <- create_salmon_datapackage_from_data(
+  resources = resources,
   path = "my-first-package",
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement",
   overwrite = TRUE
 )
 
 # See what was created
 list.files(pkg_path)
+```
+
+> **Bootstrap note:** `create_salmon_datapackage_from_data()` is for fast first-pass output, not final publication.
+> Before sharing, run the full validation + explicit semantic workflow:
+> 1) `validate_dictionary()` and `validate_semantics()`
+> 2) `suggest_semantics()`
+> 3) `apply_semantic_suggestions()`
+> 4) `create_salmon_datapackage()`
+
+For full control or staged review, use the explicit workflow in the
+[Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) guide.
+
+``` r
+
+# Optional explicit control (no bootstrap assumptions):
+# artifacts <- infer_salmon_datapackage_artifacts(
+#   resources,
+#   dataset_id = "fraser-coho-2024",
+#   seed_semantics = TRUE
+# )
+#
+# validate_dictionary(artifacts$dict)
+# validate_semantics(artifacts$dict)
+# dict <- apply_semantic_suggestions(artifacts$dict, max_per_role = 3)
+# pkg_path <- create_salmon_datapackage(
+#   resources = resources,
+#   dataset_meta = artifacts$dataset_meta,
+#   table_meta = artifacts$table_meta,
+#   dict = dict,
+#   codes = artifacts$codes,
+#   path = "my-first-package",
+#   overwrite = TRUE
+# )
 ```
 
 **What you get**: A folder called `my-first-package/` containing:
