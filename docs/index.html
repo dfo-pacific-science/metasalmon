@@ -137,27 +137,72 @@ concept schemes) while preserving your original data structure.
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Load the example NuSEDS Fraser Coho data included in metasalmon</span></span>
-<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Generate starter dictionary</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Optional: attach semantic suggestions (still no auto-commit to IRIs)</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
-<span>  <span class="va">df</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
-<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  catches <span class="op">=</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    station_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
+<span>    species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Coho"</span>, <span class="st">"Chinook"</span><span class="op">)</span>,</span>
+<span>    count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">10L</span>, <span class="fl">20L</span><span class="op">)</span>,</span>
+<span>    sample_date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="st">"2024-01-02"</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  stations <span class="op">=</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    station_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1L</span>, <span class="fl">2L</span><span class="op">)</span>,</span>
+<span>    habitat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estu"</span>, <span class="st">"river"</span><span class="op">)</span>,</span>
+<span>    lat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50.1</span>, <span class="fl">50.3</span><span class="op">)</span>,</span>
+<span>    lon <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">125.4</span>, <span class="op">-</span><span class="fl">125.6</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">artifacts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_salmon_datapackage_artifacts.html">infer_salmon_datapackage_artifacts</a></span><span class="op">(</span></span>
+<span>  <span class="va">resources</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  seed_verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Extract artifact tables</span></span>
+<span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span></span>
+<span><span class="va">codes</span> <span class="op">&lt;-</span> <span class="va">artifacts</span><span class="op">$</span><span class="va">codes</span></span>
+<span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="va">artifacts</span><span class="op">$</span><span class="va">table_meta</span></span>
+<span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="va">artifacts</span><span class="op">$</span><span class="va">dataset_meta</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># If the top-ranked suggestions look right, explicitly apply them.</span></span>
 <span><span class="co"># By default this fills only missing fields and leaves existing IRIs alone.</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict</span>, columns <span class="op">=</span> <span class="st">"NATURAL_SPAWNER_COUNT"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">artifacts</span><span class="op">$</span><span class="va">semantic_suggestions</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict</span>, columns <span class="op">=</span> <span class="st">"count"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="co"># True one-shot path (inferred artifacts + package write)</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/create_salmon_datapackage_from_data.html">create_salmon_datapackage_from_data</a></span><span class="op">(</span></span>
+<span>  <span class="va">resources</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"my-first-package"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/create_salmon_datapackage_from_data.html">create_salmon_datapackage_from_data()</a></code> is intentionally a <strong>fast bootstrap</strong>. Before sharing/ publishing, follow the explicit review path:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">artifacts</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/infer_salmon_datapackage_artifacts.html">infer_salmon_datapackage_artifacts</a></span><span class="op">(</span></span>
+<span>  <span class="va">resources</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span><span class="op">)</span></span>
+<span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span><span class="op">)</span><span class="op">$</span><span class="va">dict</span></span>
+<span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span><span class="op">)</span></span>
+<span><span class="co"># ... review + tune suggestions first</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span>  <span class="va">resources</span>,</span>
+<span>  <span class="va">artifacts</span><span class="op">$</span><span class="va">dataset_meta</span>,</span>
+<span>  <span class="va">artifacts</span><span class="op">$</span><span class="va">table_meta</span>,</span>
+<span>  <span class="va">artifacts</span><span class="op">$</span><span class="va">dict</span>,</span>
+<span>  <span class="va">artifacts</span><span class="op">$</span><span class="va">codes</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"my-first-package"</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>To continue:</p>
 <ul>
 <li>
@@ -212,7 +257,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -334,7 +379,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -342,7 +387,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>

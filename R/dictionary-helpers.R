@@ -370,7 +370,7 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     source_citation = NA_character_,
     update_frequency = NA_character_,
     topic_categories = NA_character_,
-    keywords = paste(head(keywords, 8L), collapse = "; "),
+    keywords = paste(utils::head(keywords, 8L), collapse = "; "),
     security_classification = NA_character_,
     provenance_note = NA_character_,
     created = NA_character_,

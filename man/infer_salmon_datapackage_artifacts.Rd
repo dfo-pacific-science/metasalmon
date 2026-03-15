@@ -52,7 +52,7 @@ role.}
 
 \value{
 A list with elements:
-\itemize{
+\describe{
   \item{\code{resources}}{Named list of input tables.}
   \item{\code{dataset_id}}{Dataset identifier used during inference.}
   \item{\code{dict}}{Inferred dictionary tibble.}

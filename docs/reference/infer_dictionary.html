@@ -58,7 +58,10 @@ guessing column types, roles, and basic metadata.</p>
 <span>  seed_semantics <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span>,</span>
 <span>  semantic_max_per_role <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed_table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -67,7 +70,8 @@ guessing column types, roles, and basic metadata.</p>
 
 
 <dl><dt id="arg-df">df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
-<dd><p>A data frame or tibble to analyze.</p></dd>
+<dd><p>A data frame or tibble to analyze. Or, when provided as a named list of data frames,
+<code>infer_dictionary()</code> infers each table and returns a combined dictionary.</p></dd>
 
 
 <dt id="arg-guess-types">guess_types<a class="anchor" aria-label="anchor" href="#arg-guess-types"></a></dt>
@@ -100,6 +104,21 @@ role when seeding suggestions. Default: <code>1</code>.</p></dd>
 <dt id="arg-seed-verbose">seed_verbose<a class="anchor" aria-label="anchor" href="#arg-seed-verbose"></a></dt>
 <dd><p>Logical; if TRUE, print a short progress message while
 seeding semantic suggestions.</p></dd>
+
+
+<dt id="arg-seed-codes">seed_codes<a class="anchor" aria-label="anchor" href="#arg-seed-codes"></a></dt>
+<dd><p>Optional <code>codes.csv</code>-style tibble forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>.</p></dd>
+
+
+<dt id="arg-seed-table-meta">seed_table_meta<a class="anchor" aria-label="anchor" href="#arg-seed-table-meta"></a></dt>
+<dd><p>Optional <code>tables.csv</code>-style tibble forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>.</p></dd>
+
+
+<dt id="arg-seed-dataset-meta">seed_dataset_meta<a class="anchor" aria-label="anchor" href="#arg-seed-dataset-meta"></a></dt>
+<dd><p>Optional <code>dataset.csv</code>-style tibble forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">

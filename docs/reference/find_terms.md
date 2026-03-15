@@ -50,12 +50,12 @@ find_terms(
 
 Tibble with columns: `label`, `iri`, `source`, `ontology`, `role`,
 `match_type`, `definition`, `score`, `alignment_only`,
-`agreement_sources`, `zooma_confidence`, `zooma_annotator`. The `score`
-column shows the computed ranking score. The `alignment_only` column
-indicates terms from Wikidata (useful for crosswalks but not canonical
-modeling). The `agreement_sources` column indicates how many sources
-returned the same IRI or label (Phase 4 cross-source agreement). Returns
-empty tibble if no matches found.
+`agreement_sources`, `role_hints`, `zooma_confidence`,
+`zooma_annotator`. The `score` column shows the computed ranking score.
+The `alignment_only` column indicates terms from Wikidata (useful for
+crosswalks but not canonical modeling). The `agreement_sources` column
+indicates how many sources returned the same IRI or label (Phase 4
+cross-source agreement). Returns empty tibble if no matches found.
 
 The result has a `"diagnostics"` attribute (access via
 `attr(result, "diagnostics")`) containing per-source/query diagnostic

@@ -19,8 +19,8 @@ infer_dictionary(
 )
 }
 \arguments{
-\item{df}{A data frame or tibble to analyze. If a named list of data frames is supplied,
-\code{infer_dictionary()} infers one dictionary per table and returns a combined result.
+\item{df}{A data frame or tibble to analyze. Or, when provided as a named list of data frames,
+\code{infer_dictionary()} infers each table and returns a combined dictionary.}
 
 \item{guess_types}{Logical; if \code{TRUE} (default), infer value types from data.}
 

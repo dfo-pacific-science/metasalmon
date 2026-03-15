@@ -14,7 +14,10 @@ infer_dictionary(
   seed_semantics = FALSE,
   semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
   semantic_max_per_role = 1,
-  seed_verbose = TRUE
+  seed_verbose = TRUE,
+  seed_codes = NULL,
+  seed_table_meta = NULL,
+  seed_dataset_meta = NULL
 )
 ```
 
@@ -22,7 +25,9 @@ infer_dictionary(
 
 - df:
 
-  A data frame or tibble to analyze.
+  A data frame or tibble to analyze. Or, when provided as a named list
+  of data frames, `infer_dictionary()` infers each table and returns a
+  combined dictionary.
 
 - guess_types:
 
@@ -59,6 +64,24 @@ infer_dictionary(
 
   Logical; if TRUE, print a short progress message while seeding
   semantic suggestions.
+
+- seed_codes:
+
+  Optional `codes.csv`-style tibble forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  when `seed_semantics = TRUE`.
+
+- seed_table_meta:
+
+  Optional `tables.csv`-style tibble forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  when `seed_semantics = TRUE`.
+
+- seed_dataset_meta:
+
+  Optional `dataset.csv`-style tibble forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  when `seed_semantics = TRUE`.
 
 ## Value
 

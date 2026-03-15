@@ -72,7 +72,9 @@ The dictionary tibble with selected semantic IRI fields filled in.
 
 Matching is done by both `column_name` and `dictionary_role`. When the
 suggestions tibble also includes `dataset_id` and `table_id`, those keys
-are honored too.
+are honored too. Suggestions that target non-column destinations (for
+example `codes.csv`, `tables.csv`, or `dataset.csv`) are ignored by this
+helper and remain review-only.
 
 ## Examples
 

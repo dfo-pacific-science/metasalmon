@@ -23,28 +23,6 @@ library(readr)
 df <- read_csv("my-table.csv")
 ```
 
-If you already have multiple tables, use a named resource list and keep the
-same names through `table_meta` and `create_salmon_datapackage()`:
-
-``` r
-
-resources <- list(main = df)
-# e.g. resources <- list(main = df_main, stations = df_stations)
-```
-
-For a one-shot start-to-finish metadata path, you can skip directly to
-`infer_salmon_datapackage_artifacts()`:
-
-``` r
-
-artifacts <- infer_salmon_datapackage_artifacts(
-  resources,
-  dataset_id = "my-dataset-2026",
-  seed_semantics = TRUE
-)
-```
-
-
 If you already have a dictionary and metadata from the quickstart, skip
 directly to [Describe the dataset and
 tables](#id_3-describe-the-dataset-and-tables).
@@ -125,33 +103,16 @@ tools can link to the definition.
 
 resources <- list(main = df)
 
-# One-shot packaging path for biologist-first workflows
-pkg_path <- create_salmon_datapackage_from_data(
+pkg_path <- create_salmon_datapackage(
   resources = resources,
+  dataset_meta = dataset_meta,
+  table_meta = table_meta,
+  dict = dict,
+  codes = codes,
   path = "my-data-package",
-  dataset_id = "my-dataset-2026",
-  seed_semantics = TRUE,
+  format = "csv",
   overwrite = TRUE
 )
-
-# `create_salmon_datapackage_from_data()` is the fast bootstrap route.
-# For formal validation-ready workflows, stage with `infer_salmon_datapackage_artifacts()`.
-#
-# artifacts <- infer_salmon_datapackage_artifacts(
-#   resources,
-#   dataset_id = "my-dataset-2026",
-#   seed_semantics = TRUE
-# )
-# pkg_path <- create_salmon_datapackage(
-#   resources = resources,
-#   dataset_meta = artifacts$dataset_meta,
-#   table_meta = artifacts$table_meta,
-#   dict = artifacts$dict,
-#   codes = artifacts$codes,
-#   path = "my-data-package",
-#   format = "csv",
-#   overwrite = TRUE
-# )
 
 list.files(pkg_path)
 ```

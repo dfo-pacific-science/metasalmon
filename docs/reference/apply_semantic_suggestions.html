@@ -118,7 +118,9 @@ filled. Set <code>TRUE</code> to intentionally replace existing IRIs.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Matching is done by both <code>column_name</code> and <code>dictionary_role</code>. When the
 suggestions tibble also includes <code>dataset_id</code> and <code>table_id</code>, those keys are
-honored too.</p>
+honored too. Suggestions that target non-column destinations (for example
+<code>codes.csv</code>, <code>tables.csv</code>, or <code>dataset.csv</code>) are ignored by this helper and
+remain review-only.</p>
     </div>
 
     <div class="section level2">

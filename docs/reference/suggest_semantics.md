@@ -17,7 +17,10 @@ suggest_semantics(
   sources = c("smn", "gcdfo", "ols", "nvs"),
   include_dwc = FALSE,
   max_per_role = 3,
-  search_fn = find_terms
+  search_fn = find_terms,
+  codes = NULL,
+  table_meta = NULL,
+  dataset_meta = NULL
 )
 ```
 
@@ -60,6 +63,22 @@ suggest_semantics(
   [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md).
   Can be replaced for testing or custom search strategies.
 
+- codes:
+
+  Optional `codes.csv`-like tibble. When provided, suggestions are also
+  generated for missing `codes.csv$term_iri` targets.
+
+- table_meta:
+
+  Optional `tables.csv`-like tibble. When provided, suggestions are
+  generated for missing `tables.csv$observation_unit_iri`.
+
+- dataset_meta:
+
+  Optional `dataset.csv`-like tibble. When provided, suggestions are
+  generated for missing `dataset.csv$keywords` as candidate semantic
+  keywords (IRIs intended for keyword curation).
+
 ## Value
 
 The dictionary tibble (unchanged) with a `semantic_suggestions`
@@ -72,7 +91,11 @@ suggestion would land in the Salmon Data Package. Additional columns
 include `search_query`, `column_label`, `column_description`, `label`,
 `iri`, `source`, `ontology`, and `definition`. If the underlying search
 results include a `score` column, it is preserved for downstream
-filtering.
+filtering. For non-column targets, the tibble also includes explicit
+destination context (`target_row_key`, `target_label`,
+`target_description`, `code_value`, `code_label`, `code_description`) so
+table-, dataset-, and code-level rows are inspectable without extra
+joins.
 
 ## Details
 
@@ -81,19 +104,19 @@ and returns suggestions as an attribute on the dictionary tibble. This
 allows you to review candidates before accepting them into your
 dictionary.
 
-Only columns with `column_role == "measurement"` are processed, since
-I-ADOPT components are primarily relevant for measurement metadata.
-Columns with existing IRIs in a field are skipped for that field.
-Current `seed_semantics` suggestions are column-level suggestions, so
-`target_sdp_file` is `"column_dictionary.csv"`; the explicit target
-columns are included to make future dataset/table/code-level suggestion
-layers less ambiguous.
+Column targets keep the existing behavior: only columns with
+`column_role == "measurement"` are processed for missing I-ADOPT fields.
+When `codes`, `table_meta`, or `dataset_meta` are supplied, additional
+target rows are generated for `codes.csv`, `tables.csv`, and
+`dataset.csv` respectively.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a
 property). In that case, `match_type` still describes lexical match
 quality, while `target_sdp_field` tells you where that suggestion would
-be written in the package.
+be written in the package. The output adds `role_collision` and
+`role_collision_note` so variable-vs-property collisions stay explicit
+and destination-aware.
 
 After calling this function, access suggestions with:
 

@@ -18,6 +18,7 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/apply_salmon_dictionary.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_cross_source_agreement.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_embedding_rerank.html</loc></url>
@@ -40,6 +41,7 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/index.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_column_role.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_value_type.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/metasalmon.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.html</loc></url>
