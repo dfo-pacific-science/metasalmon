@@ -74,6 +74,15 @@ validate_dictionary(dict)
 if (!is.null(artifacts$semantic_suggestions)) {
   dict <- apply_semantic_suggestions(dict, columns = "count")
 }
+
+# True one-shot path (inferred artifacts + package write)
+pkg_path <- create_salmon_datapackage_from_data(
+  resources,
+  path = "my-first-package",
+  dataset_id = "fraser-coho-2024",
+  seed_semantics = TRUE,
+  overwrite = TRUE
+)
 ```
 
 To continue:

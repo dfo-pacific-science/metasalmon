@@ -3,6 +3,7 @@
 export(apply_salmon_dictionary)
 export(apply_semantic_suggestions)
 export(create_salmon_datapackage)
+export(create_salmon_datapackage_from_data)
 export(deduplicate_proposed_terms)
 export(dwc_dp_build_descriptor)
 export(edh_build_iso19139_xml)

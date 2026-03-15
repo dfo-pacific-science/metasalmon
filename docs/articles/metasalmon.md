@@ -214,15 +214,25 @@ Bundle everything together into a shareable folder:
 
 ``` r
 
-pkg_path <- create_salmon_datapackage(
-  resources = resources,
-  dataset_meta = dataset_meta,
-  table_meta = table_meta,
-  dict = dict,
-  codes = codes,
+# Optional: true one-shot path (recommended for first pass)
+pkg_path <- create_salmon_datapackage_from_data(
+  resources,
   path = "my-first-package",
+  dataset_id = "fraser-coho-2024",
+  seed_semantics = TRUE,
   overwrite = TRUE
 )
+
+# If you prefer explicit control, keep manual two-step:
+# pkg_path <- create_salmon_datapackage(
+#   resources = resources,
+#   dataset_meta = dataset_meta,
+#   table_meta = table_meta,
+#   dict = dict,
+#   codes = codes,
+#   path = "my-first-package",
+#   overwrite = TRUE
+# )
 
 # See what was created
 list.files(pkg_path)

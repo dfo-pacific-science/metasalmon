@@ -61,6 +61,45 @@ test_that("create_salmon_datapackage creates valid package", {
   expect_true(file.exists(file.path(pkg_path, "main_table.csv")))
 })
 
+test_that("create_salmon_datapackage_from_data creates valid package", {
+  resources <- list(
+    catches = tibble::tibble(
+      station_id = c("A", "B"),
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L),
+      sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+    ),
+    stations = tibble::tibble(
+      station_id = c("A", "B"),
+      lat = c(50.12, 50.34),
+      lon = c(-125.5, -125.6),
+      habitat = c("estu", "river")
+    )
+  )
+
+  temp_dir <- withr::local_tempdir()
+  pkg_path <- create_salmon_datapackage_from_data(
+    resources,
+    path = file.path(temp_dir, "package"),
+    dataset_id = "mt-demo",
+    seed_semantics = FALSE,
+    overwrite = TRUE
+  )
+
+  expect_true(dir.exists(pkg_path))
+  expect_true(file.exists(file.path(pkg_path, "dataset.csv")))
+  expect_true(file.exists(file.path(pkg_path, "tables.csv")))
+  expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
+  expect_true(file.exists(file.path(pkg_path, "codes.csv")))
+  expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
+
+  dataset <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
+  tables <- readr::read_csv(file.path(pkg_path, "tables.csv"), show_col_types = FALSE)
+
+  expect_equal(dataset$dataset_id[[1]], "mt-demo")
+  expect_setequal(tables$table_id, c("catches", "stations"))
+})
+
 test_that("read_salmon_datapackage reads package correctly", {
   # Create test package
   resources <- list(

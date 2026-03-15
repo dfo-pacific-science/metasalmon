@@ -391,6 +391,101 @@ infer_salmon_datapackage_artifacts <- function(
   )
 }
 
+#' Create a Salmon Data Package directly from raw tables
+#'
+#' Convenience one-shot wrapper: infer dictionary/table metadata/codes/dataset metadata
+#' from raw data tables and immediately write a Salmon Data Package in one call.
+#'
+#' @param resources Either a named list of data frames (one per resource table)
+#'   or a single data frame (converted internally to a one-table list).
+#' @param path Character; directory path where package will be written
+#' @param dataset_id Dataset identifier applied to all inferred metadata rows.
+#' @param table_id Fallback table identifier when `resources` is a single data frame.
+#' @param guess_types Logical; if `TRUE` (default), infer `value_type` for each
+#'   dictionary column.
+#' @param seed_semantics Logical; if `TRUE`, seed semantic suggestions during
+#'   inference (added to `semantic_suggestions` attribute of the dictionary but not
+#'   auto-applied).
+#' @param semantic_sources Vector of vocabulary sources passed to
+#'   `suggest_semantics()`.
+#' @param semantic_max_per_role Maximum number of suggestions retained per
+#'   I-ADOPT role.
+#' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
+#'   semantic suggestions.
+#' @param seed_codes Optional `codes.csv`-style seed metadata.
+#' @param seed_table_meta Optional `tables.csv`-style seed metadata.
+#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
+#' @param format Character; resource format: `"csv"` (default, only format supported)
+#' @param overwrite Logical; if `FALSE` (default), errors if path exists
+#'
+#' @return Invisibly returns the package path.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' resources <- list(
+#'   catches = tibble::tibble(
+#'     station_id = c("A", "B"),
+#'     species = c("Coho", "Chinook"),
+#'     count = c(10L, 20L)
+#'   ),
+#'   stations = tibble::tibble(
+#'     station_id = c("A", "B"),
+#'     lat = c(49.8, 49.9),
+#'     lon = c(-124.4, -124.5)
+#'   )
+#' )
+#' pkg <- create_salmon_datapackage_from_data(
+#'   resources,
+#'   path = "my-package",
+#'   dataset_id = "demo-1",
+#'   seed_semantics = TRUE,
+#'   overwrite = TRUE
+#' )
+#' }
+create_salmon_datapackage_from_data <- function(
+    resources,
+    path,
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    guess_types = TRUE,
+    seed_semantics = TRUE,
+    semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
+    semantic_max_per_role = 1,
+    seed_verbose = TRUE,
+    seed_codes = NULL,
+    seed_table_meta = NULL,
+    seed_dataset_meta = NULL,
+    format = "csv",
+    overwrite = FALSE
+) {
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources = resources,
+    dataset_id = dataset_id,
+    table_id = table_id,
+    guess_types = guess_types,
+    seed_semantics = seed_semantics,
+    semantic_sources = semantic_sources,
+    semantic_max_per_role = semantic_max_per_role,
+    seed_verbose = seed_verbose,
+    seed_codes = seed_codes,
+    seed_table_meta = seed_table_meta,
+    seed_dataset_meta = seed_dataset_meta
+  )
+
+  create_salmon_datapackage(
+    resources = artifacts$resources,
+    dataset_meta = artifacts$dataset_meta,
+    table_meta = artifacts$table_meta,
+    dict = artifacts$dict,
+    codes = artifacts$codes,
+    path = path,
+    format = format,
+    overwrite = overwrite
+  )
+}
+
 #' Read a Salmon Data Package
 #'
 #' Loads a Salmon Data Package from disk. When canonical SDP CSV metadata files

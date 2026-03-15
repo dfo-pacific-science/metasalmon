@@ -125,16 +125,31 @@ tools can link to the definition.
 
 resources <- list(main = df)
 
-pkg_path <- create_salmon_datapackage(
+# One-shot packaging path for biologist-first workflows
+pkg_path <- create_salmon_datapackage_from_data(
   resources = resources,
-  dataset_meta = dataset_meta,
-  table_meta = table_meta,
-  dict = dict,
-  codes = codes,
   path = "my-data-package",
-  format = "csv",
+  dataset_id = "my-dataset-2026",
+  seed_semantics = TRUE,
   overwrite = TRUE
 )
+
+# For fully explicit staged control, use infer artifacts first:
+# artifacts <- infer_salmon_datapackage_artifacts(
+#   resources,
+#   dataset_id = "my-dataset-2026",
+#   seed_semantics = TRUE
+# )
+# pkg_path <- create_salmon_datapackage(
+#   resources = resources,
+#   dataset_meta = artifacts$dataset_meta,
+#   table_meta = artifacts$table_meta,
+#   dict = artifacts$dict,
+#   codes = artifacts$codes,
+#   path = "my-data-package",
+#   format = "csv",
+#   overwrite = TRUE
+# )
 
 list.files(pkg_path)
 ```
