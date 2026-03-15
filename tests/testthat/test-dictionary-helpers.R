@@ -72,6 +72,66 @@ test_that("infer_dictionary can seed semantic suggestions", {
   )
 })
 
+test_that("infer_dictionary accepts named resource lists and can seed metadata-aware suggestions", {
+  resources <- list(
+    catches = data.frame(
+      trawl_id = c(1L, 2L),
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L)
+    ),
+    environments = data.frame(
+      station = c("A", "B"),
+      temperature = c(10.2, 11.4),
+      sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"), max_per_role = 1,
+                            include_dwc = FALSE, codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
+    expect_true(all(c("catches", "environments") %in% table_meta$table_id))
+    expect_equal(dataset_meta$dataset_id[[1]], "dataset-1")
+    expect_true("keywords" %in% names(dataset_meta))
+    expect_true(all(c("table_id", "column_name", "code_value") %in% names(codes)))
+
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = c("count"),
+      dictionary_role = c("variable"),
+      table_id = c("catches"),
+      dataset_id = c("dataset-1"),
+      target_scope = c("column"),
+      target_sdp_file = c("column_dictionary.csv"),
+      target_sdp_field = c("term_iri"),
+      search_query = c("count"),
+      column_label = c("count"),
+      column_description = c(NA_character_),
+      label = c("Catch count"),
+      iri = c("https://example.org/count"),
+      source = c("smn"),
+      ontology = c("demo"),
+      definition = c(NA_character_)
+    )
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      dict <- infer_dictionary(
+        resources,
+        seed_semantics = TRUE,
+        seed_verbose = FALSE
+      )
+      expect_s3_class(dict, "tbl_df")
+      expect_equal(nrow(dict), 6)
+      expect_true(all(c("catches", "environments") %in% dict$table_id))
+      expect_equal(ncol(attr(dict, "inferred_table_meta")), 8)
+      expect_true(all(c("species", "station") %in% attr(dict, "inferred_codes")$column_name))
+      expect_true(is.data.frame(attr(dict, "inferred_dataset_meta")))
+      expect_true("dataset-1" %in% attr(dict, "inferred_dataset_meta")$dataset_id)
+    }
+  )
+})
+
 test_that("suggest_semantics attaches empty suggestions when sources disabled", {
   dict <- tibble::tibble(
     dataset_id = "test",

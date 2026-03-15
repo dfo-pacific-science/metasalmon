@@ -19,7 +19,8 @@ infer_dictionary(
 )
 }
 \arguments{
-\item{df}{A data frame or tibble to analyze.}
+\item{df}{A data frame or tibble to analyze. If a named list of data frames is supplied,
+\code{infer_dictionary()} infers one dictionary per table and returns a combined result.
 
 \item{guess_types}{Logical; if \code{TRUE} (default), infer value types from data.}
 
@@ -54,6 +55,11 @@ A tibble with dictionary schema columns: \code{dataset_id}, \code{table_id},
 \code{value_type}, \code{unit_label}, \code{unit_iri}, \code{term_iri}, \code{term_type}, \code{required},
 and I-ADOPT component fields (\code{property_iri}, \code{entity_iri},
 \code{constraint_iri}, \code{method_iri}).
+
+When \code{df} is a named list of tables and \code{seed_semantics = TRUE},
+metadata-seed tables are attached as attributes:
+\code{inferred_table_meta}, \code{inferred_codes}, and
+\code{inferred_dataset_meta}.
 }
 \description{
 Proposes a starter dictionary (column dictionary schema) from raw data by

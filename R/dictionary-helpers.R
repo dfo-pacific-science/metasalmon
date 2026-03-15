@@ -3,7 +3,8 @@
 #' Proposes a starter dictionary (column dictionary schema) from raw data by
 #' guessing column types, roles, and basic metadata.
 #'
-#' @param df A data frame or tibble to analyze.
+#' @param df A data frame or tibble to analyze. Or, when provided as a named list of data frames,
+#'   `infer_dictionary()` infers each table and returns a combined dictionary.
 #' @param guess_types Logical; if `TRUE` (default), infer value types from data.
 #' @param dataset_id Character; dataset identifier (default: "dataset-1").
 #' @param table_id Character; table identifier (default: "table-1").
@@ -54,58 +55,328 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             seed_codes = NULL,
                             seed_table_meta = NULL,
                             seed_dataset_meta = NULL) {
-  if (!inherits(df, "data.frame")) {
-    cli::cli_abort("{.arg df} must be a data frame or tibble")
+  if (is.list(df) && !inherits(df, "data.frame")) {
+    resources <- df
+    if (length(resources) == 0) {
+      cli::cli_abort("{.arg df} must be a non-empty list of data frames or a single data frame")
+    }
+
+    if (is.null(names(resources)) || any(names(resources) == "")) {
+      cli::cli_abort("{.arg df} list inputs must be named by table_id")
+    }
+
+    bad_resource <- vapply(resources, function(x) !inherits(x, "data.frame"), logical(1))
+    if (any(bad_resource)) {
+      bad <- which(bad_resource)
+      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}")
+    }
+
+    if (anyDuplicated(names(resources)) > 0) {
+      cli::cli_abort("{.arg df} table_id names must be unique")
+    }
+
+    dict_parts <- lapply(names(resources), function(tab_id) {
+      infer_dictionary(
+        df = resources[[tab_id]],
+        guess_types = guess_types,
+        dataset_id = dataset_id,
+        table_id = tab_id,
+        seed_semantics = FALSE,
+        semantic_sources = semantic_sources,
+        semantic_max_per_role = semantic_max_per_role,
+        seed_verbose = seed_verbose,
+        seed_codes = NULL,
+        seed_table_meta = NULL,
+        seed_dataset_meta = NULL
+      )
+    })
+    dict <- dplyr::bind_rows(dict_parts)
+
+    inferred_table_meta <- infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
+    inferred_codes <- infer_codes_from_resources(resources, dataset_id = dataset_id)
+    inferred_dataset_meta <- infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
+
+    if (!is.null(seed_table_meta)) {
+      table_meta <- seed_table_meta
+    } else {
+      table_meta <- inferred_table_meta
+    }
+
+    if (!is.null(seed_codes)) {
+      codes <- seed_codes
+    } else {
+      codes <- inferred_codes
+    }
+
+    if (!is.null(seed_dataset_meta)) {
+      dataset_meta <- seed_dataset_meta
+    } else {
+      dataset_meta <- inferred_dataset_meta
+    }
+
+    if (isTRUE(seed_semantics)) {
+      if (seed_verbose) {
+        cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
+      }
+      dict <- suggest_semantics(
+        df = resources[[1]],
+        dict = dict,
+        sources = semantic_sources,
+        max_per_role = semantic_max_per_role,
+        codes = codes,
+        table_meta = table_meta,
+        dataset_meta = dataset_meta
+      )
+      attr(dict, "inferred_table_meta") <- table_meta
+      attr(dict, "inferred_codes") <- codes
+      attr(dict, "inferred_dataset_meta") <- dataset_meta
+      attr(dict, "inferred_resources") <- names(resources)
+    }
+
+    dict
+  } else {
+    if (!inherits(df, "data.frame")) {
+      cli::cli_abort("{.arg df} must be a data frame or tibble")
+    }
+
+    col_names <- names(df)
+    n_cols <- length(col_names)
+
+    # Initialize dictionary structure
+    dict <- tibble::tibble(
+      dataset_id = rep(dataset_id, n_cols),
+      table_id = rep(table_id, n_cols),
+      column_name = col_names,
+      column_label = col_names,
+      column_description = rep(NA_character_, n_cols),
+      column_role = rep(NA_character_, n_cols),
+      value_type = rep(NA_character_, n_cols),
+      unit_label = rep(NA_character_, n_cols),
+      unit_iri = rep(NA_character_, n_cols),
+      term_iri = rep(NA_character_, n_cols),
+      term_type = rep(NA_character_, n_cols),
+      required = rep(FALSE, n_cols),
+      property_iri = rep(NA_character_, n_cols),
+      entity_iri = rep(NA_character_, n_cols),
+      constraint_iri = rep(NA_character_, n_cols),
+      method_iri = rep(NA_character_, n_cols)
+    )
+
+    if (guess_types) {
+      # Infer value types from data
+      for (i in seq_along(col_names)) {
+        col <- df[[col_names[i]]]
+        dict$value_type[i] <- infer_value_type(col)
+        dict$column_role[i] <- infer_column_role(col_names[i], col)
+      }
+    }
+
+    if (isTRUE(seed_semantics)) {
+      if (seed_verbose) {
+        cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
+      }
+      dict <- suggest_semantics(
+        df = df,
+        dict = dict,
+        sources = semantic_sources,
+        max_per_role = semantic_max_per_role,
+        codes = seed_codes,
+        table_meta = seed_table_meta,
+        dataset_meta = seed_dataset_meta
+      )
+      if (!is.null(seed_table_meta)) {
+        attr(dict, "seed_table_meta") <- seed_table_meta
+      }
+      if (!is.null(seed_codes)) {
+        attr(dict, "seed_codes") <- seed_codes
+      }
+      if (!is.null(seed_dataset_meta)) {
+        attr(dict, "seed_dataset_meta") <- seed_dataset_meta
+      }
+    }
+
+    dict
+  }
+}
+
+infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
+  table_meta <- purrr::map_dfr(names(resources), function(tab_id) {
+    df <- resources[[tab_id]]
+    col_names <- names(df)
+
+    id_col <- col_names[grepl("(^|_)id$|_id$|^id_", tolower(col_names))]
+    primary_key <- if (length(id_col) > 0) id_col[[1]] else NA_character_
+
+    tibble::tibble(
+      dataset_id = dataset_id,
+      table_id = tab_id,
+      file_name = paste0(tab_id, ".csv"),
+      table_label = tab_id,
+      description = NA_character_,
+      observation_unit = NA_character_,
+      observation_unit_iri = NA_character_,
+      primary_key = primary_key
+    )
+  })
+
+  .ms_normalize_table_meta(table_meta)
+}
+
+infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
+  code_limits <- 30L
+
+  code_tables <- purrr::map_dfr(names(resources), function(tab_id) {
+    df <- resources[[tab_id]]
+    col_names <- names(df)
+
+    cols <- col_names[vapply(df, function(v) {
+      inherits(v, "factor") || inherits(v, "character")
+    }, logical(1))]
+
+    if (length(cols) == 0) {
+      return(tibble::tibble())
+    }
+
+    codes <- purrr::map_dfr(cols, function(col_name) {
+      vals <- unique(stats::na.omit(as.character(df[[col_name]])))
+      if (length(vals) == 0 || length(vals) > code_limits) {
+        return(tibble::tibble())
+      }
+
+      tibble::tibble(
+        dataset_id = dataset_id,
+        table_id = tab_id,
+        column_name = col_name,
+        code_value = vals,
+        code_label = vals,
+        code_description = NA_character_,
+        vocabulary_iri = NA_character_,
+        term_iri = NA_character_,
+        term_type = NA_character_
+      )
+    })
+
+    .ms_normalize_codes(codes)
+  })
+
+  .ms_normalize_codes(code_tables)
+}
+
+infer_dataset_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
+  parse_date_values <- function(x) {
+    if (is.null(x) || length(x) == 0) {
+      return(as.Date(character()))
+    }
+    if (inherits(x, "Date")) {
+      return(x)
+    }
+    if (inherits(x, "POSIXt")) {
+      return(as.Date(x))
+    }
+
+    vals <- suppressWarnings(as.character(stats::na.omit(x)))
+    if (length(vals) == 0) {
+      return(as.Date(character()))
+    }
+
+    parsed <- suppressWarnings(as.Date(vals))
+    parsed <- parsed[!is.na(parsed)]
+    if (length(parsed) > 0) {
+      return(parsed)
+    }
+
+    parsed <- suppressWarnings(as.Date(vals, format = "%m/%d/%Y"))
+    parsed <- parsed[!is.na(parsed)]
+    if (length(parsed) > 0) {
+      return(parsed)
+    }
+
+    parsed <- suppressWarnings(as.Date(vals, format = "%Y/%m/%d"))
+    parsed <- parsed[!is.na(parsed)]
+    if (length(parsed) > 0) {
+      return(parsed)
+    }
+
+    as.Date(character())
   }
 
-  col_names <- names(df)
-  n_cols <- length(col_names)
+  date_candidates <- unlist(
+    purrr::map(resources, function(df) {
+      date_cols <- names(df)[
+        grepl("date|time|timestamp|dtt|obsdate|survey|year", tolower(names(df)))
+      ]
+      dates <- unlist(
+        lapply(
+          date_cols,
+          function(col) parse_date_values(df[[col]])
+        )
+      )
+      dates
+    }),
+    recursive = TRUE
+  )
+  date_candidates <- date_candidates[!is.na(date_candidates)]
+  temporal_start <- if (length(date_candidates) > 0) min(date_candidates) else as.Date(NA)
+  temporal_end <- if (length(date_candidates) > 0) max(date_candidates) else as.Date(NA)
 
-  # Initialize dictionary structure
-  dict <- tibble::tibble(
-    dataset_id = rep(dataset_id, n_cols),
-    table_id = rep(table_id, n_cols),
-    column_name = col_names,
-    column_label = col_names,  # Default to column name
-    column_description = rep(NA_character_, n_cols),
-    column_role = rep(NA_character_, n_cols),
-    value_type = rep(NA_character_, n_cols),
-    unit_label = rep(NA_character_, n_cols),
-    unit_iri = rep(NA_character_, n_cols),
-    term_iri = rep(NA_character_, n_cols),
-    term_type = rep(NA_character_, n_cols),
-    required = rep(FALSE, n_cols),
-    property_iri = rep(NA_character_, n_cols),
-    entity_iri = rep(NA_character_, n_cols),
-    constraint_iri = rep(NA_character_, n_cols),
-    method_iri = rep(NA_character_, n_cols)
+  lat_cols <- c()
+  lon_cols <- c()
+  for (df in resources) {
+    nms <- tolower(names(df))
+    lat_cols <- c(lat_cols, names(df)[grepl("(^|_)lat(itude)?($|_)", nms)])
+    lon_cols <- c(lon_cols, names(df)[grepl("(^|_)lon|(^|_)long(itude)?($|_)", nms)])
+  }
+
+  lats <- unlist(lapply(resources, function(df) {
+    values <- df[intersect(lat_cols, names(df))]
+    as.numeric(unlist(values))
+  }))
+  lons <- unlist(lapply(resources, function(df) {
+    values <- df[intersect(lon_cols, names(df))]
+    as.numeric(unlist(values))
+  }))
+  lats <- lats[!is.na(lats)]
+  lons <- lons[!is.na(lons)]
+
+  spatial_extent <- if (length(lats) > 0 && length(lons) > 0) {
+    glue::glue("lon={min(lons)}..{max(lons)}, lat={min(lats)}..{max(lats)}")
+  } else {
+    NA_character_
+  }
+
+  keywords <- unique(
+    unlist(
+      lapply(resources, function(df) {
+        trimws(gsub("_", " ", names(df)))
+      }),
+      recursive = TRUE
+    )
   )
 
-  if (guess_types) {
-    # Infer value types from data
-    for (i in seq_along(col_names)) {
-      col <- df[[col_names[i]]]
-      dict$value_type[i] <- infer_value_type(col)
-      dict$column_role[i] <- infer_column_role(col_names[i], col)
-    }
-  }
-
-  if (isTRUE(seed_semantics)) {
-    if (seed_verbose) {
-      cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
-    }
-    dict <- suggest_semantics(
-      df = df,
-      dict = dict,
-      sources = semantic_sources,
-      max_per_role = semantic_max_per_role,
-      codes = seed_codes,
-      table_meta = seed_table_meta,
-      dataset_meta = seed_dataset_meta
-    )
-  }
-
-  dict
+  tibble::tibble(
+    dataset_id = dataset_id,
+    title = NA_character_,
+    description = NA_character_,
+    creator = NA_character_,
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = NA_character_,
+    contact_org = NA_character_,
+    contact_position = NA_character_,
+    temporal_start = as.character(temporal_start),
+    temporal_end = as.character(temporal_end),
+    spatial_extent = spatial_extent,
+    dataset_type = NA_character_,
+    source_citation = NA_character_,
+    update_frequency = NA_character_,
+    topic_categories = NA_character_,
+    keywords = paste(head(keywords, 8L), collapse = "; "),
+    security_classification = NA_character_,
+    provenance_note = NA_character_,
+    created = NA_character_,
+    modified = NA_character_,
+    spec_version = NA_character_
+  )
 }
 
 #' Infer value type from a column
