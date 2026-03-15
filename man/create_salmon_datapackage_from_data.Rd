@@ -68,9 +68,18 @@ Invisibly returns the path to the created package.
 }
 
 \details{
-Inferred artifacts are produced by
-\code{infer_salmon_datapackage_artifacts()} and written with
-\code{create_salmon_datapackage()}.
+This is a one-shot bootstrap flow intended for fast first-pass package creation, not automatic publication-ready review.
+
+Use this function for demos and initial assembly, then run an explicit iterative loop:
+\enumerate{
+  \item{Inspect inferred artifacts with `infer_salmon_datapackage_artifacts(..., seed_semantics = TRUE)`.}
+  \item{Validate and clean with `validate_dictionary()` and `validate_semantics()`.}
+  \item{Use `suggest_semantics()` and `apply_semantic_suggestions()` deliberately (review-first by design).}
+  \item{Rebuild with `create_salmon_datapackage()` using reviewed metadata.}
+}
+
+See \url{https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html} and
+\url{https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for full guidance.
 }
 
 \seealso{

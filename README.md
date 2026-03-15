@@ -85,6 +85,32 @@ pkg_path <- create_salmon_datapackage_from_data(
 )
 ```
 
+`create_salmon_datapackage_from_data()` is intentionally a **fast bootstrap**.
+Before sharing/ publishing, follow the explicit review path:
+
+```r
+
+artifacts <- infer_salmon_datapackage_artifacts(
+  resources,
+  dataset_id = "fraser-coho-2024",
+  seed_semantics = TRUE
+)
+artifacts$dict <- validate_dictionary(artifacts$dict)
+artifacts$dict <- validate_semantics(artifacts$dict)$dict
+artifacts$dict <- apply_semantic_suggestions(artifacts$dict)
+# ... review + tune suggestions first
+pkg_path <- create_salmon_datapackage(
+  resources,
+  artifacts$dataset_meta,
+  artifacts$table_meta,
+  artifacts$dict,
+  artifacts$codes,
+  path = "my-first-package",
+  overwrite = TRUE
+)
+```
+
+
 To continue:
 
 - [5-Minute Quickstart](articles/metasalmon.html) — create the full package with metadata and export it.

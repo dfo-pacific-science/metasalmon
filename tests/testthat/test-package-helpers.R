@@ -78,13 +78,18 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
   )
 
   temp_dir <- withr::local_tempdir()
-  pkg_path <- create_salmon_datapackage_from_data(
-    resources,
-    path = file.path(temp_dir, "package"),
-    dataset_id = "mt-demo",
-    seed_semantics = FALSE,
-    overwrite = TRUE
-  )
+  pkg_path <- NULL
+  notes <- testthat::capture_messages({
+    pkg_path <- create_salmon_datapackage_from_data(
+      resources,
+      path = file.path(temp_dir, "package"),
+      dataset_id = "mt-demo",
+      seed_semantics = FALSE,
+      overwrite = TRUE
+    )
+  })
+
+  expect_true(any(grepl("one-shot bootstrap flow", notes)))
 
   expect_true(dir.exists(pkg_path))
   expect_true(file.exists(file.path(pkg_path, "dataset.csv")))

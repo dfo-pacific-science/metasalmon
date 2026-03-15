@@ -420,6 +420,15 @@ infer_salmon_datapackage_artifacts <- function(
 #'
 #' @return Invisibly returns the package path.
 #'
+#' @details This is a one-shot bootstrap helper for fast first-pass package creation,
+#' not an automatic publication-ready finalizer.
+#'
+#' For production/QA workflows, use:
+#' 1. `infer_salmon_datapackage_artifacts(..., seed_semantics = TRUE)`
+#' 2. `validate_dictionary()` and `validate_semantics()`
+#' 3. `suggest_semantics()` and `apply_semantic_suggestions()`
+#' 4. `create_salmon_datapackage()` with reviewed metadata
+#'
 #' @export
 #'
 #' @examples
@@ -474,7 +483,7 @@ create_salmon_datapackage_from_data <- function(
     seed_dataset_meta = seed_dataset_meta
   )
 
-  create_salmon_datapackage(
+  pkg_path <- create_salmon_datapackage(
     resources = artifacts$resources,
     dataset_meta = artifacts$dataset_meta,
     table_meta = artifacts$table_meta,
@@ -484,6 +493,20 @@ create_salmon_datapackage_from_data <- function(
     format = format,
     overwrite = overwrite
   )
+
+  cli::cli_alert_warning(c(
+    "Used one-shot bootstrap flow {.fn create_salmon_datapackage_from_data()}.",
+    "i" = "This creates a package quickly, but semantic quality is still provisional.",
+    "i" = "Run structural and semantic validation before publishing or sharing:",
+    "i" = "1) Review artifacts via {.code infer_salmon_datapackage_artifacts(..., seed_semantics = TRUE)}",
+    "i" = "2) Validate with {.code validate_dictionary()} and {.code validate_semantics()}",
+    "i" = "3) Fill semantic fields using {.code suggest_semantics()} and {.code apply_semantic_suggestions()}",
+    "i" = "4) Rebuild with {.code create_salmon_datapackage()} using reviewed metadata",
+    "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html} and",
+    "i" = "{.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for the full validation workflow."
+  ))
+
+  invisible(pkg_path)
 }
 
 #' Read a Salmon Data Package

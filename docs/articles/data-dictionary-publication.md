@@ -134,7 +134,9 @@ pkg_path <- create_salmon_datapackage_from_data(
   overwrite = TRUE
 )
 
-# For fully explicit staged control, use infer artifacts first:
+# `create_salmon_datapackage_from_data()` is the fast bootstrap route.
+# For formal validation-ready workflows, stage with `infer_salmon_datapackage_artifacts()`.
+#
 # artifacts <- infer_salmon_datapackage_artifacts(
 #   resources,
 #   dataset_id = "my-dataset-2026",

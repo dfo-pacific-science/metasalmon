@@ -234,9 +234,19 @@ pkg_path <- create_salmon_datapackage_from_data(
 #   overwrite = TRUE
 # )
 
+# If you use one-shot, treat it as a bootstrap and then review semantics manually.
+# See: data-dictionary-publication article for the full validated workflow.
+
 # See what was created
 list.files(pkg_path)
 ```
+
+> **Tip:** For first-pass demos this is great. For publishing, prefer the
+> iterative path: `infer_salmon_datapackage_artifacts()` →
+> `validate_dictionary()` / `validate_semantics()` →
+> `suggest_semantics()` + `apply_semantic_suggestions()` →
+> `create_salmon_datapackage()`.
+
 
 **What you get**: A folder called `my-first-package/` containing:
 
