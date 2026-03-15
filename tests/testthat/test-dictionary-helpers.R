@@ -34,6 +34,14 @@ test_that("infer_dictionary can seed semantic suggestions", {
     attr(dict, "semantic_suggestions") <- tibble::tibble(
       column_name = c("count"),
       dictionary_role = c("variable"),
+      table_id = c("table-1"),
+      dataset_id = c("dataset-1"),
+      target_scope = c("column"),
+      target_sdp_file = c("column_dictionary.csv"),
+      target_sdp_field = c("term_iri"),
+      search_query = c("count"),
+      column_label = c("count"),
+      column_description = c(NA_character_),
       label = c("Count"),
       iri = c("https://example.org/count"),
       source = c("ols"),
@@ -118,11 +126,22 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
   expect_equal(nrow(suggestions), 6) # variable/property/entity/unit/constraint/method
-  expect_true(all(c("dataset_id", "table_id", "dictionary_role", "column_name") %in% names(suggestions)))
+  expect_equal(names(suggestions)[1:4], c("column_name", "dictionary_role", "table_id", "dataset_id"))
+  expect_true(all(c("target_scope", "target_sdp_file", "target_sdp_field", "search_query") %in% names(suggestions)))
   expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
   expect_true(all(suggestions$column_name == "value"))
   expect_true(all(suggestions$dataset_id == "d1"))
   expect_true(all(suggestions$table_id == "t1"))
+  expect_true(all(suggestions$target_scope == "column"))
+  expect_true(all(suggestions$target_sdp_file == "column_dictionary.csv"))
+  expect_true(all(suggestions$search_query == "Spawner abundance estimate"))
+  expect_equal(
+    unique(suggestions[, c("dictionary_role", "target_sdp_field")]),
+    tibble::tibble(
+      dictionary_role = c("variable", "property", "entity", "unit", "constraint", "method"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
+    )
+  )
 
   res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
   dwc_map <- attr(res_dwc, "dwc_mappings")
@@ -166,7 +185,7 @@ test_that("suggest_semantics uses role-specific hints when available", {
   expect_true(any(unit_queries == "fish"))
 })
 
-test_that("suggest_semantics deduplicates namespace variants", {
+test_that("suggest_semantics deduplicates by source plus IRI without rewriting", {
   dict <- tibble::tibble(
     dataset_id = "d",
     table_id = "t",
@@ -187,30 +206,31 @@ test_that("suggest_semantics deduplicates namespace variants", {
   fake_search <- function(query, role, sources = NULL) {
     role_suffix <- if (role == "entity") "entity" else role
     tibble::tibble(
-      label = "Stock",
+      label = c("Stock", "Stock", "Stock"),
       iri = c(
+        "https://w3id.org/smn/Stock",
         "http://w3id.org/salmon/Stock",
         "https://w3id.org/smn/Stock"
       ),
-      source = c("smn", "smn"),
-      ontology = c(role_suffix, role_suffix),
+      source = c("smn", "smn", "smn"),
+      ontology = c(role_suffix, role_suffix, role_suffix),
       role = role,
       match_type = "label",
       definition = "",
-      score = c(10, 9)
+      score = c(10, 9, 8)
     )
   }
 
   res <- suggest_semantics(NULL, dict, sources = "smn", max_per_role = 2, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
 
-  # Expect deduplicated canonical namespace output for variable/property/entity roles
+  # Expect duplicate rows removed but no namespace rewriting.
   entity_rows <- suggestions[suggestions$dictionary_role == "entity", , drop = FALSE]
   var_rows <- suggestions[suggestions$dictionary_role == "variable", , drop = FALSE]
-  expect_equal(nrow(entity_rows), 1)
-  expect_equal(nrow(var_rows), 1)
-  expect_equal(unique(entity_rows$iri), "https://w3id.org/smn/Stock")
-  expect_equal(unique(var_rows$iri), "https://w3id.org/smn/Stock")
+  expect_equal(nrow(entity_rows), 2)
+  expect_equal(nrow(var_rows), 2)
+  expect_true(all(c("https://w3id.org/smn/Stock", "http://w3id.org/salmon/Stock") %in% unique(entity_rows$iri)))
+  expect_true(all(c("https://w3id.org/smn/Stock", "http://w3id.org/salmon/Stock") %in% unique(var_rows$iri)))
 })
 
 test_that("apply_semantic_suggestions matches by column_name and dictionary_role", {

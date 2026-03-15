@@ -17,10 +17,10 @@ You’ve spent years collecting salmon data. But when you try to share it:
 `metasalmon` wraps your salmon data with a **data dictionary** that
 travels with it—explaining every column, every code, and linking to
 standard scientific definitions. These definitions come from the [Salmon
-Domain Ontology](https://w3id.org/smn/) first (with DFO Salmon Ontology
-bridge/fallback support where needed) and other published controlled
-vocabularies, and the data is packaged according to the [Salmon Data
-Package
+Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO
+Salmon Ontology](https://w3id.org/gcdfo/salmon#) (DFO-specific layer),
+alongside other published controlled vocabularies, and the data is
+packaged according to the [Salmon Data Package
 Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md).
 For extra help, our custom [Salmon Data Standardizer
 GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)
@@ -156,8 +156,8 @@ future self - can immediately understand your data.
   and
   [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md):
   - Units: QUDT preferred, then NVS P06
-  - Salmon-domain roles: shared SMN terms first, then GCDFO
-    bridge/fallback where needed
+  - Salmon-domain roles: shared SMN terms first, then GCDFO DFO-specific
+    terms where needed
   - Entities/taxa: SMN and GCDFO first, then GBIF and WoRMS taxon
     resolvers
   - Properties/variables/methods: shared salmon-domain terms first, then
@@ -253,14 +253,12 @@ pkgdown::build_site()
 
 ### Salmon Domain Ontology
 
-This package can optionally link your data to the [Salmon Domain
-Ontology](https://w3id.org/smn/) first, with [DFO Salmon
-Ontology](https://w3id.org/gcdfo/salmon/) fallback support where needed.
-Shared reusable SMN terms are now canonically served under the `smn`
-namespace (for example `https://w3id.org/smn/Stock`), though metasalmon
-normalizes older `salmon:`-namespace variants when they appear. You
-don’t need to understand ontologies to use metasalmon - this is handled
-automatically for users who want it.
+This package can link your data to the [Salmon Domain
+Ontology](https://w3id.org/smn/) for shared terms and to the [DFO Salmon
+Ontology](https://w3id.org/gcdfo/salmon#) for DFO-specific terms.
+Canonical IRIs are explicit: SMN uses `https://w3id.org/smn/<Term>` and
+GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not
+silently rewrite legacy `salmon:` IRIs.
 
 See the [Reusing Standards for Salmon Data
 Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)

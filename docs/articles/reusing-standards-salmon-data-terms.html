@@ -140,12 +140,12 @@ I-ADOPT role:</p>
 <span><span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"entity"</span><span class="op">)</span></span>
 <span><span class="co"># Returns: c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols")</span></span></code></pre></div>
 <p>The shared <strong>Salmon Domain Ontology</strong> is queried first
-for salmon-domain roles. Its reusable shared terms are now canonically
+for salmon-domain roles. Its reusable shared terms are canonically
 served under the <code>smn</code> namespace (for example
 <code>https://w3id.org/smn/Stock</code>), while <code>gcdfo</code>
-remains the DFO-specific bridge/fallback source. metasalmon still
-normalizes older <code>salmon:</code>-namespace variants when they
-appear.</p>
+remains the DFO-specific source with canonical IRIs under
+<code>https://w3id.org/gcdfo/salmon#</code>. metasalmon does not
+silently rewrite legacy <code>salmon:</code>-namespace variants.</p>
 <table class="table">
 <colgroup>
 <col width="17%">

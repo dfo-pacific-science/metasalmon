@@ -68,11 +68,11 @@ slow queries.
 **Supported sources:**
 
 - **SMN** (Salmon Domain Ontology): shared salmon-domain search from
-  `https://w3id.org/smn/` (shared term IRIs are canonically served under
-  `smn` namespace, e.g. `https://w3id.org/smn/Stock`)
+  `https://w3id.org/smn/` with canonical shared IRIs (e.g.
+  `https://w3id.org/smn/Stock`)
 
-- **GCDFO** (DFO-specific fallback): bridge/fallback search for
-  DFO-specific terms
+- **GCDFO** (DFO Salmon Ontology): DFO-specific search from
+  `https://w3id.org/gcdfo/salmon#`
 
 - **OLS** (Ontology Lookup Service): Broad cross-ontology search, no API
   key needed
@@ -113,7 +113,7 @@ slow queries.
 Results are scored using I-ADOPT vocabulary hints and role-based
 ontology preferences, then ranked by relevance. When `"smn"` is included
 in `sources`, shared salmon-domain ontology search runs first; `"gcdfo"`
-is used as a deterministic DFO fallback before external sources.
+is used as a deterministic DFO-specific source before external sources.
 External fallback sources are skipped when SMN or GCDFO returns a good
 label match. Network calls are best-effort and return an empty tibble on
 failure.

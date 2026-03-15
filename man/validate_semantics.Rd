@@ -34,6 +34,9 @@ A list with elements:
 \description{
 Ensures structural requirements, adds a \code{required} column if missing,
 runs \code{validate_dictionary()}, and reports measurement rows missing
-\code{term_iri}. In non-strict mode (\code{require_iris = FALSE}), semantic gaps
-emit warnings but do not fail the overall call.
+\code{term_iri}. Also flags non-canonical Salmon ontology IRIs so source
+boundaries stay explicit (\code{smn} under \verb{https://w3id.org/smn/}, \code{gcdfo}
+under \verb{https://w3id.org/gcdfo/salmon#}). In non-strict mode
+(\code{require_iris = FALSE}), semantic gaps emit warnings but do not fail
+the overall call.
 }

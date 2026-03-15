@@ -20,7 +20,7 @@ suggest_semantics(
 incomplete semantic fields).}
 
 \item{sources}{Character vector of vocabulary sources to search. Options are
-\code{"smn"} (Salmon Domain Ontology via content negotiation), \code{"gcdfo"} (DFO-specific fallback), \code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
+\code{"smn"} (Salmon Domain Ontology via content negotiation), \code{"gcdfo"} (DFO-specific source), \code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
 \code{"bioportal"} (requires \code{BIOPORTAL_APIKEY} environment variable).
 Default is \code{c("smn", "gcdfo", "ols", "nvs")}.}
 
@@ -37,10 +37,14 @@ Can be replaced for testing or custom search strategies.}
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes \code{dataset_id}, \code{table_id}, \code{column_name}, \code{dictionary_role}
-(which dictionary field the suggestion targets), \code{label}, \code{iri}, \code{source},
-\code{ontology}, and \code{definition}. If the underlying search results include a
-\code{score} column, it is preserved for downstream filtering.
+starts with \code{column_name}, \code{dictionary_role}, \code{table_id}, and \code{dataset_id}
+so the original dictionary term is visible before the candidate match.
+It also includes \code{target_scope}, \code{target_sdp_file}, and
+\code{target_sdp_field} so users can see exactly where each accepted suggestion
+would land in the Salmon Data Package. Additional columns include
+\code{search_query}, \code{column_label}, \code{column_description}, \code{label}, \code{iri},
+\code{source}, \code{ontology}, and \code{definition}. If the underlying search results
+include a \code{score} column, it is preserved for downstream filtering.
 }
 \description{
 Searches external vocabularies to suggest IRIs for measurement columns that
@@ -48,7 +52,7 @@ are missing semantic annotations. For each measurement column with missing
 I-ADOPT component fields (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri},
 \code{constraint_iri}), this function queries vocabulary services and ranks
 results by relevance, with SMN queried first for salmon-domain roles and
-GCDFO retained as a DFO-specific fallback.
+GCDFO retained as a distinct DFO-specific source.
 }
 \details{
 The function uses the column's label or description as the search query and
@@ -57,7 +61,17 @@ you to review candidates before accepting them into your dictionary.
 
 Only columns with \code{column_role == "measurement"} are processed, since
 I-ADOPT components are primarily relevant for measurement metadata. Columns
-with existing IRIs in a field are skipped for that field.
+with existing IRIs in a field are skipped for that field. Current
+\code{seed_semantics} suggestions are column-level suggestions, so
+\code{target_sdp_file} is \code{"column_dictionary.csv"}; the explicit target columns
+are included to make future dataset/table/code-level suggestion layers less
+ambiguous.
+
+A term can legitimately appear more than once with different
+\code{dictionary_role} values (for example as both a variable and a property).
+In that case, \code{match_type} still describes lexical match quality, while
+\code{target_sdp_field} tells you where that suggestion would be written in the
+package.
 
 After calling this function, access suggestions with:
 

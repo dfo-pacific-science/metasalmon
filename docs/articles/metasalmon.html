@@ -201,7 +201,8 @@ The <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a><
 standard terminology from scientific vocabularies:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Get semantic suggestions for your dictionary</span></span>
-<span><span class="co"># For salmon-domain roles, GCDFO is queried first and OLS/NVS are fallback sources.</span></span>
+<span><span class="co"># For salmon-domain roles, SMN shared terms are queried first, then GCDFO as a</span></span>
+<span><span class="co"># distinct DFO-specific source before OLS/NVS fallback sources.</span></span>
 <span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># View the suggestions</span></span>

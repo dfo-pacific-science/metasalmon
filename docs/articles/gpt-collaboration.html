@@ -303,8 +303,8 @@ catalogue)<a class="anchor" aria-label="anchor" href="#step-3b-pull-role-aware-s
 <p>Before (or alongside) GPT, you can ask <code>metasalmon</code> to
 propose candidates using the bundled I-ADOPT terminology catalogue:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Role-aware suggestions; GCDFO is queried first for salmon-domain roles,</span></span>
-<span><span class="co"># with OLS/NVS used as fallback sources.</span></span>
+<code class="sourceCode R"><span><span class="co"># Role-aware suggestions; SMN shared terms are queried first for salmon-domain</span></span>
+<span><span class="co"># roles, with GCDFO as a distinct DFO-specific source and OLS/NVS after that.</span></span>
 <span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
 <span>  df <span class="op">=</span> <span class="va">df</span>,</span>
 <span>  dict <span class="op">=</span> <span class="va">dict</span></span>
@@ -601,7 +601,7 @@ candidates.</p>
 </h2>
 <ul>
 <li>
-<strong>DFO Salmon Ontology</strong>: <a href="https://w3id.org/gcdfo/salmon/" class="external-link uri">https://w3id.org/gcdfo/salmon/</a>
+<strong>DFO Salmon Ontology</strong>: <a href="https://w3id.org/gcdfo/salmon#" class="external-link uri">https://w3id.org/gcdfo/salmon#</a>
 <ul>
 <li>Key classes: <code>ConservationUnit</code>, <code>Stock</code>,
 <code>BroodYear</code>, <code>CatchYear</code>

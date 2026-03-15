@@ -135,14 +135,14 @@ test_that("find_terms uses gcdfo ontology backend", {
 test_that("find_terms uses smn ontology backend", {
   mock_index <- tibble::tibble(
     iri = c(
-      "http://w3id.org/salmon/NaturalSpawnerCount",
-      "http://w3id.org/salmon/Stock"
+      "https://w3id.org/smn/NaturalSpawnerCount",
+      "https://w3id.org/smn/Stock"
     ),
     label = c("Natural spawner count", "Stock"),
     alt_labels = c("Spawner count", ""),
     definition = c("Count of natural spawners.", "A salmon stock entity."),
     resource_kind = c("NamedIndividual", "Class"),
-    in_scheme = c("http://w3id.org/salmon/EstimateTypeScheme", ""),
+    in_scheme = c("https://w3id.org/smn/EstimateTypeScheme", ""),
     parent_iris = c("", ""),
     type_iris = c("http://www.w3.org/2004/02/skos/core#Concept", "http://www.w3.org/2002/07/owl#Class"),
     search_text = c(
@@ -167,43 +167,41 @@ test_that("find_terms uses smn ontology backend", {
   expect_match(res$iri[[1]], "NaturalSpawnerCount")
 })
 
-test_that("find_terms normalizes shared SMN namespace variants", {
-  mock_index <- tibble::tibble(
-    iri = c(
-      "http://w3id.org/salmon/Stock",
-      "https://w3id.org/smn/Stock"
-    ),
-    label = c("Stock", "Stock"),
-    alt_labels = c("", ""),
-    definition = c("Legacy namespace stock term", "Canonical namespace stock term"),
-    resource_kind = c("Class", "Class"),
-    in_scheme = c("", ""),
-    parent_iris = c("", ""),
-    type_iris = c(
-      "http://www.w3.org/2002/07/owl#Class",
-      "http://www.w3.org/2002/07/owl#Class"
-    ),
-    search_text = c("stock legacy namespace", "stock canonical namespace"),
-    is_variable = c(FALSE, FALSE),
-    is_property = c(FALSE, FALSE),
-    is_entity = c(TRUE, TRUE),
-    is_constraint = c(FALSE, FALSE),
-    is_method = c(FALSE, FALSE),
-    role_hints = c("entity", "entity")
+test_that("find_terms keeps distinct source IRIs without cross-source collapsing", {
+  smn_rows <- tibble::tibble(
+    label = "Stock",
+    iri = "https://w3id.org/smn/Stock",
+    source = "smn",
+    ontology = "smn",
+    role = "entity",
+    match_type = "definition",
+    definition = "Shared stock concept"
+  )
+  gcdfo_rows <- tibble::tibble(
+    label = "Stock",
+    iri = "https://w3id.org/gcdfo/salmon#Stock",
+    source = "gcdfo",
+    ontology = "gcdfo",
+    role = "entity",
+    match_type = "label_exact",
+    definition = "DFO stock concept"
   )
 
   res <- with_mocked_bindings(
-    .smn_term_index = function(refresh = FALSE) mock_index,
-    find_terms("stock", role = "entity", sources = "smn", expand_query = FALSE)
+    .search_smn = function(query, role) smn_rows,
+    .search_gcdfo = function(query, role) gcdfo_rows,
+    .search_ols = function(query, role) .empty_terms(role),
+    .search_nvs = function(query, role) .empty_terms(role),
+    find_terms("stock", role = "entity", sources = c("smn", "gcdfo"), expand_query = FALSE)
   )
 
-  expect_equal(nrow(res), 1)
-  expect_equal(res$iri[[1]], "https://w3id.org/smn/Stock")
+  expect_equal(nrow(res), 2)
+  expect_true(all(c("https://w3id.org/smn/Stock", "https://w3id.org/gcdfo/salmon#Stock") %in% res$iri))
 })
 
 test_that("find_terms short-circuits fallback when smn has a good hit", {
   mock_index <- tibble::tibble(
-    iri = "http://w3id.org/salmon/Stock",
+    iri = "https://w3id.org/smn/Stock",
     label = "Stock",
     alt_labels = "",
     definition = "A salmon stock entity.",

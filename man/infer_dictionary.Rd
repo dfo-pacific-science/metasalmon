@@ -57,7 +57,7 @@ df <- data.frame(
 dict <- infer_dictionary(df)
 
 # Optional: seed semantic suggestions from vocabulary services
-# (SMN is queried first; GCDFO is DFO-specific fallback)
+# (SMN is queried first; GCDFO is a distinct DFO-specific source)
 dict <- infer_dictionary(
   df,
   seed_semantics = TRUE,

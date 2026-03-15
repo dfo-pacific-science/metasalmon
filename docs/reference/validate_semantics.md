@@ -3,7 +3,10 @@
 Ensures structural requirements, adds a `required` column if missing,
 runs
 [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md),
-and reports measurement rows missing `term_iri`. In non-strict mode
+and reports measurement rows missing `term_iri`. Also flags
+non-canonical Salmon ontology IRIs so source boundaries stay explicit
+(`smn` under `https://w3id.org/smn/`, `gcdfo` under
+`https://w3id.org/gcdfo/salmon#`). In non-strict mode
 (`require_iris = FALSE`), semantic gaps emit warnings but do not fail
 the overall call.
 

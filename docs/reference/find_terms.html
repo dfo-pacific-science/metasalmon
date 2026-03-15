@@ -103,8 +103,8 @@ helps explain empty results or slow queries.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><strong>Supported sources:</strong></p><ul><li><p><strong>SMN</strong> (Salmon Domain Ontology): shared salmon-domain search from <code>https://w3id.org/smn/</code> (shared term IRIs are canonically served under <code>smn</code> namespace, e.g. <code>https://w3id.org/smn/Stock</code>)</p></li>
-<li><p><strong>GCDFO</strong> (DFO-specific fallback): bridge/fallback search for DFO-specific terms</p></li>
+    <p><strong>Supported sources:</strong></p><ul><li><p><strong>SMN</strong> (Salmon Domain Ontology): shared salmon-domain search from <code>https://w3id.org/smn/</code> with canonical shared IRIs (e.g. <code>https://w3id.org/smn/Stock</code>)</p></li>
+<li><p><strong>GCDFO</strong> (DFO Salmon Ontology): DFO-specific search from <code>https://w3id.org/gcdfo/salmon#</code></p></li>
 <li><p><strong>OLS</strong> (Ontology Lookup Service): Broad cross-ontology search, no API key needed</p></li>
 <li><p><strong>NVS</strong> (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)</p></li>
 <li><p><strong>ZOOMA</strong> (EBI text-to-term annotations): Resolves to OLS term metadata</p></li>
@@ -120,7 +120,7 @@ helps explain empty results or slow queries.</p>
 </ul><p>Results are scored using I-ADOPT vocabulary hints and role-based ontology
 preferences, then ranked by relevance. When <code>"smn"</code> is included in
 <code>sources</code>, shared salmon-domain ontology search runs first; <code>"gcdfo"</code> is used
-as a deterministic DFO fallback before external sources. External fallback
+as a deterministic DFO-specific source before external sources. External fallback
 sources are skipped when SMN or GCDFO returns a good label match. Network calls are
 best-effort and return an empty tibble on failure.</p>
     </div>

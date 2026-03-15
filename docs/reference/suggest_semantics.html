@@ -4,12 +4,12 @@ are missing semantic annotations. For each measurement column with missing
 I-ADOPT component fields (term_iri, property_iri, entity_iri, unit_iri,
 constraint_iri), this function queries vocabulary services and ranks
 results by relevance, with SMN queried first for salmon-domain roles and
-GCDFO retained as a DFO-specific fallback."><meta property="og:description" content="Searches external vocabularies to suggest IRIs for measurement columns that
+GCDFO retained as a distinct DFO-specific source."><meta property="og:description" content="Searches external vocabularies to suggest IRIs for measurement columns that
 are missing semantic annotations. For each measurement column with missing
 I-ADOPT component fields (term_iri, property_iri, entity_iri, unit_iri,
 constraint_iri), this function queries vocabulary services and ranks
 results by relevance, with SMN queried first for salmon-domain roles and
-GCDFO retained as a DFO-specific fallback."><meta property="og:image" content="https://dfo-pacific-science.github.io/metasalmon/logo.png"></head><body>
+GCDFO retained as a distinct DFO-specific source."><meta property="og:image" content="https://dfo-pacific-science.github.io/metasalmon/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -57,7 +57,7 @@ are missing semantic annotations. For each measurement column with missing
 I-ADOPT component fields (<code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>, <code>unit_iri</code>,
 <code>constraint_iri</code>), this function queries vocabulary services and ranks
 results by relevance, with SMN queried first for salmon-domain roles and
-GCDFO retained as a DFO-specific fallback.</p>
+GCDFO retained as a distinct DFO-specific source.</p>
     </div>
 
     <div class="section level2">
@@ -87,7 +87,7 @@ incomplete semantic fields).</p></dd>
 
 <dt id="arg-sources">sources<a class="anchor" aria-label="anchor" href="#arg-sources"></a></dt>
 <dd><p>Character vector of vocabulary sources to search. Options are
-<code>"smn"</code> (Salmon Domain Ontology via content negotiation), <code>"gcdfo"</code> (DFO-specific fallback), <code>"ols"</code> (Ontology Lookup Service), <code>"nvs"</code> (NERC Vocabulary Server), and
+<code>"smn"</code> (Salmon Domain Ontology via content negotiation), <code>"gcdfo"</code> (DFO-specific source), <code>"ols"</code> (Ontology Lookup Service), <code>"nvs"</code> (NERC Vocabulary Server), and
 <code>"bioportal"</code> (requires <code>BIOPORTAL_APIKEY</code> environment variable).
 Default is <code>c("smn", "gcdfo", "ols", "nvs")</code>.</p></dd>
 
@@ -112,10 +112,14 @@ Can be replaced for testing or custom search strategies.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>The dictionary tibble (unchanged) with a <code>semantic_suggestions</code>
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes <code>dataset_id</code>, <code>table_id</code>, <code>column_name</code>, <code>dictionary_role</code>
-(which dictionary field the suggestion targets), <code>label</code>, <code>iri</code>, <code>source</code>,
-<code>ontology</code>, and <code>definition</code>. If the underlying search results include a
-<code>score</code> column, it is preserved for downstream filtering.</p>
+starts with <code>column_name</code>, <code>dictionary_role</code>, <code>table_id</code>, and <code>dataset_id</code>
+so the original dictionary term is visible before the candidate match.
+It also includes <code>target_scope</code>, <code>target_sdp_file</code>, and
+<code>target_sdp_field</code> so users can see exactly where each accepted suggestion
+would land in the Salmon Data Package. Additional columns include
+<code>search_query</code>, <code>column_label</code>, <code>column_description</code>, <code>label</code>, <code>iri</code>,
+<code>source</code>, <code>ontology</code>, and <code>definition</code>. If the underlying search results
+include a <code>score</code> column, it is preserved for downstream filtering.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -124,7 +128,16 @@ returns suggestions as an attribute on the dictionary tibble. This allows
 you to review candidates before accepting them into your dictionary.</p>
 <p>Only columns with <code>column_role == "measurement"</code> are processed, since
 I-ADOPT components are primarily relevant for measurement metadata. Columns
-with existing IRIs in a field are skipped for that field.</p>
+with existing IRIs in a field are skipped for that field. Current
+<code>seed_semantics</code> suggestions are column-level suggestions, so
+<code>target_sdp_file</code> is <code>"column_dictionary.csv"</code>; the explicit target columns
+are included to make future dataset/table/code-level suggestion layers less
+ambiguous.</p>
+<p>A term can legitimately appear more than once with different
+<code>dictionary_role</code> values (for example as both a variable and a property).
+In that case, <code>match_type</code> still describes lexical match quality, while
+<code>target_sdp_field</code> tells you where that suggestion would be written in the
+package.</p>
 <p>After calling this function, access suggestions with:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>suggestions <span class="ot">&lt;-</span> <span class="fu">attr</span>(result, <span class="st">"semantic_suggestions"</span>)</span></code></pre><p></p></div>
 <p>Suggestions stay separate by default. Review them first, then use

@@ -222,8 +222,8 @@ candidates using the bundled I-ADOPT terminology catalogue:
 
 ``` r
 
-# Role-aware suggestions; GCDFO is queried first for salmon-domain roles,
-# with OLS/NVS used as fallback sources.
+# Role-aware suggestions; SMN shared terms are queried first for salmon-domain
+# roles, with GCDFO as a distinct DFO-specific source and OLS/NVS after that.
 dict_suggested <- suggest_semantics(
   df = df,
   dict = dict
@@ -515,7 +515,7 @@ create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 
 ## Resources
 
-- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon/>
+- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon#>
   - Key classes: `ConservationUnit`, `Stock`, `BroodYear`, `CatchYear`
   - Key schemes: `WSPMetricScheme`, `WSPBiologicalStatusZoneScheme`,
     `SalmonOriginScheme`, `EnumerationMethodScheme`

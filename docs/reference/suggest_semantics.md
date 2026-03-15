@@ -5,8 +5,8 @@ that are missing semantic annotations. For each measurement column with
 missing I-ADOPT component fields (`term_iri`, `property_iri`,
 `entity_iri`, `unit_iri`, `constraint_iri`), this function queries
 vocabulary services and ranks results by relevance, with SMN queried
-first for salmon-domain roles and GCDFO retained as a DFO-specific
-fallback.
+first for salmon-domain roles and GCDFO retained as a distinct
+DFO-specific source.
 
 ## Usage
 
@@ -37,7 +37,7 @@ suggest_semantics(
 
   Character vector of vocabulary sources to search. Options are `"smn"`
   (Salmon Domain Ontology via content negotiation), `"gcdfo"`
-  (DFO-specific fallback), `"ols"` (Ontology Lookup Service), `"nvs"`
+  (DFO-specific source), `"ols"` (Ontology Lookup Service), `"nvs"`
   (NERC Vocabulary Server), and `"bioportal"` (requires
   `BIOPORTAL_APIKEY` environment variable). Default is
   `c("smn", "gcdfo", "ols", "nvs")`.
@@ -64,10 +64,15 @@ suggest_semantics(
 
 The dictionary tibble (unchanged) with a `semantic_suggestions`
 attribute containing a tibble of suggested IRIs. The suggestions tibble
-includes `dataset_id`, `table_id`, `column_name`, `dictionary_role`
-(which dictionary field the suggestion targets), `label`, `iri`,
-`source`, `ontology`, and `definition`. If the underlying search results
-include a `score` column, it is preserved for downstream filtering.
+starts with `column_name`, `dictionary_role`, `table_id`, and
+`dataset_id` so the original dictionary term is visible before the
+candidate match. It also includes `target_scope`, `target_sdp_file`, and
+`target_sdp_field` so users can see exactly where each accepted
+suggestion would land in the Salmon Data Package. Additional columns
+include `search_query`, `column_label`, `column_description`, `label`,
+`iri`, `source`, `ontology`, and `definition`. If the underlying search
+results include a `score` column, it is preserved for downstream
+filtering.
 
 ## Details
 
@@ -79,6 +84,16 @@ dictionary.
 Only columns with `column_role == "measurement"` are processed, since
 I-ADOPT components are primarily relevant for measurement metadata.
 Columns with existing IRIs in a field are skipped for that field.
+Current `seed_semantics` suggestions are column-level suggestions, so
+`target_sdp_file` is `"column_dictionary.csv"`; the explicit target
+columns are included to make future dataset/table/code-level suggestion
+layers less ambiguous.
+
+A term can legitimately appear more than once with different
+`dictionary_role` values (for example as both a variable and a
+property). In that case, `match_type` still describes lexical match
+quality, while `target_sdp_field` tells you where that suggestion would
+be written in the package.
 
 After calling this function, access suggestions with:
 

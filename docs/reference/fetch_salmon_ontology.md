@@ -10,9 +10,8 @@ fetch_salmon_ontology(
   url = "https://w3id.org/smn/",
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
-  fallback_urls = c("https://w3id.org/smn", "https://w3id.org/gcdfo/salmon",
-    "https://w3id.org/gcdfo/salmon/",
-    "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl")
+  fallback_urls = c("https://w3id.org/smn",
+    "https://dfo-pacific-science.github.io/salmon-domain-ontology/smn.ttl")
 )
 ```
 

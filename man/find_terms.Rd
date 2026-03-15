@@ -50,8 +50,8 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 \details{
 \strong{Supported sources:}
 \itemize{
-\item \strong{SMN} (Salmon Domain Ontology): shared salmon-domain search from \verb{https://w3id.org/smn/} (shared term IRIs are canonically served under \code{smn} namespace, e.g. \verb{https://w3id.org/smn/Stock})
-\item \strong{GCDFO} (DFO-specific fallback): bridge/fallback search for DFO-specific terms
+\item \strong{SMN} (Salmon Domain Ontology): shared salmon-domain search from \verb{https://w3id.org/smn/} with canonical shared IRIs (e.g. \verb{https://w3id.org/smn/Stock})
+\item \strong{GCDFO} (DFO Salmon Ontology): DFO-specific search from \verb{https://w3id.org/gcdfo/salmon#}
 \item \strong{OLS} (Ontology Lookup Service): Broad cross-ontology search, no API key needed
 \item \strong{NVS} (NERC Vocabulary Server): Marine and oceanographic terms (P01/P06)
 \item \strong{ZOOMA} (EBI text-to-term annotations): Resolves to OLS term metadata
@@ -73,7 +73,7 @@ Implements role-aware ontology preferences per dfo-salmon-ontology CONVENTIONS.
 Results are scored using I-ADOPT vocabulary hints and role-based ontology
 preferences, then ranked by relevance. When \code{"smn"} is included in
 \code{sources}, shared salmon-domain ontology search runs first; \code{"gcdfo"} is used
-as a deterministic DFO fallback before external sources. External fallback
+as a deterministic DFO-specific source before external sources. External fallback
 sources are skipped when SMN or GCDFO returns a good label match. Network calls are
 best-effort and return an empty tibble on failure.
 }

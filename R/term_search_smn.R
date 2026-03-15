@@ -3,8 +3,7 @@
 # The shared SMN landing URL (`https://w3id.org/smn/`) currently resolves to a
 # modular Turtle scaffold that imports module files rather than a single
 # RDF/XML term graph. For search, we index the canonical module TTL files from
-# the public salmon-domain-ontology repository and normalize shared `salmon:`
-# IRIs into a lightweight lexical index.
+# the public salmon-domain-ontology repository as a lightweight lexical index.
 
 .smn_module_urls <- function() {
   base <- "https://raw.githubusercontent.com/salmon-data-mobilization/salmon-domain-ontology/main/ontology/modules"
@@ -16,7 +15,10 @@
     paste0(base, "/05-provenance-quality.ttl"),
     paste0(base, "/06-data-interoperability.ttl"),
     paste0(base, "/07-controlled-vocabularies.ttl"),
-    paste0(base, "/alignment-main.ttl")
+    paste0(base, "/08-rda-case-study-profile-bridges.ttl"),
+    paste0(base, "/09-rda-neville-decomposition-profile-bridges.ttl"),
+    paste0(base, "/alignment-main.ttl"),
+    paste0(base, "/alignment-research.ttl")
   )
 }
 
@@ -200,12 +202,12 @@
       }
 
       subject <- sub("\\s.*$", "", collapsed)
-      if (!grepl("^(salmon|smn):", subject)) {
+      if (!grepl("^smn:", subject)) {
         next
       }
 
       iri <- .smn_expand_curie(subject, prefixes)
-      if (!grepl("^https?://w3id\\.org/(salmon|smn)/", iri)) {
+      if (!grepl("^https?://w3id\\.org/smn/", iri)) {
         next
       }
 

@@ -112,7 +112,8 @@ vocabularies:
 ``` r
 
 # Get semantic suggestions for your dictionary
-# For salmon-domain roles, GCDFO is queried first and OLS/NVS are fallback sources.
+# For salmon-domain roles, SMN shared terms are queried first, then GCDFO as a
+# distinct DFO-specific source before OLS/NVS fallback sources.
 dict_suggested <- suggest_semantics(df, dict)
 
 # View the suggestions

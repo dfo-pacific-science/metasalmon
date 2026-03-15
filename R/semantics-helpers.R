@@ -5,7 +5,7 @@
 #' I-ADOPT component fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
 #' `constraint_iri`), this function queries vocabulary services and ranks
 #' results by relevance, with SMN queried first for salmon-domain roles and
-#' GCDFO retained as a DFO-specific fallback.
+#' GCDFO retained as a distinct DFO-specific source.
 #'
 #' The function uses the column's label or description as the search query and
 #' returns suggestions as an attribute on the dictionary tibble. This allows
@@ -15,7 +15,7 @@
 #' @param dict A dictionary tibble created by `infer_dictionary()` (may have
 #'   incomplete semantic fields).
 #' @param sources Character vector of vocabulary sources to search. Options are
-#'   `"smn"` (Salmon Domain Ontology via content negotiation), `"gcdfo"` (DFO-specific fallback), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
+#'   `"smn"` (Salmon Domain Ontology via content negotiation), `"gcdfo"` (DFO-specific source), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
 #'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
 #'   Default is `c("smn", "gcdfo", "ols", "nvs")`.
 #' @param include_dwc Logical; if `TRUE`, also attach DwC-DP export mappings
@@ -28,15 +28,29 @@
 #'
 #' @return The dictionary tibble (unchanged) with a `semantic_suggestions`
 #'   attribute containing a tibble of suggested IRIs. The suggestions tibble
-#'   includes `dataset_id`, `table_id`, `column_name`, `dictionary_role`
-#'   (which dictionary field the suggestion targets), `label`, `iri`, `source`,
-#'   `ontology`, and `definition`. If the underlying search results include a
-#'   `score` column, it is preserved for downstream filtering.
+#'   starts with `column_name`, `dictionary_role`, `table_id`, and `dataset_id`
+#'   so the original dictionary term is visible before the candidate match.
+#'   It also includes `target_scope`, `target_sdp_file`, and
+#'   `target_sdp_field` so users can see exactly where each accepted suggestion
+#'   would land in the Salmon Data Package. Additional columns include
+#'   `search_query`, `column_label`, `column_description`, `label`, `iri`,
+#'   `source`, `ontology`, and `definition`. If the underlying search results
+#'   include a `score` column, it is preserved for downstream filtering.
 #'
 #' @details
 #' Only columns with `column_role == "measurement"` are processed, since
 #' I-ADOPT components are primarily relevant for measurement metadata. Columns
-#' with existing IRIs in a field are skipped for that field.
+#' with existing IRIs in a field are skipped for that field. Current
+#' `seed_semantics` suggestions are column-level suggestions, so
+#' `target_sdp_file` is `"column_dictionary.csv"`; the explicit target columns
+#' are included to make future dataset/table/code-level suggestion layers less
+#' ambiguous.
+#'
+#' A term can legitimately appear more than once with different
+#' `dictionary_role` values (for example as both a variable and a property).
+#' In that case, `match_type` still describes lexical match quality, while
+#' `target_sdp_field` tells you where that suggestion would be written in the
+#' package.
 #'
 #' After calling this function, access suggestions with:
 #' ```
@@ -96,6 +110,18 @@ suggest_semantics <- function(df,
     constraint_iri = "constraint",
     method_iri = "method"
   )
+  suggestion_leading_cols <- c(
+    "column_name",
+    "dictionary_role",
+    "table_id",
+    "dataset_id",
+    "target_scope",
+    "target_sdp_file",
+    "target_sdp_field",
+    "search_query",
+    "column_label",
+    "column_description"
+  )
 
   is_missing <- function(x) is.null(x) || is.na(x) || x == ""
   first_non_empty <- function(values) {
@@ -124,13 +150,28 @@ suggest_semantics <- function(df,
       if (!nzchar(role_query)) return(tibble::tibble())
       res <- search_fn(role_query, role = role_name, sources = sources)
       if (nrow(res) == 0) return(tibble::tibble())
-      res$iri <- .normalize_smn_namespace_iri(res$iri)
-      res <- res[!duplicated(res$iri), , drop = FALSE]
+      res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
       res <- utils::head(res, max_per_role)
-      res$dataset_id <- row$dataset_id
-      res$table_id <- row$table_id
       res$column_name <- row$column_name
       res$dictionary_role <- role_name
+      res$table_id <- row$table_id
+      res$dataset_id <- row$dataset_id
+      res$target_scope <- "column"
+      res$target_sdp_file <- "column_dictionary.csv"
+      res$target_sdp_field <- col_name
+      res$search_query <- role_query
+      res$column_label <- row$column_label
+      res$column_description <- row$column_description
+      optional_cols <- intersect(
+        c("score", "alignment_only", "agreement_sources", "zooma_confidence", "zooma_annotator"),
+        names(res)
+      )
+      res <- dplyr::select(
+        res,
+        dplyr::all_of(c(suggestion_leading_cols, "label", "iri", "source", "ontology", "role", "match_type", "definition")),
+        dplyr::all_of(optional_cols),
+        dplyr::everything()
+      )
       res
     })
   })
