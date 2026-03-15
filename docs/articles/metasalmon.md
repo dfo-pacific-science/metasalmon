@@ -253,15 +253,24 @@ pkg_path <- create_salmon_datapackage_from_data(
 list.files(pkg_path)
 ```
 
-> **Bootstrap note:** `create_salmon_datapackage_from_data()` is for fast first-pass output, not final publication.
-> Before sharing, run the full validation + explicit semantic workflow:
-> 1) `validate_dictionary()` and `validate_semantics()`
-> 2) `suggest_semantics()`
-> 3) `apply_semantic_suggestions()`
-> 4) `create_salmon_datapackage()`
+> **Bootstrap note:**
+> [`create_salmon_datapackage_from_data()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.md)
+> is for fast first-pass output, not final publication. Before sharing,
+> run the full validation + explicit semantic workflow: 1)
+> [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
+> and
+> [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+> 2)
+> [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+> 3)
+> [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+> 4)
+> [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
 
 For full control or staged review, use the explicit workflow in the
-[Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) guide.
+[Publishing Data
+Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
+guide.
 
 ``` r
 
