@@ -3,12 +3,16 @@
     "case_id": "exact-smn-overrides-gcdfo",
     "query": "spawner count",
     "role": "variable",
-    "expected_top": {
-      "source": "smn",
-      "iri_contains": "w3id.org/smn/NaturalSpawnerCount"
+    "expected": {
+      "top": {
+        "candidate_id": "smn-count-primary",
+        "source": "smn",
+        "iri_contains": "w3id.org/smn/NaturalSpawnerCount"
+      }
     },
     "candidates": [
       {
+        "candidate_id": "smn-count-primary",
         "label": "Spawner count",
         "iri": "https://w3id.org/smn/NaturalSpawnerCount",
         "source": "smn",
@@ -19,6 +23,7 @@
         "backend_score": 3.0
       },
       {
+        "candidate_id": "gcdfo-count-secondary",
         "label": "Spawner count",
         "iri": "https://w3id.org/gcdfo/salmon#SpawnerCount",
         "source": "gcdfo",
@@ -34,12 +39,16 @@
     "case_id": "unit-prefers-qudt",
     "query": "kilogram",
     "role": "unit",
-    "expected_top": {
-      "source": "qudt",
-      "iri_contains": "qudt.org/vocab/unit/KiloGM"
+    "expected": {
+      "top": {
+        "candidate_id": "qudt-kilogram",
+        "source": "qudt",
+        "iri_contains": "qudt.org/vocab/unit/KiloGM"
+      }
     },
     "candidates": [
       {
+        "candidate_id": "nvs-pound",
         "label": "Pound",
         "iri": "http://vocab.nerc.ac.uk/collection/P06/UCUP",
         "source": "nvs",
@@ -50,6 +59,7 @@
         "backend_score": 1.8
       },
       {
+        "candidate_id": "qudt-kilogram",
         "label": "kilogram",
         "iri": "http://qudt.org/vocab/unit/KiloGM",
         "source": "qudt",
@@ -65,12 +75,15 @@
     "case_id": "label-poor-definition-rich",
     "query": "juvenile salmon abundance",
     "role": "variable",
-    "expected_top": {
-      "label": "Juvenile abundance (proxy)",
-      "source": "gcdfo"
+    "expected": {
+      "top": {
+        "candidate_id": "candidateB-proxy",
+        "source": "gcdfo"
+      }
     },
     "candidates": [
       {
+        "candidate_id": "candidateA-general",
         "label": "Juvenile abundance",
         "iri": "http://example.org/candidateA",
         "source": "gcdfo",
@@ -81,6 +94,7 @@
         "backend_score": 2.2
       },
       {
+        "candidate_id": "candidateB-proxy",
         "label": "Juvenile abundance (proxy)",
         "iri": "http://example.org/candidateB",
         "source": "gcdfo",
@@ -96,11 +110,15 @@
     "case_id": "zooma-high-confidence",
     "query": "measurement identifier",
     "role": "method",
-    "expected_top": {
-      "source": "zooma"
+    "expected": {
+      "top": {
+        "candidate_id": "method-zooma",
+        "source": "zooma"
+      }
     },
     "candidates": [
       {
+        "candidate_id": "method-zooma",
         "label": "measurement identifier",
         "iri": "http://example.org/zooma-term",
         "source": "zooma",
@@ -113,6 +131,7 @@
         "backend_score": 2.0
       },
       {
+        "candidate_id": "method-ols",
         "label": "measurement identifier",
         "iri": "http://example.org/ols-term",
         "source": "ols",
@@ -128,11 +147,17 @@
     "case_id": "wikidata-penalty",
     "query": "salmon",
     "role": "entity",
-    "expected_top": {
-      "source": "worms"
+    "expected": {
+      "top": {
+        "candidate_id": "worms-salmon",
+        "source": "worms"
+      },
+      "disallow_top_sources": ["ols"],
+      "disallow_top_matches": ["Q34134"]
     },
     "candidates": [
       {
+        "candidate_id": "wd-salmon",
         "label": "Salmon",
         "iri": "http://www.wikidata.org/entity/Q34134",
         "source": "ols",
@@ -143,6 +168,7 @@
         "backend_score": 2.2
       },
       {
+        "candidate_id": "worms-salmon",
         "label": "Salmon",
         "iri": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=291",
         "source": "worms",
@@ -158,12 +184,17 @@
     "case_id": "agreement-reinforces",
     "query": "temperature",
     "role": "variable",
-    "expected_top": {
-      "source": "nvs",
-      "match_type": "label_exact"
+    "expected": {
+      "top": {
+        "candidate_id": "temp-nvs",
+        "source": "nvs",
+        "match_type": "label_exact"
+      },
+      "expected_order": ["temp-nvs", "temp-ols-shared"]
     },
     "candidates": [
       {
+        "candidate_id": "temp-nvs",
         "label": "Water temperature",
         "iri": "https://vocab.nerc.ac.uk/collection/P01/TEMP01",
         "source": "nvs",
@@ -174,6 +205,7 @@
         "backend_score": 1.8
       },
       {
+        "candidate_id": "temp-ols-shared",
         "label": "Water temperature",
         "iri": "http://example.org/shared-temp",
         "source": "ols",
@@ -182,6 +214,124 @@
         "match_type": "label_exact",
         "definition": "Observed water temperature.",
         "backend_score": 1.8
+      }
+    ]
+  },
+  {
+    "case_id": "match-type-priority",
+    "query": "fish migration status",
+    "role": "property",
+    "expected": {
+      "top": {
+        "candidate_id": "property-label-exact",
+        "source": "smn"
+      },
+      "min_margin": 0.1
+    },
+    "candidates": [
+      {
+        "candidate_id": "property-label-exact",
+        "label": "Fish migration status",
+        "iri": "https://w3id.org/smn/FishMigrationStatus",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "property",
+        "match_type": "label_exact",
+        "definition": "Migration status for fish populations.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "property-concept",
+        "label": "Migration condition",
+        "iri": "http://example.org/property-1",
+        "source": "ols",
+        "ontology": "obo",
+        "role": "property",
+        "match_type": "concept",
+        "definition": "Condition describing fish migration and movement.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "property-definition",
+        "label": "Migration",
+        "iri": "http://example.org/property-2",
+        "source": "nvs",
+        "ontology": "p01",
+        "role": "property",
+        "match_type": "definition",
+        "definition": "Fish moves from freshwater to saltwater and back.",
+        "backend_score": 2.0
+      }
+    ]
+  },
+  {
+    "case_id": "missing-definition-robustness",
+    "query": "stream discharge",
+    "role": "variable",
+    "expected": {
+      "top": {
+        "candidate_id": "discharge-label",
+        "source": "gcdfo"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "discharge-label",
+        "label": "Stream discharge",
+        "iri": "http://example.org/variable/stream-discharge",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "discharge-olslabel",
+        "label": "Discharge",
+        "iri": "http://example.org/variable/discharge-short",
+        "source": "ols",
+        "ontology": "hydro",
+        "role": "variable",
+        "match_type": "label_partial",
+        "definition": "Waterflow amount",
+        "backend_score": 2.0
+      }
+    ]
+  },
+  {
+    "case_id": "role-sensitive-constraint",
+    "query": "run escapement target",
+    "role": "constraint",
+    "expected": {
+      "top": {
+        "candidate_id": "constraint-targets",
+        "source": "smn"
+      },
+      "expected_order": ["constraint-targets", "constraint-label"]
+    },
+    "candidates": [
+      {
+        "candidate_id": "constraint-targets",
+        "label": "Run escapement target",
+        "iri": "https://w3id.org/smn/RunEscapementTarget",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "Target threshold for run escapement.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "constraint-label",
+        "label": "Target",
+        "iri": "http://example.org/constraint/target",
+        "source": "ols",
+        "ontology": "misc",
+        "role": "constraint",
+        "match_type": "label",
+        "definition": "General target value.",
+        "backend_score": 2.0
       }
     ]
   }
