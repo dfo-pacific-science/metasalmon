@@ -263,6 +263,11 @@ devtools::build_vignettes()
 pkgdown::build_site()
 ```
 
+```bash
+# Canonical source-tarball build path (writes into the repo root, not ../)
+./scripts/build-package.sh
+```
+
 ### Package Structure
 
 - `R/`: Core functions for dictionary and package operations
