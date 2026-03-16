@@ -176,9 +176,18 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 - If a column is purely administrative or custom to your survey, it is
   fine to leave `term_iri` blank and rely on your own
   `column_description`.
-- If you cannot find a fitting term, note the idea in
-  `gpt_proposed_terms.csv` and move on. You can revisit it later when
-  new terms are published.
+- If you cannot find a fitting term, use metadata-first workflows
+  (`gpt_proposed_terms.csv`) or the new gap detection tools in
+  metasalmon:
+  - [`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+    identifies candidates where SMN is missing but fallback sources
+    found useful matches.
+  - [`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md)
+    lets you choose shared SMN vs profile-specific requests and generate
+    ready-to-post issue text.
+  - [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+    creates GitHub issues (dry-run first) against the ontology request
+    template.
 
 ### Building vocabulary-aware code lists
 

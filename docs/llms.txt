@@ -367,6 +367,18 @@ Fetch the ontology and validate semantic coverage
 - [`suggest_facet_schemes()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.md)
   : Suggest facet schemes for proposed terms
 
+## Term Request Workflow
+
+Detect missing SMN terms, route shared vs profile requests, and draft
+GitHub issues
+
+- [`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+  : Detect missing semantic terms that are not covered by SMN
+- [`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md)
+  : Render GitHub-ready ontology term request payloads
+- [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+  : Submit rendered ontology term requests as GitHub issues
+
 ## NuSEDS Helpers
 
 Crosswalk legacy NuSEDS method labels to canonical method families

@@ -298,9 +298,22 @@ only when it adds clarity.</li>
 <li>If a column is purely administrative or custom to your survey, it is
 fine to leave <code>term_iri</code> blank and rely on your own
 <code>column_description</code>.</li>
-<li>If you cannot find a fitting term, note the idea in
-<code>gpt_proposed_terms.csv</code> and move on. You can revisit it
-later when new terms are published.</li>
+<li>If you cannot find a fitting term, use metadata-first workflows
+(<code>gpt_proposed_terms.csv</code>) or the new gap detection tools in
+metasalmon:
+<ul>
+<li>
+<code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> identifies candidates where
+SMN is missing but fallback sources found useful matches.</li>
+<li>
+<code><a href="../reference/render_ontology_term_request.html">render_ontology_term_request()</a></code> lets you choose shared
+SMN vs profile-specific requests and generate ready-to-post issue
+text.</li>
+<li>
+<code><a href="../reference/submit_term_request_issues.html">submit_term_request_issues()</a></code> creates GitHub issues
+(dry-run first) against the ontology request template.</li>
+</ul>
+</li>
 </ul>
 </div>
 <div class="section level3">

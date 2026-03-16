@@ -20,6 +20,7 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_cross_source_agreement.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_embedding_rerank.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-embedding_rerank_enabled.html</loc></url>
@@ -50,7 +51,9 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/suggest_dwc_mappings.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.html</loc></url>

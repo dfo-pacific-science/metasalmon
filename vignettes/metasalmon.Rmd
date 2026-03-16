@@ -169,6 +169,29 @@ Use this review table as a **scope decision**:
 - If a term is broadly used across many salmon datasets and has clear ontological intent, use the result as a **SMN ontology addition request** path.
 - If it is specific to one project/program/organization workflow (e.g., local ID patterns, internal quality flags, station code conventions), keep it in a **local controlled vocabulary**.
 
+If you want to automate that split+ask-and-render flow, use the new helper trio in the package:
+
+```{r}
+# Find unresolved terms that are likely SMN gaps
+term_gaps <- detect_semantic_term_gaps(
+  suggestions = attr(dict_suggested, "semantic_suggestions")
+)
+
+# Create request payloads. In scripts, set ask = FALSE and provide scope/profile
+# upfront; in interactive sessions, use the defaults for guided prompts.
+term_requests <- render_ontology_term_request(
+  term_gaps,
+  scope = "auto",
+  ask = interactive(),
+  profile_name = "your-program-name"
+)
+
+# Preview what would be submitted before posting:
+submit_term_request_issues(term_requests, dry_run = TRUE)
+```
+
+For production use, run the last call with `dry_run = FALSE` once your payloads look right.
+
 ---
 
 ## Step 3: Check Your Dictionary

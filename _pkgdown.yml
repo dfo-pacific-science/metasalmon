@@ -65,6 +65,13 @@ reference:
       - validate_semantics
       - suggest_facet_schemes
 
+  - title: "Term Request Workflow"
+    desc: "Detect missing SMN terms, route shared vs profile requests, and draft GitHub issues"
+    contents:
+      - detect_semantic_term_gaps
+      - render_ontology_term_request
+      - submit_term_request_issues
+
   - title: "NuSEDS Helpers"
     desc: "Crosswalk legacy NuSEDS method labels to canonical method families"
     contents:
