@@ -2,6 +2,7 @@
 
 export(apply_salmon_dictionary)
 export(apply_semantic_suggestions)
+export(benchmark_term_ranking_fixtures)
 export(create_salmon_datapackage)
 export(create_salmon_datapackage_from_data)
 export(deduplicate_proposed_terms)

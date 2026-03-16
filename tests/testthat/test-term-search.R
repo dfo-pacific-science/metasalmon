@@ -879,3 +879,44 @@ test_that("text-similarity score helpers are bounded and stable", {
   expect_equal(metasalmon:::.match_type_score("definition"), 0.15)
   expect_equal(metasalmon:::.match_type_score(""), 0)
 })
+
+test_that("benchmark helper returns profile-level and per-case ranking metrics", {
+  fixture_path <- testthat::test_path("fixtures", "semantic-ranking-fixtures.json")
+  bench <- benchmark_term_ranking_fixtures(fixture_path = fixture_path)
+
+  expect_true(is.list(bench))
+  expect_true(all(c("summary", "per_case", "profiles") %in% names(bench)))
+  expect_equal(class(bench), "metasalmon_ranking_benchmark")
+  expect_equal(nrow(bench$summary), 1L)
+  expect_gte(nrow(bench$per_case), 1L)
+  expect_true(all(c("profile", "top1_accuracy") %in% names(bench$summary)))
+  expect_true(all(c("top1_ok", "top_k_ok", "mrr", "top1_position") %in% names(bench$per_case)))
+  expect_true(bench$summary$top1_accuracy[1] >= 0.6)
+})
+
+test_that("benchmark helper can compare ranking profiles and detect sensitivity", {
+  fixture_path <- testthat::test_path("fixtures", "semantic-ranking-fixtures.json")
+
+  profiles <- list(
+    baseline = NULL,
+    no_smn = list(base_source_weight = c(smn = -100), role_preferences_enabled = TRUE)
+  )
+
+  bench <- benchmark_term_ranking_fixtures(
+    fixture_path = fixture_path,
+    profiles = profiles,
+    top_k = 2L
+  )
+
+  expect_equal(nrow(bench$summary), 2L)
+  expect_setequal(bench$summary$profile, c("baseline", "no_smn"))
+
+  baseline <- bench$summary$top1_accuracy[bench$summary$profile == "baseline"]
+  no_smn <- bench$summary$top1_accuracy[bench$summary$profile == "no_smn"]
+  expect_true(length(baseline) == 1L)
+  expect_true(length(no_smn) == 1L)
+  expect_true(no_smn <= baseline)
+
+  no_smn_cases <- subset(bench$per_case, profile == "no_smn")
+  expect_true(any(!no_smn_cases$top1_ok))
+})

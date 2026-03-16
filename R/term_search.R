@@ -1237,6 +1237,117 @@ sources_for_role <- function(role) {
   tolower(Sys.getenv("METASALMON_EMBEDDING_RERANK", unset = "")) %in% c("1", "true", "yes")
 }
 
+.ranking_profile_defaults <- function() {
+  list(
+    base_source_weight = c(
+      smn = 1.0,
+      gcdfo = 0.9,
+      ols = 0.3,
+      nvs = 0.6,
+      zooma = 0.5,
+      bioportal = 0.2,
+      qudt = 0.7,
+      gbif = 0.6,
+      worms = 0.6
+    ),
+    role_boost = list(
+      unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
+      property = c(smn = 1.6, gcdfo = 1.0, nvs = 1.0, ols = 0.5, zooma = 0.4),
+      variable = c(smn = 1.7, gcdfo = 1.3, nvs = 1.0, ols = 0.4, zooma = 0.4),
+      entity = c(smn = 1.7, gcdfo = 1.3, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
+      constraint = c(smn = 1.4, gcdfo = 1.0, ols = 0.5),
+      method = c(smn = 1.7, gcdfo = 1.3, bioportal = 0.4, ols = 0.5, zooma = 0.4)
+    ),
+    ontology_preferences = list(
+      host_bonus = 0.8,
+      slug_bonus = 0.8,
+      label_pattern_bonus = 0.4,
+      wikidata_penalty = -0.5,
+      role_priority_base = 2.5,
+      role_priority_step = 0.5
+    ),
+    match_type_weights = list(
+      label_exact = 1.0,
+      label = 0.45,
+      label_partial = 0.45,
+      zooma_high = 0.3,
+      zooma = 0.3,
+      definition = 0.15,
+      concept = 0.15,
+      other = 0.05
+    ),
+    lexical_weights = list(
+      label_overlap = 0.2,
+      definition_overlap = 0.4
+    ),
+    zooma_weights = list(
+      curated_high = 0.75,
+      curated_medium = 0.35,
+      automatic_low = -0.25
+    ),
+    cross_source_agreement = list(
+      iri_boost = 0.5,
+      label_boost = 0.2
+    ),
+    role_preferences_enabled = TRUE,
+    match_type_enabled = TRUE,
+    lexical_enabled = TRUE,
+    zooma_enabled = TRUE,
+    cross_source_enabled = TRUE,
+    backend_score_weight = 1
+  )
+}
+
+.merge_ranking_profile <- function(base, update) {
+  if (is.null(update) || length(update) == 0) {
+    return(base)
+  }
+
+  if (!is.list(base) || !is.list(update)) {
+    return(update)
+  }
+
+  out <- base
+  for (n in names(update)) {
+    if (!is.null(update[[n]]) && is.list(update[[n]]) && !is.null(base[[n]]) && is.list(base[[n]])) {
+      out[[n]] <- .merge_ranking_profile(base[[n]], update[[n]])
+    } else if (!is.null(update[[n]])) {
+      out[[n]] <- update[[n]]
+    }
+  }
+
+  out
+}
+
+.match_type_score_profiled <- function(match_type, weights) {
+  mt <- tolower(trimws(match_type %||% ""))
+  if (!nzchar(mt)) {
+    return(weights$other %||% 0)
+  }
+
+  if (mt == "label_exact") {
+    return(weights$label_exact %||% 1.0)
+  }
+
+  if (grepl("^label", mt)) {
+    return(weights$label %||% 0.45)
+  }
+
+  if (grepl("^zooma", mt)) {
+    return(weights$zooma %||% 0.3)
+  }
+
+  if (mt %in% c("definition", "concept")) {
+    return(weights$definition %||% 0.15)
+  }
+
+  weights$other %||% 0.05
+}
+
+.apply_match_type_score <- function(match_type, match_type_weights) {
+  .match_type_score_profiled(match_type, match_type_weights)
+}
+
 #' Apply cross-source agreement boosting (Phase 4)
 #'
 #' Boosts terms that appear from multiple sources, indicating higher confidence.
@@ -1244,9 +1355,11 @@ sources_for_role <- function(role) {
 #' label-only agreement (same label, different IRIs).
 #'
 #' @param df Data frame of term results with score column
+#' @param iri_boost Per-additional-source boost when IRI matches
+#' @param label_boost Per-additional-source boost when only label matches
 #' @return Data frame with agreement boosts applied and agreement_sources column
 #' @keywords internal
-.apply_cross_source_agreement <- function(df) {
+.apply_cross_source_agreement <- function(df, iri_boost = 0.5, label_boost = 0.2) {
   if (nrow(df) < 2) {
     df$agreement_sources <- 1L
     return(df)
@@ -1265,25 +1378,30 @@ sources_for_role <- function(role) {
   names(label_counts)[2] <- "label_source_count"
 
   # Merge counts back
-
   df <- merge(df, iri_counts, by = "iri_norm", all.x = TRUE)
   df <- merge(df, label_counts, by = "label_norm", all.x = TRUE)
 
+  iri_boost <- suppressWarnings(as.numeric(iri_boost))
+  label_boost <- suppressWarnings(as.numeric(label_boost))
+  if (!is.finite(iri_boost)) {
+    iri_boost <- 0.5
+  }
+  if (!is.finite(label_boost)) {
+    label_boost <- 0.2
+  }
+
   # Apply boosts:
-  # - IRI agreement (2+ sources): +0.5 per additional source (strong signal)
-  # - Label-only agreement (2+ sources, no IRI match): +0.2 per additional source
   df$score <- df$score + ifelse(
     df$iri_source_count > 1,
-    (df$iri_source_count - 1) * 0.5,  # IRI agreement boost
+    (df$iri_source_count - 1L) * iri_boost,
     ifelse(
       df$label_source_count > 1,
-      (df$label_source_count - 1) * 0.2,  # Label-only agreement boost
+      (df$label_source_count - 1L) * label_boost,
       0
     )
   )
 
   # Record agreement for explainability
-
   df$agreement_sources <- pmax(df$iri_source_count, df$label_source_count)
 
   # Clean up temp columns
@@ -1295,35 +1413,36 @@ sources_for_role <- function(role) {
   df
 }
 
-.score_and_rank_terms <- function(df, role, vocab_tbl, query = NULL) {
-if (nrow(df) == 0) {
+
+
+.score_and_rank_terms <- function(df, role, vocab_tbl, query = NULL, ranking_profile = NULL) {
+  if (nrow(df) == 0) {
     return(df)
   }
 
-  # Load role-based ontology preferences (Phase 2)
-  role_prefs <- .role_preferences()
+  profile <- .merge_ranking_profile(.ranking_profile_defaults(), ranking_profile)
+  base_source_weight <- as.list(profile$base_source_weight)
+  role_boost_map <- profile$role_boost
+  ontology_prefs_cfg <- profile$ontology_preferences
+  match_type_weights <- profile$match_type_weights
+  lexical_weights <- profile$lexical_weights
+  zooma_weights <- profile$zooma_weights
+  cross_source_cfg <- profile$cross_source_agreement
 
-  # Base source weights - updated for new sources
-  base_source_weight <- c(
-    smn = 1.0,
-    gcdfo = 0.9,
-    ols = 0.3,
-    nvs = 0.6,
-    zooma = 0.5,
-    bioportal = 0.2,
-    qudt = 0.7,  # High weight for QUDT (preferred for units)
-    gbif = 0.6,  # High weight for GBIF (preferred for entities)
-    worms = 0.6  # High weight for WoRMS (preferred for entities)
-  )
+  role_prefs <- if (isTRUE(profile$role_preferences_enabled)) {
+    .role_preferences()
+  } else {
+    NULL
+  }
 
-  # Role-specific source boosts (Phase 2: ontology preferences by role)
-  role_boost <- list(
-    unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
-    property = c(smn = 1.6, gcdfo = 1.0, nvs = 1.0, ols = 0.5, zooma = 0.4),
-    variable = c(smn = 1.7, gcdfo = 1.3, nvs = 1.0, ols = 0.4, zooma = 0.4),
-    entity = c(smn = 1.7, gcdfo = 1.3, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
-    constraint = c(smn = 1.4, gcdfo = 1.0, ols = 0.5),
-    method = c(smn = 1.7, gcdfo = 1.3, bioportal = 0.4, ols = 0.5, zooma = 0.4)
+  role_prefs <- role_prefs %||% tibble::tibble(
+    role = character(),
+    ontology = character(),
+    priority = integer(),
+    source_hint = character(),
+    iri_pattern = character(),
+    alignment_only = logical(),
+    notes = character()
   )
 
   role_key <- if (is.null(role) || is.na(role)) NA_character_ else role
@@ -1333,9 +1452,12 @@ if (nrow(df) == 0) {
   slug_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$slug), collapse = "|") else ""
   label_pattern <- if (nrow(role_vocabs) > 0) paste(unique(role_vocabs$label_tokens), collapse = "|") else ""
 
-  df$score <- vapply(df$source, function(src) base_source_weight[[src]] %||% 0.1, numeric(1))
+  df$score <- vapply(df$source, function(src) {
+    as.numeric(base_source_weight[[src]] %||% 0.1)
+  }, numeric(1))
+
   if ("backend_score" %in% names(df)) {
-    df$score <- df$score + dplyr::coalesce(df$backend_score, 0)
+    df$score <- df$score + (dplyr::coalesce(df$backend_score, 0) * as.numeric(profile$backend_score_weight %||% 1))
   }
 
   query_tokens <- character()
@@ -1344,16 +1466,55 @@ if (nrow(df) == 0) {
     query_tokens <- query_tokens[nzchar(query_tokens)]
   }
 
-  role_map <- role_boost[[role_key]] %||% numeric(0)
+  role_map <- role_boost_map[[role_key]] %||% numeric(0)
   if (length(role_map) > 0) {
-    df$score <- df$score + vapply(df$source, function(src) role_map[[src]] %||% 0, numeric(1))
+    df$score <- df$score + vapply(df$source, function(src) as.numeric(role_map[[src]] %||% 0), numeric(1))
   }
 
   # Apply ontology preference boosts based on IRI patterns (Phase 2)
   if (nrow(role_prefs) > 0 && !is.na(role_key)) {
     role_specific_prefs <- dplyr::filter(role_prefs, .data$role == role_key | .data$role == "wikidata")
     if (nrow(role_specific_prefs) > 0) {
-      # Apply priority-based boost: higher priority (lower number) = bigger boost
+      host_boost <- as.numeric(ontology_prefs_cfg$host_bonus %||% 0)
+      slug_boost <- as.numeric(ontology_prefs_cfg$slug_bonus %||% 0)
+      label_pat_boost <- as.numeric(ontology_prefs_cfg$label_pattern_bonus %||% 0)
+      wikidata_penalty <- as.numeric(ontology_prefs_cfg$wikidata_penalty %||% 0)
+      role_priority_base <- as.numeric(ontology_prefs_cfg$role_priority_base %||% 2.5)
+      role_priority_step <- as.numeric(ontology_prefs_cfg$role_priority_step %||% 0.5)
+
+      if (!is.finite(host_boost)) {
+        host_boost <- 0
+      }
+      if (!is.finite(slug_boost)) {
+        slug_boost <- 0
+      }
+      if (!is.finite(label_pat_boost)) {
+        label_pat_boost <- 0
+      }
+      if (!is.finite(wikidata_penalty)) {
+        wikidata_penalty <- -0.5
+      }
+      if (!is.finite(role_priority_base)) {
+        role_priority_base <- 2.5
+      }
+      if (!is.finite(role_priority_step)) {
+        role_priority_step <- 0.5
+      }
+
+      if (host_pattern != "") {
+        df$score <- df$score + ifelse(grepl(host_pattern, df$iri, ignore.case = TRUE), host_boost, 0)
+      }
+      if (slug_pattern != "") {
+        df$score <- df$score + ifelse(
+          grepl(slug_pattern, df$iri, ignore.case = TRUE) | grepl(slug_pattern, df$ontology, ignore.case = TRUE),
+          slug_boost,
+          0
+        )
+      }
+      if (label_pattern != "") {
+        df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), label_pat_boost, 0)
+      }
+
       df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
         iri <- df$iri[i]
         boost <- 0
@@ -1364,15 +1525,14 @@ if (nrow(df) == 0) {
 
           # Check if IRI matches this ontology preference
           if (!is.na(pattern) && nzchar(pattern) && grepl(pattern, iri, ignore.case = TRUE)) {
-            # Wikidata is alignment-only: penalize instead of boost
             if (isTRUE(pref$alignment_only)) {
-              boost <- boost - 0.5
+              boost <- wikidata_penalty
             } else {
               # Priority 1 = +2.0, Priority 2 = +1.5, Priority 3 = +1.0, etc.
-              priority_boost <- max(0, 2.5 - (pref$priority * 0.5))
+              priority_boost <- max(0, role_priority_base - (pref$priority * role_priority_step))
               boost <- boost + priority_boost
             }
-            break  # Use first matching preference
+            break
           }
         }
         boost
@@ -1380,64 +1540,86 @@ if (nrow(df) == 0) {
     }
   }
 
-  # I-ADOPT vocabulary matching (legacy, still useful for broad coverage)
-  if (host_pattern != "") {
-    df$score <- df$score + ifelse(grepl(host_pattern, df$iri, ignore.case = TRUE), 0.8, 0)
-  }
-  if (slug_pattern != "") {
-    df$score <- df$score + ifelse(
-      grepl(slug_pattern, df$iri, ignore.case = TRUE) | grepl(slug_pattern, df$ontology, ignore.case = TRUE),
-      0.8, 0
-    )
-  }
-  if (label_pattern != "") {
-    df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), 0.4, 0)
-  }
-
   # Match-type and lexical overlap scoring
   if (length(query_tokens) > 0) {
-    # Match-type prior is especially useful for resolving near-ties.
-    df$score <- df$score + vapply(df$match_type, .match_type_score, numeric(1))
+    if (isTRUE(profile$match_type_enabled)) {
+      df$score <- df$score + vapply(df$match_type, function(mt) .apply_match_type_score(mt, match_type_weights), numeric(1))
+    }
 
-    # Label overlap remains useful for compact strings.
-    df$score <- df$score + vapply(df$label, function(lbl) {
-      lbl_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(lbl %||% "")), "\\s+")[[1]])
-      lbl_tokens <- lbl_tokens[nzchar(lbl_tokens)]
-      overlaps <- intersect(query_tokens, lbl_tokens)
-      length(overlaps) * 0.2
-    }, numeric(1))
-
-    # Definition overlap helps when labels are terse but definitions are informative.
-    df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
-      q <- paste(query_tokens, collapse = " ")
-      if (!nzchar(q)) {
-        0
-      } else {
-        txt_tokens <- .query_tokens(df$definition[[i]] %||% "")
-        def_overlap <- intersect(query_tokens, txt_tokens)
-        0.4 * (length(def_overlap) / length(query_tokens))
+    if (isTRUE(profile$lexical_enabled)) {
+      label_overlap_weight <- as.numeric(lexical_weights$label_overlap %||% 0)
+      definition_overlap_weight <- as.numeric(lexical_weights$definition_overlap %||% 0)
+      if (!is.finite(label_overlap_weight)) {
+        label_overlap_weight <- 0
       }
-    }, numeric(1))
+      if (!is.finite(definition_overlap_weight)) {
+        definition_overlap_weight <- 0
+      }
+
+      # Label overlap remains useful for compact strings.
+      df$score <- df$score + vapply(df$label, function(lbl) {
+        lbl_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(lbl %||% "")), "\\s+")[[1]])
+        lbl_tokens <- lbl_tokens[nzchar(lbl_tokens)]
+        overlaps <- intersect(query_tokens, lbl_tokens)
+        length(overlaps) * label_overlap_weight
+      }, numeric(1))
+
+      # Definition overlap helps when labels are terse but definitions informative.
+      df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+        q <- paste(query_tokens, collapse = " ")
+        if (!nzchar(q)) {
+          0
+        } else {
+          txt_tokens <- .query_tokens(df$definition[[i]] %||% "")
+          def_overlap <- intersect(query_tokens, txt_tokens)
+          definition_overlap_weight * (length(def_overlap) / length(query_tokens))
+        }
+      }, numeric(1))
+    }
   }
 
-  # ZOOMA confidence weighting (Phase 4 prework)
-  if ("zooma_confidence" %in% names(df)) {
-    conf <- tolower(df$zooma_confidence %||% NA_character_) # nolint
+  # ZOOMA confidence weighting
+  if (isTRUE(profile$zooma_enabled) && "zooma_confidence" %in% names(df)) {
+    conf <- tolower(df$zooma_confidence %||% NA_character_)
     annot <- tolower(df$zooma_annotator %||% NA_character_)
     is_curated <- !is.na(annot) & grepl("curated|manual", annot)
-    is_automatic <- !is.na(annot) & !is_curated # nolint
+    is_automatic <- !is.na(annot) & !is_curated
+
+    curated_high <- as.numeric(zooma_weights$curated_high %||% 0.75)
+    curated_medium <- as.numeric(zooma_weights$curated_medium %||% 0.35)
+    automatic_low <- as.numeric(zooma_weights$automatic_low %||% -0.25)
+    if (!is.finite(curated_high)) {
+      curated_high <- 0.75
+    }
+    if (!is.finite(curated_medium)) {
+      curated_medium <- 0.35
+    }
+    if (!is.finite(automatic_low)) {
+      automatic_low <- -0.25
+    }
 
     df$score <- df$score + dplyr::case_when(
-      is_curated & conf %in% c("high", "good") ~ 0.75,
-      is_curated & conf %in% c("medium") ~ 0.35,
-      is_automatic & conf %in% c("low") ~ -0.25,
+      is_curated & conf %in% c("high", "good") ~ curated_high,
+      is_curated & conf %in% c("medium") ~ curated_medium,
+      is_automatic & conf %in% c("low") ~ automatic_low,
       TRUE ~ 0
     )
   }
 
   # Cross-source agreement boosting (Phase 4)
-  # Boost terms that appear from multiple sources (same IRI or same label)
-  df <- .apply_cross_source_agreement(df)
+  if (isTRUE(profile$cross_source_enabled)) {
+    iri_boost <- as.numeric(cross_source_cfg$iri_boost %||% 0.5)
+    label_boost <- as.numeric(cross_source_cfg$label_boost %||% 0.2)
+    if (!is.finite(iri_boost)) {
+      iri_boost <- 0.5
+    }
+    if (!is.finite(label_boost)) {
+      label_boost <- 0.2
+    }
+    df <- .apply_cross_source_agreement(df, iri_boost = iri_boost, label_boost = label_boost)
+  } else {
+    df$agreement_sources <- 1L
+  }
 
   # Optional embedding-based reranking (Phase 4)
   # Enabled via METASALMON_EMBEDDING_RERANK=1 environment variable
@@ -1450,6 +1632,268 @@ if (nrow(df) == 0) {
 
   df[order(-df$score, df$source, df$ontology, df$label, df$iri), ]
 }
+
+
+#' Benchmark semantic term ranking against fixture cases
+#'
+#' Evaluate ranking quality across a curated fixture dataset to support profile tuning.
+#'
+#' @param fixture_path Path to semantic ranking fixture JSON.
+#'   The file should contain a list of case objects with `query`, `role`,
+#'   `expected`, and `candidates` fields.
+#' @param profiles Named list of ranking profiles. Each element should be a list of
+#'   overrides merged into the default profile used by
+#'   `.score_and_rank_terms()`. If `NULL`, a single `baseline` profile is run.
+#' @param top_k Optional top-k cutoff for top-k accuracy and hit position checks.
+#' @param include_details Return per-case diagnostics table (TRUE by default).
+#' @param fixture_path_override Optional preloaded fixture object. If provided,
+#'   `fixture_path` is ignored and this value is used as the fixture list.
+#' @return A list with `summary`, `per_case`, and `profiles`.
+#' @export
+benchmark_term_ranking_fixtures <- function(fixture_path = NULL, profiles = NULL, top_k = 3L, include_details = TRUE, fixture_path_override = NULL) {
+  if (is.null(fixture_path) && is.null(fixture_path_override)) {
+    stop("fixture_path is required unless fixture_path_override is provided")
+  }
+
+  fixtures <- if (!is.null(fixture_path_override)) {
+    fixture_path_override
+  } else {
+    jsonlite::fromJSON(fixture_path, simplifyDataFrame = FALSE)
+  }
+
+  if (!is.list(fixtures) || length(fixtures) == 0) {
+    stop("fixture must be a non-empty list")
+  }
+
+  if (is.null(profiles) || length(profiles) == 0) {
+    profiles <- list(baseline = NULL)
+  }
+  if (is.null(names(profiles)) || any(!nzchar(names(profiles)))) {
+    names(profiles) <- if (is.null(names(profiles)) || any(!nzchar(names(profiles)))) {
+      vapply(seq_along(profiles), function(i) paste0("profile_", i), character(1))
+    } else names(profiles)
+  }
+
+  top_k <- as.integer(top_k)
+  if (!is.finite(top_k) || top_k < 1) {
+    top_k <- 3L
+  }
+
+  vocab_tbl <- .iadopt_vocab()
+
+  eval_case <- function(case, profile) {
+    candidate_df <- .build_fixture_candidates(case)
+    ranked <- .score_and_rank_terms(
+      candidate_df,
+      case$role,
+      vocab_tbl,
+      case$query,
+      ranking_profile = profile
+    )
+
+    top <- ranked[1, , drop = FALSE]
+    expected <- case$expected
+    expected_top <- expected$top %||% list()
+
+    top1_position <- .fixture_expected_position(ranked, expected_top)
+    expected_order <- .fixture_expected_order_check(ranked, expected)
+    top1_match <- !is.na(top1_position) && top1_position == 1L
+
+    disallow <- .fixture_disallowed_top_violation(top, expected)
+
+    top2 <- if (nrow(ranked) >= 2L) ranked$score[[2L]] else NA_real_
+    top1_margin <- if (nrow(ranked) >= 2L) top$score[[1L]] - top2 else NA_real_
+
+    if (include_details) {
+      tibble::tibble(
+        case_id = case$case_id %||% NA_character_,
+        query = case$query,
+        role = case$role %||% NA_character_,
+        n_candidates = nrow(ranked),
+        top1_candidate_id = top$candidate_id[[1]],
+        top1_source = top$source[[1]],
+        top1_match_type = top$match_type[[1]],
+        top1_score = top$score[[1]],
+        top1_margin = top1_margin,
+        top1_ok = top1_match,
+        top1_position = top1_position,
+        top_k_ok = !is.na(top1_position) && top1_position <= top_k,
+        expected_order_ok = expected_order,
+        disallowed_top_source = disallow$disallowed_source,
+        disallowed_top_match = disallow$disallowed_match,
+        mrr = if (is.na(top1_position)) NA_real_ else 1 / top1_position
+      )
+    } else {
+      NULL
+    }
+  }
+
+  profile_results <- list()
+  per_case <- list()
+  for (name in names(profiles)) {
+    prof <- profiles[[name]]
+    case_rows <- purrr::map(fixtures, function(case) eval_case(case, prof))
+
+    if (include_details) {
+      case_tbl <- dplyr::bind_rows(case_rows)
+      case_tbl$profile <- name
+    } else {
+      case_tbl <- tibble::tibble()
+      case_tbl$profile <- name
+    }
+
+    summary_tbl <- if (nrow(case_tbl) > 0) {
+      tibble::tibble(
+        profile = name,
+        n_cases = nrow(case_tbl),
+        top1_accuracy = mean(case_tbl$top1_ok, na.rm = TRUE),
+        top_k_accuracy = mean(case_tbl$top_k_ok, na.rm = TRUE),
+        expected_order_accuracy = mean(case_tbl$expected_order_ok, na.rm = TRUE),
+        no_disallow_rate = 1 - mean(case_tbl$disallowed_top_source | case_tbl$disallowed_top_match, na.rm = TRUE),
+        mean_top1_margin = mean(case_tbl$top1_margin, na.rm = TRUE),
+        mrr = mean(case_tbl$mrr, na.rm = TRUE)
+      )
+    } else {
+      tibble::tibble(
+        profile = name,
+        n_cases = 0L,
+        top1_accuracy = NA_real_,
+        top_k_accuracy = NA_real_,
+        expected_order_accuracy = NA_real_,
+        no_disallow_rate = NA_real_,
+        mean_top1_margin = NA_real_,
+        mrr = NA_real_
+      )
+    }
+
+    profile_results[[name]] <- list(per_case = case_tbl, summary = summary_tbl)
+    per_case[[name]] <- case_tbl
+  }
+
+  all_case_tbl <- if (include_details) {
+    dplyr::bind_rows(per_case)
+  } else {
+    tibble::tibble(profile = names(profiles))
+  }
+
+  all_summary <- dplyr::bind_rows(lapply(profile_results, function(x) x$summary))
+
+  structure(
+    list(
+      summary = all_summary,
+      per_case = all_case_tbl,
+      profiles = names(profiles)
+    ),
+    class = "metasalmon_ranking_benchmark"
+  )
+}
+
+.fixture_expected_position <- function(ranked_df, expected_top) {
+  if (length(expected_top) == 0) {
+    return(NA_integer_)
+  }
+  expected_id <- expected_top$candidate_id %||% NULL
+  expected_source <- expected_top$source %||% NULL
+  expected_match_type <- expected_top$match_type %||% NULL
+  expected_iri_contains <- expected_top$iri_contains %||% NULL
+
+  for (i in seq_len(nrow(ranked_df))) {
+    candidate <- ranked_df[i, ]
+    if (!is.null(expected_id) && nzchar(expected_id) && candidate$candidate_id[[1]] == expected_id) {
+      return(i)
+    }
+    if (!is.null(expected_iri_contains) && nzchar(expected_iri_contains) && grepl(expected_iri_contains, candidate$iri[[1]], fixed = TRUE)) {
+      return(i)
+    }
+    if (!is.null(expected_source) && nzchar(expected_source) && candidate$source[[1]] == expected_source) {
+      if (!is.null(expected_match_type) && nzchar(expected_match_type)) {
+        if (!is.null(candidate$match_type) && candidate$match_type[[1]] == expected_match_type) {
+          return(i)
+        }
+      } else {
+        return(i)
+      }
+    }
+  }
+  NA_integer_
+}
+
+.fixture_expected_order_check <- function(ranked_df, expected) {
+  expected_order <- expected$expected_order %||% NULL
+  if (is.null(expected_order) || length(expected_order) == 0) {
+    return(TRUE)
+  }
+
+  if (nrow(ranked_df) < length(expected_order)) {
+    return(FALSE)
+  }
+
+  candidate_ids <- ranked_df$candidate_id %||% as.character(seq_len(nrow(ranked_df)))
+  for (i in seq_along(expected_order)) {
+    if (candidate_ids[[i]] != expected_order[[i]]) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
+.fixture_disallowed_top_violation <- function(top_row, expected) {
+  if (nrow(top_row) == 0) {
+    return(list(disallowed_source = FALSE, disallowed_match = FALSE))
+  }
+
+  top <- top_row[1, , drop = FALSE]
+  disallowed_source <- FALSE
+  disallowed_match <- FALSE
+
+  if (!is.null(expected$disallow_top_sources)) {
+    bad_sources <- unlist(expected$disallow_top_sources)
+    disallowed_source <- top$source[[1]] %in% bad_sources
+  }
+
+  if (!is.null(expected$disallow_top_matches)) {
+    bad_matches <- unlist(expected$disallow_top_matches)
+    disallowed_match <- any(vapply(bad_matches, function(x) {
+      is.character(top$iri[[1]]) && grepl(x, top$iri[[1]], fixed = TRUE)
+    }, logical(1)))
+  }
+
+  list(disallowed_source = disallowed_source, disallowed_match = disallowed_match)
+}
+
+.build_fixture_candidates <- function(case) {
+  if (!"candidates" %in% names(case)) {
+    stop("fixture case missing candidates")
+  }
+
+  candidate_df <- dplyr::bind_rows(case$candidates)
+  for (col in c("candidate_id", "role_hints", "zooma_confidence", "zooma_annotator", "alignment_only", "agreement_sources", "backend_score")) {
+    if (!col %in% names(candidate_df)) {
+      candidate_df[[col]] <- switch(
+        col,
+        candidate_id = as.character(seq_len(nrow(candidate_df))),
+        role_hints = NA_character_,
+        zooma_confidence = NA_character_,
+        zooma_annotator = NA_character_,
+        alignment_only = FALSE,
+        agreement_sources = as.integer(1L),
+        backend_score = 0,
+        candidate_df[[col]]
+      )
+    }
+  }
+
+  candidate_df$alignment_only <- as.logical(candidate_df$alignment_only)
+  candidate_df$agreement_sources <- as.integer(candidate_df$agreement_sources)
+  candidate_df$backend_score <- as.numeric(candidate_df$backend_score)
+  candidate_df$candidate_id <- as.character(candidate_df$candidate_id)
+  candidate_df$zooma_confidence <- as.character(candidate_df$zooma_confidence)
+  candidate_df$zooma_annotator <- as.character(candidate_df$zooma_annotator)
+
+  candidate_df
+}
+
+
 
 utils::globalVariables(c(
   "ttl_url",
