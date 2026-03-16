@@ -345,7 +345,8 @@ Create and read Salmon Data Packages
 
 ## Semantic Helpers
 
-Semantic suggestion and vocabulary search capabilities
+Semantic suggestion, vocabulary search, and ranking benchmark
+capabilities
 
 - [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
   : Suggest semantic annotations for a dictionary
@@ -353,6 +354,8 @@ Semantic suggestion and vocabulary search capabilities
   : Find candidate terms across external vocabularies
 - [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
   : Get recommended sources for a given role
+- [`benchmark_term_ranking_fixtures()`](https://dfo-pacific-science.github.io/metasalmon/reference/benchmark_term_ranking_fixtures.md)
+  : Benchmark semantic term ranking against fixture cases
 - [`deduplicate_proposed_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
   : Deduplicate proposed ontology terms
 

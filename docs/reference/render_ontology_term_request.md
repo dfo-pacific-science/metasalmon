@@ -13,8 +13,7 @@ render_ontology_term_request(
   profile_name = NULL,
   scope_overrides = NULL,
   issue_labels = NULL,
-  term_request_template =
-    "https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md",
+  term_request_template = .term_request_default_template,
   ontology_repo = "dfo-pacific-science/dfo-salmon-ontology"
 )
 ```
@@ -108,16 +107,11 @@ gap <- dplyr::tibble(
   placement_rationale = "Contains internal identifier patterns."
 )
 
-render_ontology_term_request(gap, scope = "auto", ask = FALSE, profile_name = "pacific-monitoring")
-#> # A tibble: 1 × 29
-#>   dataset_id table_id column_name code_value target_scope target_sdp_file      
-#>   <chr>      <chr>    <chr>       <chr>      <chr>        <chr>                
-#> 1 d1         t1       run_id      NA         column       column_dictionary.csv
-#> # ℹ 23 more variables: target_sdp_field <chr>, target_row_key <chr>,
-#> #   dictionary_role <chr>, search_query <chr>, column_label <chr>,
-#> #   column_description <chr>, top_non_smn_source <chr>,
-#> #   top_non_smn_label <chr>, top_non_smn_iri <chr>, top_non_smn_ontology <chr>,
-#> #   top_non_smn_match_type <chr>, top_non_smn_score <dbl>,
-#> #   candidate_count <dbl>, non_smn_sources <chr>,
-#> #   placement_recommendation <chr>, placement_confidence <dbl>, …
+render_ontology_term_request(
+  gap,
+  scope = "auto",
+  ask = FALSE,
+  profile_name = "pacific-monitoring"
+)
+#> Error in render_ontology_term_request(gap, scope = "auto", ask = FALSE,     profile_name = "pacific-monitoring"): could not find function "render_ontology_term_request"
 ```

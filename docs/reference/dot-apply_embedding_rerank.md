@@ -1,8 +1,10 @@
-# Embedding-based reranking (Phase 4 placeholder)
+# Embedding/ranking re-rank utility (Phase 4)
 
-Optional reranking of term candidates using sentence embeddings. When
-enabled via `METASALMON_EMBEDDING_RERANK=1`, applies cosine similarity
-reranking over the top lexical candidates.
+Optional semantic reranking stage that uses lightweight text-similarity
+when `METASALMON_EMBEDDING_RERANK=1` is set. This is deterministic and
+dependency-light (no Python model required), and it adds a reusable
+`embedding_score` field that can later be replaced with true vector
+embeddings without changing callers.
 
 ## Usage
 
@@ -27,14 +29,3 @@ reranking over the top lexical candidates.
 ## Value
 
 Data frame with optional embedding_score column
-
-## Details
-
-Current status: placeholder infrastructure. Full implementation
-requires:
-
-- Local embedding model (e.g., sentence-transformers via reticulate)
-
-- Embedding cache to avoid repeated computation
-
-- Configurable top-k for reranking (default: top 50 lexical candidates)

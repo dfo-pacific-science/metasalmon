@@ -82,10 +82,13 @@ sample_gap <- dplyr::tibble(
   placement_confidence = 0.82,
   placement_rationale = "Local identifier-like term for workflow tracking."
 )
-reqs <- render_ontology_term_request(sample_gap, scope = "auto", ask = FALSE, profile_name = "local-program")
+reqs <- render_ontology_term_request(
+  sample_gap,
+  scope = "auto",
+  ask = FALSE,
+  profile_name = "local-program"
+)
+#> Error in render_ontology_term_request(sample_gap, scope = "auto", ask = FALSE,     profile_name = "local-program"): could not find function "render_ontology_term_request"
 submit_term_request_issues(reqs, dry_run = TRUE)
-#> # A tibble: 1 × 6
-#>   request_title         request_body request_scope issue_number issue_url status
-#>   <chr>                 <chr>        <chr>                <int> <chr>     <chr> 
-#> 1 Request new local-pr… "## Propose… profile                 NA NA        dry_r…
+#> Error in submit_term_request_issues(reqs, dry_run = TRUE): could not find function "submit_term_request_issues"
 ```

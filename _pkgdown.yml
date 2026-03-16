@@ -51,11 +51,12 @@ reference:
       - read_salmon_datapackage
 
   - title: "Semantic Helpers"
-    desc: "Semantic suggestion and vocabulary search capabilities"
+    desc: "Semantic suggestion, vocabulary search, and ranking benchmark capabilities"
     contents:
       - suggest_semantics
       - find_terms
       - sources_for_role
+      - benchmark_term_ranking_fixtures
       - deduplicate_proposed_terms
 
   - title: "Ontology + Validation"

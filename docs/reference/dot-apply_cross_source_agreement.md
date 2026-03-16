@@ -7,7 +7,7 @@ boost than label-only agreement (same label, different IRIs).
 ## Usage
 
 ``` r
-.apply_cross_source_agreement(df)
+.apply_cross_source_agreement(df, iri_boost = 0.5, label_boost = 0.2)
 ```
 
 ## Arguments
@@ -15,6 +15,14 @@ boost than label-only agreement (same label, different IRIs).
 - df:
 
   Data frame of term results with score column
+
+- iri_boost:
+
+  Per-additional-source boost when IRI matches
+
+- label_boost:
+
+  Per-additional-source boost when only label matches
 
 ## Value
 
