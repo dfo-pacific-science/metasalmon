@@ -152,8 +152,12 @@
         "candidate_id": "worms-salmon",
         "source": "worms"
       },
-      "disallow_top_sources": ["ols"],
-      "disallow_top_matches": ["Q34134"]
+      "disallow_top_sources": [
+        "ols"
+      ],
+      "disallow_top_matches": [
+        "Q34134"
+      ]
     },
     "candidates": [
       {
@@ -190,7 +194,10 @@
         "source": "nvs",
         "match_type": "label_exact"
       },
-      "expected_order": ["temp-nvs", "temp-ols-shared"]
+      "expected_order": [
+        "temp-nvs",
+        "temp-ols-shared"
+      ]
     },
     "candidates": [
       {
@@ -308,7 +315,10 @@
         "candidate_id": "constraint-targets",
         "source": "smn"
       },
-      "expected_order": ["constraint-targets", "constraint-label"]
+      "expected_order": [
+        "constraint-targets",
+        "constraint-label"
+      ]
     },
     "candidates": [
       {
@@ -332,6 +342,479 @@
         "match_type": "label",
         "definition": "General target value.",
         "backend_score": 2.0
+      }
+    ]
+  },
+  {
+    "case_id": "variable-label-exact-vs-concept-nullrole",
+    "query": "chlorophyll concentration",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "gcdfo-chloro-conc",
+        "source": "gcdfo"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-chloro",
+        "label": "chlorophyll",
+        "iri": "https://w3id.org/smn/Chlorophyll",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "concept",
+        "definition": "A variable tracking chlorophyll levels.",
+        "backend_score": 1.0
+      },
+      {
+        "candidate_id": "gcdfo-chloro-conc",
+        "label": "chlorophyll concentration",
+        "iri": "https://w3id.org/gcdfo/salmon#ChlorophyllConcentration",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Concentration metric for chlorophyll concentration.",
+        "backend_score": 1.0
+      },
+      {
+        "candidate_id": "ols-chloro",
+        "label": "chlorophyll measurement",
+        "iri": "http://example.org/chloro-measure",
+        "source": "ols",
+        "ontology": "envo",
+        "role": "variable",
+        "match_type": "label",
+        "definition": "A chlorophyll-related measure.",
+        "backend_score": 1.0
+      }
+    ]
+  },
+  {
+    "case_id": "nullrole-match-type-priority",
+    "query": "annual mortality",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "nvs-annual-mortality"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "ols-annual-def",
+        "label": "Annual mortality rate",
+        "iri": "http://example.org/annual-mort-def",
+        "source": "ols",
+        "ontology": "eco",
+        "role": "constraint",
+        "match_type": "definition",
+        "definition": "Annual mortality percentage in a cohort.",
+        "backend_score": 1.0
+      },
+      {
+        "candidate_id": "nvs-annual-mortality",
+        "label": "annual mortality",
+        "iri": "http://example.org/annual-mort-nvs",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "The annual mortality metric used for trend tracking.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "gbif-annual-mortality",
+        "label": "annual mortality",
+        "iri": "http://example.org/annual-mort-gbif",
+        "source": "gbif",
+        "ontology": "gbif",
+        "role": "constraint",
+        "match_type": "definition",
+        "definition": "Exact phrase for the mortality over a year.",
+        "backend_score": 0.2
+      }
+    ]
+  },
+  {
+    "case_id": "unit-preference-kilogram-strength",
+    "query": "gram",
+    "role": "unit",
+    "expected": {
+      "top": {
+        "candidate_id": "qudt-gram",
+        "source": "qudt"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "qudt-gram",
+        "label": "gram",
+        "iri": "http://qudt.org/vocab/unit/GM",
+        "source": "qudt",
+        "ontology": "qudt",
+        "role": "unit",
+        "match_type": "label_exact",
+        "definition": "SI unit of mass.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "nvs-gram",
+        "label": "gram",
+        "iri": "http://vocab.nerc.ac.uk/collection/P06/UL",
+        "source": "nvs",
+        "ontology": "P06",
+        "role": "unit",
+        "match_type": "label_exact",
+        "definition": "Unit used in biology and chemistry.",
+        "backend_score": 1.2
+      },
+      {
+        "candidate_id": "ols-gram",
+        "label": "g",
+        "iri": "http://example.org/g-unit",
+        "source": "ols",
+        "ontology": "uo",
+        "role": "unit",
+        "match_type": "label_exact",
+        "definition": "Gram shorthand.",
+        "backend_score": 1.0
+      }
+    ]
+  },
+  {
+    "case_id": "property-null-lexical-dominance",
+    "query": "fish stock age distribution",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "smn-age-dist"
+      },
+      "min_margin": 0.15
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-age-dist",
+        "label": "stock age distribution",
+        "iri": "http://vocab.nerc.ac.uk/collection/P01/age",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "property",
+        "match_type": "definition",
+        "definition": "Age distribution of fish stock within a population.",
+        "backend_score": 0.8
+      },
+      {
+        "candidate_id": "ols-age-dist",
+        "label": "Age distribution",
+        "iri": "http://example.org/age-dist",
+        "source": "ols",
+        "ontology": "obo",
+        "role": "property",
+        "match_type": "label_exact",
+        "definition": "Distribution of ages.",
+        "backend_score": 1.0
+      },
+      {
+        "candidate_id": "zooma-age-dist",
+        "label": "stock age",
+        "iri": "http://example.org/zooma-age",
+        "source": "zooma",
+        "ontology": "afo",
+        "role": "property",
+        "match_type": "zooma_high",
+        "definition": "Term for fish stock age.",
+        "zooma_confidence": "HIGH",
+        "zooma_annotator": "Curated annotation",
+        "backend_score": 0.4
+      }
+    ]
+  },
+  {
+    "case_id": "method-zooma-curated-versus-auto",
+    "query": "sampling uncertainty",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "zooma-auto-curated"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "zooma-automatic",
+        "label": "Sampling uncertainty",
+        "iri": "http://example.org/samp-unc-auto",
+        "source": "zooma",
+        "ontology": "afo",
+        "role": "method",
+        "match_type": "zooma_medium",
+        "definition": "Automatic annotation from text mining pipeline.",
+        "zooma_confidence": "LOW",
+        "zooma_annotator": "Automatic annotation",
+        "backend_score": 1.6
+      },
+      {
+        "candidate_id": "zooma-auto-curated",
+        "label": "Sampling uncertainty",
+        "iri": "http://example.org/samp-unc-curated",
+        "source": "zooma",
+        "ontology": "afo",
+        "role": "method",
+        "match_type": "zooma_high",
+        "definition": "Curated annotation for sampling uncertainty.",
+        "zooma_confidence": "HIGH",
+        "zooma_annotator": "Curated annotation",
+        "backend_score": 1.2
+      },
+      {
+        "candidate_id": "ols-sampling-unc",
+        "label": "Sampling uncertainty",
+        "iri": "http://example.org/samp-unc-ols",
+        "source": "ols",
+        "ontology": "obo",
+        "role": "method",
+        "match_type": "label_exact",
+        "definition": "Uncertainty in sampling measurement process.",
+        "backend_score": 0.8
+      }
+    ]
+  },
+  {
+    "case_id": "constraint-order-depth",
+    "query": "minimum safe depth",
+    "role": "constraint",
+    "expected": {
+      "expected_order": [
+        "constraint-smn-min-depth",
+        "constraint-gcdfo-depth",
+        "constraint-ols-depth"
+      ],
+      "top": {
+        "candidate_id": "constraint-smn-min-depth"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "constraint-smn-min-depth",
+        "label": "Minimum safe depth",
+        "iri": "https://w3id.org/smn/MinimumSafeDepth",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "Constraint on the minimum safe depth threshold.",
+        "backend_score": 0.8
+      },
+      {
+        "candidate_id": "constraint-gcdfo-depth",
+        "label": "minimum depth",
+        "iri": "https://w3id.org/gcdfo/salmon#MinimumDepth",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "Limit on minimum depth.",
+        "backend_score": 1.2
+      },
+      {
+        "candidate_id": "constraint-ols-depth",
+        "label": "safe minimum depth",
+        "iri": "http://example.org/depth-limit",
+        "source": "ols",
+        "ontology": "oceans",
+        "role": "constraint",
+        "match_type": "label_partial",
+        "definition": "Depth should be safe and greater than this minimum.",
+        "backend_score": 1.2
+      }
+    ]
+  },
+  {
+    "case_id": "entity-gbif-vs-worms-tiebreak",
+    "query": "Chinook salmon",
+    "role": "entity",
+    "expected": {
+      "top": {
+        "source": "gbif",
+        "match_type": "taxon"
+      },
+      "disallow_top_sources": [
+        "ols"
+      ]
+    },
+    "candidates": [
+      {
+        "candidate_id": "entity-ols-chinook",
+        "label": "Chinook salmon",
+        "iri": "http://www.wikidata.org/entity/Q1019",
+        "source": "ols",
+        "ontology": "wikidata",
+        "role": "entity",
+        "match_type": "taxon",
+        "definition": "Chinook salmon species.",
+        "backend_score": 2.0
+      },
+      {
+        "candidate_id": "entity-gbif-chinook",
+        "label": "Chinook salmon",
+        "iri": "https://www.gbif.org/species/2435094",
+        "source": "gbif",
+        "ontology": "gbif",
+        "role": "entity",
+        "match_type": "taxon",
+        "definition": "Oncorhynchus tshawytscha.",
+        "backend_score": 1.6
+      },
+      {
+        "candidate_id": "entity-worms-chinook",
+        "label": "Chinook salmon",
+        "iri": "http://example.org/worms-chinook",
+        "source": "worms",
+        "ontology": "worms",
+        "role": "entity",
+        "match_type": "taxon",
+        "definition": "Pacific ocean trout species.",
+        "backend_score": 1.5
+      }
+    ]
+  },
+  {
+    "case_id": "agreement-iri-reinforces-null-role",
+    "query": "discharge concentration",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "nvs-discharge-shared"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "ols-discharge-shared",
+        "label": "discharge concentration",
+        "iri": "http://example.org/shared/discharge-term",
+        "source": "ols",
+        "ontology": "envo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Water discharge concentration and flow metrics.",
+        "backend_score": 0.7
+      },
+      {
+        "candidate_id": "nvs-discharge-shared",
+        "label": "discharge concentration",
+        "iri": "http://example.org/shared/discharge-term",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Concentration descriptor for discharge metric.",
+        "backend_score": 0.4
+      },
+      {
+        "candidate_id": "smn-discharge-unique",
+        "label": "river discharge",
+        "iri": "https://w3id.org/smn/RiverDischarge",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "label_partial",
+        "definition": "Rate of flow in river systems.",
+        "backend_score": 0.9
+      }
+    ]
+  },
+  {
+    "case_id": "backend-weight-can-repair",
+    "query": "fish fork length",
+    "role": null,
+    "expected": {
+      "top": {
+        "candidate_id": "ols-fork-high-backend"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-fork-low-backend",
+        "label": "fork length",
+        "iri": "https://w3id.org/smn/ForkLength",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Length from snout to fork.",
+        "backend_score": 0.1
+      },
+      {
+        "candidate_id": "gcdfo-fork-low",
+        "label": "fork length",
+        "iri": "https://w3id.org/gcdfo/salmon#ForkLength",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Fork length variable for fish.",
+        "backend_score": 0.1
+      },
+      {
+        "candidate_id": "ols-fork-high-backend",
+        "label": "fish fork length",
+        "iri": "http://example.org/fork-length",
+        "source": "ols",
+        "ontology": "fish",
+        "role": "variable",
+        "match_type": "label",
+        "definition": "Common morphometric measure of fork length.",
+        "backend_score": 4.5
+      }
+    ]
+  },
+  {
+    "case_id": "expected-order-constraint-chain",
+    "query": "minimum river depth",
+    "role": "constraint",
+    "expected": {
+      "expected_order": [
+        "constraint-min-depth",
+        "constraint-ol-min-depth",
+        "constraint-gh-min-depth"
+      ],
+      "top": {
+        "candidate_id": "constraint-min-depth"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "constraint-min-depth",
+        "label": "Minimum depth",
+        "iri": "https://w3id.org/smn/MinimumDepth",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "The minimum allowed depth.",
+        "backend_score": 1.0
+      },
+      {
+        "candidate_id": "constraint-ol-min-depth",
+        "label": "Minimum depth",
+        "iri": "http://example.org/constraint-min-ol",
+        "source": "ols",
+        "ontology": "obs",
+        "role": "constraint",
+        "match_type": "label_exact",
+        "definition": "The minimum depth threshold constraint.",
+        "backend_score": 1.1
+      },
+      {
+        "candidate_id": "constraint-gh-min-depth",
+        "label": "minimum",
+        "iri": "http://example.org/constraint-min-gh",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "constraint",
+        "match_type": "label",
+        "definition": "Minimum constraint value for measurement.",
+        "backend_score": 1.0
       }
     ]
   }
