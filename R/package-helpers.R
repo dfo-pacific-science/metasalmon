@@ -417,6 +417,15 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
 #' @param format Character; resource format: `"csv"` (default, only format supported)
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists
+#' @param include_edh_xml Logical; when `TRUE`, writes an EDH XML metadata file into
+#'   the output package path using `edh_build_iso19139_xml()`.
+#' @param edh_profile One of "dfo_edh_hnap" (default) or "iso19139". Determines
+#'   whether the richer HNAP-aware profile or compact fallback profile is written
+#'   when `include_edh_xml = TRUE`.
+#' @param edh_xml_path Optional file path for the EDH output when
+#'   `include_edh_xml = TRUE`. If `NULL`, defaults to `metadata-edh-hnap.xml` for
+#'   `edh_profile = "dfo_edh_hnap"` and `metadata-iso19139.xml` for
+#'   `edh_profile = "iso19139"`.
 #'
 #' @return Invisibly returns the package path.
 #'
@@ -467,7 +476,10 @@ create_salmon_datapackage_from_data <- function(
     seed_table_meta = NULL,
     seed_dataset_meta = NULL,
     format = "csv",
-    overwrite = FALSE
+    overwrite = FALSE,
+    include_edh_xml = FALSE,
+    edh_profile = c("dfo_edh_hnap", "iso19139"),
+    edh_xml_path = NULL
 ) {
   artifacts <- infer_salmon_datapackage_artifacts(
     resources = resources,
@@ -494,6 +506,27 @@ create_salmon_datapackage_from_data <- function(
     overwrite = overwrite
   )
 
+  if (isTRUE(include_edh_xml)) {
+    edh_profile <- match.arg(edh_profile)
+    default_edh_path <- if (identical(edh_profile, "dfo_edh_hnap")) {
+      file.path(pkg_path, "metadata-edh-hnap.xml")
+    } else {
+      file.path(pkg_path, "metadata-iso19139.xml")
+    }
+
+    if (is.null(edh_xml_path)) {
+      edh_xml_path <- default_edh_path
+    }
+
+    edh_build_iso19139_xml(
+      artifacts$dataset_meta,
+      output_path = edh_xml_path,
+      profile = edh_profile
+    )
+
+    cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
+  }
+
   cli::cli_alert_warning(c(
     "Used one-shot bootstrap flow {.fn create_salmon_datapackage_from_data()}.",
     "i" = "This creates a package quickly, but semantic quality is still provisional.",
@@ -502,6 +535,7 @@ create_salmon_datapackage_from_data <- function(
     "i" = "2) Validate with {.code validate_dictionary()} and {.code validate_semantics()}",
     "i" = "3) Fill semantic fields using {.code suggest_semantics()} and {.code apply_semantic_suggestions()}",
     "i" = "4) Rebuild with {.code create_salmon_datapackage()} using reviewed metadata",
+    "i" = "If `include_edh_xml = TRUE`, validate generated XML against your local EDH profile.",
     "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html} and",
     "i" = "{.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for the full validation workflow."
   ))

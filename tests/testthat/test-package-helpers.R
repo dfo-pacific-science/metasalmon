@@ -97,12 +97,39 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
   expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
   expect_true(file.exists(file.path(pkg_path, "codes.csv")))
   expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
+  expect_false(file.exists(file.path(pkg_path, "metadata-edh-hnap.xml")))
 
   dataset <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
   tables <- readr::read_csv(file.path(pkg_path, "tables.csv"), show_col_types = FALSE)
 
   expect_equal(dataset$dataset_id[[1]], "mt-demo")
   expect_setequal(tables$table_id, c("catches", "stations"))
+
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "mt-demo2",
+    title = "MT Demo 2",
+    description = "Two table demo with explicit metadata",
+    creator = "Test",
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = "MIT",
+    temporal_start = NA_character_,
+    temporal_end = NA_character_,
+    spatial_extent = NA_character_
+  )
+
+  pkg_path_with_edh <- create_salmon_datapackage_from_data(
+    resources,
+    path = file.path(temp_dir, "package-with-edh"),
+    dataset_id = "mt-demo2",
+    seed_semantics = FALSE,
+    seed_dataset_meta = seed_dataset_meta,
+    include_edh_xml = TRUE,
+    edh_profile = "dfo_edh_hnap",
+    overwrite = TRUE
+  )
+
+  expect_true(file.exists(file.path(pkg_path_with_edh, "metadata-edh-hnap.xml")))
 })
 
 test_that("read_salmon_datapackage reads package correctly", {

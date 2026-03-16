@@ -224,6 +224,52 @@ sample!</p>
 <span><span class="va">sem_with_dwc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">dict</span>, include_dwc <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>DwC-DP mappings stay optional; keep SDP columns as canonical and use
 the DwC view only when exporting to biodiversity tooling.</p>
+</div>
+<div class="section level3">
+<h3 id="step-2b-decide-whether-missing-terms-belong-in-smn-or-in-a-projectprogram-vocabulary">Step 2b: Decide whether missing terms belong in SMN or in a
+project/program vocabulary<a class="anchor" aria-label="anchor" href="#step-2b-decide-whether-missing-terms-belong-in-smn-or-in-a-projectprogram-vocabulary"></a>
+</h3>
+<p>Not every domain term should be forced into SMN. Use this as a
+practical review step:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Identify measurement columns still without SMN-style IRIs</span></span>
+<span><span class="va">measurement_cols</span> <span class="op">&lt;-</span> <span class="va">dict</span><span class="op">$</span><span class="va">column_name</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_role</span> <span class="op">==</span> <span class="st">"measurement"</span><span class="op">]</span></span>
+<span><span class="va">missing_smn</span> <span class="op">&lt;-</span> <span class="va">dict</span><span class="op">$</span><span class="va">column_name</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">dict</span><span class="op">$</span><span class="va">term_iri</span><span class="op">)</span> <span class="op">&amp;</span> <span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">measurement_cols</span><span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Optional: run broader sources for these terms to see candidates</span></span>
+<span><span class="co"># Good candidates here can indicate:</span></span>
+<span><span class="co"># - likely SMN addition candidate (shared across programs), or</span></span>
+<span><span class="co"># - dataset-local/program-specific term for a custom controlled vocabulary</span></span>
+<span><span class="va">scope_review</span> <span class="op">&lt;-</span> <span class="fu">purrr</span><span class="fu">::</span><span class="fu"><a href="https://purrr.tidyverse.org/reference/map_dfr.html" class="external-link">map_dfr</a></span><span class="op">(</span><span class="va">missing_smn</span>, <span class="kw">function</span><span class="op">(</span><span class="va">col</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">q</span> <span class="op">&lt;-</span> <span class="va">dict</span><span class="op">$</span><span class="va">column_label</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="va">col</span><span class="op">]</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">q</span><span class="op">)</span> <span class="op">||</span> <span class="va">q</span> <span class="op">==</span> <span class="st">""</span><span class="op">)</span> <span class="va">q</span> <span class="op">&lt;-</span> <span class="va">col</span></span>
+<span></span>
+<span>  <span class="va">broader</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span></span>
+<span>    query <span class="op">=</span> <span class="va">q</span>,</span>
+<span>    sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">broader</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span>column_name <span class="op">=</span> <span class="va">col</span>, candidate_label <span class="op">=</span> <span class="cn">NA_character_</span>, candidate_iri <span class="op">=</span> <span class="cn">NA_character_</span>, source <span class="op">=</span> <span class="cn">NA_character_</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>    column_name <span class="op">=</span> <span class="va">col</span>,</span>
+<span>    candidate_label <span class="op">=</span> <span class="va">broader</span><span class="op">$</span><span class="va">label</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>    candidate_iri <span class="op">=</span> <span class="va">broader</span><span class="op">$</span><span class="va">iri</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>    source <span class="op">=</span> <span class="va">broader</span><span class="op">$</span><span class="va">source</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span>,</span>
+<span>    score <span class="op">=</span> <span class="va">broader</span><span class="op">$</span><span class="va">score</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">scope_review</span></span></code></pre></div>
+<p>Use this review table as a <strong>scope decision</strong>: - If a
+term is broadly used across many salmon datasets and has clear
+ontological intent, use the result as a <strong>SMN ontology addition
+request</strong> path. - If it is specific to one
+project/program/organization workflow (e.g., local ID patterns, internal
+quality flags, station code conventions), keep it in a <strong>local
+controlled vocabulary</strong>.</p>
 <hr>
 </div>
 </div>
@@ -231,7 +277,7 @@ the DwC view only when exporting to biodiversity tooling.</p>
 <h2 id="step-3-check-your-dictionary">Step 3: Check Your Dictionary<a class="anchor" aria-label="anchor" href="#step-3-check-your-dictionary"></a>
 </h2>
 <p>Before packaging, let’s make sure the dictionary is valid:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span></code></pre></div>
 <p><strong>What happens</strong>:</p>
 <ul>
@@ -246,7 +292,7 @@ proceeding</li>
 </ul>
 <p>If you see errors, the message will tell you what’s wrong. Common
 fixes:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example: Fix a column type that was guessed incorrectly</span></span>
 <span><span class="va">dict</span><span class="op">$</span><span class="va">value_type</span><span class="op">[</span><span class="va">dict</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"YEAR"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"integer"</span></span>
 <span></span>
@@ -263,7 +309,7 @@ fixes:</p>
 </h2>
 <p>Now we need to add some basic information about the dataset as a
 whole - who created it, what it contains, and how others can use it.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Dataset-level metadata (describes the overall dataset)</span></span>
 <span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
@@ -354,19 +400,33 @@ export)</td>
 <h2 id="step-5-create-your-data-package">Step 5: Create Your Data Package<a class="anchor" aria-label="anchor" href="#step-5-create-your-data-package"></a>
 </h2>
 <p>Now let’s bundle everything together into a shareable package:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  escapement <span class="op">=</span> <span class="va">df</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Recommended for fast first-pass bootstrap</span></span>
+<span><span class="co"># Optional: include EDH XML in the package with the default HNAP-aware profile</span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage_from_data.html">create_salmon_datapackage_from_data</a></span><span class="op">(</span></span>
 <span>  resources <span class="op">=</span> <span class="va">resources</span>,</span>
 <span>  path <span class="op">=</span> <span class="st">"my-first-package"</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  include_edh_xml <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  edh_profile <span class="op">=</span> <span class="st">"dfo_edh_hnap"</span></span>
 <span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Optional alternative: write ISO19139 profile instead</span></span>
+<span><span class="co"># pkg_path &lt;- create_salmon_datapackage_from_data(</span></span>
+<span><span class="co">#   resources = resources,</span></span>
+<span><span class="co">#   path = "my-first-package-iso",</span></span>
+<span><span class="co">#   dataset_id = "fraser-coho-2024",</span></span>
+<span><span class="co">#   table_id = "escapement",</span></span>
+<span><span class="co">#   overwrite = TRUE,</span></span>
+<span><span class="co">#   include_edh_xml = TRUE,</span></span>
+<span><span class="co">#   edh_profile = "iso19139"</span></span>
+<span><span class="co"># )</span></span>
 <span></span>
 <span><span class="co"># See what was created</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
@@ -383,7 +443,7 @@ validation + explicit semantic workflow: 1)
 <p>For full control or staged review, use the explicit workflow in the
 <a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing
 Data Packages</a> guide.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Optional explicit control (no bootstrap assumptions):</span></span>
 <span><span class="co"># artifacts &lt;- infer_salmon_datapackage_artifacts(</span></span>
 <span><span class="co">#   resources,</span></span>
@@ -406,6 +466,10 @@ Data Packages</a> guide.</p>
 <p><strong>What you get</strong>: A folder called
 <code>my-first-package/</code> containing:</p>
 <table class="table">
+<colgroup>
+<col width="40%">
+<col width="60%">
+</colgroup>
 <thead><tr class="header">
 <th>File</th>
 <th>Purpose</th>
@@ -431,6 +495,10 @@ Data Packages</a> guide.</p>
 <td><code>tables.csv</code></td>
 <td>Table-level information</td>
 </tr>
+<tr class="even">
+<td><code>metadata-edh-hnap.xml</code></td>
+<td>Optional EDH metadata export (if included in one-shot call)</td>
+</tr>
 </tbody>
 </table>
 <hr>
@@ -443,7 +511,7 @@ upload, the default <code><a href="../reference/edh_build_iso19139_xml.html">edh
 writes the richer HNAP-aware EDH XML export from
 <code>dataset_meta</code>. The older compact ISO 19139 shape is still
 available as an explicit fallback.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">edh_hnap_xml_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml_path</span><span class="op">)</span></span>
 <span></span>
@@ -489,7 +557,7 @@ complete documentation explaining what every column means.</p>
 <h2 id="reading-a-package-back">Reading a Package Back<a class="anchor" aria-label="anchor" href="#reading-a-package-back"></a>
 </h2>
 <p>Later, you (or a colleague) can load the package back into R:</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Read the package</span></span>
 <span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span></span>
@@ -543,7 +611,7 @@ troubleshooting</li>
 </h3>
 <p>This usually means a column type was guessed incorrectly. Check the
 error message and fix:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># See what types are valid</span></span>
 <span><span class="co"># string, integer, number, boolean, date, datetime</span></span>
 <span></span>
@@ -567,7 +635,7 @@ definitions of terms like “column_role”, “value_type”, etc.</p>
 <h3 id="i-want-to-add-better-descriptions">“I want to add better descriptions”<a class="anchor" aria-label="anchor" href="#i-want-to-add-better-descriptions"></a>
 </h3>
 <p>Edit the dictionary directly before creating the package:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># View and edit in RStudio</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/View.html" class="external-link">View</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>

@@ -20,7 +20,10 @@ create_salmon_datapackage_from_data(
   seed_table_meta = NULL,
   seed_dataset_meta = NULL,
   format = "csv",
-  overwrite = FALSE
+  overwrite = FALSE,
+  include_edh_xml = FALSE,
+  edh_profile = c("dfo_edh_hnap", "iso19139"),
+  edh_xml_path = NULL
 )
 ```
 
@@ -90,6 +93,20 @@ create_salmon_datapackage_from_data(
 - overwrite:
 
   Logical; if FALSE (default), errors when the target path exists.
+
+- include_edh_xml:
+
+  Logical; if TRUE, writes EDH XML metadata to the package path.
+
+- edh_profile:
+
+  Profile for EDH XML export, one of \`dfo_edh_hnap\` or \`iso19139\`.
+
+- edh_xml_path:
+
+  Optional output file path for the EDH XML. Defaults to
+  \`metadata-edh-hnap.xml\` for \`dfo_edh_hnap\` and
+  \`metadata-iso19139.xml\` for \`iso19139\`.
 
 ## Value
 

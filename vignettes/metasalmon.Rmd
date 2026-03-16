@@ -127,6 +127,48 @@ sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
 
 DwC-DP mappings stay optional; keep SDP columns as canonical and use the DwC view only when exporting to biodiversity tooling.
 
+### Step 2b: Decide whether missing terms belong in SMN or in a project/program vocabulary
+
+Not every domain term should be forced into SMN. Use this as a practical review step:
+
+```{r}
+# Identify measurement columns still without SMN-style IRIs
+measurement_cols <- dict$column_name[dict$column_role == "measurement"]
+missing_smn <- dict$column_name[is.na(dict$term_iri) & dict$column_name %in% measurement_cols]
+
+# Optional: run broader sources for these terms to see candidates
+# Good candidates here can indicate:
+# - likely SMN addition candidate (shared across programs), or
+# - dataset-local/program-specific term for a custom controlled vocabulary
+scope_review <- purrr::map_dfr(missing_smn, function(col) {
+  q <- dict$column_label[dict$column_name == col][1]
+  if (is.na(q) || q == "") q <- col
+
+  broader <- find_terms(
+    query = q,
+    sources = c("gcdfo", "ols", "nvs")
+  )
+
+  if (nrow(broader) == 0) {
+    return(tibble::tibble(column_name = col, candidate_label = NA_character_, candidate_iri = NA_character_, source = NA_character_))
+  }
+
+  tibble::tibble(
+    column_name = col,
+    candidate_label = broader$label[1],
+    candidate_iri = broader$iri[1],
+    source = broader$source[1],
+    score = broader$score[1]
+  )
+})
+
+scope_review
+```
+
+Use this review table as a **scope decision**:
+- If a term is broadly used across many salmon datasets and has clear ontological intent, use the result as a **SMN ontology addition request** path.
+- If it is specific to one project/program/organization workflow (e.g., local ID patterns, internal quality flags, station code conventions), keep it in a **local controlled vocabulary**.
+
 ---
 
 ## Step 3: Check Your Dictionary
@@ -222,13 +264,27 @@ resources <- list(
 )
 
 # Recommended for fast first-pass bootstrap
+# Optional: include EDH XML in the package with the default HNAP-aware profile
 pkg_path <- create_salmon_datapackage_from_data(
   resources = resources,
   path = "my-first-package",
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  overwrite = TRUE
+  overwrite = TRUE,
+  include_edh_xml = TRUE,
+  edh_profile = "dfo_edh_hnap"
 )
+
+# Optional alternative: write ISO19139 profile instead
+# pkg_path <- create_salmon_datapackage_from_data(
+#   resources = resources,
+#   path = "my-first-package-iso",
+#   dataset_id = "fraser-coho-2024",
+#   table_id = "escapement",
+#   overwrite = TRUE,
+#   include_edh_xml = TRUE,
+#   edh_profile = "iso19139"
+# )
 
 # See what was created
 list.files(pkg_path)
@@ -275,6 +331,7 @@ For full control or staged review, use the explicit workflow in the
 | `datapackage.json` | Machine-readable metadata |
 | `dataset.csv` | Dataset-level information |
 | `tables.csv` | Table-level information |
+| `metadata-edh-hnap.xml` | Optional EDH metadata export (if included in one-shot call) |
 
 ---
 
