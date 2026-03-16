@@ -661,3 +661,106 @@ test_that("expand_query returns original for disabled expansion", {
   expect_equal(expanded, "test")
   expect_equal(length(expanded), 1)
 })
+
+# ==========================================================================
+# Ranking fixture pack for regression safety
+# ==========================================================================
+
+test_that("ranking fixtures keep top results deterministic", {
+  fixtures <- jsonlite::fromJSON(
+    testthat::test_path("fixtures", "semantic-ranking-fixtures.json"),
+    simplifyDataFrame = FALSE
+  )
+
+  expect_true(length(fixtures) > 0)
+  vocab <- metasalmon:::.iadopt_vocab()
+
+  for (case in fixtures) {
+    candidate_df <- dplyr::bind_rows(case$candidates)
+
+    for (col in c("role_hints", "zooma_confidence", "zooma_annotator", "alignment_only", "agreement_sources")) {
+      if (!col %in% names(candidate_df)) {
+        candidate_df[[col]] <- switch(
+          col,
+          role_hints = NA_character_,
+          zooma_confidence = NA_character_,
+          zooma_annotator = NA_character_,
+          alignment_only = FALSE,
+          agreement_sources = as.integer(1L),
+          candidate_df[[col]]
+        )
+      }
+    }
+    # Ensure columns that .score_and_rank_terms expects are present.
+    candidate_df$alignment_only <- as.logical(candidate_df$alignment_only)
+    candidate_df$agreement_sources <- as.integer(candidate_df$agreement_sources)
+    candidate_df$zooma_confidence <- as.character(candidate_df$zooma_confidence)
+    candidate_df$zooma_annotator <- as.character(candidate_df$zooma_annotator)
+
+    ranked <- metasalmon:::.score_and_rank_terms(
+      candidate_df,
+      case$role,
+      vocab,
+      case$query
+    )
+
+    expect_true(nrow(ranked) >= 1)
+
+    expected <- case$expected_top
+    top <- ranked[1, , drop = FALSE]
+    if (!is.null(expected$source)) {
+      expect_equal(top$source[[1]], expected$source)
+    }
+    if (!is.null(expected$label)) {
+      expect_equal(top$label[[1]], expected$label)
+    }
+    if (!is.null(expected$iri_contains)) {
+      expect_true(grepl(expected$iri_contains, top$iri[[1]], fixed = TRUE))
+    }
+    if (!is.null(expected$match_type)) {
+      expect_equal(top$match_type[[1]], expected$match_type)
+    }
+  }
+})
+
+test_that("text-similarity rerank updates score when enabled", {
+  old_enabled <- Sys.getenv("METASALMON_EMBEDDING_RERANK", unset = NA_character_)
+  old_weight <- Sys.getenv("METASALMON_EMBEDDING_WEIGHT", unset = NA_character_)
+  on.exit({
+    if (is.na(old_enabled)) {
+      Sys.unsetenv("METASALMON_EMBEDDING_RERANK")
+    } else {
+      Sys.setenv(METASALMON_EMBEDDING_RERANK = old_enabled)
+    }
+    if (is.na(old_weight)) {
+      Sys.unsetenv("METASALMON_EMBEDDING_WEIGHT")
+    } else {
+      Sys.setenv(METASALMON_EMBEDDING_WEIGHT = old_weight)
+    }
+  }, add = TRUE)
+
+  Sys.setenv(METASALMON_EMBEDDING_RERANK = "1", METASALMON_EMBEDDING_WEIGHT = "1.5")
+
+  vocab <- metasalmon:::.iadopt_vocab()
+  ranked <- metasalmon:::.score_and_rank_terms(
+    tibble::tibble(
+      label = c("Water salinity", "Random fish measurement"),
+      iri = c("https://example.org/temp", "https://example.org/filler"),
+      source = c("ols", "ols"),
+      ontology = c("envo", "misc"),
+      role = c(NA_character_, NA_character_),
+      match_type = c("label", "label"),
+      definition = c("Concentration of salt in water", "Unrelated fish-related text"),
+      score = c(1.0, 1.0),
+      alignment_only = c(FALSE, FALSE),
+      agreement_sources = c(1L, 1L)
+    ),
+    NA_character_,
+    vocab,
+    "water salinity"
+  )
+
+  expect_true("embedding_score" %in% names(ranked))
+  expect_false(is.na(ranked$embedding_score[[1]]))
+  expect_equal(ranked$label[[1]], "Water salinity")
+})

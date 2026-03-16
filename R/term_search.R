@@ -765,6 +765,51 @@ pattern <- paste(tokens, collapse = ".*")
   if (length(x) == 0) "" else x[[1]]
 }
 
+.text_similarity_score <- function(query, label, definition) {
+  q <- tolower(trimws(query %||% ""))
+  if (!nzchar(q)) {
+    return(0)
+  }
+
+  label_text <- tolower(trimws(paste(label %||% "", definition %||% "")))
+  if (!nzchar(label_text)) {
+    return(0)
+  }
+
+  query_tokens <- .query_tokens(q)
+  candidate_tokens <- .query_tokens(label_text)
+  if (length(query_tokens) == 0 || length(candidate_tokens) == 0) {
+    return(0)
+  }
+
+  overlap <- intersect(query_tokens, candidate_tokens)
+  token_ratio <- length(overlap) / length(query_tokens)
+  phrase_bonus <- if (grepl(q, label_text, fixed = TRUE)) 0.35 else 0
+  exact_bonus <- if (identical(label_text, q)) 0.35 else 0
+  min(1, token_ratio + phrase_bonus + exact_bonus)
+}
+
+.match_type_score <- function(match_type) {
+  mt <- tolower(trimws(match_type %||% ""))
+  if (!nzchar(mt)) {
+    return(0)
+  }
+
+  if (mt == "label_exact") {
+    return(1.0)
+  }
+  if (grepl("^label", mt)) {
+    return(0.45)
+  }
+  if (grepl("^zooma", mt)) {
+    return(0.3)
+  }
+  if (mt %in% c("definition", "concept")) {
+    return(0.15)
+  }
+  0.05
+}
+
 .xml_text_values <- function(node, xpath, ns) {
   vals <- xml2::xml_text(xml2::xml_find_all(node, xpath, ns = ns))
   vals <- trimws(vals)
@@ -1116,19 +1161,16 @@ sources_for_role <- function(role) {
   )
 }
 
-#' Embedding-based reranking (Phase 4 placeholder)
+#' Embedding/ranking re-rank utility (Phase 4)
 #'
-#' Optional reranking of term candidates using sentence embeddings.
-#' When enabled via `METASALMON_EMBEDDING_RERANK=1`, applies cosine similarity
-#' reranking over the top lexical candidates.
-#'
-#' Current status: placeholder infrastructure. Full implementation requires:
-#' - Local embedding model (e.g., sentence-transformers via reticulate)
-#' - Embedding cache to avoid repeated computation
-#' - Configurable top-k for reranking (default: top 50 lexical candidates)
+#' Optional semantic reranking stage that uses lightweight text-similarity when
+#' `METASALMON_EMBEDDING_RERANK=1` is set. This is deterministic and
+#' dependency-light (no Python model required), and it adds a reusable
+#' `embedding_score` field that can later be replaced with true vector
+#' embeddings without changing callers.
 #'
 #' @param df Data frame of term results with score column
-
+#'
 #' @param query Original search query
 #' @param top_k Number of top candidates to rerank (default 50)
 #' @return Data frame with optional embedding_score column
@@ -1143,20 +1185,47 @@ sources_for_role <- function(role) {
     return(df)
   }
 
-  # Placeholder: log that embedding rerank was requested but not yet implemented
+  if (!("label" %in% names(df)) || !("definition" %in% names(df))) {
+    return(df)
+  }
 
-  # Full implementation would:
-  # 1. Take top-k candidates by lexical score
-  # 2. Embed query and candidate (label + definition) using sentence model
-  # 3. Compute cosine similarity
-  # 4. Add embedding_score column and optionally rerank
+  # Run ranking on the top-k lexical rows. Keep rest in their existing order.
+  top_n <- min(as.integer(top_k), nrow(df))
+  if (top_n < 1) {
+    return(df)
+  }
+  ranking_idx <- seq_len(nrow(df))
+  if (nrow(df) > top_n) {
+    ranking_idx <- ranking_idx[order(-df$score)][seq_len(top_n)]
+  }
 
-  # For now, just add a placeholder column
-  df$embedding_score <- NA_real_
+  sim_scores <- vapply(ranking_idx, function(i) {
+    .text_similarity_score(query, df$label[[i]], df$definition[[i]])
+  }, numeric(1))
 
-  # Issue a one-time message if debug mode is on
+  # Normalize similarity scores to [0, 1] for stable weighting.
+  sim_range <- range(sim_scores, na.rm = TRUE)
+  if (!is.finite(sim_range[1]) || !is.finite(sim_range[2]) || sim_range[1] == sim_range[2]) {
+    sim_scores <- rep(0, length(sim_scores))
+  } else {
+    sim_scores <- (sim_scores - sim_range[1]) / (sim_range[2] - sim_range[1])
+  }
+
+  # Blend with existing lexical ranking score. Weight defaults to 1.0.
+  weight <- suppressWarnings(as.numeric(Sys.getenv("METASALMON_EMBEDDING_WEIGHT", unset = "1")))
+  if (is.na(weight) || !is.finite(weight)) {
+    weight <- 1
+  }
+
+  score <- rep(NA_real_, nrow(df))
+  score[ranking_idx] <- df$score[ranking_idx] + (weight * sim_scores)
+  score[is.na(score)] <- df$score[is.na(score)]
+  df$embedding_score <- rep(NA_real_, nrow(df))
+  df$embedding_score[ranking_idx] <- sim_scores
+  df$score <- score
+
   if (tolower(Sys.getenv("METASALMON_DEBUG", unset = "")) %in% c("1", "true")) {
-    message("metasalmon: embedding rerank requested but not yet implemented (Phase 4 placeholder)")
+    message("metasalmon: embedding-style rerank applied to top candidates using text similarity")
   }
 
   df
@@ -1325,13 +1394,29 @@ if (nrow(df) == 0) {
     df$score <- df$score + ifelse(grepl(label_pattern, df$ontology, ignore.case = TRUE), 0.4, 0)
   }
 
-  # Query token overlap scoring
+  # Match-type and lexical overlap scoring
   if (length(query_tokens) > 0) {
+    # Match-type prior is especially useful for resolving near-ties.
+    df$score <- df$score + vapply(df$match_type, .match_type_score, numeric(1))
+
+    # Label overlap remains useful for compact strings.
     df$score <- df$score + vapply(df$label, function(lbl) {
       lbl_tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(lbl %||% "")), "\\s+")[[1]])
       lbl_tokens <- lbl_tokens[nzchar(lbl_tokens)]
       overlaps <- intersect(query_tokens, lbl_tokens)
       length(overlaps) * 0.2
+    }, numeric(1))
+
+    # Definition overlap helps when labels are terse but definitions are informative.
+    df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+      q <- paste(query_tokens, collapse = " ")
+      if (!nzchar(q)) {
+        0
+      } else {
+        txt_tokens <- .query_tokens(df$definition[[i]] %||% "")
+        def_overlap <- intersect(query_tokens, txt_tokens)
+        0.4 * (length(def_overlap) / length(query_tokens))
+      }
     }, numeric(1))
   }
 

@@ -1,0 +1,188 @@
+[
+  {
+    "case_id": "exact-smn-overrides-gcdfo",
+    "query": "spawner count",
+    "role": "variable",
+    "expected_top": {
+      "source": "smn",
+      "iri_contains": "w3id.org/smn/NaturalSpawnerCount"
+    },
+    "candidates": [
+      {
+        "label": "Spawner count",
+        "iri": "https://w3id.org/smn/NaturalSpawnerCount",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Count of natural spawners.",
+        "backend_score": 3.0
+      },
+      {
+        "label": "Spawner count",
+        "iri": "https://w3id.org/gcdfo/salmon#SpawnerCount",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_partial",
+        "definition": "Spawning count metric.",
+        "backend_score": 2.5
+      }
+    ]
+  },
+  {
+    "case_id": "unit-prefers-qudt",
+    "query": "kilogram",
+    "role": "unit",
+    "expected_top": {
+      "source": "qudt",
+      "iri_contains": "qudt.org/vocab/unit/KiloGM"
+    },
+    "candidates": [
+      {
+        "label": "Pound",
+        "iri": "http://vocab.nerc.ac.uk/collection/P06/UCUP",
+        "source": "nvs",
+        "ontology": "P06",
+        "role": "unit",
+        "match_type": "definition",
+        "definition": "Mass unit definition.",
+        "backend_score": 1.8
+      },
+      {
+        "label": "kilogram",
+        "iri": "http://qudt.org/vocab/unit/KiloGM",
+        "source": "qudt",
+        "ontology": "qudt",
+        "role": "unit",
+        "match_type": "label_exact",
+        "definition": "SI mass unit.",
+        "backend_score": 1.7
+      }
+    ]
+  },
+  {
+    "case_id": "label-poor-definition-rich",
+    "query": "juvenile salmon abundance",
+    "role": "variable",
+    "expected_top": {
+      "label": "Juvenile abundance (proxy)",
+      "source": "gcdfo"
+    },
+    "candidates": [
+      {
+        "label": "Juvenile abundance",
+        "iri": "http://example.org/candidateA",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "General ecological abundance metric.",
+        "backend_score": 2.2
+      },
+      {
+        "label": "Juvenile abundance (proxy)",
+        "iri": "http://example.org/candidateB",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Estimated abundance of juvenile fish by stream survey.",
+        "backend_score": 2.2
+      }
+    ]
+  },
+  {
+    "case_id": "zooma-high-confidence",
+    "query": "measurement identifier",
+    "role": "method",
+    "expected_top": {
+      "source": "zooma"
+    },
+    "candidates": [
+      {
+        "label": "measurement identifier",
+        "iri": "http://example.org/zooma-term",
+        "source": "zooma",
+        "ontology": "afo",
+        "role": "method",
+        "match_type": "zooma_high",
+        "definition": "The identifier used for a measurement.",
+        "zooma_confidence": "HIGH",
+        "zooma_annotator": "Curated annotation",
+        "backend_score": 2.0
+      },
+      {
+        "label": "measurement identifier",
+        "iri": "http://example.org/ols-term",
+        "source": "ols",
+        "ontology": "obs",
+        "role": "method",
+        "match_type": "label_exact",
+        "definition": "A value from a measurement record.",
+        "backend_score": 2.0
+      }
+    ]
+  },
+  {
+    "case_id": "wikidata-penalty",
+    "query": "salmon",
+    "role": "entity",
+    "expected_top": {
+      "source": "worms"
+    },
+    "candidates": [
+      {
+        "label": "Salmon",
+        "iri": "http://www.wikidata.org/entity/Q34134",
+        "source": "ols",
+        "ontology": "wikidata",
+        "role": "entity",
+        "match_type": "taxon",
+        "definition": "Salmon.",
+        "backend_score": 2.2
+      },
+      {
+        "label": "Salmon",
+        "iri": "https://www.marinespecies.org/aphia.php?p=taxdetails&id=291",
+        "source": "worms",
+        "ontology": "worms",
+        "role": "entity",
+        "match_type": "taxon",
+        "definition": "Fish in family Salmonidae.",
+        "backend_score": 2.2
+      }
+    ]
+  },
+  {
+    "case_id": "agreement-reinforces",
+    "query": "temperature",
+    "role": "variable",
+    "expected_top": {
+      "source": "nvs",
+      "match_type": "label_exact"
+    },
+    "candidates": [
+      {
+        "label": "Water temperature",
+        "iri": "https://vocab.nerc.ac.uk/collection/P01/TEMP01",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Temperature of water body.",
+        "backend_score": 1.8
+      },
+      {
+        "label": "Water temperature",
+        "iri": "http://example.org/shared-temp",
+        "source": "ols",
+        "ontology": "oceans",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Observed water temperature.",
+        "backend_score": 1.8
+      }
+    ]
+  }
+]
