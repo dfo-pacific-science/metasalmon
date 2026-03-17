@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,14 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.17" id="metasalmon-0017">metasalmon 0.0.17<a class="anchor" aria-label="anchor" href="#metasalmon-0017"></a></h2>
+<ul><li>Improved measurement semantic query shaping for count-like fields:
+<ul><li>split variable/property query behavior so <code>NATURAL_SPAWNERS_TOTAL</code> no longer defaults both roles to the same abundance concept,</li>
+<li>added a count-like unit fallback query (<code>count</code>) for measurement columns that clearly represent totals/counts/abundance.</li>
+</ul></li>
+<li>Added/updated regression tests for role-aware query behavior, count-like unit fallback, and unit-label backfill when applying unit suggestions.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.16" id="metasalmon-0016">metasalmon 0.0.16<a class="anchor" aria-label="anchor" href="#metasalmon-0016"></a></h2>
 <ul><li>Rewrote <code>README-review.txt</code> intro and checklist to be shorter, more first-time friendly, and more action-oriented.</li>

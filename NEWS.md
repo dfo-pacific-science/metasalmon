@@ -1,3 +1,11 @@
+metasalmon 0.0.17
+----------------
+
+- Improved measurement semantic query shaping for count-like fields:
+  - split variable/property query behavior so `NATURAL_SPAWNERS_TOTAL` no longer defaults both roles to the same abundance concept,
+  - added a count-like unit fallback query (`count`) for measurement columns that clearly represent totals/counts/abundance.
+- Added/updated regression tests for role-aware query behavior, count-like unit fallback, and unit-label backfill when applying unit suggestions.
+
 metasalmon 0.0.16
 ----------------
 

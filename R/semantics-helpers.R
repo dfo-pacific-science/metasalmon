@@ -197,6 +197,22 @@ suggest_semantics <- function(df,
     if (length(candidates) == 0) return(FALSE)
     any(grepl(pattern, candidates, ignore.case = TRUE))
   }
+  is_count_like_measurement <- function(row, base_query) {
+    value_type <- tolower(as.character(row$value_type[[1]] %||% ""))
+    text <- tolower(clean_query(paste(
+      strip_review_placeholder(row$column_name[[1]]),
+      strip_review_placeholder(row$column_label[[1]]),
+      base_query
+    )))
+    if (!nzchar(text)) return(FALSE)
+
+    has_explicit_count <- grepl("\\b(count|counts|number|numbers|num|abundance)\\b", text)
+    has_total <- grepl("\\btotal\\b", text)
+    has_organism <- grepl("\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|population|populations)\\b", text)
+    looks_integer <- value_type %in% c("integer", "int")
+
+    has_explicit_count || (has_total && has_organism) || (grepl("\\babundance\\b", text) && (has_organism || looks_integer))
+  }
   measurement_role_query <- function(row, dict, role_name) {
     desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
       ""
@@ -215,6 +231,9 @@ suggest_semantics <- function(df,
       unit_query <- strip_review_placeholder(row$unit_label[[1]])
       if (nzchar(unit_query)) {
         return(unit_query)
+      }
+      if (is_count_like_measurement(row, base_query)) {
+        return("count")
       }
       return("")
     }
@@ -241,7 +260,12 @@ suggest_semantics <- function(df,
 
     if (role_name %in% c("variable", "property")) {
       if (grepl("spawner", base_lower) && grepl("total|count|number", base_lower)) {
-        return("spawner abundance")
+        if (identical(role_name, "variable")) return("spawner abundance")
+        return("abundance")
+      }
+      if (is_count_like_measurement(row, base_query) && identical(role_name, "property")) {
+        if (grepl("\\babundance\\b", base_lower)) return("abundance")
+        return("count")
       }
     }
 

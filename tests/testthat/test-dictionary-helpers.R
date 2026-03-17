@@ -210,22 +210,23 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
 
   res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
-  expect_equal(nrow(suggestions), 5) # variable/property/entity/constraint/method (unit skipped when no unit label)
+  expect_equal(nrow(suggestions), 6) # includes count-like unit fallback query
   expect_equal(names(suggestions)[1:4], c("column_name", "dictionary_role", "table_id", "dataset_id"))
   expect_true(all(c("target_scope", "target_sdp_file", "target_sdp_field", "search_query") %in% names(suggestions)))
-  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "constraint", "method")))
+  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
   expect_true(all(suggestions$column_name == "value"))
   expect_true(all(suggestions$dataset_id == "d1"))
   expect_true(all(suggestions$table_id == "t1"))
   expect_true(all(suggestions$target_scope == "column"))
   expect_true(all(suggestions$target_sdp_file == "column_dictionary.csv"))
   expect_equal(suggestions$search_query[suggestions$dictionary_role == "variable"], "Spawner abundance estimate")
+  expect_equal(suggestions$search_query[suggestions$dictionary_role == "unit"], "count")
   expect_equal(suggestions$search_query[suggestions$dictionary_role == "entity"], "population")
   expect_equal(
     unique(suggestions[, c("dictionary_role", "target_sdp_field")]),
     tibble::tibble(
-      dictionary_role = c("variable", "property", "entity", "constraint", "method"),
-      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri")
+      dictionary_role = c("variable", "property", "entity", "unit", "constraint", "method"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
     )
   )
 
@@ -272,10 +273,48 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
   suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
 
   call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
-  expect_false(any(call_df$role == "unit"))
+  expect_true(any(call_df$role == "unit" & call_df$query == "count"))
   expect_true(any(call_df$role == "variable" & call_df$query == "spawner abundance"))
+  expect_true(any(call_df$role == "property" & call_df$query == "abundance"))
   expect_true(any(call_df$role == "constraint" & call_df$query == "natural origin"))
   expect_true(any(call_df$role == "entity" & call_df$query == "population"))
+})
+
+test_that("suggest_semantics skips unit guesses when measurement has no unit clue", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "temperature",
+    column_label = "Temperature",
+    column_description = "Water temperature measurement",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_false(any(call_df$role == "unit"))
 })
 
 test_that("apply_semantic_suggestions fills unit_label when applying unit_iri", {
@@ -308,6 +347,58 @@ test_that("apply_semantic_suggestions fills unit_label when applying unit_iri", 
   out <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
   expect_equal(out$unit_iri, "http://example.org/unit/count")
   expect_equal(out$unit_label, "count")
+})
+
+test_that("count-like unit suggestions can be applied with unit_label backfill", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "NATURAL_SPAWNERS_TOTAL",
+    column_label = "NATURAL_SPAWNERS_TOTAL",
+    column_description = "Total natural spawners",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    if (role == "unit") {
+      return(tibble::tibble(
+        label = "Count",
+        iri = "https://qudt.org/vocab/unit/COUNT",
+        source = "qudt",
+        ontology = "qudt",
+        role = role,
+        match_type = "label_exact",
+        definition = "Count unit"
+      ))
+    }
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggested <- suggest_semantics(NULL, dict, sources = c("qudt", "ols"), max_per_role = 1, search_fn = fake_search)
+  suggestions <- attr(suggested, "semantic_suggestions")
+  unit_rows <- suggestions[suggestions$dictionary_role == "unit", , drop = FALSE]
+  expect_true(nrow(unit_rows) > 0)
+  expect_true(all(unit_rows$search_query == "count"))
+
+  out <- apply_semantic_suggestions(dict, suggestions = suggestions, roles = "unit", verbose = FALSE)
+  expect_equal(out$unit_iri, "https://qudt.org/vocab/unit/COUNT")
+  expect_equal(out$unit_label, "Count")
 })
 
 test_that("suggest_semantics supports code, table, and dataset targets", {
