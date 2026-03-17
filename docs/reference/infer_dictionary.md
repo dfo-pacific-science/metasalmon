@@ -10,7 +10,7 @@ infer_dictionary(
   df,
   guess_types = TRUE,
   dataset_id = "dataset-1",
-  table_id = "table-1",
+  table_id = "table_1",
   seed_semantics = FALSE,
   semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
   semantic_max_per_role = 1,
@@ -39,7 +39,7 @@ infer_dictionary(
 
 - table_id:
 
-  Character; table identifier (default: "table-1").
+  Character; table identifier (default: "table_1").
 
 - seed_semantics:
 
@@ -85,11 +85,11 @@ infer_dictionary(
 
 ## Value
 
-A tibble with dictionary schema columns: `dataset_id`, `table_id`,
-`column_name`, `column_label`, `column_description`, `column_role`,
-`value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`,
-`required`, and I-ADOPT component fields (`property_iri`, `entity_iri`,
-`constraint_iri`, `method_iri`).
+A tibble with dictionary schema columns in canonical Salmon Data Package
+order: `dataset_id`, `table_id`, `column_name`, `column_label`,
+`column_description`, `term_iri`, `property_iri`, `entity_iri`,
+`constraint_iri`, `method_iri`, `unit_label`, `unit_iri`, `term_type`,
+`value_type`, `column_role`, `required`.
 
 ## Examples
 

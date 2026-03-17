@@ -29,7 +29,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
-Install, infer a dictionary, and validate. Then jump to the 5-minute quickstart for the full publishing workflow.
+Install, run one function, then review in Excel.
 
 ```r
 # Install from GitHub (recommended)
@@ -38,76 +38,23 @@ Install, infer a dictionary, and validate. Then jump to the 5-minute quickstart 
 
 library(metasalmon)
 
-resources <- list(
-  catches = tibble::tibble(
-    station_id = c(1L, 2L),
-    species = c("Coho", "Chinook"),
-    count = c(10L, 20L),
-    sample_date = as.Date(c("2024-01-01", "2024-01-02"))
-  ),
-  stations = tibble::tibble(
-    station_id = c(1L, 2L),
-    habitat = c("estu", "river"),
-    lat = c(50.1, 50.3),
-    lon = c(-125.4, -125.6)
-  )
-)
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
-artifacts <- infer_salmon_datapackage_artifacts(
-  resources,
+pkg_path <- create_sdp(
+  fraser_coho,
   dataset_id = "fraser-coho-2024",
-  seed_semantics = TRUE,
-  seed_verbose = FALSE
-)
-
-# Extract artifact tables
-
-dict <- artifacts$dict
-codes <- artifacts$codes
-table_meta <- artifacts$table_meta
-dataset_meta <- artifacts$dataset_meta
-
-validate_dictionary(dict)
-
-# If the top-ranked suggestions look right, explicitly apply them.
-# By default this fills only missing fields and leaves existing IRIs alone.
-if (!is.null(artifacts$semantic_suggestions)) {
-  dict <- apply_semantic_suggestions(dict, columns = "count")
-}
-
-# True one-shot path (inferred artifacts + package write)
-pkg_path <- create_salmon_datapackage_from_data(
-  resources,
-  path = "my-first-package",
-  dataset_id = "fraser-coho-2024",
-  seed_semantics = TRUE,
+  table_id = "escapement",
   overwrite = TRUE
 )
-```
 
-`create_salmon_datapackage_from_data()` is intentionally a **fast bootstrap**.
-Before sharing/ publishing, follow the explicit review path:
-
-```r
-
-artifacts <- infer_salmon_datapackage_artifacts(
-  resources,
-  dataset_id = "fraser-coho-2024",
-  seed_semantics = TRUE
-)
-artifacts$dict <- validate_dictionary(artifacts$dict)
-artifacts$dict <- validate_semantics(artifacts$dict)$dict
-artifacts$dict <- apply_semantic_suggestions(artifacts$dict)
-# ... review + tune suggestions first
-pkg_path <- create_salmon_datapackage(
-  resources,
-  artifacts$dataset_meta,
-  artifacts$table_meta,
-  artifacts$dict,
-  artifacts$codes,
-  path = "my-first-package",
-  overwrite = TRUE
-)
+# Open pkg_path and review:
+# - dataset.csv
+# - tables.csv
+# - column_dictionary.csv
+# - data/*.csv
+# - semantic_suggestions.csv (if present)
+# - README-review.txt
 ```
 
 
@@ -145,7 +92,10 @@ When you create a package, you get a folder containing:
 
 ```
 my-data-package/
-  +-- escapement.csv          # Your data
+  +-- data/
+  |   +-- escapement.csv      # Your data table(s)
+  +-- dataset.csv             # Dataset-level metadata
+  +-- tables.csv              # Table-level metadata and file paths
   +-- column_dictionary.csv   # What each column means
   +-- codes.csv               # What each code value means (if applicable)
   +-- datapackage.json        # Machine-readable metadata

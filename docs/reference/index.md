@@ -19,8 +19,10 @@ Create and read Salmon Data Packages
 
 - [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
   : Create a Salmon Data Package
+- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  : Create a Salmon Data Package directly from raw tables
 - [`create_salmon_datapackage_from_data()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.md)
-  : Create a Salmon Data Package from raw tables
+  : Create a Salmon Data Package directly from raw tables
 - [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
   : Infer Salmon Data Package artifacts from resource tables
 - [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)

@@ -1,15 +1,13 @@
 # Create a Salmon Data Package directly from raw tables
 
-Backward-compatible wrapper for
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md).
-Prefer
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-for new workflows.
+Primary one-shot wrapper: infer dictionary/table metadata/codes/dataset
+metadata from raw data tables and immediately write a review-ready
+Salmon Data Package.
 
 ## Usage
 
 ``` r
-create_salmon_datapackage_from_data(
+create_sdp(
   resources,
   path = NULL,
   dataset_id = "dataset-1",
@@ -117,3 +115,28 @@ create_salmon_datapackage_from_data(
 ## Value
 
 Invisibly returns the package path.
+
+## Details
+
+This one-shot helper creates a review-ready package by default: semantic
+suggestions are seeded and the top-ranked column-level suggestions are
+auto-applied only into missing dictionary IRI fields. The output package
+also includes `semantic_suggestions.csv` (when available) plus
+`README-review.txt` with clear Excel-based review instructions, plus
+required-field review placeholders in the inferred metadata files.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
+
+pkg <- create_sdp(
+  fraser_coho,
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement",
+  overwrite = TRUE
+)
+} # }
+```

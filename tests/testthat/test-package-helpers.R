@@ -25,7 +25,7 @@ test_that("create_salmon_datapackage creates valid package", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main Table",
     description = "Main data table",
     observation_unit = NA_character_,
@@ -58,7 +58,7 @@ test_that("create_salmon_datapackage creates valid package", {
   expect_true(file.exists(file.path(pkg_path, "tables.csv")))
   expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
   expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
-  expect_true(file.exists(file.path(pkg_path, "main_table.csv")))
+  expect_true(file.exists(file.path(pkg_path, "data", "main_table.csv")))
 })
 
 test_that("create_salmon_datapackage_from_data creates valid package", {
@@ -89,7 +89,7 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
     )
   })
 
-  expect_true(any(grepl("one-shot bootstrap flow", notes)))
+  expect_true(any(grepl("deprecated in favor of.*create_sdp", notes)))
 
   expect_true(dir.exists(pkg_path))
   expect_true(file.exists(file.path(pkg_path, "dataset.csv")))
@@ -104,6 +104,7 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
 
   expect_equal(dataset$dataset_id[[1]], "mt-demo")
   expect_setequal(tables$table_id, c("catches", "stations"))
+  expect_true(all(startsWith(tables$file_name, "data/")))
 
   seed_dataset_meta <- tibble::tibble(
     dataset_id = "mt-demo2",
@@ -130,6 +131,136 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
   )
 
   expect_true(file.exists(file.path(pkg_path_with_edh, "metadata-edh-hnap.xml")))
+})
+
+test_that("normalized dictionary column order is preserved when writing package", {
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
+  dict <- infer_dictionary(resources$main, dataset_id = "ord-1", table_id = "main")
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "ord-1",
+    title = "Order check",
+    description = "Order check",
+    creator = NA_character_,
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "ord-1",
+    table_id = "main",
+    file_name = "data/main.csv",
+    table_label = "Main",
+    description = NA_character_
+  )
+
+  pkg_path <- create_salmon_datapackage(
+    resources = resources,
+    dataset_meta = dataset_meta,
+    table_meta = table_meta,
+    dict = dict,
+    path = withr::local_tempdir(),
+    overwrite = TRUE
+  )
+
+  written <- readr::read_csv(file.path(pkg_path, "column_dictionary.csv"), show_col_types = FALSE)
+  expect_equal(
+    names(written),
+    c(
+      "dataset_id", "table_id", "column_name", "column_label", "column_description",
+      "term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri",
+      "unit_label", "unit_iri", "term_type",
+      "value_type", "column_role", "required"
+    )
+  )
+})
+
+test_that("create_sdp defaults path in getwd using dataset_id slug", {
+  withr::local_tempdir() -> tmp
+  withr::local_dir(tmp)
+
+  df <- tibble::tibble(
+    species = c("Coho", "Chinook"),
+    count = c(10L, 20L)
+  )
+
+  pkg_path <- create_sdp(
+    df,
+    dataset_id = "Fraser Coho 2024",
+    table_id = "escapement",
+    seed_semantics = FALSE,
+    overwrite = TRUE
+  )
+
+  expect_equal(normalizePath(pkg_path), normalizePath(file.path(getwd(), "fraser-coho-2024-sdp")))
+  expect_true(file.exists(file.path(pkg_path, "README-review.txt")))
+  expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
+})
+
+test_that("create_sdp writes review files and auto-applies top column suggestions", {
+  resources <- list(
+    catches = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L)
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    dict$property_iri[dict$column_name == "count"] <- "https://example.org/property-existing"
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = c("count", "count"),
+      dictionary_role = c("variable", "property"),
+      table_id = c("catches", "catches"),
+      dataset_id = c("review-demo", "review-demo"),
+      target_scope = c("column", "column"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
+      target_sdp_field = c("term_iri", "property_iri"),
+      iri = c("https://example.org/term-top", "https://example.org/property-top"),
+      label = c("Count term", "Count property"),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c("variable", "property"),
+      match_type = c("label_exact", "label_exact"),
+      definition = c(NA_character_, NA_character_)
+    )
+    dict
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "review-package"),
+        dataset_id = "review-demo",
+        seed_semantics = TRUE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  expect_true(file.exists(file.path(pkg_path, "README-review.txt")))
+  expect_true(file.exists(file.path(pkg_path, "semantic_suggestions.csv")))
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "column_dictionary.csv"), show_col_types = FALSE)
+  count_row <- dict_written[dict_written$column_name == "count", , drop = FALSE]
+  expect_equal(count_row$term_iri[[1]], "https://example.org/term-top")
+  expect_equal(count_row$property_iri[[1]], "https://example.org/property-existing")
+  expect_true(startsWith(count_row$column_description[[1]], "REVIEW REQUIRED:"))
+
+  tables_written <- readr::read_csv(file.path(pkg_path, "tables.csv"), show_col_types = FALSE)
+  expect_true(all(startsWith(tables_written$file_name, "data/")))
+  expect_true(all(startsWith(tables_written$description, "REVIEW REQUIRED:")))
+
+  dataset_written <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
+  expect_true(startsWith(dataset_written$creator[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(dataset_written$contact_name[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(dataset_written$contact_email[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(dataset_written$license[[1]], "REVIEW REQUIRED:"))
 })
 
 test_that("read_salmon_datapackage reads package correctly", {
@@ -159,7 +290,7 @@ test_that("read_salmon_datapackage reads package correctly", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main Table",
     description = "Main data table",
     observation_unit = NA_character_,
@@ -224,7 +355,7 @@ test_that("read_salmon_datapackage prefers canonical CSV metadata when datapacka
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main Table",
     description = "Main data table"
   )
@@ -286,7 +417,7 @@ test_that("create_salmon_datapackage round-trip preserves data", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main Table",
     description = "Main data table",
     observation_unit = NA_character_,
@@ -350,7 +481,7 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main Table",
     description = "Main data table",
     observation_unit = NA_character_,
@@ -422,7 +553,7 @@ test_that("create_salmon_datapackage errors on existing path without overwrite",
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main_table",
-    file_name = "main_table.csv",
+    file_name = "data/main_table.csv",
     table_label = "Main",
     description = NA_character_,
     observation_unit = NA_character_,

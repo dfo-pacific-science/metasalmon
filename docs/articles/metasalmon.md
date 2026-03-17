@@ -2,548 +2,93 @@
 
 ## Installation
 
-First, install metasalmon from GitHub:
-
 ``` r
 
-# Install from GitHub (recommended)
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
 ```
 
-## What You’ll Learn
+## One-shot Workflow
 
-By the end of this guide, you’ll be able to:
-
-- Turn your salmon data spreadsheet into a shareable “data package”
-- Create a data dictionary that explains what each column means
-- Share data that colleagues can immediately understand
-
-## What You’ll Need
-
-- R installed (version 4.4 or higher)
-- Your salmon data as a CSV file (or use our example data)
-- About 5 minutes
-
-## Video Version
-
-Prefer video? [Watch the
-walkthrough](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
-
-------------------------------------------------------------------------
-
-## Step 1: Load Your Data
-
-First, let’s load the metasalmon package and some example data. We’ll
-use a sample of NuSEDS escapement data for Fraser River coho that comes
-with the package.
+Load the built-in NuSEDS Fraser Coho sample and create a review-ready
+Salmon Data Package in one call.
 
 ``` r
 
 library(metasalmon)
 
-# Load the example data included with the package
-data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv",
-                          package = "metasalmon")
-df <- readr::read_csv(data_path, show_col_types = FALSE)
+sample_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+fraser_coho <- readr::read_csv(sample_path, show_col_types = FALSE)
 
-# Take a look at what we have
-head(df)
-```
-
-**What you see**: A table with columns like `POP_ID`, `SPECIES`,
-`ANALYSIS_YR`, `MAX_ESTIMATE`, etc.
-
-**The problem**: What does `POP_ID` mean? What are the valid values for
-`SPECIES`? If you shared this CSV with a colleague, they’d have
-questions.
-
-> **Using your own data?** Just replace the `data_path` line with your
-> file path:
->
-> ``` r
->
-> df <- readr::read_csv("path/to/your-data.csv", show_col_types = FALSE)
-> ```
-
-------------------------------------------------------------------------
-
-## Step 2: Generate a Data Dictionary
-
-metasalmon can look at your data and create a starter dictionary - a
-table that describes each column.
-
-``` r
-
-dict <- infer_dictionary(
-  df,
-  dataset_id = "fraser-coho-2024",
-  table_id = "escapement"
-)
-
-# See what it created
-print(dict)
-```
-
-**What you get**: A table with one row per column in your data,
-describing:
-
-| Field | What it means |
-|----|----|
-| `column_name` | The column name from your data |
-| `column_label` | A human-readable label (you can edit this) |
-| `value_type` | Is it text (`string`), a number (`integer`, `number`), a date? |
-| `column_role` | Is this an ID, a measurement, a category, or a date? |
-
-The dictionary is a starting point - metasalmon makes educated guesses,
-but you can (and should) review and improve the descriptions.
-
-> **Tip**: To see all columns in the dictionary, use `View(dict)` in
-> RStudio or `print(dict, width = Inf)`.
-
-### Need Help Finding Standard Terms?
-
-Not sure what the official salmon data standard term is for a column?
-The
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-function can automatically suggest standard terminology from scientific
-vocabularies:
-
-``` r
-
-# Get semantic suggestions for your dictionary
-# For salmon-domain roles, SMN shared terms are queried first, then GCDFO as a
-# distinct DFO-specific source before OLS/NVS fallback sources.
-dict_suggested <- suggest_semantics(df, dict)
-
-# View the suggestions
-suggestions <- attr(dict_suggested, "semantic_suggestions")
-head(suggestions)
-```
-
-This searches standard ontologies and vocabularies to find matching
-terms for your columns, helping you link your data to recognized
-scientific standards without making OLS/NVS the first stop for
-salmon-domain matches.
-
-> **Want faster results?** Use the [Salmon Data Standardizer
-> GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)
-> to get AI-powered suggestions for terminology, descriptions, and
-> metadata. Just upload your dictionary and data sample!
-
-``` r
-
-# Optional: include DwC-DP export mappings alongside ontology suggestions
-sem <- suggest_semantics(dict)                  # default: DwC export off
-sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
-```
-
-DwC-DP mappings stay optional; keep SDP columns as canonical and use the
-DwC view only when exporting to biodiversity tooling.
-
-### Step 2b: Decide whether missing terms belong in SMN or in a project/program vocabulary
-
-Not every domain term should be forced into SMN. Use this as a practical
-review step:
-
-``` r
-
-# Identify measurement columns still without SMN-style IRIs
-measurement_cols <- dict$column_name[dict$column_role == "measurement"]
-missing_smn <- dict$column_name[is.na(dict$term_iri) & dict$column_name %in% measurement_cols]
-
-# Optional: run broader sources for these terms to see candidates
-# Good candidates here can indicate:
-# - likely SMN addition candidate (shared across programs), or
-# - dataset-local/program-specific term for a custom controlled vocabulary
-scope_review <- purrr::map_dfr(missing_smn, function(col) {
-  q <- dict$column_label[dict$column_name == col][1]
-  if (is.na(q) || q == "") q <- col
-
-  broader <- find_terms(
-    query = q,
-    sources = c("gcdfo", "ols", "nvs")
-  )
-
-  if (nrow(broader) == 0) {
-    return(tibble::tibble(column_name = col, candidate_label = NA_character_, candidate_iri = NA_character_, source = NA_character_))
-  }
-
-  tibble::tibble(
-    column_name = col,
-    candidate_label = broader$label[1],
-    candidate_iri = broader$iri[1],
-    source = broader$source[1],
-    score = broader$score[1]
-  )
-})
-
-scope_review
-```
-
-Use this review table as a **scope decision**: - If a term is broadly
-used across many salmon datasets and has clear ontological intent, use
-the result as a **SMN ontology addition request** path. - If it is
-specific to one project/program/organization workflow (e.g., local ID
-patterns, internal quality flags, station code conventions), keep it in
-a **local controlled vocabulary**.
-
-If you want to automate that split+ask-and-render flow, use the new
-helper trio in the package:
-
-``` r
-
-# Find unresolved terms that are likely SMN gaps
-term_gaps <- detect_semantic_term_gaps(
-  suggestions = attr(dict_suggested, "semantic_suggestions")
-)
-
-# Create request payloads. In scripts, set ask = FALSE and provide scope/profile
-# upfront; in interactive sessions, use the defaults for guided prompts.
-term_requests <- render_ontology_term_request(
-  term_gaps,
-  scope = "auto",
-  ask = interactive(),
-  profile_name = "your-program-name"
-)
-
-# Preview what would be submitted before posting:
-submit_term_request_issues(term_requests, dry_run = TRUE)
-```
-
-For production use, run the last call with `dry_run = FALSE` once your
-payloads look right.
-
-------------------------------------------------------------------------
-
-## Step 3: Check Your Dictionary
-
-Before packaging, let’s make sure the dictionary is valid:
-
-``` r
-
-validate_dictionary(dict)
-```
-
-**What happens**:
-
-- **Green checkmarks** = everything looks good
-- **Warnings** = optional improvements you could make
-- **Errors** = things you need to fix before proceeding
-
-If you see errors, the message will tell you what’s wrong. Common fixes:
-
-``` r
-
-# Example: Fix a column type that was guessed incorrectly
-dict$value_type[dict$column_name == "YEAR"] <- "integer"
-
-# Example: Add a better description
-dict$column_description[dict$column_name == "POP_ID"] <-
-  "Unique population identifier from the NuSEDS database"
-
-# Validate again
-validate_dictionary(dict)
-```
-
-------------------------------------------------------------------------
-
-## Step 4: Describe Your Dataset
-
-Now we need to add some basic information about the dataset as a whole -
-who created it, what it contains, and how others can use it.
-
-``` r
-
-# Dataset-level metadata (describes the overall dataset)
-dataset_meta <- tibble::tibble(
-  dataset_id = "fraser-coho-2024",
-  title = "Fraser River Coho Escapement Data",
-  description = "Sample escapement monitoring data for coho salmon in PFMA 29",
-  creator = "DFO Pacific Science",
-  contact_name = "Your Name",
-  contact_email = "your.email@dfo-mpo.gc.ca",
-  license = "Open Government License - Canada",
-  temporal_start = "2001",
-  temporal_end = "2024",
-  spatial_extent = "PFMA 29, Fraser River watershed",
-  # Optional but useful for EDH/GeoNetwork-ready export
-  contact_org = "Fisheries and Oceans Canada - Pacific Region Science Branch",
-  contact_position = "Fishery and Assessment Data Section",
-  update_frequency = "annually",
-  topic_categories = "biota;oceans",
-  keywords = "coho;escapement;Fraser River",
-  security_classification = "unclassified"
-)
-
-# Table-level metadata (describes this specific table)
-table_meta <- tibble::tibble(
+pkg_path <- create_sdp(
+  fraser_coho,
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  file_name = "escapement.csv",
-  table_label = "Escapement Data",
-  description = "Coho escapement counts by population and year",
-  primary_key = "POP_ID"
-)
-```
-
-**What these fields mean**:
-
-| Field | Purpose |
-|----|----|
-| `dataset_id` | A short identifier (letters, numbers, hyphens) |
-| `title` | Human-readable title for the dataset |
-| `description` | What the data contains |
-| `creator` | Who created/collected the data |
-| `contact_name/email` | Who to contact with questions |
-| `license` | How others can use the data |
-| `contact_org`, `contact_position`, `update_frequency`, `topic_categories`, `keywords`, `security_classification` | Optional discovery/governance fields (recommended for EDH-ready export) |
-| `table_id` | Identifier for this table (matches `dict`) |
-| `file_name` | What to name the output CSV file |
-
-------------------------------------------------------------------------
-
-## Step 5: Create Your Data Package
-
-Now let’s bundle everything together into a shareable package:
-
-``` r
-
-resources <- list(
-  escapement = df
+  overwrite = TRUE
 )
 
-# Recommended for fast first-pass bootstrap
-# Optional: include EDH XML in the package with the default HNAP-aware profile
-pkg_path <- create_salmon_datapackage_from_data(
-  resources = resources,
-  path = "my-first-package",
-  dataset_id = "fraser-coho-2024",
-  table_id = "escapement",
-  overwrite = TRUE,
-  include_edh_xml = TRUE,
-  edh_profile = "dfo_edh_hnap"
-)
-
-# Optional alternative: write ISO19139 profile instead
-# pkg_path <- create_salmon_datapackage_from_data(
-#   resources = resources,
-#   path = "my-first-package-iso",
-#   dataset_id = "fraser-coho-2024",
-#   table_id = "escapement",
-#   overwrite = TRUE,
-#   include_edh_xml = TRUE,
-#   edh_profile = "iso19139"
-# )
-
-# See what was created
+pkg_path
 list.files(pkg_path)
 ```
 
-> **Bootstrap note:**
-> [`create_salmon_datapackage_from_data()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.md)
-> is for fast first-pass output, not final publication. Before sharing,
-> run the full validation + explicit semantic workflow: 1)
-> [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
-> and
-> [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
-> 2)
-> [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-> 3)
-> [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
-> 4)
-> [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
+If `path` is omitted,
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+writes to your working directory using a default folder name like
+`fraser-coho-2024-sdp`.
 
-For full control or staged review, use the explicit workflow in the
-[Publishing Data
-Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
-guide.
+## Review In Excel
 
-``` r
+Open the output folder and review these files:
 
-# Optional explicit control (no bootstrap assumptions):
-# artifacts <- infer_salmon_datapackage_artifacts(
-#   resources,
-#   dataset_id = "fraser-coho-2024",
-#   seed_semantics = TRUE
-# )
-#
-# validate_dictionary(artifacts$dict)
-# validate_semantics(artifacts$dict)
-# dict <- apply_semantic_suggestions(artifacts$dict, max_per_role = 3)
-# pkg_path <- create_salmon_datapackage(
-#   resources = resources,
-#   dataset_meta = artifacts$dataset_meta,
-#   table_meta = artifacts$table_meta,
-#   dict = dict,
-#   codes = artifacts$codes,
-#   path = "my-first-package",
-#   overwrite = TRUE
-# )
-```
+- `dataset.csv`
+- `tables.csv`
+- `column_dictionary.csv`
+- `data/*.csv` resource files
+- `semantic_suggestions.csv` (when suggestions were found)
+- `README-review.txt`
 
-**What you get**: A folder called `my-first-package/` containing:
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+seeds semantic suggestions by default and auto-fills the top-ranked
+**column-level** suggestions into missing dictionary fields (`term_iri`,
+`property_iri`, `entity_iri`, `unit_iri`, etc.). It does not overwrite
+existing non-empty IRI values.
 
-| File | Purpose |
-|----|----|
-| `escapement.csv` | Your data |
-| `column_dictionary.csv` | What each column means |
-| `datapackage.json` | Machine-readable metadata |
-| `dataset.csv` | Dataset-level information |
-| `tables.csv` | Table-level information |
-| `metadata-edh-hnap.xml` | Optional EDH metadata export (if included in one-shot call) |
+The inferred metadata includes `REVIEW REQUIRED:` placeholders for
+required fields so the package is immediately reviewable in Excel.
+Replace those placeholders before publishing.
 
-------------------------------------------------------------------------
+## How To Decide If `term_iri` Is Correct
 
-## Step 5b (Optional): Export EDH XML metadata
+Use plain-language checks for each measurement column:
 
-If your workflow includes DFO Enterprise Data Hub / GeoNetwork upload,
-the default
-[`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
-path now writes the richer HNAP-aware EDH XML export from
-`dataset_meta`. The older compact ISO 19139 shape is still available as
-an explicit fallback.
+1.  Does the suggested label describe exactly what the column measures?
+2.  Does the definition match your intent (not just a similar word)?
+3.  Is the scope right (for example species-level vs population-level)?
+4.  Is the unit consistent with your values and `unit_iri`?
+
+Keep the IRI only when all checks pass.
+
+Replace it when the term is close but not exact.
+
+Remove it (leave blank) when no candidate is reliable yet.
+
+When the top auto-applied suggestion is wrong, use
+`semantic_suggestions.csv` to pick a better alternative and copy that
+IRI into `column_dictionary.csv`.
+
+## Finalize
+
+After Excel edits, run validation again before publishing:
 
 ``` r
 
-edh_hnap_xml_path <- file.path(pkg_path, "metadata-edh-hnap.xml")
-edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml_path)
-
-edh_iso_xml_path <- file.path(pkg_path, "metadata-iso19139.xml")
-edh_build_iso19139_xml(
-  dataset_meta,
-  output_path = edh_iso_xml_path,
-  profile = "iso19139"
-)
-
-file.exists(edh_hnap_xml_path)
-file.exists(edh_iso_xml_path)
-```
-
-The default HNAP-aware path adds EDH-oriented structure like
-maintenance/status, legal constraints, optional download/distribution
-metadata, reference system info, bounding boxes, deterministic
-identifiers, and bilingual locale scaffolding. Use
-`profile = "iso19139"` only when you specifically need that smaller
-fallback export.
-
-Validate and enrich either XML output against your local EDH profile
-before production upload.
-
-------------------------------------------------------------------------
-
-## Step 6: Share It!
-
-Your data package is ready. You can:
-
-- **Email the folder** to a colleague (zip it first)
-- **Upload to a data repository** like Zenodo or CIOOS
-- **Archive it** for your future self
-- **Include it** in a research compendium
-
-When someone opens your package, they’ll find not just data, but
-complete documentation explaining what every column means.
-
-------------------------------------------------------------------------
-
-## Reading a Package Back
-
-Later, you (or a colleague) can load the package back into R:
-
-``` r
-
-# Read the package
 pkg <- read_salmon_datapackage(pkg_path)
-
-# What's inside?
-names(pkg)
-
-# Access the components
-pkg$dataset      # Dataset metadata
-pkg$tables       # Table metadata
-pkg$dictionary   # Column descriptions
-pkg$resources    # Your actual data
-
-# Get your data back as a tibble
-head(pkg$resources$escapement)
+validate_dictionary(pkg$dictionary)
+validate_semantics(pkg$dictionary)
 ```
 
-------------------------------------------------------------------------
+For a staged, fully explicit workflow (manual artifact inference and
+controlled semantic merges), see the publication guide:
 
-## What’s Next?
-
-You’ve created your first Salmon Data Package! Here are some ways to go
-deeper:
-
-- **[Using AI to Document Your
-  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)** -
-  Use the Salmon Data Standardizer GPT to get AI-powered suggestions for
-  terminology, descriptions, and metadata
-- **[Publishing Data
-  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)** -
-  More control over metadata and publishing
-- **[Linking to Standard
-  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)** -
-  Connect your data to scientific standards
-- **[Accessing Data from
-  GitHub](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md)** -
-  Read CSVs from private repositories
-- **[Glossary of
-  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md)** -
-  Definitions of technical terms
-- **[FAQ](https://dfo-pacific-science.github.io/metasalmon/articles/faq.md)** -
-  Common questions and troubleshooting
-
-------------------------------------------------------------------------
-
-## Troubleshooting
-
-### “validate_dictionary() shows errors”
-
-This usually means a column type was guessed incorrectly. Check the
-error message and fix:
-
-``` r
-
-# See what types are valid
-# string, integer, number, boolean, date, datetime
-
-# Fix a specific column
-dict$value_type[dict$column_name == "PROBLEM_COLUMN"] <- "string"
-```
-
-### “Column not found in dictionary”
-
-Make sure your `table_id` in `table_meta` matches the `table_id` you
-used in
-[`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md).
-
-### “I don’t understand what a field means”
-
-See the
-[Glossary](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md)
-for plain-English definitions of terms like “column_role”, “value_type”,
-etc.
-
-### “I want to add better descriptions”
-
-Edit the dictionary directly before creating the package:
-
-``` r
-
-# View and edit in RStudio
-View(dict)
-
-# Or edit programmatically
-dict$column_description[dict$column_name == "MAX_ESTIMATE"] <-
-  "Maximum escapement estimate for the population in a given year"
-dict$column_label[dict$column_name == "MAX_ESTIMATE"] <-
-  "Maximum Estimate"
-```
-
-### Still stuck?
-
-- [Report a
-  bug](https://github.com/dfo-pacific-science/metasalmon/issues)
-- [Ask a
-  question](https://github.com/dfo-pacific-science/metasalmon/issues)
+- [Publishing Data
+  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)

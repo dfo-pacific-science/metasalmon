@@ -11,6 +11,15 @@ test_that("infer_dictionary creates valid structure", {
   expect_s3_class(dict, "tbl_df")
   expect_equal(nrow(dict), 4)
   expect_equal(ncol(dict), 16)
+  expect_equal(
+    names(dict),
+    c(
+      "dataset_id", "table_id", "column_name", "column_label", "column_description",
+      "term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri",
+      "unit_label", "unit_iri", "term_type",
+      "value_type", "column_role", "required"
+    )
+  )
 
   # Check required columns exist
   required_cols <- c(
@@ -820,4 +829,3 @@ test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts",
   expect_equal(artifacts$dataset_meta$dataset_id[[1]], "dataset-1")
   expect_true(is.null(artifacts$semantic_suggestions) || is.data.frame(artifacts$semantic_suggestions))
 })
-

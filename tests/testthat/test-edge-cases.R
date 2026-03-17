@@ -283,7 +283,7 @@ test_that("create_salmon_datapackage handles empty resources list", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "table-1",
-    file_name = "table-1.csv",
+    file_name = "data/table-1.csv",
     table_label = "Table 1"
   )
 
@@ -308,7 +308,7 @@ test_that("create_salmon_datapackage handles resources with no matching table_me
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "other_table",  # Doesn't match
-    file_name = "other.csv",
+    file_name = "data/other.csv",
     table_label = "Other"
   )
 
@@ -340,7 +340,7 @@ test_that("create_salmon_datapackage handles invalid format parameter", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main",
-    file_name = "main.csv",
+    file_name = "data/main.csv",
     table_label = "Main"
   )
 
@@ -370,7 +370,7 @@ test_that("create_salmon_datapackage handles invalid path", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main",
-    file_name = "main.csv",
+    file_name = "data/main.csv",
     table_label = "Main"
   )
 
@@ -407,7 +407,7 @@ test_that("create_salmon_datapackage handles multiple resources", {
   table_meta <- tibble::tibble(
     dataset_id = c("test-1", "test-1"),
     table_id = c("table1", "table2"),
-    file_name = c("table1.csv", "table2.csv"),
+    file_name = c("data/table1.csv", "data/table2.csv"),
     table_label = c("Table 1", "Table 2")
   )
 
@@ -417,8 +417,8 @@ test_that("create_salmon_datapackage handles multiple resources", {
     path = temp_dir, overwrite = TRUE
   )
 
-  expect_true(file.exists(file.path(temp_dir, "table1.csv")))
-  expect_true(file.exists(file.path(temp_dir, "table2.csv")))
+  expect_true(file.exists(file.path(temp_dir, "data", "table1.csv")))
+  expect_true(file.exists(file.path(temp_dir, "data", "table2.csv")))
 
   # Read back and verify
   pkg <- read_salmon_datapackage(temp_dir)
@@ -443,7 +443,7 @@ test_that("create_salmon_datapackage handles resources with no matching dictiona
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main",
-    file_name = "main.csv",
+    file_name = "data/main.csv",
     table_label = "Main"
   )
 
@@ -454,7 +454,7 @@ test_that("create_salmon_datapackage handles resources with no matching dictiona
   )
 
   # Should still create package (y column just won't have schema)
-  expect_true(file.exists(file.path(temp_dir, "main.csv")))
+  expect_true(file.exists(file.path(temp_dir, "data", "main.csv")))
 
   # Read back and verify y column exists
   pkg <- read_salmon_datapackage(temp_dir)
@@ -506,7 +506,7 @@ test_that("read_salmon_datapackage handles missing resource files", {
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main",
-    file_name = "main.csv",
+    file_name = "data/main.csv",
     table_label = "Main"
   )
 
@@ -517,7 +517,7 @@ test_that("read_salmon_datapackage handles missing resource files", {
   )
 
   # Delete the CSV file
-  unlink(file.path(temp_dir, "main.csv"))
+  unlink(file.path(temp_dir, "data", "main.csv"))
 
   # Should warn but not crash
   result <- suppressWarnings(
@@ -554,7 +554,7 @@ test_that("read_salmon_datapackage handles corrupted CSV files", {
       resources = list(
         list(
           name = "main",
-          path = "main.csv",
+          path = "data/main.csv",
           profile = "data-resource",
           schema = list(fields = list())
         )
@@ -566,7 +566,8 @@ test_that("read_salmon_datapackage handles corrupted CSV files", {
   )
 
   # Write corrupted CSV
-  writeLines("invalid,csv\nbroken,data,with,wrong,columns", file.path(temp_dir, "main.csv"))
+  dir.create(file.path(temp_dir, "data"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("invalid,csv\nbroken,data,with,wrong,columns", file.path(temp_dir, "data", "main.csv"))
 
   # Should handle gracefully (may error or warn)
   result <- tryCatch(
@@ -595,7 +596,7 @@ test_that("create_salmon_datapackage handles dataset_meta with wrong number of r
   table_meta <- tibble::tibble(
     dataset_id = "test-1",
     table_id = "main",
-    file_name = "main.csv",
+    file_name = "data/main.csv",
     table_label = "Main"
   )
 

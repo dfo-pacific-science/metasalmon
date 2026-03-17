@@ -1,7 +1,8 @@
 # Infer Salmon Data Package artifacts from resource tables
 
-Infers package-building metadata artifacts from one or more input tables
-in a single step.
+Infers column dictionaries, table metadata, candidate code lists, and
+dataset-level metadata in a single step from one or more raw data
+tables.
 
 ## Usage
 
@@ -9,7 +10,7 @@ in a single step.
 infer_salmon_datapackage_artifacts(
   resources,
   dataset_id = "dataset-1",
-  table_id = "table-1",
+  table_id = "table_1",
   guess_types = TRUE,
   seed_semantics = TRUE,
   semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
@@ -25,30 +26,31 @@ infer_salmon_datapackage_artifacts(
 
 - resources:
 
-  Either a single data frame or a named list of data frames.
+  Either a named list of data frames (one per resource table) or a
+  single data frame (converted internally to a one-table list).
 
 - dataset_id:
 
-  Dataset identifier applied to all inferred metadata rows.
+  Dataset identifier applied to all inferred metadata.
 
 - table_id:
 
-  Fallback table identifier when `resources` is a single data frame.
+  Name used when `resources` is a single data frame.
 
 - guess_types:
 
-  Logical; if TRUE (default), infer `value_type` for each column in the
-  dictionary.
+  Logical; if `TRUE` (default), infer `value_type` for each dictionary
+  column.
 
 - seed_semantics:
 
-  Logical; if TRUE, run
+  Logical; if `TRUE`, run
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-  and attach semantic suggestions.
+  and attach semantic suggestions to the returned dictionary.
 
 - semantic_sources:
 
-  Vector of vocabulary sources forwarded to
+  Vector of vocabulary sources passed to
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
 
 - semantic_max_per_role:
@@ -57,68 +59,41 @@ infer_salmon_datapackage_artifacts(
 
 - seed_verbose:
 
-  Logical; if TRUE, report inference and seeding progress.
+  Logical; if TRUE, emit progress messages while seeding semantic
+  suggestions.
 
 - seed_codes:
 
-  Optional prebuilt codes metadata used to seed semantic suggestion
-  target generation.
+  Optional `codes.csv`-style seed metadata.
 
 - seed_table_meta:
 
-  Optional prebuilt tables metadata used to seed semantic suggestion
-  target generation.
+  Optional `tables.csv`-style seed metadata.
 
 - seed_dataset_meta:
 
-  Optional prebuilt dataset metadata used to seed semantic suggestion
-  target generation.
+  Optional `dataset.csv`-style seed metadata.
 
 ## Value
 
-A list with elements:
+A named list with the following components:
 
-- `resources`:
+- `resources`: Named list of input tables
 
-  Named list of input tables.
+- `dict`: Inferred dictionary tibble
 
-- `dataset_id`:
+- `table_meta`: Inferred table metadata tibble
 
-  Dataset identifier used during inference.
+- `codes`: Inferred candidate codes tibble
 
-- `dict`:
+- `dataset_meta`: Inferred dataset metadata one-row tibble
 
-  Inferred dictionary tibble.
-
-- `table_meta`:
-
-  Inferred table metadata tibble.
-
-- `codes`:
-
-  Inferred candidate codes tibble.
-
-- `dataset_meta`:
-
-  Inferred dataset metadata tibble.
-
-- `semantic_suggestions`:
-
-  The semantic suggestion tibble attached during seeding, or `NULL` when
-  `seed_semantics = FALSE`.
+- `semantic_suggestions`: Semantic suggestion tibble (or `NULL`)
 
 ## Details
 
-The return object is intentionally shaped for common biologist
-workflows: use it with
-[`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
-once you are happy with the inferred metadata.
-
-## See also
-
-[`infer_dictionary`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),
-[`create_salmon_datapackage`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md),
-[`suggest_semantics`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+This is a convenience helper for biologists who want to get from raw
+data frames to package-ready metadata artifacts with one call.
 
 ## Examples
 
@@ -145,9 +120,9 @@ artifacts <- infer_salmon_datapackage_artifacts(
   seed_verbose = TRUE
 )
 
-artifacts$dict
-artifacts$table_meta
-artifacts$codes
-artifacts$dataset_meta
+dict <- artifacts$dict
+table_meta <- artifacts$table_meta
+codes <- artifacts$codes
+dataset_meta <- artifacts$dataset_meta
 } # }
 ```

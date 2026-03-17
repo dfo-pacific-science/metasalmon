@@ -58,7 +58,7 @@ dataset_meta <- tibble::tibble(
 table_meta <- tibble::tibble(
   dataset_id = "test-1",
   table_id = "main_table",
-  file_name = "main_table.csv",
+  file_name = "data/main_table.csv",
   table_label = "Main Table"
 )
 dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")

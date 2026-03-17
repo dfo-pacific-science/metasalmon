@@ -46,6 +46,7 @@ reference:
     desc: "Create and read Salmon Data Packages"
     contents:
       - create_salmon_datapackage
+      - create_sdp
       - create_salmon_datapackage_from_data
       - infer_salmon_datapackage_artifacts
       - read_salmon_datapackage

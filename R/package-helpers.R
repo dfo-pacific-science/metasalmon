@@ -34,7 +34,7 @@
 #' table_meta <- tibble::tibble(
 #'   dataset_id = "test-1",
 #'   table_id = "main_table",
-#'   file_name = "main_table.csv",
+#'   file_name = "data/main_table.csv",
 #'   table_label = "Main Table"
 #' )
 #' dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
@@ -77,9 +77,9 @@ create_salmon_datapackage <- function(
   # Validate dictionary (also normalizes optional columns)
   dict <- validate_dictionary(dict, require_iris = FALSE)
 
-  dataset_meta <- .ms_normalize_dataset_meta(dataset_meta)
-  table_meta <- .ms_normalize_table_meta(table_meta)
-  dict <- .ms_normalize_dictionary(dict)
+  dataset_meta <- .ms_fill_review_placeholders_dataset_meta(.ms_normalize_dataset_meta(dataset_meta))
+  table_meta <- .ms_fill_review_placeholders_table_meta(.ms_normalize_table_meta(table_meta))
+  dict <- .ms_fill_review_placeholders_dictionary(.ms_normalize_dictionary(dict))
   codes <- .ms_normalize_codes(codes)
 
   dataset_id <- dataset_meta$dataset_id[1]
@@ -116,11 +116,14 @@ create_salmon_datapackage <- function(
 
     file_name <- table_info$file_name[1]
     if (is.na(file_name) || file_name == "") {
-      file_name <- paste0(resource_name, ".", format)
-      table_meta$file_name[table_meta$table_id == resource_name] <- file_name
+      file_name <- file.path("data", paste0(resource_name, ".", format))
     }
+    file_name <- .ms_normalize_resource_file_name(file_name)
+    file_name <- .ms_force_data_subdir(file_name)
+    table_meta$file_name[table_meta$table_id == resource_name] <- file_name
 
     file_path <- file.path(path, file_name)
+    dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
     readr::write_csv(resource_df, file_path)
 
     table_dict <- dict %>%
@@ -298,7 +301,7 @@ create_salmon_datapackage <- function(
 infer_salmon_datapackage_artifacts <- function(
     resources,
     dataset_id = "dataset-1",
-    table_id = "table-1",
+    table_id = "table_1",
     guess_types = TRUE,
     seed_semantics = TRUE,
     semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
@@ -380,6 +383,10 @@ infer_salmon_datapackage_artifacts <- function(
     semantic_suggestions <- attr(dict, "semantic_suggestions", exact = TRUE)
   }
 
+  dict <- .ms_fill_review_placeholders_dictionary(dict)
+  table_meta <- .ms_fill_review_placeholders_table_meta(table_meta)
+  dataset_meta <- .ms_fill_review_placeholders_dataset_meta(dataset_meta)
+
   list(
     resources = resources,
     dataset_id = dataset_id,
@@ -393,19 +400,21 @@ infer_salmon_datapackage_artifacts <- function(
 
 #' Create a Salmon Data Package directly from raw tables
 #'
-#' Convenience one-shot wrapper: infer dictionary/table metadata/codes/dataset metadata
-#' from raw data tables and immediately write a Salmon Data Package in one call.
+#' Primary one-shot wrapper: infer dictionary/table metadata/codes/dataset
+#' metadata from raw data tables and immediately write a review-ready Salmon
+#' Data Package.
 #'
 #' @param resources Either a named list of data frames (one per resource table)
 #'   or a single data frame (converted internally to a one-table list).
-#' @param path Character; directory path where package will be written
+#' @param path Character; directory path where package will be written. If
+#'   omitted, defaults to `file.path(getwd(), paste0(<dataset_id>-sdp))` using
+#'   a filesystem-safe dataset id slug.
 #' @param dataset_id Dataset identifier applied to all inferred metadata rows.
 #' @param table_id Fallback table identifier when `resources` is a single data frame.
 #' @param guess_types Logical; if `TRUE` (default), infer `value_type` for each
 #'   dictionary column.
-#' @param seed_semantics Logical; if `TRUE`, seed semantic suggestions during
-#'   inference (added to `semantic_suggestions` attribute of the dictionary but not
-#'   auto-applied).
+#' @param seed_semantics Logical; if `TRUE` (default), seed semantic suggestions
+#'   during inference.
 #' @param semantic_sources Vector of vocabulary sources passed to
 #'   `suggest_semantics()`.
 #' @param semantic_max_per_role Maximum number of suggestions retained per
@@ -429,44 +438,31 @@ infer_salmon_datapackage_artifacts <- function(
 #'
 #' @return Invisibly returns the package path.
 #'
-#' @details This is a one-shot bootstrap helper for fast first-pass package creation,
-#' not an automatic publication-ready finalizer.
-#'
-#' For production/QA workflows, use:
-#' 1. `infer_salmon_datapackage_artifacts(..., seed_semantics = TRUE)`
-#' 2. `validate_dictionary()` and `validate_semantics()`
-#' 3. `suggest_semantics()` and `apply_semantic_suggestions()`
-#' 4. `create_salmon_datapackage()` with reviewed metadata
+#' @details This one-shot helper creates a review-ready package by default:
+#' semantic suggestions are seeded and the top-ranked column-level suggestions
+#' are auto-applied only into missing dictionary IRI fields. The output package
+#' also includes `semantic_suggestions.csv` (when available) plus
+#' `README-review.txt` with clear Excel-based review instructions, plus required-field review placeholders in the inferred metadata files.
 #'
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' resources <- list(
-#'   catches = tibble::tibble(
-#'     station_id = c("A", "B"),
-#'     species = c("Coho", "Chinook"),
-#'     count = c(10L, 20L)
-#'   ),
-#'   stations = tibble::tibble(
-#'     station_id = c("A", "B"),
-#'     lat = c(49.8, 49.9),
-#'     lon = c(-124.4, -124.5)
-#'   )
-#' )
-#' pkg <- create_salmon_datapackage_from_data(
-#'   resources,
-#'   path = "my-package",
-#'   dataset_id = "demo-1",
-#'   seed_semantics = TRUE,
+#' data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+#' fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
+#'
+#' pkg <- create_sdp(
+#'   fraser_coho,
+#'   dataset_id = "fraser-coho-2024",
+#'   table_id = "escapement",
 #'   overwrite = TRUE
 #' )
 #' }
-create_salmon_datapackage_from_data <- function(
+create_sdp <- function(
     resources,
-    path,
+    path = NULL,
     dataset_id = "dataset-1",
-    table_id = "table-1",
+    table_id = "table_1",
     guess_types = TRUE,
     seed_semantics = TRUE,
     semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
@@ -481,6 +477,10 @@ create_salmon_datapackage_from_data <- function(
     edh_profile = c("dfo_edh_hnap", "iso19139"),
     edh_xml_path = NULL
 ) {
+  if (is.null(path) || !nzchar(trimws(path))) {
+    path <- file.path(getwd(), paste0(.ms_safe_path_slug(dataset_id), "-sdp"))
+  }
+
   artifacts <- infer_salmon_datapackage_artifacts(
     resources = resources,
     dataset_id = dataset_id,
@@ -495,6 +495,20 @@ create_salmon_datapackage_from_data <- function(
     seed_dataset_meta = seed_dataset_meta
   )
 
+  suggestions <- artifacts$semantic_suggestions
+  if (is.null(suggestions)) {
+    suggestions <- attr(artifacts$dict, "semantic_suggestions", exact = TRUE)
+  }
+  if (!is.null(suggestions) && nrow(suggestions) > 0) {
+    artifacts$dict <- apply_semantic_suggestions(
+      artifacts$dict,
+      suggestions = suggestions,
+      strategy = "top",
+      overwrite = FALSE,
+      verbose = FALSE
+    )
+  }
+
   pkg_path <- create_salmon_datapackage(
     resources = artifacts$resources,
     dataset_meta = artifacts$dataset_meta,
@@ -505,6 +519,12 @@ create_salmon_datapackage_from_data <- function(
     format = format,
     overwrite = overwrite
   )
+
+  .ms_write_sdp_review_readme(pkg_path = pkg_path, dataset_id = dataset_id)
+
+  if (!is.null(suggestions) && nrow(suggestions) > 0) {
+    readr::write_csv(suggestions, file.path(pkg_path, "semantic_suggestions.csv"), na = "")
+  }
 
   if (isTRUE(include_edh_xml)) {
     edh_profile <- match.arg(edh_profile)
@@ -527,20 +547,66 @@ create_salmon_datapackage_from_data <- function(
     cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
   }
 
-  cli::cli_alert_warning(c(
-    "Used one-shot bootstrap flow {.fn create_salmon_datapackage_from_data()}.",
-    "i" = "This creates a package quickly, but semantic quality is still provisional.",
-    "i" = "Run structural and semantic validation before publishing or sharing:",
-    "i" = "1) Review artifacts via {.code infer_salmon_datapackage_artifacts(..., seed_semantics = TRUE)}",
-    "i" = "2) Validate with {.code validate_dictionary()} and {.code validate_semantics()}",
-    "i" = "3) Fill semantic fields using {.code suggest_semantics()} and {.code apply_semantic_suggestions()}",
-    "i" = "4) Rebuild with {.code create_salmon_datapackage()} using reviewed metadata",
-    "i" = "If `include_edh_xml = TRUE`, validate generated XML against your local EDH profile.",
-    "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html} and",
-    "i" = "{.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for the full validation workflow."
+  cli::cli_alert_info(c(
+    "Created review-ready one-shot package with {.fn create_sdp}.",
+    "i" = "Top column-level semantic suggestions were auto-applied only where IRI fields were blank.",
+    "i" = "Review and finalize in Excel: {.file README-review.txt} and {.file semantic_suggestions.csv}."
   ))
 
   invisible(pkg_path)
+}
+
+#' Create a Salmon Data Package directly from raw tables
+#'
+#' Backward-compatible wrapper for [create_sdp()]. Prefer [create_sdp()] for
+#' new workflows.
+#'
+#' @inheritParams create_sdp
+#' @return Invisibly returns the package path.
+#' @export
+create_salmon_datapackage_from_data <- function(
+    resources,
+    path = NULL,
+    dataset_id = "dataset-1",
+    table_id = "table_1",
+    guess_types = TRUE,
+    seed_semantics = TRUE,
+    semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
+    semantic_max_per_role = 1,
+    seed_verbose = TRUE,
+    seed_codes = NULL,
+    seed_table_meta = NULL,
+    seed_dataset_meta = NULL,
+    format = "csv",
+    overwrite = FALSE,
+    include_edh_xml = FALSE,
+    edh_profile = c("dfo_edh_hnap", "iso19139"),
+    edh_xml_path = NULL
+) {
+  cli::cli_alert_info(c(
+    "{.fn create_salmon_datapackage_from_data} is deprecated in favor of {.fn create_sdp}.",
+    "i" = "Switch to {.fn create_sdp} when convenient; behavior is preserved."
+  ))
+
+  create_sdp(
+    resources = resources,
+    path = path,
+    dataset_id = dataset_id,
+    table_id = table_id,
+    guess_types = guess_types,
+    seed_semantics = seed_semantics,
+    semantic_sources = semantic_sources,
+    semantic_max_per_role = semantic_max_per_role,
+    seed_verbose = seed_verbose,
+    seed_codes = seed_codes,
+    seed_table_meta = seed_table_meta,
+    seed_dataset_meta = seed_dataset_meta,
+    format = format,
+    overwrite = overwrite,
+    include_edh_xml = include_edh_xml,
+    edh_profile = edh_profile,
+    edh_xml_path = edh_xml_path
+  )
 }
 
 #' Read a Salmon Data Package
@@ -723,8 +789,9 @@ read_salmon_datapackage <- function(path) {
 .ms_dictionary_cols <- function() {
   c(
     "dataset_id", "table_id", "column_name", "column_label", "column_description",
-    "column_role", "value_type", "required", "unit_label", "unit_iri", "term_iri",
-    "term_type", "property_iri", "entity_iri", "constraint_iri", "method_iri"
+    "term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri",
+    "unit_label", "unit_iri", "term_type",
+    "value_type", "column_role", "required"
   )
 }
 
@@ -816,4 +883,85 @@ read_salmon_datapackage <- function(path) {
     col_types = readr::cols(.default = readr::col_character()),
     show_col_types = FALSE
   )
+}
+
+.ms_safe_path_slug <- function(x) {
+  slug <- as.character(x)[1]
+  if (is.na(slug) || !nzchar(trimws(slug))) {
+    slug <- "dataset"
+  }
+  slug <- tolower(trimws(slug))
+  slug <- gsub("[^a-z0-9._-]+", "-", slug)
+  slug <- gsub("(^[-._]+|[-._]+$)", "", slug)
+  if (!nzchar(slug)) {
+    slug <- "dataset"
+  }
+  slug
+}
+
+.ms_normalize_resource_file_name <- function(file_name) {
+  normalized <- gsub("\\\\", "/", trimws(as.character(file_name)[1]))
+  normalized <- sub("^\\./", "", normalized)
+
+  if (!nzchar(normalized)) {
+    cli::cli_abort("{.field file_name} cannot be blank after normalization.")
+  }
+  if (grepl("^([A-Za-z]:)?/", normalized)) {
+    cli::cli_abort("{.field file_name} must be a relative path inside the package, not an absolute path.")
+  }
+  if (grepl("(^|/)\\.\\.(/|$)", normalized)) {
+    cli::cli_abort("{.field file_name} must not contain '..' path segments.")
+  }
+
+  normalized
+}
+
+.ms_force_data_subdir <- function(file_name) {
+  normalized <- gsub("\\\\", "/", file_name)
+  normalized <- sub("^\\./", "", normalized)
+
+  if (startsWith(normalized, "data/")) {
+    return(normalized)
+  }
+
+  file.path("data", basename(normalized))
+}
+
+.ms_write_sdp_review_readme <- function(pkg_path, dataset_id) {
+  lines <- c(
+    "Salmon Data Package Review Guide",
+    "",
+    sprintf("Dataset ID: %s", dataset_id),
+    "",
+    "Package layout:",
+    "- dataset.csv",
+    "- tables.csv",
+    "- column_dictionary.csv",
+    "- codes.csv (if present)",
+    "- data/<table>.csv resource files",
+    "",
+    "Open dataset.csv, tables.csv, column_dictionary.csv, and your data/*.csv files in Excel.",
+    "Cells that begin with 'REVIEW REQUIRED:' are placeholders that should be replaced before publishing.",
+    "",
+    "Review semantic IRI fields in column_dictionary.csv:",
+    "- term_iri: should match what the column is measuring or representing.",
+    "- property_iri: should describe the measurable property (abundance, length, temperature, etc.).",
+    "- entity_iri: should identify what is being measured (species, population, location, etc.).",
+    "- unit_iri: should match the data values unit exactly.",
+    "",
+    "When to keep, replace, or remove a suggested IRI:",
+    "- Keep it when the label, definition, scope, and unit all match your column meaning.",
+    "- Replace it when the term is close but the definition, scope, or unit is wrong.",
+    "- Remove it (leave blank) when no reliable term exists yet.",
+    "",
+    "Use semantic_suggestions.csv:",
+    "- It includes alternatives for each role.",
+    "- If the auto-applied top choice is wrong, choose a better IRI and update column_dictionary.csv.",
+    "",
+    "Finalize before publishing:",
+    "- Replace all REVIEW REQUIRED placeholders in dataset.csv, tables.csv, and column_dictionary.csv.",
+    "- Run validate_dictionary() and validate_semantics() again after edits.",
+    "- Confirm tables.csv file_name values still point to the correct data/*.csv files."
+  )
+  writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
 }

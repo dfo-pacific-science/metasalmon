@@ -7,7 +7,7 @@
 #'   `infer_dictionary()` infers each table and returns a combined dictionary.
 #' @param guess_types Logical; if `TRUE` (default), infer value types from data.
 #' @param dataset_id Character; dataset identifier (default: "dataset-1").
-#' @param table_id Character; table identifier (default: "table-1").
+#' @param table_id Character; table identifier (default: "table_1").
 #' @param seed_semantics Logical; if `TRUE`, run `suggest_semantics()` and attach
 #'   the resulting `semantic_suggestions` attribute to the returned dictionary.
 #' @param semantic_sources Character vector of vocabulary sources passed to
@@ -23,11 +23,11 @@
 #' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #'
-#' @return A tibble with dictionary schema columns: `dataset_id`, `table_id`,
-#'   `column_name`, `column_label`, `column_description`, `column_role`,
-#'   `value_type`, `unit_label`, `unit_iri`, `term_iri`, `term_type`, `required`,
-#'   and I-ADOPT component fields (`property_iri`, `entity_iri`,
-#'   `constraint_iri`, `method_iri`).
+#' @return A tibble with dictionary schema columns in canonical Salmon Data
+#'   Package order: `dataset_id`, `table_id`, `column_name`, `column_label`,
+#'   `column_description`, `term_iri`, `property_iri`, `entity_iri`,
+#'   `constraint_iri`, `method_iri`, `unit_label`, `unit_iri`, `term_type`,
+#'   `value_type`, `column_role`, `required`.
 #'
 #' @export
 #'
@@ -49,7 +49,7 @@
 #' )
 #' suggestions <- attr(dict, "semantic_suggestions")
 #' }
-infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table-1",
+infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", table_id = "table_1",
                             seed_semantics = FALSE, semantic_sources = c("smn", "gcdfo", "ols", "nvs"), semantic_max_per_role = 1,
                             seed_verbose = TRUE,
                             seed_codes = NULL,
@@ -133,6 +133,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       attr(dict, "inferred_resources") <- names(resources)
     }
 
+    dict <- .ms_fill_review_placeholders_dictionary(dict)
     dict
   } else {
     if (!inherits(df, "data.frame")) {
@@ -149,17 +150,17 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       column_name = col_names,
       column_label = col_names,
       column_description = rep(NA_character_, n_cols),
-      column_role = rep(NA_character_, n_cols),
-      value_type = rep(NA_character_, n_cols),
-      unit_label = rep(NA_character_, n_cols),
-      unit_iri = rep(NA_character_, n_cols),
       term_iri = rep(NA_character_, n_cols),
-      term_type = rep(NA_character_, n_cols),
-      required = rep(FALSE, n_cols),
       property_iri = rep(NA_character_, n_cols),
       entity_iri = rep(NA_character_, n_cols),
       constraint_iri = rep(NA_character_, n_cols),
-      method_iri = rep(NA_character_, n_cols)
+      method_iri = rep(NA_character_, n_cols),
+      unit_label = rep(NA_character_, n_cols),
+      unit_iri = rep(NA_character_, n_cols),
+      term_type = rep(NA_character_, n_cols),
+      value_type = rep(NA_character_, n_cols),
+      column_role = rep(NA_character_, n_cols),
+      required = rep(FALSE, n_cols)
     )
 
     if (guess_types) {
@@ -195,8 +196,102 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       }
     }
 
+    dict <- .ms_fill_review_placeholders_dictionary(dict)
     dict
   }
+}
+
+.ms_humanize_identifier <- function(x) {
+  x <- gsub("[-_]+", " ", as.character(x))
+  x <- gsub("\\s+", " ", x)
+  trimws(x)
+}
+
+.ms_titleize_identifier <- function(x) {
+  humanized <- .ms_humanize_identifier(x)
+  ifelse(
+    is.na(humanized) | humanized == "",
+    humanized,
+    tools::toTitleCase(humanized)
+  )
+}
+
+.ms_fill_review_placeholders_dictionary <- function(dict) {
+  dict <- tibble::as_tibble(dict)
+
+  blank_desc <- is.na(dict$column_description) | trimws(dict$column_description) == ""
+  if (any(blank_desc)) {
+    dict$column_description[blank_desc] <- sprintf(
+      "REVIEW REQUIRED: define what '%s' means in table '%s'.",
+      dict$column_name[blank_desc],
+      dict$table_id[blank_desc]
+    )
+  }
+
+  dict
+}
+
+.ms_fill_review_placeholders_table_meta <- function(table_meta) {
+  table_meta <- tibble::as_tibble(table_meta)
+
+  blank_label <- is.na(table_meta$table_label) | trimws(table_meta$table_label) == ""
+  if (any(blank_label)) {
+    table_meta$table_label[blank_label] <- .ms_titleize_identifier(table_meta$table_id[blank_label])
+  }
+
+  blank_desc <- is.na(table_meta$description) | trimws(table_meta$description) == ""
+  if (any(blank_desc)) {
+    table_meta$description[blank_desc] <- sprintf(
+      "REVIEW REQUIRED: describe what each row in table '%s' represents.",
+      table_meta$table_id[blank_desc]
+    )
+  }
+
+  table_meta
+}
+
+.ms_fill_review_placeholders_dataset_meta <- function(dataset_meta) {
+  dataset_meta <- tibble::as_tibble(dataset_meta)
+
+  blank_title <- is.na(dataset_meta$title) | trimws(dataset_meta$title) == ""
+  if (any(blank_title)) {
+    dataset_meta$title[blank_title] <- .ms_titleize_identifier(dataset_meta$dataset_id[blank_title])
+  }
+
+  blank_description <- is.na(dataset_meta$description) | trimws(dataset_meta$description) == ""
+  if (any(blank_description)) {
+    dataset_meta$description[blank_description] <- sprintf(
+      "REVIEW REQUIRED: describe the contents and purpose of dataset '%s'.",
+      dataset_meta$dataset_id[blank_description]
+    )
+  }
+
+  blank_creator <- is.na(dataset_meta$creator) | trimws(dataset_meta$creator) == ""
+  if (any(blank_creator)) {
+    dataset_meta$creator[blank_creator] <- "REVIEW REQUIRED: add creator, team, or originating program."
+  }
+
+  blank_contact_name <- is.na(dataset_meta$contact_name) | trimws(dataset_meta$contact_name) == ""
+  if (any(blank_contact_name)) {
+    dataset_meta$contact_name[blank_contact_name] <- "REVIEW REQUIRED: add primary contact name or team."
+  }
+
+  blank_contact_email <- is.na(dataset_meta$contact_email) | trimws(dataset_meta$contact_email) == ""
+  if (any(blank_contact_email)) {
+    dataset_meta$contact_email[blank_contact_email] <- "REVIEW REQUIRED: add primary contact email."
+  }
+
+  blank_license <- is.na(dataset_meta$license) | trimws(dataset_meta$license) == ""
+  if (any(blank_license)) {
+    dataset_meta$license[blank_license] <- "REVIEW REQUIRED: add dataset license (for example, CC-BY-4.0)."
+  }
+
+  blank_spec_version <- is.na(dataset_meta$spec_version) | trimws(dataset_meta$spec_version) == ""
+  if (any(blank_spec_version)) {
+    dataset_meta$spec_version[blank_spec_version] <- "sdp-0.1.0"
+  }
+
+  dataset_meta
 }
 
 infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
@@ -210,8 +305,8 @@ infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset
     tibble::tibble(
       dataset_id = dataset_id,
       table_id = tab_id,
-      file_name = paste0(tab_id, ".csv"),
-      table_label = tab_id,
+      file_name = file.path("data", paste0(tab_id, ".csv")),
+      table_label = .ms_titleize_identifier(tab_id),
       description = NA_character_,
       observation_unit = NA_character_,
       observation_unit_iri = NA_character_,
@@ -219,7 +314,7 @@ infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset
     )
   })
 
-  .ms_normalize_table_meta(table_meta)
+  .ms_fill_review_placeholders_table_meta(.ms_normalize_table_meta(table_meta))
 }
 
 infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
@@ -353,7 +448,7 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     )
   )
 
-  tibble::tibble(
+  dataset_meta <- tibble::tibble(
     dataset_id = dataset_id,
     title = NA_character_,
     description = NA_character_,
@@ -377,6 +472,8 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     modified = NA_character_,
     spec_version = NA_character_
   )
+
+  .ms_fill_review_placeholders_dataset_meta(dataset_meta)
 }
 
 #' Infer value type from a column
