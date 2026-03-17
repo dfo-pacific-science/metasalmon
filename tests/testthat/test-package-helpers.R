@@ -273,9 +273,9 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
 
   review_lines <- readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE)
   expect_true(any(grepl("Salmon Data Package Review Checklist", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("[ ] 1. Confirm the package is complete", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("The canonical Salmon Data Package is the whole folder", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("Share the whole folder or a zip of the whole folder", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("Congratulations! You made a Salmon Data Package", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("[ ] 1. Start in metadata/*.csv", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("Share the whole package folder", review_lines, fixed = TRUE)))
   expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)

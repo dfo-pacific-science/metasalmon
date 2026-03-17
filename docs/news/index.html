@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.15</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.16</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,15 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.16" id="metasalmon-0016">metasalmon 0.0.16<a class="anchor" aria-label="anchor" href="#metasalmon-0016"></a></h2>
+<ul><li>Rewrote <code>README-review.txt</code> intro and checklist to be shorter, more first-time friendly, and more action-oriented.</li>
+<li>
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> now prints an explicit up-front note that semantic seeding may take a few minutes.</li>
+<li>Improved column-level semantic query construction for measurement fields so placeholder text is not used as the query source.</li>
+<li>Added role-aware query shaping that improves built-in sample suggestions for <code>NATURAL_SPAWNERS_TOTAL</code> (e.g., variable/property <code>SpawnerAbundance</code>, entity <code>Population</code>, constraint <code>NaturalOrigin</code>) and avoids the previous exploitation/mortality-rate mismatches.</li>
+<li>Unit suggestions are now skipped when no unit context exists, and applying a unit suggestion now backfills <code>unit_label</code> when missing.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.15" id="metasalmon-0015">metasalmon 0.0.15<a class="anchor" aria-label="anchor" href="#metasalmon-0015"></a></h2>
 <ul><li>

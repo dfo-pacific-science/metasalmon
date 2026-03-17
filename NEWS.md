@@ -1,3 +1,12 @@
+metasalmon 0.0.16
+----------------
+
+- Rewrote `README-review.txt` intro and checklist to be shorter, more first-time friendly, and more action-oriented.
+- `create_sdp()` now prints an explicit up-front note that semantic seeding may take a few minutes.
+- Improved column-level semantic query construction for measurement fields so placeholder text is not used as the query source.
+- Added role-aware query shaping that improves built-in sample suggestions for `NATURAL_SPAWNERS_TOTAL` (e.g., variable/property `SpawnerAbundance`, entity `Population`, constraint `NaturalOrigin`) and avoids the previous exploitation/mortality-rate mismatches.
+- Unit suggestions are now skipped when no unit context exists, and applying a unit suggestion now backfills `unit_label` when missing.
+
 metasalmon 0.0.15
 ----------------
 

@@ -157,9 +157,95 @@ suggest_semantics <- function(df,
     if (length(values) == 0) "" else values[[1]]
   }
   clean_query <- function(x) {
+    x <- as.character(x %||% "")
+    x[is.na(x)] <- ""
     x <- gsub("[._]+", " ", x)
     x <- gsub("\\s+", " ", x)
     trimws(x)
+  }
+  is_review_placeholder <- function(x) {
+    if (is_missing(x)) return(FALSE)
+    grepl("^\\s*REVIEW REQUIRED\\s*:", as.character(x), ignore.case = TRUE)
+  }
+  strip_review_placeholder <- function(x) {
+    text <- as.character(x %||% "")
+    text[is.na(text)] <- ""
+    text <- sub("^\\s*REVIEW REQUIRED\\s*:\\s*", "", text, ignore.case = TRUE)
+    text <- sub("^\\s*define what\\s+'?", "", text, ignore.case = TRUE)
+    text <- sub("'?\\s*means in table.*$", "", text, ignore.case = TRUE)
+    clean_query(text)
+  }
+  table_context <- function(row, dict) {
+    if (!all(c("dataset_id", "table_id") %in% names(dict))) {
+      return(tibble::tibble())
+    }
+
+    same <- dict[dict$dataset_id == row$dataset_id[[1]] & dict$table_id == row$table_id[[1]], , drop = FALSE]
+    if (!"column_name" %in% names(same)) {
+      return(same)
+    }
+    same[same$column_name != row$column_name[[1]], , drop = FALSE]
+  }
+  context_has <- function(ctx, pattern) {
+    if (nrow(ctx) == 0) return(FALSE)
+    candidates <- c(
+      if ("column_name" %in% names(ctx)) as.character(ctx$column_name) else character(),
+      if ("column_label" %in% names(ctx)) as.character(ctx$column_label) else character(),
+      if ("column_description" %in% names(ctx)) as.character(ctx$column_description) else character()
+    )
+    candidates <- candidates[!is.na(candidates) & nzchar(trimws(candidates))]
+    if (length(candidates) == 0) return(FALSE)
+    any(grepl(pattern, candidates, ignore.case = TRUE))
+  }
+  measurement_role_query <- function(row, dict, role_name) {
+    desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
+      ""
+    } else {
+      strip_review_placeholder(row$column_description[[1]])
+    }
+    label_query <- strip_review_placeholder(row$column_label[[1]])
+    name_query <- strip_review_placeholder(row$column_name[[1]])
+    base_query <- clean_query(first_non_empty(list(desc_query, label_query, name_query)))
+    if (!nzchar(base_query)) return("")
+
+    base_lower <- tolower(base_query)
+    ctx <- table_context(row, dict)
+
+    if (identical(role_name, "unit")) {
+      unit_query <- strip_review_placeholder(row$unit_label[[1]])
+      if (nzchar(unit_query)) {
+        return(unit_query)
+      }
+      return("")
+    }
+
+    if (identical(role_name, "constraint")) {
+      if (grepl("\\bnatural\\b", base_lower)) return("natural origin")
+      if (grepl("\\bhatchery\\b", base_lower)) return("hatchery origin")
+      return(base_query)
+    }
+
+    if (identical(role_name, "method")) {
+      if (context_has(ctx, "method")) {
+        return("estimate method")
+      }
+      return(base_query)
+    }
+
+    if (identical(role_name, "entity")) {
+      if (context_has(ctx, "stock")) return("stock")
+      if (context_has(ctx, "population")) return("population")
+      if (grepl("spawner", base_lower)) return("population")
+      return(base_query)
+    }
+
+    if (role_name %in% c("variable", "property")) {
+      if (grepl("spawner", base_lower) && grepl("total|count|number", base_lower)) {
+        return("spawner abundance")
+      }
+    }
+
+    base_query
   }
   split_role_hints <- function(x) {
     if (is_missing(x)) return(character())
@@ -197,14 +283,11 @@ suggest_semantics <- function(df,
       row <- dict[i, , drop = FALSE]
       if (!identical(row$column_role[[1]], "measurement")) return(tibble::tibble())
 
-      query <- clean_query(first_non_empty(list(row$column_description[[1]], row$column_label[[1]], row$column_name[[1]])))
       purrr::imap_dfr(roles, function(role_name, col_name) {
         if (!col_name %in% names(row)) return(tibble::tibble())
         if (is_present(row[[col_name]][[1]])) return(tibble::tibble())
-        role_query <- query
-        if (identical(role_name, "unit")) {
-          role_query <- clean_query(first_non_empty(list(row$unit_label[[1]], query)))
-        }
+
+        role_query <- measurement_role_query(row, dict, role_name)
         if (!nzchar(role_query)) return(tibble::tibble())
         tibble::tibble(
           dataset_id = row$dataset_id[[1]],
@@ -655,6 +738,12 @@ apply_semantic_suggestions <- function(dict,
 
     if (isTRUE(overwrite)) {
       out[[field]][row_ids] <- suggestion$iri[[1]]
+      if (identical(field, "unit_iri") && "unit_label" %in% names(out) && "label" %in% names(suggestion)) {
+        missing_labels <- is.na(out$unit_label[row_ids]) | out$unit_label[row_ids] == ""
+        if (any(missing_labels)) {
+          out$unit_label[row_ids[missing_labels]] <- suggestion$label[[1]]
+        }
+      }
       applied <- applied + length(row_ids)
       next
     }
@@ -663,6 +752,12 @@ apply_semantic_suggestions <- function(dict,
     fill_rows <- row_ids[missing_now]
     if (length(fill_rows) > 0) {
       out[[field]][fill_rows] <- suggestion$iri[[1]]
+      if (identical(field, "unit_iri") && "unit_label" %in% names(out) && "label" %in% names(suggestion)) {
+        missing_labels <- is.na(out$unit_label[fill_rows]) | out$unit_label[fill_rows] == ""
+        if (any(missing_labels)) {
+          out$unit_label[fill_rows[missing_labels]] <- suggestion$label[[1]]
+        }
+      }
       applied <- applied + length(fill_rows)
     }
     skipped_existing <- skipped_existing + sum(!missing_now)

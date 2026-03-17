@@ -210,27 +210,104 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
 
   res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
-  expect_equal(nrow(suggestions), 6) # variable/property/entity/unit/constraint/method
+  expect_equal(nrow(suggestions), 5) # variable/property/entity/constraint/method (unit skipped when no unit label)
   expect_equal(names(suggestions)[1:4], c("column_name", "dictionary_role", "table_id", "dataset_id"))
   expect_true(all(c("target_scope", "target_sdp_file", "target_sdp_field", "search_query") %in% names(suggestions)))
-  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
+  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "constraint", "method")))
   expect_true(all(suggestions$column_name == "value"))
   expect_true(all(suggestions$dataset_id == "d1"))
   expect_true(all(suggestions$table_id == "t1"))
   expect_true(all(suggestions$target_scope == "column"))
   expect_true(all(suggestions$target_sdp_file == "column_dictionary.csv"))
-  expect_true(all(suggestions$search_query == "Spawner abundance estimate"))
+  expect_equal(suggestions$search_query[suggestions$dictionary_role == "variable"], "Spawner abundance estimate")
+  expect_equal(suggestions$search_query[suggestions$dictionary_role == "entity"], "population")
   expect_equal(
     unique(suggestions[, c("dictionary_role", "target_sdp_field")]),
     tibble::tibble(
-      dictionary_role = c("variable", "property", "entity", "unit", "constraint", "method"),
-      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
+      dictionary_role = c("variable", "property", "entity", "constraint", "method"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri")
     )
   )
 
   res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
   dwc_map <- attr(res_dwc, "dwc_mappings")
   expect_true(is.data.frame(dwc_map))
+})
+
+test_that("suggest_semantics strips review placeholders and applies role-aware column queries", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("NATURAL_SPAWNERS_TOTAL", "POPULATION"),
+    column_label = c("NATURAL_SPAWNERS_TOTAL", "Population"),
+    column_description = c(
+      "REVIEW REQUIRED: define what 'NATURAL_SPAWNERS_TOTAL' means in table 'escapement'.",
+      "Population identifier"
+    ),
+    column_role = c("measurement", "categorical"),
+    value_type = c("number", "string"),
+    unit_label = c(NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_)
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_false(any(call_df$role == "unit"))
+  expect_true(any(call_df$role == "variable" & call_df$query == "spawner abundance"))
+  expect_true(any(call_df$role == "constraint" & call_df$query == "natural origin"))
+  expect_true(any(call_df$role == "entity" & call_df$query == "population"))
+})
+
+test_that("apply_semantic_suggestions fills unit_label when applying unit_iri", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Spawner count",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    dictionary_role = "unit",
+    iri = "http://example.org/unit/count",
+    label = "count"
+  )
+
+  out <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
+  expect_equal(out$unit_iri, "http://example.org/unit/count")
+  expect_equal(out$unit_label, "count")
 })
 
 test_that("suggest_semantics supports code, table, and dataset targets", {
