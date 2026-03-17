@@ -294,7 +294,7 @@ dataset_meta <- tibble::tibble(
 table_meta <- tibble::tibble(
   dataset_id = "nuseds-fraser-coho-2024",
   table_id = "escapement",
-  file_name = "escapement.csv",
+  file_name = "data/escapement.csv",
   table_label = "Escapement Data",
   description = "Coho escapement counts and metadata",
   observation_unit = NA_character_,      # or a short label like "CU-year record"
@@ -304,7 +304,7 @@ table_meta <- tibble::tibble(
 
 # Create package
 resources <- list(escapement = df)
-pkg_path <- create_salmon_datapackage(
+pkg_path <- write_salmon_datapackage(
   resources,
   dataset_meta,
   table_meta,
@@ -315,6 +315,8 @@ pkg_path <- create_salmon_datapackage(
   overwrite = TRUE
 )
 ```
+
+This advanced/manual writer places the canonical metadata tables under `metadata/`, the table CSVs under `data/`, and writes `datapackage.json` at the package root.
 
 ## Advanced: GPT Prompt Templates
 
@@ -471,7 +473,7 @@ dict$term_type <- c("skos_concept", ...)  # From GPT
 validate_dictionary(dict)
 
 # 5. Create package
-create_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
+write_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 ```
 
 ## Resources

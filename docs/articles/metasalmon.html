@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,35 +100,46 @@ Salmon Data Package in one call.</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pkg_path</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>If <code>path</code> is omitted, <code><a href="../reference/create_sdp.html">create_sdp()</a></code> writes to
 your working directory using a default folder name like
-<code>fraser-coho-2024-sdp</code>.</p>
+<code>fraser-coho-2024-sdp</code>. In interactive use it can also
+mention when a newer <code>metasalmon</code> release is available; set
+<code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
 <h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
 </h2>
 <p>Open the output folder and review these files:</p>
 <ul>
-<li><code>dataset.csv</code></li>
-<li><code>tables.csv</code></li>
-<li><code>column_dictionary.csv</code></li>
-<li>
-<code>data/*.csv</code> resource files</li>
+<li><code>README-review.txt</code></li>
 <li>
 <code>semantic_suggestions.csv</code> (when suggestions were
 found)</li>
-<li><code>README-review.txt</code></li>
+<li><code>metadata/dataset.csv</code></li>
+<li><code>metadata/tables.csv</code></li>
+<li><code>metadata/column_dictionary.csv</code></li>
+<li>
+<code>metadata/codes.csv</code> (when present)</li>
+<li>
+<code>data/*.csv</code> resource files</li>
 </ul>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
 auto-fills the top-ranked <strong>column-level</strong> suggestions into
 missing dictionary fields (<code>term_iri</code>,
 <code>property_iri</code>, <code>entity_iri</code>,
 <code>unit_iri</code>, etc.). It does not overwrite existing non-empty
-IRI values.</p>
+IRI values. Table-level suggestions are still available when table
+metadata needs them, while code-level suggestions default to
+factor/categorical source columns only. Use
+<code>semantic_code_scope = "all"</code> if you want broader code-level
+seeding.</p>
 <p>The inferred metadata includes <code>REVIEW REQUIRED:</code>
 placeholders for required fields so the package is immediately
-reviewable in Excel. Replace those placeholders before publishing.</p>
+reviewable in Excel. Replace those placeholders before publishing. The
+<code>metadata/*.csv</code> files are the canonical package metadata;
+<code>datapackage.json</code> is a derived export for
+interoperability.</p>
 </div>
 <div class="section level2">
 <h2 id="how-to-decide-if-term_iri-is-correct">How To Decide If <code>term_iri</code> Is Correct<a class="anchor" aria-label="anchor" href="#how-to-decide-if-term_iri-is-correct"></a>
@@ -149,12 +160,14 @@ population-level)?</li>
 <p>Remove it (leave blank) when no candidate is reliable yet.</p>
 <p>When the top auto-applied suggestion is wrong, use
 <code>semantic_suggestions.csv</code> to pick a better alternative and
-copy that IRI into <code>column_dictionary.csv</code>.</p>
+copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="finalize">Finalize<a class="anchor" aria-label="anchor" href="#finalize"></a>
 </h2>
-<p>After Excel edits, run validation again before publishing:</p>
+<p>After Excel edits, save the metadata back to CSV, share the whole
+folder (or a zip of the whole folder) when you hand it to someone else,
+then run validation again before publishing:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span>

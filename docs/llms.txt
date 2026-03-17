@@ -66,13 +66,21 @@ pkg_path <- create_sdp(
 )
 
 # Open pkg_path and review:
-# - dataset.csv
-# - tables.csv
-# - column_dictionary.csv
+# - metadata/dataset.csv
+# - metadata/tables.csv
+# - metadata/column_dictionary.csv
+# - metadata/codes.csv (if present)
 # - data/*.csv
 # - semantic_suggestions.csv (if present)
 # - README-review.txt
 ```
+
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+is the main path. It writes the canonical `metadata/*.csv` files plus
+your `data/*.csv` tables, adds a review checklist, and only seeds
+code-level semantic suggestions by default for factor/categorical source
+columns. In interactive use it can also mention an available package
+update; set `check_updates = FALSE` to skip that check.
 
 To continue:
 
@@ -115,16 +123,23 @@ remotes::install_github("dfo-pacific-science/metasalmon")
 When you create a package, you get a folder containing:
 
     my-data-package/
+      +-- README-review.txt         # Step-by-step review checklist
+      +-- semantic_suggestions.csv  # Review-only semantic suggestions (when present)
+      +-- datapackage.json          # Machine-readable export
+      +-- metadata/
+      |   +-- dataset.csv           # Dataset-level metadata (canonical)
+      |   +-- tables.csv            # Table-level metadata and file paths
+      |   +-- column_dictionary.csv # What each column means
+      |   +-- codes.csv             # What each code value means (if applicable)
       +-- data/
-      |   +-- escapement.csv      # Your data table(s)
-      +-- dataset.csv             # Dataset-level metadata
-      +-- tables.csv              # Table-level metadata and file paths
-      +-- column_dictionary.csv   # What each column means
-      +-- codes.csv               # What each code value means (if applicable)
-      +-- datapackage.json        # Machine-readable metadata
+          +-- escapement.csv        # Your data table(s)
 
 Anyone opening this folder - whether a colleague, a reviewer, or your
-future self - can immediately understand your data.
+future self - can immediately understand your data. The `metadata/*.csv`
+files are the canonical package metadata; `datapackage.json` is a
+derived interoperability export. When you share the package, send the
+whole folder (or a zip of the whole folder), not just
+`datapackage.json`.
 
 ## Key Features
 
@@ -204,15 +219,25 @@ choices so you can close the loop without juggling multiple tools.
 
 The high-level flow is:
 
-- **Raw tables** lead into `column_dictionary.csv` (and `codes.csv` when
-  there are categorical columns).
+- **Start here:**
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  takes raw tables, infers the package metadata, writes a review-ready
+  package, gives you a checklist, and keeps default code-level semantic
+  seeding conservative by limiting it to factor/categorical source
+  columns.
+- **Advanced/manual path:**
+  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  is for cases where you already assembled `dataset.csv`, `tables.csv`,
+  `column_dictionary.csv`, and optional `codes.csv` yourself.
+- **Raw tables** lead into `metadata/column_dictionary.csv` (and
+  `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields
   (title, description, creator, contact, etc.), so the package folder
   can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply
   `term_iri`/`entity_iri` links that describe what each column and row
   represents.
-- **[`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)**
+- **[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
   consumes the metadata, dictionary, codes, and data to write the files
   in the Salmon Data Package format, while the GPT assistant helps
   polish the metadata and suggests vocabulary links.
@@ -269,6 +294,24 @@ guide for details.
 
 # Package index
 
+## Start Here
+
+One-shot package creation from raw tables
+
+- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  : Create a Salmon Data Package directly from raw tables
+- [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+  : Infer Salmon Data Package artifacts from resource tables
+- [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
+  : Read a Salmon Data Package
+
+## Advanced Package Assembly
+
+Manual writing when you already have the SDP metadata tables assembled
+
+- [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  : Write a Salmon Data Package from preassembled metadata
+
 ## Dictionary Functions
 
 Infer, validate, and apply semantic data dictionaries
@@ -281,21 +324,6 @@ Infer, validate, and apply semantic data dictionaries
   : Apply a salmon dictionary to a data frame
 - [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   : Apply semantic suggestions into a dictionary
-
-## Package Functions
-
-Create and read Salmon Data Packages
-
-- [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
-  : Create a Salmon Data Package
-- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-  : Create a Salmon Data Package directly from raw tables
-- [`create_salmon_datapackage_from_data()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.md)
-  : Create a Salmon Data Package directly from raw tables
-- [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
-  : Infer Salmon Data Package artifacts from resource tables
-- [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
-  : Read a Salmon Data Package
 
 ## Semantic Helpers
 
@@ -389,6 +417,13 @@ Access ICES reference codes and vocabulary
   : Find ICES code types by text match
 - [`ices_find_codes()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_codes.md)
   : Find ICES codes within a code type by text match
+
+## Maintenance
+
+Version and update helpers
+
+- [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  : Check whether a newer metasalmon release is available
 
 # Articles
 

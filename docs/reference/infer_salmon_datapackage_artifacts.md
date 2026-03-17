@@ -18,7 +18,8 @@ infer_salmon_datapackage_artifacts(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = NULL,
-  seed_dataset_meta = NULL
+  seed_dataset_meta = NULL,
+  semantic_code_scope = c("factor", "all", "none")
 )
 ```
 
@@ -73,6 +74,15 @@ infer_salmon_datapackage_artifacts(
 - seed_dataset_meta:
 
   Optional `dataset.csv`-style seed metadata.
+
+- semantic_code_scope:
+
+  Character string controlling which `codes.csv` rows are sent through
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  during one-shot seeding. `"factor"` (default) only analyzes codes
+  sourced from factor/categorical columns in the original data frame(s);
+  `"all"` analyzes all inferred or supplied code rows; `"none"` skips
+  code-level semantic suggestions.
 
 ## Value
 

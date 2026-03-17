@@ -20,6 +20,8 @@ create_sdp(
   seed_codes = NULL,
   seed_table_meta = NULL,
   seed_dataset_meta = NULL,
+  semantic_code_scope = c("factor", "all", "none"),
+  check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
   include_edh_xml = FALSE,
@@ -85,6 +87,23 @@ create_sdp(
 
   Optional `dataset.csv`-style seed metadata.
 
+- semantic_code_scope:
+
+  Character string controlling which `codes.csv` rows are sent through
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  during one-shot seeding. `"factor"` (default) only analyzes codes
+  sourced from factor/categorical columns in the original data frame(s);
+  `"all"` analyzes all inferred or supplied code rows; `"none"` skips
+  code-level semantic suggestions.
+
+- check_updates:
+
+  Logical; if `TRUE`, run a short, non-fatal
+  [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  call after writing the package and mention newer releases only when
+  one is available. Defaults to
+  [`interactive()`](https://rdrr.io/r/base/interactive.html).
+
 - format:
 
   Character; resource format: `"csv"` (default, only format supported)
@@ -95,8 +114,8 @@ create_sdp(
 
 - include_edh_xml:
 
-  Logical; when `TRUE`, writes an EDH XML metadata file into the output
-  package path using
+  Logical; when `TRUE`, writes an EDH XML metadata file into `metadata/`
+  using
   [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md).
 
 - edh_profile:
@@ -108,9 +127,9 @@ create_sdp(
 - edh_xml_path:
 
   Optional file path for the EDH output when `include_edh_xml = TRUE`.
-  If `NULL`, defaults to `metadata-edh-hnap.xml` for
-  `edh_profile = "dfo_edh_hnap"` and `metadata-iso19139.xml` for
-  `edh_profile = "iso19139"`.
+  If `NULL`, defaults to `metadata/metadata-edh-hnap.xml` for
+  `edh_profile = "dfo_edh_hnap"` and `metadata/metadata-iso19139.xml`
+  for `edh_profile = "iso19139"`.
 
 ## Value
 
@@ -120,10 +139,19 @@ Invisibly returns the package path.
 
 This one-shot helper creates a review-ready package by default: semantic
 suggestions are seeded and the top-ranked column-level suggestions are
-auto-applied only into missing dictionary IRI fields. The output package
-also includes `semantic_suggestions.csv` (when available) plus
-`README-review.txt` with clear Excel-based review instructions, plus
-required-field review placeholders in the inferred metadata files.
+auto-applied only into missing dictionary IRI fields. Table-level
+suggestions remain available when table metadata is present. To reduce
+review noise conservatively, code-level suggestions default to
+factor/categorical source columns only; set
+`semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
+The package root contains `README-review.txt`,
+`semantic_suggestions.csv` (when available), `datapackage.json`,
+`metadata/`, and `data/`. To keep review files usable,
+`semantic_suggestions.csv` trims code-level suggestions that do not have
+enough human-readable context to review safely. Required-field review
+placeholders are also inserted into the inferred metadata files. In
+interactive use, `create_sdp()` can also mention an available package
+update; set `check_updates = FALSE` to skip that network check.
 
 ## Examples
 

@@ -11,6 +11,10 @@ first.
 When all of the pieces are ready, `metasalmon` writes files matching the
 Salmon Data Package specification so you can upload or hand the folder
 to someone else with confidence.
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+is the main one-shot path; this article covers the more explicit, manual
+workflow where you assemble the metadata tables yourself and then call
+[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md).
 
 ### 1) Start with your data
 
@@ -67,7 +71,7 @@ dataset_meta <- tibble::tibble(
 table_meta <- tibble::tibble(
   dataset_id = "my-dataset-2026",
   table_id = "main-table",
-  file_name = "main-table.csv",
+  file_name = "data/main-table.csv",
   table_label = "Main Salmon Table",
   description = "Escapement and effort data by population"
 )
@@ -95,7 +99,11 @@ codes <- tibble::tibble(
 
 If the column reuses a published controlled vocabulary (like the DFO
 Salmon Ontology), include the matching IRI in `term_iri` so automated
-tools can link to the definition.
+tools can link to the definition. In the one-shot
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+workflow, code-level semantic suggestions are seeded automatically only
+for factor/categorical source columns unless you opt into
+`semantic_code_scope = "all"`.
 
 ### 5) Create the package
 
@@ -103,7 +111,7 @@ tools can link to the definition.
 
 resources <- list(main = df)
 
-pkg_path <- create_salmon_datapackage(
+pkg_path <- write_salmon_datapackage(
   resources = resources,
   dataset_meta = dataset_meta,
   table_meta = table_meta,
@@ -114,12 +122,16 @@ pkg_path <- create_salmon_datapackage(
   overwrite = TRUE
 )
 
-list.files(pkg_path)
+list.files(pkg_path, recursive = TRUE)
 ```
 
-This writes the CSV files plus `datapackage.json` that follow the Salmon
-Data Package specification. The folder is now ready for publication,
-archiving, or sharing with colleagues.
+This writes the canonical metadata CSV files under `metadata/`, the data
+tables under `data/`, and a derived `datapackage.json` at the package
+root. The `metadata/*.csv` files are the source of truth; if they
+disagree with `datapackage.json`, fix the CSV metadata and rewrite the
+package. The folder is now ready for publication, archiving, or sharing
+with colleagues. Share the whole folder (or a zip of the whole folder),
+not just `datapackage.json`.
 
 ### Optional: include DwC-DP export hints
 
@@ -149,10 +161,10 @@ older compact ISO 19139 path as an explicit fallback.
 
 ``` r
 
-edh_hnap_xml <- file.path(pkg_path, "metadata-edh-hnap.xml")
+edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
 edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml)
 
-edh_iso_xml <- file.path(pkg_path, "metadata-iso19139.xml")
+edh_iso_xml <- file.path(pkg_path, "metadata", "metadata-iso19139.xml")
 edh_build_iso19139_xml(
   dataset_meta,
   output_path = edh_iso_xml,

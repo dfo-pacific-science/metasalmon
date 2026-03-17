@@ -36,6 +36,18 @@ test_that("infer_dictionary creates valid structure", {
   expect_equal(dict$value_type[dict$column_name == "is_active"], "boolean")
 })
 
+test_that("infer_dictionary marks factor columns as categorical", {
+  df <- data.frame(
+    run = factor(c("early", "late")),
+    count = c(100L, 200L)
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "run"], "categorical")
+  expect_equal(dict$column_role[dict$column_name == "count"], "measurement")
+})
+
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {

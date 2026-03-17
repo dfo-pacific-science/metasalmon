@@ -1,5 +1,33 @@
 # Changelog
 
+## metasalmon 0.0.14
+
+- Simplified the package-creation surface so
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  is the clear one-shot entrypoint,
+  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  is the advanced/manual writer, and the older create-from-data helper
+  was removed.
+- Reworked
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  output into a cleaner review layout with `metadata/` and `data/`
+  subdirectories, package-root `README-review.txt`, package-root
+  `semantic_suggestions.csv` (when present), and root
+  `datapackage.json`.
+- Rewrote `README-review.txt` as a step-by-step checklist that explains
+  the canonical Salmon Data Package, how to share the full package
+  folder (or zip), and how to return to R for validation.
+- Tightened default semantic seeding so code-level semantic suggestions
+  run only for factor/categorical source columns by default, while
+  keeping column-level and table-level seeding available.
+- Added optional update notifications inside
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  via `check_updates`, using the explicit
+  [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  helper rather than package-attach network checks.
+- Refreshed README, vignettes, reference pages, generated documentation,
+  tests, and pkgdown outputs to match the new workflow and layout.
+
 ## metasalmon 0.0.13
 
 - Made

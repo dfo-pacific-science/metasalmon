@@ -40,25 +40,26 @@ pkg_path <- create_sdp(
 )
 
 pkg_path
-list.files(pkg_path)
+list.files(pkg_path, recursive = TRUE)
 ```
 
-If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2024-sdp`.
+If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2024-sdp`. In interactive use it can also mention when a newer `metasalmon` release is available; set `check_updates = FALSE` to skip that check.
 
 ## Review In Excel
 
 Open the output folder and review these files:
 
-- `dataset.csv`
-- `tables.csv`
-- `column_dictionary.csv`
-- `data/*.csv` resource files
-- `semantic_suggestions.csv` (when suggestions were found)
 - `README-review.txt`
+- `semantic_suggestions.csv` (when suggestions were found)
+- `metadata/dataset.csv`
+- `metadata/tables.csv`
+- `metadata/column_dictionary.csv`
+- `metadata/codes.csv` (when present)
+- `data/*.csv` resource files
 
-`create_sdp()` seeds semantic suggestions by default and auto-fills the top-ranked **column-level** suggestions into missing dictionary fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`, etc.). It does not overwrite existing non-empty IRI values.
+`create_sdp()` seeds semantic suggestions by default and auto-fills the top-ranked **column-level** suggestions into missing dictionary fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`, etc.). It does not overwrite existing non-empty IRI values. Table-level suggestions are still available when table metadata needs them, while code-level suggestions default to factor/categorical source columns only. Use `semantic_code_scope = "all"` if you want broader code-level seeding.
 
-The inferred metadata includes `REVIEW REQUIRED:` placeholders for required fields so the package is immediately reviewable in Excel. Replace those placeholders before publishing.
+The inferred metadata includes `REVIEW REQUIRED:` placeholders for required fields so the package is immediately reviewable in Excel. Replace those placeholders before publishing. The `metadata/*.csv` files are the canonical package metadata; `datapackage.json` is a derived export for interoperability.
 
 ## How To Decide If `term_iri` Is Correct
 
@@ -75,11 +76,11 @@ Replace it when the term is close but not exact.
 
 Remove it (leave blank) when no candidate is reliable yet.
 
-When the top auto-applied suggestion is wrong, use `semantic_suggestions.csv` to pick a better alternative and copy that IRI into `column_dictionary.csv`.
+When the top auto-applied suggestion is wrong, use `semantic_suggestions.csv` to pick a better alternative and copy that IRI into `metadata/column_dictionary.csv`.
 
 ## Finalize
 
-After Excel edits, run validation again before publishing:
+After Excel edits, save the metadata back to CSV, share the whole folder (or a zip of the whole folder) when you hand it to someone else, then run validation again before publishing:
 
 ```{r}
 pkg <- read_salmon_datapackage(pkg_path)

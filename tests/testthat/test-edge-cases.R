@@ -268,7 +268,7 @@ test_that("apply_salmon_dictionary handles missing required columns", {
   )
 })
 
-test_that("create_salmon_datapackage handles empty resources list", {
+test_that("write_salmon_datapackage handles empty resources list", {
   resources <- list()
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
@@ -288,12 +288,12 @@ test_that("create_salmon_datapackage handles empty resources list", {
   )
 
   expect_error(
-    create_salmon_datapackage(resources, dataset_meta, table_meta, dict, path = tempdir()),
+    write_salmon_datapackage(resources, dataset_meta, table_meta, dict, path = tempdir()),
     "must be a named list"
   )
 })
 
-test_that("create_salmon_datapackage handles resources with no matching table_meta", {
+test_that("write_salmon_datapackage handles resources with no matching table_meta", {
   resources <- list(missing_table = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
@@ -314,7 +314,7 @@ test_that("create_salmon_datapackage handles resources with no matching table_me
 
   temp_dir <- withr::local_tempdir()
   result <- expect_warning(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources, dataset_meta, table_meta, dict,
       path = temp_dir, overwrite = TRUE
     ),
@@ -325,7 +325,7 @@ test_that("create_salmon_datapackage handles resources with no matching table_me
   expect_true(file.exists(file.path(temp_dir, "datapackage.json")))
 })
 
-test_that("create_salmon_datapackage handles invalid format parameter", {
+test_that("write_salmon_datapackage handles invalid format parameter", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
@@ -347,7 +347,7 @@ test_that("create_salmon_datapackage handles invalid format parameter", {
   temp_dir <- withr::local_tempdir()
 
   expect_error(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources, dataset_meta, table_meta, dict,
       path = temp_dir, format = "parquet"
     ),
@@ -355,7 +355,7 @@ test_that("create_salmon_datapackage handles invalid format parameter", {
   )
 })
 
-test_that("create_salmon_datapackage handles invalid path", {
+test_that("write_salmon_datapackage handles invalid path", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df)
@@ -378,7 +378,7 @@ test_that("create_salmon_datapackage handles invalid path", {
   invalid_path <- file.path(tempdir(), "nonexistent", "subdir")
 
   expect_error(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources, dataset_meta, table_meta, dict,
       path = invalid_path, overwrite = TRUE
     ),
@@ -386,7 +386,7 @@ test_that("create_salmon_datapackage handles invalid path", {
   )
 })
 
-test_that("create_salmon_datapackage handles multiple resources", {
+test_that("write_salmon_datapackage handles multiple resources", {
   resources <- list(
     table1 = data.frame(x = 1:3, y = 4:6),
     table2 = data.frame(a = letters[1:3], b = 7:9)
@@ -412,7 +412,7 @@ test_that("create_salmon_datapackage handles multiple resources", {
   )
 
   temp_dir <- withr::local_tempdir()
-  pkg_path <- create_salmon_datapackage(
+  pkg_path <- write_salmon_datapackage(
     resources, dataset_meta, table_meta, dict,
     path = temp_dir, overwrite = TRUE
   )
@@ -427,7 +427,7 @@ test_that("create_salmon_datapackage handles multiple resources", {
   expect_true("table2" %in% names(pkg$resources))
 })
 
-test_that("create_salmon_datapackage handles resources with no matching dictionary entries", {
+test_that("write_salmon_datapackage handles resources with no matching dictionary entries", {
   resources <- list(main = data.frame(x = 1:3, y = 4:6))
 
   # Dictionary only has x, not y
@@ -448,7 +448,7 @@ test_that("create_salmon_datapackage handles resources with no matching dictiona
   )
 
   temp_dir <- withr::local_tempdir()
-  pkg_path <- create_salmon_datapackage(
+  pkg_path <- write_salmon_datapackage(
     resources, dataset_meta, table_meta, dict,
     path = temp_dir, overwrite = TRUE
   )
@@ -511,7 +511,7 @@ test_that("read_salmon_datapackage handles missing resource files", {
   )
 
   temp_dir <- withr::local_tempdir()
-  create_salmon_datapackage(
+  write_salmon_datapackage(
     resources, dataset_meta, table_meta, dict,
     path = temp_dir, overwrite = TRUE
   )
@@ -580,7 +580,7 @@ test_that("read_salmon_datapackage handles corrupted CSV files", {
   expect_true(inherits(result, c("list", "error", "warning")))
 })
 
-test_that("create_salmon_datapackage handles dataset_meta with wrong number of rows", {
+test_that("write_salmon_datapackage handles dataset_meta with wrong number of rows", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "main")
@@ -603,7 +603,7 @@ test_that("create_salmon_datapackage handles dataset_meta with wrong number of r
   temp_dir <- withr::local_tempdir()
 
   expect_error(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources, dataset_meta, table_meta, dict,
       path = temp_dir, overwrite = TRUE
     ),
@@ -611,7 +611,7 @@ test_that("create_salmon_datapackage handles dataset_meta with wrong number of r
   )
 })
 
-test_that("create_salmon_datapackage handles empty table_meta", {
+test_that("write_salmon_datapackage handles empty table_meta", {
   resources <- list(main = data.frame(x = 1:3))
   df <- data.frame(x = 1:3)
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "main")
@@ -628,7 +628,7 @@ test_that("create_salmon_datapackage handles empty table_meta", {
   temp_dir <- withr::local_tempdir()
 
   expect_error(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources, dataset_meta, table_meta, dict,
       path = temp_dir, overwrite = TRUE
     ),

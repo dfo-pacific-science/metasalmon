@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -158,22 +158,25 @@ through the fastest path.</p>
 <div class="section level3">
 <h3 id="can-i-edit-the-data-package-after-creating-it">Can I edit the data package after creating it?<a class="anchor" aria-label="anchor" href="#can-i-edit-the-data-package-after-creating-it"></a>
 </h3>
-<p>Yes! A data package is just a folder with files. You can:</p>
+<p>Yes. A data package is just a folder with files. You can:</p>
 <ul>
 <li>
-<strong>Edit the CSV files</strong> directly in Excel or R</li>
+<strong>Edit the metadata/<em>.csv and data/</em>.csv files</strong>
+directly in Excel or R</li>
 <li>
-<strong>Modify the dictionary</strong> and re-run
-<code><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage()</a></code>
-</li>
+<strong>Use <code><a href="../reference/create_sdp.html">create_sdp()</a></code></strong> for the main one-shot
+workflow from raw tables</li>
 <li>
-<strong>Hand-edit the JSON files</strong> if you’re comfortable with
-JSON</li>
+<strong>Use <code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> when
+you already assembled metadata and want the advanced/manual writer</li>
 <li>
-<strong>Add or remove files</strong> as needed</li>
+<strong>Regenerate <code>datapackage.json</code></strong> by
+rewriting the package after metadata changes</li>
 </ul>
-<p>The package structure is designed to be human-readable and
-editable.</p>
+<p>The package structure is designed to be human-readable and editable.
+The <code>metadata/*.csv</code> files are canonical;
+<code>datapackage.json</code> is a derived export, so avoid treating the
+JSON as the source of truth.</p>
 </div>
 <div class="section level3">
 <h3 id="can-colleagues-open-my-package-without-installing-metasalmon">Can colleagues open my package without installing metasalmon?<a class="anchor" aria-label="anchor" href="#can-colleagues-open-my-package-without-installing-metasalmon"></a>
@@ -192,7 +195,9 @@ mean</li>
 context</li>
 </ul>
 <p>metasalmon makes it easy to <em>create</em> packages, but anyone can
-<em>read</em> them without special software.</p>
+<em>read</em> them without special software. When you share one, send
+the whole folder (or a zip of the whole folder) so the canonical
+metadata stays with the data files.</p>
 </div>
 <div class="section level3">
 <h3 id="does-this-work-with-python">Does this work with Python?<a class="anchor" aria-label="anchor" href="#does-this-work-with-python"></a>
@@ -362,6 +367,13 @@ descriptive IDs:</p>
 </h3>
 <p>If you have columns with coded values (like
 <code>SPECIES = "CO"</code> for Coho), you can add a code list:</p>
+<ul>
+<li>In the default <code><a href="../reference/create_sdp.html">create_sdp()</a></code> workflow, code-level
+semantic suggestions are seeded automatically only for
+factor/categorical source columns.</li>
+<li>If you want broader code-level suggestion seeding, use
+<code>semantic_code_scope = "all"</code>.</li>
+</ul>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">codes</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
@@ -374,7 +386,7 @@ descriptive IDs:</p>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Include codes when creating the package</span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage</a></span><span class="op">(</span></span>
 <span>  resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">df</span><span class="op">)</span>,</span>
 <span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
 <span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
@@ -406,12 +418,12 @@ list:</p>
 <span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="st">"fraser-coho-2024"</span>, <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"escapement"</span>, <span class="st">"age_composition"</span>, <span class="st">"catch"</span><span class="op">)</span>,</span>
-<span>  file_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"escapement.csv"</span>, <span class="st">"age_composition.csv"</span>, <span class="st">"catch.csv"</span><span class="op">)</span>,</span>
+<span>  file_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"data/escapement.csv"</span>, <span class="st">"data/age_composition.csv"</span>, <span class="st">"data/catch.csv"</span><span class="op">)</span>,</span>
 <span>  table_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Escapement Data"</span>, <span class="st">"Age Composition"</span>, <span class="st">"Catch Data"</span><span class="op">)</span>,</span>
 <span>  description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Spawner counts"</span>, <span class="st">"Age structure"</span>, <span class="st">"Harvest numbers"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage</a></span><span class="op">(</span></span>
 <span>  resources <span class="op">=</span> <span class="va">resources</span>,</span>
 <span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
 <span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
@@ -438,7 +450,7 @@ errors/warnings</li>
 <li>Fix issues: Edit <code>dict</code> to fix problems</li>
 <li>Validate again: <code>validate_dictionary(dict)</code> - should pass
 now</li>
-<li>Create package: <code>create_salmon_datapackage(...)</code>
+<li>Create package: <code>write_salmon_datapackage(...)</code>
 </li>
 </ol>
 </div>

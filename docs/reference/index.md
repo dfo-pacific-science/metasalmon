@@ -1,5 +1,23 @@
 # Package index
 
+## Start Here
+
+One-shot package creation from raw tables
+
+- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  : Create a Salmon Data Package directly from raw tables
+- [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
+  : Infer Salmon Data Package artifacts from resource tables
+- [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
+  : Read a Salmon Data Package
+
+## Advanced Package Assembly
+
+Manual writing when you already have the SDP metadata tables assembled
+
+- [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  : Write a Salmon Data Package from preassembled metadata
+
 ## Dictionary Functions
 
 Infer, validate, and apply semantic data dictionaries
@@ -12,21 +30,6 @@ Infer, validate, and apply semantic data dictionaries
   : Apply a salmon dictionary to a data frame
 - [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   : Apply semantic suggestions into a dictionary
-
-## Package Functions
-
-Create and read Salmon Data Packages
-
-- [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
-  : Create a Salmon Data Package
-- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-  : Create a Salmon Data Package directly from raw tables
-- [`create_salmon_datapackage_from_data()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage_from_data.md)
-  : Create a Salmon Data Package directly from raw tables
-- [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)
-  : Infer Salmon Data Package artifacts from resource tables
-- [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
-  : Read a Salmon Data Package
 
 ## Semantic Helpers
 
@@ -120,3 +123,10 @@ Access ICES reference codes and vocabulary
   : Find ICES code types by text match
 - [`ices_find_codes()`](https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_codes.md)
   : Find ICES codes within a code type by text match
+
+## Maintenance
+
+Version and update helpers
+
+- [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  : Check whether a newer metasalmon release is available

@@ -1,4 +1,4 @@
-test_that("create_salmon_datapackage creates valid package", {
+test_that("write_salmon_datapackage creates valid package", {
   # Create test data
   resources <- list(
     main_table = tibble::tibble(
@@ -43,7 +43,7 @@ test_that("create_salmon_datapackage creates valid package", {
 
   # Create package in temp directory
   temp_dir <- withr::local_tempdir()
-  pkg_path <- create_salmon_datapackage(
+  pkg_path <- write_salmon_datapackage(
     resources,
     dataset_meta,
     table_meta,
@@ -54,14 +54,17 @@ test_that("create_salmon_datapackage creates valid package", {
   )
 
   expect_true(dir.exists(pkg_path))
-  expect_true(file.exists(file.path(pkg_path, "dataset.csv")))
-  expect_true(file.exists(file.path(pkg_path, "tables.csv")))
-  expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "dataset.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "tables.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "column_dictionary.csv")))
   expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
   expect_true(file.exists(file.path(pkg_path, "data", "main_table.csv")))
+  expect_false(file.exists(file.path(pkg_path, "dataset.csv")))
+  expect_false(file.exists(file.path(pkg_path, "tables.csv")))
+  expect_false(file.exists(file.path(pkg_path, "column_dictionary.csv")))
 })
 
-test_that("create_salmon_datapackage_from_data creates valid package", {
+test_that("create_sdp creates valid package", {
   resources <- list(
     catches = tibble::tibble(
       station_id = c("A", "B"),
@@ -78,29 +81,26 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
   )
 
   temp_dir <- withr::local_tempdir()
-  pkg_path <- NULL
-  notes <- testthat::capture_messages({
-    pkg_path <- create_salmon_datapackage_from_data(
-      resources,
-      path = file.path(temp_dir, "package"),
-      dataset_id = "mt-demo",
-      seed_semantics = FALSE,
-      overwrite = TRUE
-    )
-  })
-
-  expect_true(any(grepl("deprecated in favor of.*create_sdp", notes)))
+  pkg_path <- create_sdp(
+    resources,
+    path = file.path(temp_dir, "package"),
+    dataset_id = "mt-demo",
+    seed_semantics = FALSE,
+    overwrite = TRUE
+  )
 
   expect_true(dir.exists(pkg_path))
-  expect_true(file.exists(file.path(pkg_path, "dataset.csv")))
-  expect_true(file.exists(file.path(pkg_path, "tables.csv")))
-  expect_true(file.exists(file.path(pkg_path, "column_dictionary.csv")))
-  expect_true(file.exists(file.path(pkg_path, "codes.csv")))
+  expect_true(dir.exists(file.path(pkg_path, "metadata")))
+  expect_true(dir.exists(file.path(pkg_path, "data")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "dataset.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "tables.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "column_dictionary.csv")))
+  expect_true(file.exists(file.path(pkg_path, "metadata", "codes.csv")))
   expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
-  expect_false(file.exists(file.path(pkg_path, "metadata-edh-hnap.xml")))
+  expect_false(file.exists(file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")))
 
-  dataset <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
-  tables <- readr::read_csv(file.path(pkg_path, "tables.csv"), show_col_types = FALSE)
+  dataset <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
+  tables <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
 
   expect_equal(dataset$dataset_id[[1]], "mt-demo")
   expect_setequal(tables$table_id, c("catches", "stations"))
@@ -119,7 +119,7 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
     spatial_extent = NA_character_
   )
 
-  pkg_path_with_edh <- create_salmon_datapackage_from_data(
+  pkg_path_with_edh <- create_sdp(
     resources,
     path = file.path(temp_dir, "package-with-edh"),
     dataset_id = "mt-demo2",
@@ -130,7 +130,7 @@ test_that("create_salmon_datapackage_from_data creates valid package", {
     overwrite = TRUE
   )
 
-  expect_true(file.exists(file.path(pkg_path_with_edh, "metadata-edh-hnap.xml")))
+  expect_true(file.exists(file.path(pkg_path_with_edh, "metadata", "metadata-edh-hnap.xml")))
 })
 
 test_that("normalized dictionary column order is preserved when writing package", {
@@ -154,7 +154,7 @@ test_that("normalized dictionary column order is preserved when writing package"
     description = NA_character_
   )
 
-  pkg_path <- create_salmon_datapackage(
+  pkg_path <- write_salmon_datapackage(
     resources = resources,
     dataset_meta = dataset_meta,
     table_meta = table_meta,
@@ -163,7 +163,7 @@ test_that("normalized dictionary column order is preserved when writing package"
     overwrite = TRUE
   )
 
-  written <- readr::read_csv(file.path(pkg_path, "column_dictionary.csv"), show_col_types = FALSE)
+  written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   expect_equal(
     names(written),
     c(
@@ -212,7 +212,7 @@ test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", 
     overwrite = TRUE
   )
 
-  dataset_written <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
+  dataset_written <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
   expect_equal(as.character(dataset_written$temporal_start[[1]]), "1997-12-03")
   expect_equal(as.character(dataset_written$temporal_end[[1]]), "2024-11-20")
   expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
@@ -232,20 +232,24 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
                            table_meta = NULL, dataset_meta = NULL) {
     dict$property_iri[dict$column_name == "count"] <- "https://example.org/property-existing"
     attr(dict, "semantic_suggestions") <- tibble::tibble(
-      column_name = c("count", "count"),
-      dictionary_role = c("variable", "property"),
-      table_id = c("catches", "catches"),
-      dataset_id = c("review-demo", "review-demo"),
-      target_scope = c("column", "column"),
-      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
-      target_sdp_field = c("term_iri", "property_iri"),
-      iri = c("https://example.org/term-top", "https://example.org/property-top"),
-      label = c("Count term", "Count property"),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c("variable", "property"),
-      match_type = c("label_exact", "label_exact"),
-      definition = c(NA_character_, NA_character_)
+      column_name = c("count", "count", "species"),
+      dictionary_role = c("variable", "property", "entity"),
+      table_id = c("catches", "catches", "catches"),
+      dataset_id = c("review-demo", "review-demo", "review-demo"),
+      target_scope = c("column", "column", "code"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "codes.csv"),
+      target_sdp_field = c("term_iri", "property_iri", "term_iri"),
+      target_row_key = c("review-demo/catches/count", "review-demo/catches/count", "review-demo/catches/species/POP1"),
+      code_value = c(NA_character_, NA_character_, "POP1"),
+      code_label = c(NA_character_, NA_character_, "POP1"),
+      code_description = c(NA_character_, NA_character_, NA_character_),
+      iri = c("https://example.org/term-top", "https://example.org/property-top", "https://example.org/pop1"),
+      label = c("Count term", "Count property", "Population One"),
+      source = c("smn", "smn", "smn"),
+      ontology = c("demo", "demo", "demo"),
+      role = c("variable", "property", "entity"),
+      match_type = c("label_exact", "label_exact", "label_exact"),
+      definition = c(NA_character_, NA_character_, NA_character_)
     )
     dict
   }
@@ -267,21 +271,132 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
   expect_true(file.exists(file.path(pkg_path, "README-review.txt")))
   expect_true(file.exists(file.path(pkg_path, "semantic_suggestions.csv")))
 
-  dict_written <- readr::read_csv(file.path(pkg_path, "column_dictionary.csv"), show_col_types = FALSE)
+  review_lines <- readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE)
+  expect_true(any(grepl("Salmon Data Package Review Checklist", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("[ ] 1. Confirm the package has the expected metadata/ and data/ files", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("The canonical Salmon Data Package is the whole folder", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("send the whole folder or a zip of the whole folder", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
+
+  suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
+  expect_true(all(suggestions_written$target_scope == "column"))
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   count_row <- dict_written[dict_written$column_name == "count", , drop = FALSE]
   expect_equal(count_row$term_iri[[1]], "https://example.org/term-top")
   expect_equal(count_row$property_iri[[1]], "https://example.org/property-existing")
   expect_true(startsWith(count_row$column_description[[1]], "REVIEW REQUIRED:"))
 
-  tables_written <- readr::read_csv(file.path(pkg_path, "tables.csv"), show_col_types = FALSE)
+  tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
   expect_true(all(startsWith(tables_written$file_name, "data/")))
   expect_true(all(startsWith(tables_written$description, "REVIEW REQUIRED:")))
 
-  dataset_written <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
+  dataset_written <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
   expect_true(startsWith(dataset_written$creator[[1]], "REVIEW REQUIRED:"))
   expect_true(startsWith(dataset_written$contact_name[[1]], "REVIEW REQUIRED:"))
   expect_true(startsWith(dataset_written$contact_email[[1]], "REVIEW REQUIRED:"))
   expect_true(startsWith(dataset_written$license[[1]], "REVIEW REQUIRED:"))
+})
+
+test_that("create_sdp limits default code-level semantic seeding to factor columns", {
+  resources <- list(
+    catches = tibble::tibble(
+      run = factor(c("early", "late")),
+      station = c("A", "B"),
+      count = c(10L, 20L)
+    )
+  )
+
+  seen_codes <- NULL
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    seen_codes <<- codes
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "factor-code-scope"),
+        dataset_id = "scope-demo",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  expect_s3_class(seen_codes, "tbl_df")
+  expect_setequal(unique(seen_codes$column_name), "run")
+})
+
+test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {
+  resources <- list(
+    catches = tibble::tibble(
+      run = factor(c("early", "late")),
+      station = c("A", "B"),
+      count = c(10L, 20L)
+    )
+  )
+
+  seen_codes <- NULL
+  update_calls <- 0L
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    seen_codes <<- codes
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+  fake_check_for_updates <- function(...) {
+    update_calls <<- update_calls + 1L
+    structure(
+      list(
+        status = "update_available",
+        update_available = TRUE,
+        latest_version = "9.9.9",
+        install_command = "remotes::install_github('dfo-pacific-science/metasalmon')"
+      ),
+      class = "metasalmon_update_check"
+    )
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    check_for_updates = fake_check_for_updates,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "all-code-scope"),
+        dataset_id = "scope-demo-all",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        semantic_code_scope = "all",
+        check_updates = TRUE,
+        overwrite = TRUE
+      )
+
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "no-update-check"),
+        dataset_id = "scope-demo-no-update",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        semantic_code_scope = "all",
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  expect_setequal(unique(seen_codes$column_name), c("run", "station"))
+  expect_equal(update_calls, 1L)
 })
 
 test_that("read_salmon_datapackage reads package correctly", {
@@ -328,7 +443,7 @@ test_that("read_salmon_datapackage reads package correctly", {
   validate_dictionary(dict)
 
   temp_dir <- withr::local_tempdir()
-  create_salmon_datapackage(
+  write_salmon_datapackage(
     resources,
     dataset_meta,
     table_meta,
@@ -390,7 +505,7 @@ test_that("read_salmon_datapackage prefers canonical CSV metadata when datapacka
   validate_dictionary(dict)
 
   temp_dir <- withr::local_tempdir()
-  create_salmon_datapackage(
+  write_salmon_datapackage(
     resources,
     dataset_meta,
     table_meta,
@@ -410,7 +525,64 @@ test_that("read_salmon_datapackage prefers canonical CSV metadata when datapacka
   expect_true("main_table" %in% names(pkg$resources))
 })
 
-test_that("create_salmon_datapackage round-trip preserves data", {
+test_that("read_salmon_datapackage still reads legacy root-level metadata CSVs", {
+  resources <- list(
+    main_table = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(100L, 200L)
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "legacy-1",
+    title = "Legacy Dataset",
+    description = "Legacy layout test",
+    creator = "Test Author",
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = "MIT"
+  )
+
+  table_meta <- tibble::tibble(
+    dataset_id = "legacy-1",
+    table_id = "main_table",
+    file_name = "data/main_table.csv",
+    table_label = "Main Table",
+    description = "Main data table"
+  )
+
+  dict <- infer_dictionary(
+    resources$main_table,
+    dataset_id = "legacy-1",
+    table_id = "main_table"
+  )
+  dict <- fill_measurement_components(dict)
+  validate_dictionary(dict)
+
+  temp_dir <- withr::local_tempdir()
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    format = "csv",
+    overwrite = TRUE
+  )
+
+  file.copy(file.path(temp_dir, "metadata", "dataset.csv"), file.path(temp_dir, "dataset.csv"), overwrite = TRUE)
+  file.copy(file.path(temp_dir, "metadata", "tables.csv"), file.path(temp_dir, "tables.csv"), overwrite = TRUE)
+  file.copy(file.path(temp_dir, "metadata", "column_dictionary.csv"), file.path(temp_dir, "column_dictionary.csv"), overwrite = TRUE)
+  unlink(file.path(temp_dir, "metadata"), recursive = TRUE)
+
+  pkg <- read_salmon_datapackage(temp_dir)
+
+  expect_equal(pkg$dataset$dataset_id, "legacy-1")
+  expect_equal(pkg$tables$table_id, "main_table")
+  expect_true("main_table" %in% names(pkg$resources))
+})
+
+test_that("write_salmon_datapackage round-trip preserves data", {
   # Create test data
   original_df <- tibble::tibble(
     species = c("Coho", "Chinook", "Sockeye"),
@@ -455,7 +627,7 @@ test_that("create_salmon_datapackage round-trip preserves data", {
   validate_dictionary(dict)
 
   temp_dir <- withr::local_tempdir()
-  create_salmon_datapackage(
+  write_salmon_datapackage(
     resources,
     dataset_meta,
     table_meta,
@@ -530,7 +702,7 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
   )
 
   temp_dir <- withr::local_tempdir()
-  create_salmon_datapackage(
+  write_salmon_datapackage(
     resources,
     dataset_meta,
     table_meta,
@@ -550,7 +722,7 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
   expect_equal(pkg$dictionary$unit_iri, dict$unit_iri)
 })
 
-test_that("create_salmon_datapackage errors on existing path without overwrite", {
+test_that("write_salmon_datapackage errors on existing path without overwrite", {
   temp_dir <- withr::local_tempdir()
 
   # Create a file in the directory
@@ -585,7 +757,7 @@ test_that("create_salmon_datapackage errors on existing path without overwrite",
   dict <- fill_measurement_components(dict)
 
   expect_error(
-    create_salmon_datapackage(
+    write_salmon_datapackage(
       resources,
       dataset_meta,
       table_meta,

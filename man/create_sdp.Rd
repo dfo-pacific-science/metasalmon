@@ -17,6 +17,8 @@ create_sdp(
   seed_codes = NULL,
   seed_table_meta = NULL,
   seed_dataset_meta = NULL,
+  semantic_code_scope = c("factor", "all", "none"),
+  check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
   include_edh_xml = FALSE,
@@ -57,21 +59,31 @@ semantic suggestions.}
 
 \item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata.}
 
+\item{semantic_code_scope}{Character string controlling which \code{codes.csv}
+rows are sent through \code{suggest_semantics()} during one-shot seeding.
+\code{"factor"} (default) only analyzes codes sourced from factor/categorical
+columns in the original data frame(s); \code{"all"} analyzes all inferred or
+supplied code rows; \code{"none"} skips code-level semantic suggestions.}
+
+\item{check_updates}{Logical; if \code{TRUE}, run a short, non-fatal
+\code{\link[=check_for_updates]{check_for_updates()}} call after writing the package and mention newer
+releases only when one is available. Defaults to \code{interactive()}.}
+
 \item{format}{Character; resource format: \code{"csv"} (default, only format supported)}
 
 \item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists}
 
 \item{include_edh_xml}{Logical; when \code{TRUE}, writes an EDH XML metadata file into
-the output package path using \code{edh_build_iso19139_xml()}.}
+\verb{metadata/} using \code{edh_build_iso19139_xml()}.}
 
 \item{edh_profile}{One of "dfo_edh_hnap" (default) or "iso19139". Determines
 whether the richer HNAP-aware profile or compact fallback profile is written
 when \code{include_edh_xml = TRUE}.}
 
 \item{edh_xml_path}{Optional file path for the EDH output when
-\code{include_edh_xml = TRUE}. If \code{NULL}, defaults to \code{metadata-edh-hnap.xml} for
-\code{edh_profile = "dfo_edh_hnap"} and \code{metadata-iso19139.xml} for
-\code{edh_profile = "iso19139"}.}
+\code{include_edh_xml = TRUE}. If \code{NULL}, defaults to \code{metadata/metadata-edh-hnap.xml}
+for \code{edh_profile = "dfo_edh_hnap"} and \code{metadata/metadata-iso19139.xml}
+for \code{edh_profile = "iso19139"}.}
 }
 \value{
 Invisibly returns the package path.
@@ -84,9 +96,18 @@ Data Package.
 \details{
 This one-shot helper creates a review-ready package by default:
 semantic suggestions are seeded and the top-ranked column-level suggestions
-are auto-applied only into missing dictionary IRI fields. The output package
-also includes \code{semantic_suggestions.csv} (when available) plus
-\code{README-review.txt} with clear Excel-based review instructions, plus required-field review placeholders in the inferred metadata files.
+are auto-applied only into missing dictionary IRI fields. Table-level
+suggestions remain available when table metadata is present. To reduce review
+noise conservatively, code-level suggestions default to factor/categorical
+source columns only; set \code{semantic_code_scope = "all"} to broaden that or
+\code{"none"} to disable it. The package root contains \code{README-review.txt},
+\code{semantic_suggestions.csv} (when available), \code{datapackage.json},
+\verb{metadata/}, and \verb{data/}. To keep review files usable,
+\code{semantic_suggestions.csv} trims code-level suggestions that do not have
+enough human-readable context to review safely. Required-field review
+placeholders are also inserted into the inferred metadata files. In
+interactive use, \code{create_sdp()} can also mention an available package update;
+set \code{check_updates = FALSE} to skip that network check.
 }
 \examples{
 \dontrun{

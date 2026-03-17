@@ -47,15 +47,23 @@ walks you through the fastest path.
 
 ### Can I edit the data package after creating it?
 
-Yes! A data package is just a folder with files. You can:
+Yes. A data package is just a folder with files. You can:
 
-- **Edit the CSV files** directly in Excel or R
-- **Modify the dictionary** and re-run
-  [`create_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_salmon_datapackage.md)
-- **Hand-edit the JSON files** if you’re comfortable with JSON
-- **Add or remove files** as needed
+- **Edit the metadata/*.csv and data/*.csv files** directly in Excel or
+  R
+- **Use
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)**
+  for the main one-shot workflow from raw tables
+- **Use
+  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
+  when you already assembled metadata and want the advanced/manual
+  writer
+- **Regenerate `datapackage.json`** by rewriting the package after
+  metadata changes
 
-The package structure is designed to be human-readable and editable.
+The package structure is designed to be human-readable and editable. The
+`metadata/*.csv` files are canonical; `datapackage.json` is a derived
+export, so avoid treating the JSON as the source of truth.
 
 ### Can colleagues open my package without installing metasalmon?
 
@@ -68,7 +76,9 @@ colleagues can:
 - **Use the metadata** to understand the dataset’s context
 
 metasalmon makes it easy to *create* packages, but anyone can *read*
-them without special software.
+them without special software. When you share one, send the whole folder
+(or a zip of the whole folder) so the canonical metadata stays with the
+data files.
 
 ### Does this work with Python?
 
@@ -192,6 +202,13 @@ dict_age <- infer_dictionary(df_age,
 If you have columns with coded values (like `SPECIES = "CO"` for Coho),
 you can add a code list:
 
+- In the default
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  workflow, code-level semantic suggestions are seeded automatically
+  only for factor/categorical source columns.
+- If you want broader code-level suggestion seeding, use
+  `semantic_code_scope = "all"`.
+
 ``` r
 
 codes <- tibble::tibble(
@@ -205,7 +222,7 @@ codes <- tibble::tibble(
 )
 
 # Include codes when creating the package
-pkg_path <- create_salmon_datapackage(
+pkg_path <- write_salmon_datapackage(
   resources = list(escapement = df),
   dataset_meta = dataset_meta,
   table_meta = table_meta,
@@ -238,12 +255,12 @@ dict_all <- dplyr::bind_rows(
 table_meta <- tibble::tibble(
   dataset_id = rep("fraser-coho-2024", 3),
   table_id = c("escapement", "age_composition", "catch"),
-  file_name = c("escapement.csv", "age_composition.csv", "catch.csv"),
+  file_name = c("data/escapement.csv", "data/age_composition.csv", "data/catch.csv"),
   table_label = c("Escapement Data", "Age Composition", "Catch Data"),
   description = c("Spawner counts", "Age structure", "Harvest numbers")
 )
 
-pkg_path <- create_salmon_datapackage(
+pkg_path <- write_salmon_datapackage(
   resources = resources,
   dataset_meta = dataset_meta,
   table_meta = table_meta,
@@ -264,7 +281,7 @@ pkg_path <- create_salmon_datapackage(
 2.  Validate: `validate_dictionary(dict)` - note any errors/warnings
 3.  Fix issues: Edit `dict` to fix problems
 4.  Validate again: `validate_dictionary(dict)` - should pass now
-5.  Create package: `create_salmon_datapackage(...)`
+5.  Create package: `write_salmon_datapackage(...)`
 
 ### How detailed should my descriptions be?
 

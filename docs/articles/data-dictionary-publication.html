@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,11 @@
 generated a starter dictionary yet, start with the <a href="metasalmon.html">5-Minute Quickstart</a> first.</p>
 <p>When all of the pieces are ready, <code>metasalmon</code> writes
 files matching the Salmon Data Package specification so you can upload
-or hand the folder to someone else with confidence.</p>
+or hand the folder to someone else with confidence.
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> is the main one-shot path; this article covers
+the more explicit, manual workflow where you assemble the metadata
+tables yourself and then call
+<code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code>.</p>
 <div class="section level3">
 <h3 id="start-with-your-data">1) Start with your data<a class="anchor" aria-label="anchor" href="#start-with-your-data"></a>
 </h3>
@@ -134,7 +138,7 @@ row.</p>
 <span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"my-dataset-2026"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"main-table"</span>,</span>
-<span>  file_name <span class="op">=</span> <span class="st">"main-table.csv"</span>,</span>
+<span>  file_name <span class="op">=</span> <span class="st">"data/main-table.csv"</span>,</span>
 <span>  table_label <span class="op">=</span> <span class="st">"Main Salmon Table"</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"Escapement and effort data by population"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -159,7 +163,10 @@ that explains what the code means.</p>
 <span><span class="op">)</span></span></code></pre></div>
 <p>If the column reuses a published controlled vocabulary (like the DFO
 Salmon Ontology), include the matching IRI in <code>term_iri</code> so
-automated tools can link to the definition.</p>
+automated tools can link to the definition. In the one-shot
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> workflow, code-level semantic suggestions are
+seeded automatically only for factor/categorical source columns unless
+you opt into <code>semantic_code_scope = "all"</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="create-the-package">5) Create the package<a class="anchor" aria-label="anchor" href="#create-the-package"></a>
@@ -167,7 +174,7 @@ automated tools can link to the definition.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>main <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage</a></span><span class="op">(</span></span>
 <span>  resources <span class="op">=</span> <span class="va">resources</span>,</span>
 <span>  dataset_meta <span class="op">=</span> <span class="va">dataset_meta</span>,</span>
 <span>  table_meta <span class="op">=</span> <span class="va">table_meta</span>,</span>
@@ -178,10 +185,15 @@ automated tools can link to the definition.</p>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
-<p>This writes the CSV files plus <code>datapackage.json</code> that
-follow the Salmon Data Package specification. The folder is now ready
-for publication, archiving, or sharing with colleagues.</p>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>This writes the canonical metadata CSV files under
+<code>metadata/</code>, the data tables under <code>data/</code>, and a
+derived <code>datapackage.json</code> at the package root. The
+<code>metadata/*.csv</code> files are the source of truth; if they
+disagree with <code>datapackage.json</code>, fix the CSV metadata and
+rewrite the package. The folder is now ready for publication, archiving,
+or sharing with colleagues. Share the whole folder (or a zip of the
+whole folder), not just <code>datapackage.json</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="optional-include-dwc-dp-export-hints">Optional: include DwC-DP export hints<a class="anchor" aria-label="anchor" href="#optional-include-dwc-dp-export-hints"></a>
@@ -206,10 +218,10 @@ GeoNetwork, <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_i
 richer HNAP-aware EDH export and still offers the older compact ISO
 19139 path as an explicit fallback.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">edh_hnap_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">edh_hnap_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">edh_iso_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
+<span><span class="va">edh_iso_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"metadata-iso19139.xml"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span></span>
 <span>  <span class="va">dataset_meta</span>,</span>
 <span>  output_path <span class="op">=</span> <span class="va">edh_iso_xml</span>,</span>

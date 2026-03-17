@@ -1,15 +1,17 @@
-# Create a Salmon Data Package
+# Write a Salmon Data Package from preassembled metadata
 
-Writes the canonical Salmon Data Package (SDP) CSV metadata files
-(`dataset.csv`, `tables.csv`, `column_dictionary.csv`, and optional
-`codes.csv`) plus the data resource files themselves. For
-interoperability with Frictionless-style tooling, the function also
-emits a derived `datapackage.json` descriptor.
+Advanced/manual writer for cases where you already have the canonical
+Salmon Data Package (SDP) metadata tables assembled. It writes the SDP
+CSV metadata files under `metadata/` (`dataset.csv`, `tables.csv`,
+`column_dictionary.csv`, and optional `codes.csv`) plus the data
+resource files themselves under `data/`. For interoperability with
+Frictionless-style tooling, the function also emits a derived
+`datapackage.json` descriptor at the package root.
 
 ## Usage
 
 ``` r
-create_salmon_datapackage(
+write_salmon_datapackage(
   resources,
   dataset_meta,
   table_meta,
@@ -82,7 +84,7 @@ table_meta <- tibble::tibble(
   table_label = "Main Table"
 )
 dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
-create_salmon_datapackage(
+write_salmon_datapackage(
   resources, dataset_meta, table_meta, dict,
   path = tempdir()
 )

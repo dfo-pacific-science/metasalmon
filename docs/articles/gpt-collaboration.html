@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -374,7 +374,7 @@ the repo) and follows the same rules: measurement columns require
 <span><span class="va">table_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"nuseds-fraser-coho-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  file_name <span class="op">=</span> <span class="st">"escapement.csv"</span>,</span>
+<span>  file_name <span class="op">=</span> <span class="st">"data/escapement.csv"</span>,</span>
 <span>  table_label <span class="op">=</span> <span class="st">"Escapement Data"</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"Coho escapement counts and metadata"</span>,</span>
 <span>  observation_unit <span class="op">=</span> <span class="cn">NA_character_</span>,      <span class="co"># or a short label like "CU-year record"</span></span>
@@ -384,7 +384,7 @@ the repo) and follows the same rules: measurement columns require
 <span></span>
 <span><span class="co"># Create package</span></span>
 <span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">df</span><span class="op">)</span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span></span>
+<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage</a></span><span class="op">(</span></span>
 <span>  <span class="va">resources</span>,</span>
 <span>  <span class="va">dataset_meta</span>,</span>
 <span>  <span class="va">table_meta</span>,</span>
@@ -394,6 +394,9 @@ the repo) and follows the same rules: measurement columns require
 <span>  format <span class="op">=</span> <span class="st">"csv"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>This advanced/manual writer places the canonical metadata tables
+under <code>metadata/</code>, the table CSVs under <code>data/</code>,
+and writes <code>datapackage.json</code> at the package root.</p>
 </div>
 </div>
 <div class="section level2">
@@ -594,7 +597,7 @@ candidates.</p>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 5. Create package</span></span>
-<span><span class="fu"><a href="../reference/create_salmon_datapackage.html">create_salmon_datapackage</a></span><span class="op">(</span><span class="va">resources</span>, <span class="va">dataset_meta</span>, <span class="va">table_meta</span>, <span class="va">dict</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage</a></span><span class="op">(</span><span class="va">resources</span>, <span class="va">dataset_meta</span>, <span class="va">table_meta</span>, <span class="va">dict</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="resources">Resources<a class="anchor" aria-label="anchor" href="#resources"></a>

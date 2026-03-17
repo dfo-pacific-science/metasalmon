@@ -532,6 +532,11 @@ infer_column_role <- function(col_name, col) {
     return("temporal")
   }
 
+  # Preserve explicit factor/categorical intent from the source data.
+  if (inherits(col, "factor")) {
+    return("categorical")
+  }
+
   # Check for measurement/quantity patterns
   if (grepl("count|total|number|amount|quantity|measure", name_lower)) {
     return("measurement")

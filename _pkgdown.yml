@@ -34,6 +34,18 @@ home:
           This package is under active development.
 
 reference:
+  - title: "Start Here"
+    desc: "One-shot package creation from raw tables"
+    contents:
+      - create_sdp
+      - infer_salmon_datapackage_artifacts
+      - read_salmon_datapackage
+
+  - title: "Advanced Package Assembly"
+    desc: "Manual writing when you already have the SDP metadata tables assembled"
+    contents:
+      - write_salmon_datapackage
+
   - title: "Dictionary Functions"
     desc: "Infer, validate, and apply semantic data dictionaries"
     contents:
@@ -41,15 +53,6 @@ reference:
       - validate_dictionary
       - apply_salmon_dictionary
       - apply_semantic_suggestions
-
-  - title: "Package Functions"
-    desc: "Create and read Salmon Data Packages"
-    contents:
-      - create_salmon_datapackage
-      - create_sdp
-      - create_salmon_datapackage_from_data
-      - infer_salmon_datapackage_artifacts
-      - read_salmon_datapackage
 
   - title: "Semantic Helpers"
     desc: "Semantic suggestion, vocabulary search, and ranking benchmark capabilities"
@@ -107,6 +110,11 @@ reference:
       - ices_codes
       - ices_find_code_types
       - ices_find_codes
+
+  - title: "Maintenance"
+    desc: "Version and update helpers"
+    contents:
+      - check_for_updates
 
 articles:
   - title: "Getting Started"

@@ -49,14 +49,16 @@ pkg_path <- create_sdp(
 )
 
 # Open pkg_path and review:
-# - dataset.csv
-# - tables.csv
-# - column_dictionary.csv
+# - metadata/dataset.csv
+# - metadata/tables.csv
+# - metadata/column_dictionary.csv
+# - metadata/codes.csv (if present)
 # - data/*.csv
 # - semantic_suggestions.csv (if present)
 # - README-review.txt
 ```
 
+`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, and only seeds code-level semantic suggestions by default for factor/categorical source columns. In interactive use it can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
 To continue:
 
@@ -92,16 +94,19 @@ When you create a package, you get a folder containing:
 
 ```
 my-data-package/
+  +-- README-review.txt         # Step-by-step review checklist
+  +-- semantic_suggestions.csv  # Review-only semantic suggestions (when present)
+  +-- datapackage.json          # Machine-readable export
+  +-- metadata/
+  |   +-- dataset.csv           # Dataset-level metadata (canonical)
+  |   +-- tables.csv            # Table-level metadata and file paths
+  |   +-- column_dictionary.csv # What each column means
+  |   +-- codes.csv             # What each code value means (if applicable)
   +-- data/
-  |   +-- escapement.csv      # Your data table(s)
-  +-- dataset.csv             # Dataset-level metadata
-  +-- tables.csv              # Table-level metadata and file paths
-  +-- column_dictionary.csv   # What each column means
-  +-- codes.csv               # What each code value means (if applicable)
-  +-- datapackage.json        # Machine-readable metadata
+      +-- escapement.csv        # Your data table(s)
 ```
 
-Anyone opening this folder - whether a colleague, a reviewer, or your future self - can immediately understand your data.
+Anyone opening this folder - whether a colleague, a reviewer, or your future self - can immediately understand your data. The `metadata/*.csv` files are the canonical package metadata; `datapackage.json` is a derived interoperability export. When you share the package, send the whole folder (or a zip of the whole folder), not just `datapackage.json`.
 
 ## Key Features
 
@@ -145,10 +150,12 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 The high-level flow is:
 
-- **Raw tables** lead into `column_dictionary.csv` (and `codes.csv` when there are categorical columns).
+- **Start here:** `create_sdp()` takes raw tables, infers the package metadata, writes a review-ready package, gives you a checklist, and keeps default code-level semantic seeding conservative by limiting it to factor/categorical source columns.
+- **Advanced/manual path:** `write_salmon_datapackage()` is for cases where you already assembled `dataset.csv`, `tables.csv`, `column_dictionary.csv`, and optional `codes.csv` yourself.
+- **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
-- **`create_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.
+- **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.
 
 <script>
 // Prevent Mermaid from auto-rendering before we prepare the code blocks.
@@ -179,15 +186,15 @@ document.addEventListener("DOMContentLoaded", function () {
 <div id="how-it-fits-together-diagram"></div>
 <textarea id="how-it-fits-together-mermaid" style="display:none">
 flowchart LR
-  RawData["Raw data tables"] --> Dict["column_dictionary.csv + codes.csv"]
-  Dict["column_dictionary.csv + codes.csv"] --> Dataset["dataset.csv + tables.csv"]
-  Dataset["dataset.csv + tables.csv"] --> Package["Salmon Data Package files + datapackage.json"]
-  Dataset["dataset.csv + tables.csv"] --> Spec["Salmon Data Package specification"]
-  Spec["Salmon Data Package specification"] --> Package["Salmon Data Package files + datapackage.json"]
-  Ontology["Salmon Domain Ontology and published vocabularies"] --> Dict["column_dictionary.csv + codes.csv"]
-  Ontology["Salmon Domain Ontology and published vocabularies"] --> Package["Salmon Data Package files + datapackage.json"]
-  GPT["Salmon Data Standardizer GPT"] --> Dict["column_dictionary.csv + codes.csv"]
-  GPT["Salmon Data Standardizer GPT"] --> Package["Salmon Data Package files + datapackage.json"]
+  RawData["Raw data tables"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
+  Dict["metadata/column_dictionary.csv + metadata/codes.csv"] --> Dataset["metadata/dataset.csv + metadata/tables.csv"]
+  Dataset["metadata/dataset.csv + metadata/tables.csv"] --> Package["Package root + data/ + datapackage.json"]
+  Dataset["metadata/dataset.csv + metadata/tables.csv"] --> Spec["Salmon Data Package specification"]
+  Spec["Salmon Data Package specification"] --> Package["Package root + data/ + datapackage.json"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
+  Ontology["Salmon Domain Ontology and published vocabularies"] --> Package["Package root + data/ + datapackage.json"]
+  GPT["Salmon Data Standardizer GPT"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
+  GPT["Salmon Data Standardizer GPT"] --> Package["Package root + data/ + datapackage.json"]
 </textarea>
 
 ## For Developers

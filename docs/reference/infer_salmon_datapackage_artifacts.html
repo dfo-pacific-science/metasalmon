@@ -9,7 +9,7 @@ dataset-level metadata in a single step from one or more raw data tables."><meta
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.13</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.14</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,8 @@ dataset-level metadata in a single step from one or more raw data tables.</p>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed_table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  semantic_code_scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"factor"</span>, <span class="st">"all"</span>, <span class="st">"none"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -118,6 +119,14 @@ semantic suggestions.</p></dd>
 
 <dt id="arg-seed-dataset-meta">seed_dataset_meta<a class="anchor" aria-label="anchor" href="#arg-seed-dataset-meta"></a></dt>
 <dd><p>Optional <code>dataset.csv</code>-style seed metadata.</p></dd>
+
+
+<dt id="arg-semantic-code-scope">semantic_code_scope<a class="anchor" aria-label="anchor" href="#arg-semantic-code-scope"></a></dt>
+<dd><p>Character string controlling which <code>codes.csv</code>
+rows are sent through <code><a href="suggest_semantics.html">suggest_semantics()</a></code> during one-shot seeding.
+<code>"factor"</code> (default) only analyzes codes sourced from factor/categorical
+columns in the original data frame(s); <code>"all"</code> analyzes all inferred or
+supplied code rows; <code>"none"</code> skips code-level semantic suggestions.</p></dd>
 
 </dl></div>
     <div class="section level2">

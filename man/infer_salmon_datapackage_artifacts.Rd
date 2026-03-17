@@ -15,7 +15,8 @@ infer_salmon_datapackage_artifacts(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = NULL,
-  seed_dataset_meta = NULL
+  seed_dataset_meta = NULL,
+  semantic_code_scope = c("factor", "all", "none")
 )
 }
 \arguments{
@@ -47,6 +48,12 @@ semantic suggestions.}
 \item{seed_table_meta}{Optional \code{tables.csv}-style seed metadata.}
 
 \item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata.}
+
+\item{semantic_code_scope}{Character string controlling which \code{codes.csv}
+rows are sent through \code{suggest_semantics()} during one-shot seeding.
+\code{"factor"} (default) only analyzes codes sourced from factor/categorical
+columns in the original data frame(s); \code{"all"} analyzes all inferred or
+supplied code rows; \code{"none"} skips code-level semantic suggestions.}
 }
 \value{
 A named list with the following components:

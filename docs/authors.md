@@ -7,13 +7,13 @@
 ## Citation
 
 Johnson B (2026). *metasalmon: Metasalmon: Salmon Data Utilities*. R
-package version 0.0.13,
+package version 0.0.14,
 <https://dfo-pacific-science.github.io/metasalmon/>.
 
     @Manual{,
       title = {metasalmon: Metasalmon: Salmon Data Utilities},
       author = {Brett Johnson},
       year = {2026},
-      note = {R package version 0.0.13},
+      note = {R package version 0.0.14},
       url = {https://dfo-pacific-science.github.io/metasalmon/},
     }
