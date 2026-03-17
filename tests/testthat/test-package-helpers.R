@@ -197,6 +197,27 @@ test_that("create_sdp defaults path in getwd using dataset_id slug", {
   expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
 })
 
+test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {
+  withr::local_tempdir() -> tmp
+
+  sample_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+  fraser_coho <- readr::read_csv(sample_path, show_col_types = FALSE)
+
+  pkg_path <- create_sdp(
+    fraser_coho,
+    path = file.path(tmp, "nuseds-sample"),
+    dataset_id = "fraser-coho-2024",
+    table_id = "escapement",
+    seed_semantics = FALSE,
+    overwrite = TRUE
+  )
+
+  dataset_written <- readr::read_csv(file.path(pkg_path, "dataset.csv"), show_col_types = FALSE)
+  expect_equal(as.character(dataset_written$temporal_start[[1]]), "1997-12-03")
+  expect_equal(as.character(dataset_written$temporal_end[[1]]), "2024-11-20")
+  expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
+})
+
 test_that("create_sdp writes review files and auto-applies top column suggestions", {
   resources <- list(
     catches = tibble::tibble(

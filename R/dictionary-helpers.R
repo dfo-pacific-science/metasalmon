@@ -359,6 +359,14 @@ infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
 
 infer_dataset_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
   parse_date_values <- function(x) {
+    try_parse <- function(values, format = NULL) {
+      parsed <- tryCatch(
+        suppressWarnings(as.Date(values, format = format)),
+        error = function(e) as.Date(rep(NA_character_, length(values)))
+      )
+      parsed[!is.na(parsed)]
+    }
+
     if (is.null(x) || length(x) == 0) {
       return(as.Date(character()))
     }
@@ -374,22 +382,18 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
       return(as.Date(character()))
     }
 
-    parsed <- suppressWarnings(as.Date(vals))
-    parsed <- parsed[!is.na(parsed)]
-    if (length(parsed) > 0) {
-      return(parsed)
-    }
+    parse_attempts <- list(
+      try_parse(vals),
+      try_parse(vals, "%m/%d/%Y"),
+      try_parse(vals, "%Y/%m/%d"),
+      try_parse(vals, "%d-%b-%y"),
+      try_parse(vals, "%d-%b-%Y")
+    )
 
-    parsed <- suppressWarnings(as.Date(vals, format = "%m/%d/%Y"))
-    parsed <- parsed[!is.na(parsed)]
-    if (length(parsed) > 0) {
-      return(parsed)
-    }
-
-    parsed <- suppressWarnings(as.Date(vals, format = "%Y/%m/%d"))
-    parsed <- parsed[!is.na(parsed)]
-    if (length(parsed) > 0) {
-      return(parsed)
+    for (parsed in parse_attempts) {
+      if (length(parsed) > 0) {
+        return(parsed)
+      }
     }
 
     as.Date(character())
@@ -410,6 +414,9 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     }),
     recursive = TRUE
   )
+  if (length(date_candidates) > 0) {
+    date_candidates <- as.Date(date_candidates, origin = "1970-01-01")
+  }
   date_candidates <- date_candidates[!is.na(date_candidates)]
   temporal_start <- if (length(date_candidates) > 0) min(date_candidates) else as.Date(NA)
   temporal_end <- if (length(date_candidates) > 0) max(date_candidates) else as.Date(NA)
