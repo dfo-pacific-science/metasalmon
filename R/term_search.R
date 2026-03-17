@@ -1466,7 +1466,7 @@ sources_for_role <- function(role) {
     query_tokens <- query_tokens[nzchar(query_tokens)]
   }
 
-  role_map <- role_boost_map[[role_key]] %||% numeric(0)
+  role_map <- as.list(role_boost_map[[role_key]] %||% numeric(0))
   if (length(role_map) > 0) {
     df$score <- df$score + vapply(df$source, function(src) as.numeric(role_map[[src]] %||% 0), numeric(1))
   }

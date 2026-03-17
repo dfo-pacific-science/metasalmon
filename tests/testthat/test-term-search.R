@@ -330,6 +330,24 @@ test_that("score_and_rank_terms is deterministic on ties", {
   expect_equal(ranked$label, c("A label", "B label"))
 })
 
+test_that("score_and_rank_terms tolerates role sources missing from role boost map", {
+  vocab <- metasalmon:::`.iadopt_vocab`()
+  df <- tibble::tibble(
+    label = c("Spawner count", "Fallback count"),
+    iri = c("https://example.org/spawner-count", "https://example.org/fallback-count"),
+    source = c("gbif", "nvs"),
+    ontology = c("gbif", "bodc"),
+    role = NA_character_,
+    match_type = c("label", "label"),
+    definition = c("Count of spawners", "Fallback count term")
+  )
+
+  expect_no_error({
+    ranked <- metasalmon:::`.score_and_rank_terms`(df, "variable", vocab, "spawner count")
+    expect_equal(nrow(ranked), 2)
+  })
+})
+
 # ============================================================================
 # Phase 2 Tests: Ontology Preferences by Role
 # ============================================================================
