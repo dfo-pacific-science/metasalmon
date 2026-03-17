@@ -1,3 +1,9 @@
+metasalmon 0.0.15
+----------------
+
+- `create_sdp()` now tells users up front when online semantic seeding may take a few minutes and points to `seed_semantics = FALSE` for the fastest first pass.
+- Simplified `README-review.txt` into a shorter 7-step checklist so the review flow is easier to follow.
+
 metasalmon 0.0.14
 ----------------
 

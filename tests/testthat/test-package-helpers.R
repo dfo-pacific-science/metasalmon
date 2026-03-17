@@ -273,9 +273,9 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
 
   review_lines <- readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE)
   expect_true(any(grepl("Salmon Data Package Review Checklist", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("[ ] 1. Confirm the package has the expected metadata/ and data/ files", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("[ ] 1. Confirm the package is complete", review_lines, fixed = TRUE)))
   expect_true(any(grepl("The canonical Salmon Data Package is the whole folder", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("send the whole folder or a zip of the whole folder", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("Share the whole folder or a zip of the whole folder", review_lines, fixed = TRUE)))
   expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
@@ -296,6 +296,19 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
   expect_true(startsWith(dataset_written$contact_name[[1]], "REVIEW REQUIRED:"))
   expect_true(startsWith(dataset_written$contact_email[[1]], "REVIEW REQUIRED:"))
   expect_true(startsWith(dataset_written$license[[1]], "REVIEW REQUIRED:"))
+})
+
+test_that("create_sdp seed note explains slower semantic lookup", {
+  note <- metasalmon:::.ms_create_sdp_seed_note(
+    seed_semantics = TRUE,
+    seed_verbose = TRUE,
+    semantic_code_scope = "factor"
+  )
+
+  expect_match(note, "may take a few minutes")
+  expect_match(note, "factor/categorical columns")
+  expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = FALSE))
+  expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = TRUE, seed_verbose = FALSE))
 })
 
 test_that("create_sdp limits default code-level semantic seeding to factor columns", {

@@ -519,6 +519,15 @@ create_sdp <- function(
 
   semantic_code_scope <- match.arg(semantic_code_scope)
 
+  seed_note <- .ms_create_sdp_seed_note(
+    seed_semantics = seed_semantics,
+    seed_verbose = seed_verbose,
+    semantic_code_scope = semantic_code_scope
+  )
+  if (!is.null(seed_note)) {
+    cli::cli_alert_info(seed_note)
+  }
+
   artifacts <- infer_salmon_datapackage_artifacts(
     resources = resources,
     dataset_id = dataset_id,
@@ -1002,6 +1011,29 @@ read_salmon_datapackage <- function(path) {
   dplyr::semi_join(codes, factor_keys, by = c("table_id", "column_name"))
 }
 
+.ms_create_sdp_seed_note <- function(seed_semantics = TRUE,
+                                     seed_verbose = TRUE,
+                                     semantic_code_scope = c("factor", "all", "none")) {
+  if (!isTRUE(seed_semantics) || !isTRUE(seed_verbose)) {
+    return(NULL)
+  }
+
+  semantic_code_scope <- match.arg(semantic_code_scope)
+  scope_note <- switch(
+    semantic_code_scope,
+    factor = "Code-level semantic suggestions are limited to factor/categorical columns for this first pass.",
+    all = "Code-level semantic suggestions are enabled for all inferred code lists in this run.",
+    none = "Code-level semantic suggestions are skipped for this run."
+  )
+
+  paste(
+    "Seeding semantic suggestions from online vocabularies.",
+    "This may take a few minutes for wider tables.",
+    scope_note,
+    "Use {.code seed_semantics = FALSE} for the fastest first pass."
+  )
+}
+
 .ms_create_sdp_update_note <- function(check_updates = interactive()) {
   if (!isTRUE(check_updates)) {
     return(NULL)
@@ -1089,22 +1121,13 @@ read_salmon_datapackage <- function(path) {
     "5. data/*.csv",
     "",
     "Checklist:",
-    "[ ] 1. Confirm the package has the expected metadata/ and data/ files before editing anything.",
-    "[ ] 2. Replace every value that starts with 'REVIEW REQUIRED:' in metadata/*.csv.",
-    "[ ] 3. Confirm dataset title, description, creator, contact, and license in metadata/dataset.csv.",
-    "[ ] 4. Confirm each metadata/tables.csv file_name still points to the correct data/*.csv file.",
-    "[ ] 5. Check table labels, descriptions, observation units, and primary keys in metadata/tables.csv.",
-    "[ ] 6. Check each column label, description, value_type, column_role, and required flag in metadata/column_dictionary.csv.",
-    "[ ] 7. If metadata/codes.csv exists, confirm every coded value used in data/*.csv is listed and described correctly.",
-    if (isTRUE(has_suggestions)) "[ ] 8. Review semantic_suggestions.csv for better semantic matches before publishing." else "[ ] 8. No semantic_suggestions.csv was written for this package; continue with manual semantic review as needed.",
-    "[ ] 9. Review semantic IRIs in metadata/column_dictionary.csv:",
-    "      - term_iri: what the column measures or represents",
-    "      - property_iri: the measurable property (abundance, length, temperature, etc.)",
-    "      - entity_iri: what is being measured (species, population, location, etc.)",
-    "      - unit_iri: the unit that matches the stored values exactly",
-    "[ ] 10. For any suggested IRI: keep it only when the label, definition, scope, and unit all match; replace it when close-but-wrong; leave it blank when no reliable term exists yet.",
-    "[ ] 11. When sharing with others, send the whole folder or a zip of the whole folder. Do not share only datapackage.json or only one metadata CSV if you mean to share the canonical package.",
-    "[ ] 12. When you return to R, re-open the folder with read_salmon_datapackage(pkg_path), then run validate_dictionary(pkg$dictionary, require_iris = TRUE) and validate_semantics(pkg$dictionary, require_iris = TRUE).",
+    "[ ] 1. Confirm the package is complete, then replace every value that starts with 'REVIEW REQUIRED:' in metadata/*.csv.",
+    "[ ] 2. Check metadata/dataset.csv and metadata/tables.csv: title, description, creator/contact, license, file_name paths, labels, observation units, and primary keys.",
+    "[ ] 3. Open data/*.csv and confirm the exported tables and column names match metadata/column_dictionary.csv exactly.",
+    "[ ] 4. If metadata/codes.csv exists, confirm every coded value used in data/*.csv is listed and described correctly.",
+    if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv, then confirm semantic IRIs in metadata/column_dictionary.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; continue with manual semantic review and confirm semantic IRIs in metadata/column_dictionary.csv.",
+    "[ ] 6. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_dictionary(pkg$dictionary, require_iris = TRUE) and validate_semantics(pkg$dictionary, require_iris = TRUE).",
+    "[ ] 7. Share the whole folder or a zip of the whole folder. Do not share only datapackage.json or only one metadata CSV if you mean to share the canonical package.",
     "",
     "Publishing sanity check:",
     "- data/*.csv should remain aligned with metadata/tables.csv and metadata/column_dictionary.csv.",
