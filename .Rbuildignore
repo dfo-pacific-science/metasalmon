@@ -23,3 +23,4 @@ inst/extdata/\.gitkeep$
 ^pkgdown(/|$)
 ^scripts(/|$)
 ^\\.claude(/|$)
+^CLAUDE\\.md$
