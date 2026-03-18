@@ -111,7 +111,14 @@ The package root contains \code{README-review.txt},
 enough human-readable context to review safely. Required-field review
 placeholders are also inserted into the inferred metadata files. In
 interactive use, \code{create_sdp()} can also mention an available package update;
-set \code{check_updates = FALSE} to skip that network check.
+set \code{check_updates = FALSE} to skip that network check. The package bundles
+two Fraser coho examples: \code{nuseds-fraser-coho-sample.csv} (30 rows across
+1996-2024) for the quickest demo, and \verb{nuseds-fraser-coho-2023-2024.csv}
+(173 rows from the official Open Government Canada Fraser and BC Interior
+workbook) for a fuller multi-year example. The bundled
+\code{system.file("extdata", "example-data-README.md", package = "metasalmon")}
+note points to the upstream record/resource URLs, licensing, and the
+repository \verb{data-raw/} script used to derive the fuller example.
 }
 \examples{
 \dontrun{

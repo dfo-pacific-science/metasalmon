@@ -60,6 +60,23 @@ pkg_path <- create_sdp(
 
 `create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. In interactive use it can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
+## Built-in NuSEDS Examples
+
+`metasalmon` now ships two Fraser coho example tables so you can pick speed vs realism:
+
+| File | Rows | Years | Use it when |
+| --- | ---: | --- | --- |
+| `nuseds-fraser-coho-sample.csv` | 30 | 1996-2024 | You want the smallest possible quickstart/demo dataset |
+| `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023-2024 | You want a fuller official multi-year slice for more realistic workflows |
+
+```r
+tiny_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
+provenance_path <- system.file("extdata", "example-data-README.md", package = "metasalmon")
+```
+
+The fuller example is derived from the Open Government Canada NuSEDS record using the Fraser and BC Interior workbook, filtered to `SPECIES == "Coho"` and `ANALYSIS_YR %in% c(2023, 2024)`. It keeps a compact analysis-friendly subset of columns and uses `NATURAL_ADULT_SPAWNERS` because `NATURAL_SPAWNERS_TOTAL` is blank for this official two-year slice. See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` script that reproduces it.
+
 To continue:
 
 - [5-Minute Quickstart](articles/metasalmon.html) — create the full package with metadata and export it.

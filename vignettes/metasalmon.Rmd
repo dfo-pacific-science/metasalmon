@@ -45,6 +45,27 @@ list.files(pkg_path, recursive = TRUE)
 
 If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2024-sdp`. In interactive use it can also mention when a newer `metasalmon` release is available; set `check_updates = FALSE` to skip that check.
 
+## Pick The Right Bundled Example
+
+`metasalmon` ships two Fraser coho example tables:
+
+| File | Rows | Years | Best for |
+| --- | ---: | --- | --- |
+| `nuseds-fraser-coho-sample.csv` | 30 | 1996-2024 | Fastest walkthroughs and smallest demo payload |
+| `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023-2024 | More realistic package creation and testing |
+
+```{r}
+fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
+provenance_path <- system.file("extdata", "example-data-README.md", package = "metasalmon")
+```
+
+The fuller table is an official Open Government Canada NuSEDS slice from the
+Fraser and BC Interior workbook, filtered to `SPECIES == "Coho"` and
+`ANALYSIS_YR %in% c(2023, 2024)`. It keeps a compact column subset and uses
+`NATURAL_ADULT_SPAWNERS` because `NATURAL_SPAWNERS_TOTAL` is blank for this
+two-year official slice. See `example-data-README.md` for provenance, row
+counts, and the Open Government Licence - Canada note.
+
 ## Review In Excel
 
 Open the output folder and review these files:
