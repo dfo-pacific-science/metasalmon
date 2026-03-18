@@ -1,12 +1,11 @@
 # Suggest semantic annotations for a dictionary
 
-Searches external vocabularies to suggest IRIs for measurement columns
-that are missing semantic annotations. For each measurement column with
-missing I-ADOPT component fields (`term_iri`, `property_iri`,
-`entity_iri`, `unit_iri`, `constraint_iri`), this function queries
-vocabulary services and ranks results by relevance, with SMN queried
-first for salmon-domain roles and GCDFO retained as a distinct
-DFO-specific source.
+Searches external vocabularies to suggest IRIs for semantic gaps in the
+dictionary and package metadata. Measurement columns keep full I-ADOPT
+decomposition (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
+`constraint_iri`), while selected non-measurement columns can receive
+lighter `term_iri` coverage when they are categorical or controlled
+low-cardinality attributes.
 
 ## Usage
 
@@ -88,14 +87,14 @@ starts with `column_name`, `dictionary_role`, `table_id`, and
 candidate match. It also includes `target_scope`, `target_sdp_file`, and
 `target_sdp_field` so users can see exactly where each accepted
 suggestion would land in the Salmon Data Package. Additional columns
-include `search_query`, `column_label`, `column_description`, `label`,
-`iri`, `source`, `ontology`, and `definition`. If the underlying search
-results include a `score` column, it is preserved for downstream
-filtering. For non-column targets, the tibble also includes explicit
-destination context (`target_row_key`, `target_label`,
-`target_description`, `code_value`, `code_label`, `code_description`) so
-table-, dataset-, and code-level rows are inspectable without extra
-joins.
+include `search_query`, `target_query_basis`, `target_query_context`,
+`column_label`, `column_description`, `label`, `iri`, `source`,
+`ontology`, and `definition`. If the underlying search results include a
+`score` column, it is preserved for downstream filtering. For non-column
+targets, the tibble also includes explicit destination context
+(`target_row_key`, `target_label`, `target_description`, `code_value`,
+`code_label`, `code_description`) so table-, dataset-, and code-level
+rows are inspectable without extra joins.
 
 ## Details
 
@@ -104,11 +103,16 @@ and returns suggestions as an attribute on the dictionary tibble. This
 allows you to review candidates before accepting them into your
 dictionary.
 
-Column targets keep the existing behavior: only columns with
-`column_role == "measurement"` are processed for missing I-ADOPT fields.
-When `codes`, `table_meta`, or `dataset_meta` are supplied, additional
-target rows are generated for `codes.csv`, `tables.csv`, and
-`dataset.csv` respectively.
+Column targets keep full I-ADOPT behavior for
+`column_role == "measurement"` rows. Non-measurement coverage is
+lighter: only missing `term_iri` values are considered, focused on
+categorical rows and controlled low-cardinality attribute rows inferred
+through `codes.csv`. Identifier and temporal columns are skipped by
+default. When `codes`, `table_meta`, or `dataset_meta` are supplied,
+additional target rows are generated for `codes.csv`, `tables.csv`, and
+`dataset.csv` respectively. Table-level observation-unit queries ignore
+review placeholders such as `MISSING METADATA:` and fall back to real
+table metadata context instead.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a

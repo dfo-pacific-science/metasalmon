@@ -11,7 +11,7 @@ Data Package."><meta property="og:image" content="https://dfo-pacific-science.gi
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -139,9 +139,10 @@ semantic suggestions.</p></dd>
 <dt id="arg-semantic-code-scope">semantic_code_scope<a class="anchor" aria-label="anchor" href="#arg-semantic-code-scope"></a></dt>
 <dd><p>Character string controlling which <code>codes.csv</code>
 rows are sent through <code><a href="suggest_semantics.html">suggest_semantics()</a></code> during one-shot seeding.
-<code>"factor"</code> (default) only analyzes codes sourced from factor/categorical
-columns in the original data frame(s); <code>"all"</code> analyzes all inferred or
-supplied code rows; <code>"none"</code> skips code-level semantic suggestions.</p></dd>
+<code>"factor"</code> (default) analyzes codes sourced from factor columns and
+low-cardinality character columns in the original data frame(s); <code>"all"</code>
+analyzes all inferred or supplied code rows; <code>"none"</code> skips code-level
+semantic suggestions.</p></dd>
 
 
 <dt id="arg-check-updates">check_updates<a class="anchor" aria-label="anchor" href="#arg-check-updates"></a></dt>
@@ -185,17 +186,29 @@ for <code>edh_profile = "iso19139"</code>.</p></dd>
     <p>This one-shot helper creates a review-ready package by default:
 semantic suggestions are seeded and the top-ranked column-level suggestions
 are auto-applied only into missing dictionary IRI fields. Table-level
-suggestions remain available when table metadata is present. To reduce review
-noise conservatively, code-level suggestions default to factor/categorical
-source columns only; set <code>semantic_code_scope = "all"</code> to broaden that or
-<code>"none"</code> to disable it. The package root contains <code>README-review.txt</code>,
+observation-unit suggestions stay enabled, but <code>create_sdp()</code> only
+auto-applies them into missing <code>tables.csv$observation_unit_iri</code> values
+when they are backed by non-placeholder table metadata and still look
+lexically compatible with that context; compatible suggestions can also
+backfill <code>tables.csv$observation_unit</code> labels when missing. To reduce review
+noise conservatively, code-level suggestions default to factor and
+low-cardinality character source columns only; set
+<code>semantic_code_scope = "all"</code> to broaden that or <code>"none"</code> to disable it.
+The package root contains <code>README-review.txt</code>,
 <code>semantic_suggestions.csv</code> (when available), <code>datapackage.json</code>,
 <code>metadata/</code>, and <code>data/</code>. To keep review files usable,
 <code>semantic_suggestions.csv</code> trims code-level suggestions that do not have
 enough human-readable context to review safely. Required-field review
 placeholders are also inserted into the inferred metadata files. In
 interactive use, <code>create_sdp()</code> can also mention an available package update;
-set <code>check_updates = FALSE</code> to skip that network check.</p>
+set <code>check_updates = FALSE</code> to skip that network check. The package bundles
+two Fraser coho examples: <code>nuseds-fraser-coho-sample.csv</code> (30 rows across
+1996-2024) for the quickest demo, and <code>nuseds-fraser-coho-2023-2024.csv</code>
+(173 rows from the official Open Government Canada Fraser and BC Interior
+workbook) for a fuller multi-year example. The bundled
+<code>system.file("extdata", "example-data-README.md", package = "metasalmon")</code>
+note points to the upstream record/resource URLs, licensing, and the
+repository <code>data-raw/</code> script used to derive the fuller example.</p>
     </div>
 
     <div class="section level2">

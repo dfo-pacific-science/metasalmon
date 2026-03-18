@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,6 +108,50 @@ mention when a newer <code>metasalmon</code> release is available; set
 <code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
+<h2 id="pick-the-right-bundled-example">Pick The Right Bundled Example<a class="anchor" aria-label="anchor" href="#pick-the-right-bundled-example"></a>
+</h2>
+<p><code>metasalmon</code> ships two Fraser coho example tables:</p>
+<table style="width:100%;" class="table">
+<colgroup>
+<col width="23%">
+<col width="30%">
+<col width="23%">
+<col width="23%">
+</colgroup>
+<thead><tr class="header">
+<th>File</th>
+<th align="right">Rows</th>
+<th>Years</th>
+<th>Best for</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>nuseds-fraser-coho-sample.csv</code></td>
+<td align="right">30</td>
+<td>1996-2024</td>
+<td>Fastest walkthroughs and smallest demo payload</td>
+</tr>
+<tr class="even">
+<td><code>nuseds-fraser-coho-2023-2024.csv</code></td>
+<td align="right">173</td>
+<td>2023-2024</td>
+<td>More realistic package creation and testing</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fuller_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">provenance_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example-data-README.md"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<p>The fuller table is an official Open Government Canada NuSEDS slice
+from the Fraser and BC Interior workbook, filtered to
+<code>SPECIES == "Coho"</code> and
+<code>ANALYSIS_YR %in% c(2023, 2024)</code>. It keeps a compact column
+subset and uses <code>NATURAL_ADULT_SPAWNERS</code> because
+<code>NATURAL_SPAWNERS_TOTAL</code> is blank for this two-year official
+slice. See <code>example-data-README.md</code> for provenance, row
+counts, and the Open Government Licence - Canada note.</p>
+</div>
+<div class="section level2">
 <h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
 </h2>
 <p>Open the output folder and review these files:</p>
@@ -128,18 +172,19 @@ found)</li>
 auto-fills the top-ranked <strong>column-level</strong> suggestions into
 missing dictionary fields (<code>term_iri</code>,
 <code>property_iri</code>, <code>entity_iri</code>,
-<code>unit_iri</code>, etc.). It does not overwrite existing non-empty
-IRI values. Table-level suggestions are still available when table
-metadata needs them, while code-level suggestions default to
-factor/categorical source columns only. Use
-<code>semantic_code_scope = "all"</code> if you want broader code-level
-seeding.</p>
-<p>The inferred metadata includes <code>REVIEW REQUIRED:</code>
-placeholders for required fields so the package is immediately
-reviewable in Excel. Replace those placeholders before publishing. The
-<code>metadata/*.csv</code> files are the canonical package metadata;
-<code>datapackage.json</code> is a derived export for
-interoperability.</p>
+<code>unit_iri</code>, etc.). It also auto-fills top table-level
+observation-unit suggestions into missing
+<code>tables.csv$observation_unit_iri</code> values (and labels when
+blank). It does not overwrite existing non-empty semantic values.
+Code-level suggestions default to factor and low-cardinality character
+source columns; use <code>semantic_code_scope = "all"</code> if you want
+broader code-level seeding.</p>
+<p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
+<code>MISSING METADATA:</code> placeholders for required fields so the
+package is immediately reviewable in Excel. Replace those placeholders
+before publishing. The <code>metadata/*.csv</code> files are the
+canonical package metadata; <code>datapackage.json</code> is a derived
+export for interoperability.</p>
 </div>
 <div class="section level2">
 <h2 id="how-to-decide-if-term_iri-is-correct">How To Decide If <code>term_iri</code> Is Correct<a class="anchor" aria-label="anchor" href="#how-to-decide-if-term_iri-is-correct"></a>
@@ -168,7 +213,7 @@ copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
 <p>After Excel edits, save the metadata back to CSV, share the whole
 folder (or a zip of the whole folder) when you hand it to someone else,
 then run validation again before publishing:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span></code></pre></div>

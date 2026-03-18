@@ -1,5 +1,69 @@
 # Changelog
 
+## metasalmon 0.0.19
+
+- Hardened table observation-unit auto-apply in
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md):
+  table-level observation-unit suggestions are now ignored when driven
+  by placeholder review text and only auto-applied when lexical
+  compatibility checks pass against non-placeholder table metadata.
+- Improved non-measurement `term_iri` auto-apply quality without
+  disabling the feature: incompatible candidates are now filtered using
+  role-hint mismatch checks, match-type/score guards, and token-level
+  lexical compatibility with the target column context.
+- Strengthened
+  [`infer_column_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_column_role.md)
+  heuristics for NuSEDS-like fields: year-like columns are now
+  classified as temporal more reliably, and
+  `NATURAL_ADULT_SPAWNERS`-style quantity columns are inferred as
+  measurement.
+- Tightened default code-level seeding gates to reduce free-text noise
+  while preserving useful low-cardinality categorical/attribute
+  suggestions: text-like field names and non-code-like all-unique short
+  character values are excluded from the default factor-scope code
+  seeding path.
+- Added regression coverage for the above hardening paths, including
+  placeholder-driven table seeding prevention, bad non-measurement
+  suggestion filtering, improved role inference for fuller examples, and
+  free-text seeding guardrails.
+- Rebuilt reference docs, tests, package artifacts, and pkgdown site for
+  the 0.0.19 patch release.
+
+## metasalmon 0.0.18
+
+- Reworked review placeholders so missing descriptions/metadata are
+  labeled explicitly (`MISSING DESCRIPTION:` / `MISSING METADATA:`)
+  instead of the more ambiguous generic review wording.
+- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  and related inference paths now seed table-level observation-unit
+  review content and auto-apply the top table semantic suggestion into
+  `tables.csv`, including `observation_unit_iri` and a backfilled
+  `observation_unit` label when needed.
+- Broadened default semantic suggestion coverage beyond measurement
+  columns in a conservative way: categorical and controlled
+  low-cardinality attribute columns can now receive lighter `term_iri`
+  suggestions, while identifier and temporal columns remain excluded
+  from default non-measurement suggestion seeding.
+- Broadened default code-level semantic seeding so ordinary
+  low-cardinality character columns from typical CSV imports are
+  considered, rather than relying on R factor inputs.
+- Made inferred `required` flags less misleading by marking obvious
+  identifier columns as required and leaving other columns unknown
+  (`NA`) until reviewed, instead of defaulting everything to `FALSE`.
+- Improved auto-filled `term_type` values when `term_iri` suggestions
+  are applied and kept the `target_description` vs `column_description`
+  distinction explicit in suggestion outputs.
+- Added a second bundled official NuSEDS example dataset:
+  `nuseds-fraser-coho-2023-2024.csv` (173 rows across 2023–2024), while
+  keeping the existing 30-row demo sample intact.
+- Added reproducible provenance for bundled NuSEDS examples via
+  `data-raw/nuseds_fraser_coho_examples.R` and documented the upstream
+  Open Government Canada record/resource and licensing.
+- Updated README, vignettes, reference docs, and tests to reflect the
+  broader semantic seeding behavior, required-flag review stance,
+  observation-unit handling, and the tiny-vs-fuller example-data
+  workflow.
+
 ## metasalmon 0.0.17
 
 - Improved measurement semantic query shaping for count-like fields:

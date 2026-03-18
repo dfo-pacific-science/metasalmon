@@ -4,6 +4,7 @@
 ^LICENSE\.md$
 ^docs$
 ^\.github$
+^\.git$
 ^notes$
 ^\.DS_Store$
 \.cursorignore$

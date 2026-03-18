@@ -331,7 +331,7 @@ at the package root.
 
     For each column, please:
     1. Write a clear description (1-2 sentences)
-    2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon# and put it in the right field:
+    2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon/ (using canonical term IRIs like `https://w3id.org/gcdfo/salmon#<Term>`) and put it in the right field:
        - term_iri for the best-matching term (use a SKOS concept for compound variables)
        - term_type: `skos_concept` when the match is a SKOS concept (a controlled vocabulary term); use `owl_class` only when the column represents a class/type rather than a variable
        - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
@@ -519,7 +519,8 @@ write_salmon_datapackage(resources, dataset_meta, table_meta, dict, ...)
 
 ## Resources
 
-- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon#>
+- **DFO Salmon Ontology**: <https://w3id.org/gcdfo/salmon/> (canonical
+  term IRIs use `https://w3id.org/gcdfo/salmon#<Term>`)
   - Key classes: `ConservationUnit`, `Stock`, `BroodYear`, `CatchYear`
   - Key schemes: `WSPMetricScheme`, `WSPBiologicalStatusZoneScheme`,
     `SalmonOriginScheme`, `EnumerationMethodScheme`

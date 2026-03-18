@@ -101,8 +101,8 @@ If the column reuses a published controlled vocabulary (like the DFO
 Salmon Ontology), include the matching IRI in `term_iri` so automated
 tools can link to the definition. In the one-shot
 [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-workflow, code-level semantic suggestions are seeded automatically only
-for factor/categorical source columns unless you opt into
+workflow, code-level semantic suggestions are seeded automatically for
+factor and low-cardinality character source columns unless you opt into
 `semantic_code_scope = "all"`.
 
 ### 5) Create the package

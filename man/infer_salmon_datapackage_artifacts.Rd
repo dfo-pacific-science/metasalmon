@@ -51,9 +51,10 @@ semantic suggestions.}
 
 \item{semantic_code_scope}{Character string controlling which \code{codes.csv}
 rows are sent through \code{suggest_semantics()} during one-shot seeding.
-\code{"factor"} (default) only analyzes codes sourced from factor/categorical
-columns in the original data frame(s); \code{"all"} analyzes all inferred or
-supplied code rows; \code{"none"} skips code-level semantic suggestions.}
+\code{"factor"} (default) analyzes codes sourced from factor columns and
+low-cardinality character columns in the original data frame(s); \code{"all"}
+analyzes all inferred or supplied code rows; \code{"none"} skips code-level
+semantic suggestions.}
 }
 \value{
 A named list with the following components:

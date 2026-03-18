@@ -1,11 +1,11 @@
 #' Suggest semantic annotations for a dictionary
 #'
-#' Searches external vocabularies to suggest IRIs for measurement columns that
-#' are missing semantic annotations. For each measurement column with missing
-#' I-ADOPT component fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
-#' `constraint_iri`), this function queries vocabulary services and ranks
-#' results by relevance, with SMN queried first for salmon-domain roles and
-#' GCDFO retained as a distinct DFO-specific source.
+#' Searches external vocabularies to suggest IRIs for semantic gaps in the
+#' dictionary and package metadata. Measurement columns keep full I-ADOPT
+#' decomposition (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
+#' `constraint_iri`), while selected non-measurement columns can receive
+#' lighter `term_iri` coverage when they are categorical or controlled
+#' low-cardinality attributes.
 #'
 #' The function uses the column's label or description as the search query and
 #' returns suggestions as an attribute on the dictionary tibble. This allows
@@ -40,7 +40,8 @@
 #'   It also includes `target_scope`, `target_sdp_file`, and
 #'   `target_sdp_field` so users can see exactly where each accepted suggestion
 #'   would land in the Salmon Data Package. Additional columns include
-#'   `search_query`, `column_label`, `column_description`, `label`, `iri`,
+#'   `search_query`, `target_query_basis`, `target_query_context`,
+#'   `column_label`, `column_description`, `label`, `iri`,
 #'   `source`, `ontology`, and `definition`. If the underlying search results
 #'   include a `score` column, it is preserved for downstream filtering.
 #'   For non-column targets, the tibble also includes explicit destination
@@ -49,11 +50,15 @@
 #'   code-level rows are inspectable without extra joins.
 #'
 #' @details
-#' Column targets keep the existing behavior: only columns with
-#' `column_role == "measurement"` are processed for missing I-ADOPT fields.
-#' When `codes`, `table_meta`, or `dataset_meta` are supplied, additional
-#' target rows are generated for `codes.csv`, `tables.csv`, and `dataset.csv`
-#' respectively.
+#' Column targets keep full I-ADOPT behavior for
+#' `column_role == "measurement"` rows. Non-measurement coverage is lighter:
+#' only missing `term_iri` values are considered, focused on categorical rows
+#' and controlled low-cardinality attribute rows inferred through `codes.csv`.
+#' Identifier and temporal columns are skipped by default. When `codes`,
+#' `table_meta`, or `dataset_meta` are supplied, additional target rows are
+#' generated for `codes.csv`, `tables.csv`, and `dataset.csv` respectively.
+#' Table-level observation-unit queries ignore review placeholders such as
+#' `MISSING METADATA:` and fall back to real table metadata context instead.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -140,6 +145,8 @@ suggest_semantics <- function(df,
     "target_sdp_file",
     "target_sdp_field",
     "search_query",
+    "target_query_basis",
+    "target_query_context",
     "column_label",
     "column_description",
     "code_value",
@@ -165,12 +172,12 @@ suggest_semantics <- function(df,
   }
   is_review_placeholder <- function(x) {
     if (is_missing(x)) return(FALSE)
-    grepl("^\\s*REVIEW REQUIRED\\s*:", as.character(x), ignore.case = TRUE)
+    grepl("^\\s*(REVIEW REQUIRED|MISSING DESCRIPTION|MISSING METADATA)\\s*:", as.character(x), ignore.case = TRUE)
   }
   strip_review_placeholder <- function(x) {
     text <- as.character(x %||% "")
     text[is.na(text)] <- ""
-    text <- sub("^\\s*REVIEW REQUIRED\\s*:\\s*", "", text, ignore.case = TRUE)
+    text <- sub("^\\s*(REVIEW REQUIRED|MISSING DESCRIPTION|MISSING METADATA)\\s*:\\s*", "", text, ignore.case = TRUE)
     text <- sub("^\\s*define what\\s+'?", "", text, ignore.case = TRUE)
     text <- sub("'?\\s*means in table.*$", "", text, ignore.case = TRUE)
     clean_query(text)
@@ -271,6 +278,74 @@ suggest_semantics <- function(df,
 
     base_query
   }
+  non_measurement_query <- function(row) {
+    desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
+      ""
+    } else {
+      strip_review_placeholder(row$column_description[[1]])
+    }
+    label_query <- strip_review_placeholder(row$column_label[[1]])
+    name_query <- strip_review_placeholder(row$column_name[[1]])
+    clean_query(first_non_empty(list(desc_query, label_query, name_query)))
+  }
+  table_target_query <- function(row) {
+    observation_unit <- if ("observation_unit" %in% names(row) && !is_review_placeholder(row$observation_unit[[1]])) {
+      strip_review_placeholder(row$observation_unit[[1]])
+    } else {
+      ""
+    }
+    table_description <- if ("description" %in% names(row) && !is_review_placeholder(row$description[[1]])) {
+      strip_review_placeholder(row$description[[1]])
+    } else {
+      ""
+    }
+    table_label <- if ("table_label" %in% names(row)) strip_review_placeholder(row$table_label[[1]]) else ""
+    table_id_query <- if ("table_id" %in% names(row)) strip_review_placeholder(row$table_id[[1]]) else ""
+
+    query_basis <- if (nzchar(observation_unit)) {
+      "observation_unit"
+    } else if (nzchar(table_description)) {
+      "description"
+    } else if (nzchar(table_label)) {
+      "table_label"
+    } else if (nzchar(table_id_query)) {
+      "table_id"
+    } else {
+      ""
+    }
+
+    query_context_parts <- c(observation_unit, table_description, table_label, table_id_query)
+    query_context_parts <- query_context_parts[nzchar(query_context_parts)]
+
+    tibble::tibble(
+      search_query = clean_query(first_non_empty(list(observation_unit, table_description, table_label, table_id_query))),
+      target_query_basis = query_basis,
+      target_query_context = clean_query(paste(query_context_parts, collapse = " "))
+    )
+  }
+  has_low_card_codes <- function(row, codes) {
+    if (nrow(codes) == 0) return(FALSE)
+    keep <- rep(TRUE, nrow(codes))
+    for (key in intersect(c("dataset_id", "table_id", "column_name"), names(codes))) {
+      value <- row[[key]][[1]]
+      if (!is.na(value) && nzchar(as.character(value))) {
+        keep <- keep & !is.na(codes[[key]]) & as.character(codes[[key]]) == as.character(value)
+      }
+    }
+    any(keep)
+  }
+  non_measurement_roles <- function(row, codes) {
+    role <- tolower(as.character(row$column_role[[1]] %||% ""))
+    if (!nzchar(role) || role %in% c("identifier", "temporal")) return(character())
+    if (.ms_is_text_like_field_name(row$column_name[[1]] %||% "")) return(character())
+
+    term_missing <- "term_iri" %in% names(row) && is_missing(row$term_iri[[1]])
+    if (!term_missing) return(character())
+    if (!has_low_card_codes(row, codes)) return(character())
+
+    if (role %in% c("categorical", "attribute")) return(c(term_iri = "variable"))
+    character()
+  }
   split_role_hints <- function(x) {
     if (is_missing(x)) return(character())
     hints <- trimws(unlist(strsplit(as.character(x), "\\|", fixed = FALSE)))
@@ -305,13 +380,22 @@ suggest_semantics <- function(df,
   if (nrow(dict) > 0) {
     column_targets <- purrr::map_dfr(seq_len(nrow(dict)), function(i) {
       row <- dict[i, , drop = FALSE]
-      if (!identical(row$column_role[[1]], "measurement")) return(tibble::tibble())
+      role_targets <- if (identical(row$column_role[[1]], "measurement")) {
+        roles
+      } else {
+        non_measurement_roles(row, codes)
+      }
+      if (length(role_targets) == 0) return(tibble::tibble())
 
-      purrr::imap_dfr(roles, function(role_name, col_name) {
+      purrr::imap_dfr(role_targets, function(role_name, col_name) {
         if (!col_name %in% names(row)) return(tibble::tibble())
         if (is_present(row[[col_name]][[1]])) return(tibble::tibble())
 
-        role_query <- measurement_role_query(row, dict, role_name)
+        role_query <- if (identical(row$column_role[[1]], "measurement")) {
+          measurement_role_query(row, dict, role_name)
+        } else {
+          non_measurement_query(row)
+        }
         if (!nzchar(role_query)) return(tibble::tibble())
         tibble::tibble(
           dataset_id = row$dataset_id[[1]],
@@ -390,8 +474,8 @@ suggest_semantics <- function(df,
       table_id <- if ("table_id" %in% names(row)) row$table_id[[1]] else NA_character_
       table_label <- if ("table_label" %in% names(row)) row$table_label[[1]] else table_id
       table_description <- if ("description" %in% names(row)) row$description[[1]] else NA_character_
-      observation_unit <- if ("observation_unit" %in% names(row)) row$observation_unit[[1]] else NA_character_
-      query <- clean_query(first_non_empty(list(observation_unit, table_description, table_label, table_id)))
+      query_info <- table_target_query(row)
+      query <- query_info$search_query[[1]]
       if (!nzchar(query)) return(tibble::tibble())
 
       tibble::tibble(
@@ -407,6 +491,8 @@ suggest_semantics <- function(df,
         target_label = table_label,
         target_description = table_description,
         search_query = query,
+        target_query_basis = query_info$target_query_basis[[1]],
+        target_query_context = query_info$target_query_context[[1]],
         column_label = NA_character_,
         column_description = NA_character_,
         code_label = NA_character_,
@@ -448,6 +534,13 @@ suggest_semantics <- function(df,
       )
     })
     targets <- dplyr::bind_rows(targets, dataset_targets)
+  }
+
+  missing_target_cols <- setdiff(suggestion_leading_cols, names(targets))
+  if (length(missing_target_cols) > 0) {
+    for (nm in missing_target_cols) {
+      targets[[nm]] <- NA_character_
+    }
   }
 
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
@@ -550,7 +643,7 @@ suggest_semantics <- function(df,
   if (nrow(suggestions) > 0) {
     cli::cli_inform("Semantic suggestions added (attr 'semantic_suggestions'); no fields were auto-filled.")
   } else {
-    cli::cli_inform("No semantic suggestions found for missing measurement metadata.")
+    cli::cli_inform("No semantic suggestions found for missing semantic metadata.")
   }
 
   dict
@@ -668,6 +761,19 @@ apply_semantic_suggestions <- function(dict,
     cli::cli_abort("Unsupported {.arg strategy}: {.val {strategy}}. Use {.val top}.")
   }
 
+  infer_term_type <- function(suggestion_row) {
+    if ("term_type" %in% names(suggestion_row)) {
+      candidate <- as.character(suggestion_row$term_type[[1]] %||% "")
+      if (!is.na(candidate) && nzchar(trimws(candidate))) {
+        return(trimws(candidate))
+      }
+    }
+    if (identical(suggestion_row$dictionary_role[[1]], "variable")) {
+      return("skos_concept")
+    }
+    NA_character_
+  }
+
   out <- dict
   for (field in unique(unname(role_to_field))) {
     if (!field %in% names(out)) {
@@ -708,6 +814,8 @@ apply_semantic_suggestions <- function(dict,
   if (!is.null(min_score)) {
     suggestions <- suggestions[!is.na(suggestions$score) & suggestions$score >= min_score, , drop = FALSE]
   }
+
+  suggestions <- .ms_filter_auto_apply_suggestions(out, suggestions)
 
   unknown_roles <- unique(suggestions$dictionary_role[!is.na(suggestions$dictionary_role) &
     !suggestions$dictionary_role %in% names(role_to_field)])
@@ -762,6 +870,15 @@ apply_semantic_suggestions <- function(dict,
 
     if (isTRUE(overwrite)) {
       out[[field]][row_ids] <- suggestion$iri[[1]]
+      if (identical(field, "term_iri") && "term_type" %in% names(out)) {
+        term_type_guess <- infer_term_type(suggestion)
+        if (!is.na(term_type_guess) && nzchar(term_type_guess)) {
+          missing_term_type <- is.na(out$term_type[row_ids]) | out$term_type[row_ids] == ""
+          if (any(missing_term_type)) {
+            out$term_type[row_ids[missing_term_type]] <- term_type_guess
+          }
+        }
+      }
       if (identical(field, "unit_iri") && "unit_label" %in% names(out) && "label" %in% names(suggestion)) {
         missing_labels <- is.na(out$unit_label[row_ids]) | out$unit_label[row_ids] == ""
         if (any(missing_labels)) {
@@ -776,6 +893,15 @@ apply_semantic_suggestions <- function(dict,
     fill_rows <- row_ids[missing_now]
     if (length(fill_rows) > 0) {
       out[[field]][fill_rows] <- suggestion$iri[[1]]
+      if (identical(field, "term_iri") && "term_type" %in% names(out)) {
+        term_type_guess <- infer_term_type(suggestion)
+        if (!is.na(term_type_guess) && nzchar(term_type_guess)) {
+          missing_term_type <- is.na(out$term_type[fill_rows]) | out$term_type[fill_rows] == ""
+          if (any(missing_term_type)) {
+            out$term_type[fill_rows[missing_term_type]] <- term_type_guess
+          }
+        }
+      }
       if (identical(field, "unit_iri") && "unit_label" %in% names(out) && "label" %in% names(suggestion)) {
         missing_labels <- is.na(out$unit_label[fill_rows]) | out$unit_label[fill_rows] == ""
         if (any(missing_labels)) {
@@ -783,6 +909,19 @@ apply_semantic_suggestions <- function(dict,
         }
       }
       applied <- applied + length(fill_rows)
+    }
+
+    if (identical(field, "term_iri") && "term_type" %in% names(out)) {
+      term_type_guess <- infer_term_type(suggestion)
+      if (!is.na(term_type_guess) && nzchar(term_type_guess)) {
+        existing_rows <- row_ids[!missing_now]
+        if (length(existing_rows) > 0) {
+          missing_term_type <- is.na(out$term_type[existing_rows]) | out$term_type[existing_rows] == ""
+          if (any(missing_term_type)) {
+            out$term_type[existing_rows[missing_term_type]] <- term_type_guess
+          }
+        }
+      }
     }
     skipped_existing <- skipped_existing + sum(!missing_now)
   }

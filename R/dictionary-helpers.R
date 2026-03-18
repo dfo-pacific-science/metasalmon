@@ -160,7 +160,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       term_type = rep(NA_character_, n_cols),
       value_type = rep(NA_character_, n_cols),
       column_role = rep(NA_character_, n_cols),
-      required = rep(FALSE, n_cols)
+      required = rep(NA, n_cols)
     )
 
     if (guess_types) {
@@ -169,6 +169,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         col <- df[[col_names[i]]]
         dict$value_type[i] <- infer_value_type(col)
         dict$column_role[i] <- infer_column_role(col_names[i], col)
+        dict$required[i] <- .ms_infer_required_flag(col_names[i], col, dict$column_role[i])
       }
     }
 
@@ -222,7 +223,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
   blank_desc <- is.na(dict$column_description) | trimws(dict$column_description) == ""
   if (any(blank_desc)) {
     dict$column_description[blank_desc] <- sprintf(
-      "REVIEW REQUIRED: define what '%s' means in table '%s'.",
+      "MISSING DESCRIPTION: define what '%s' means in table '%s'.",
       dict$column_name[blank_desc],
       dict$table_id[blank_desc]
     )
@@ -242,9 +243,19 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
   blank_desc <- is.na(table_meta$description) | trimws(table_meta$description) == ""
   if (any(blank_desc)) {
     table_meta$description[blank_desc] <- sprintf(
-      "REVIEW REQUIRED: describe what each row in table '%s' represents.",
+      "MISSING DESCRIPTION: describe what each row in table '%s' represents.",
       table_meta$table_id[blank_desc]
     )
+  }
+
+  if ("observation_unit" %in% names(table_meta)) {
+    blank_obs <- is.na(table_meta$observation_unit) | trimws(table_meta$observation_unit) == ""
+    if (any(blank_obs)) {
+      table_meta$observation_unit[blank_obs] <- sprintf(
+        "MISSING METADATA: describe the observation unit for table '%s'.",
+        table_meta$table_id[blank_obs]
+      )
+    }
   }
 
   table_meta
@@ -261,29 +272,29 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
   blank_description <- is.na(dataset_meta$description) | trimws(dataset_meta$description) == ""
   if (any(blank_description)) {
     dataset_meta$description[blank_description] <- sprintf(
-      "REVIEW REQUIRED: describe the contents and purpose of dataset '%s'.",
+      "MISSING DESCRIPTION: describe the contents and purpose of dataset '%s'.",
       dataset_meta$dataset_id[blank_description]
     )
   }
 
   blank_creator <- is.na(dataset_meta$creator) | trimws(dataset_meta$creator) == ""
   if (any(blank_creator)) {
-    dataset_meta$creator[blank_creator] <- "REVIEW REQUIRED: add creator, team, or originating program."
+    dataset_meta$creator[blank_creator] <- "MISSING METADATA: add creator, team, or originating program."
   }
 
   blank_contact_name <- is.na(dataset_meta$contact_name) | trimws(dataset_meta$contact_name) == ""
   if (any(blank_contact_name)) {
-    dataset_meta$contact_name[blank_contact_name] <- "REVIEW REQUIRED: add primary contact name or team."
+    dataset_meta$contact_name[blank_contact_name] <- "MISSING METADATA: add primary contact name or team."
   }
 
   blank_contact_email <- is.na(dataset_meta$contact_email) | trimws(dataset_meta$contact_email) == ""
   if (any(blank_contact_email)) {
-    dataset_meta$contact_email[blank_contact_email] <- "REVIEW REQUIRED: add primary contact email."
+    dataset_meta$contact_email[blank_contact_email] <- "MISSING METADATA: add primary contact email."
   }
 
   blank_license <- is.na(dataset_meta$license) | trimws(dataset_meta$license) == ""
   if (any(blank_license)) {
-    dataset_meta$license[blank_license] <- "REVIEW REQUIRED: add dataset license (for example, CC-BY-4.0)."
+    dataset_meta$license[blank_license] <- "MISSING METADATA: add dataset license (for example, CC-BY-4.0)."
   }
 
   blank_spec_version <- is.na(dataset_meta$spec_version) | trimws(dataset_meta$spec_version) == ""
@@ -510,6 +521,31 @@ infer_value_type <- function(col) {
   "string"  # Default fallback
 }
 
+# Helper: tokenize column names for lightweight role inference heuristics.
+.ms_name_tokens <- function(x) {
+  text <- as.character(x %||% "")
+  text[is.na(text)] <- ""
+  text <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", text)
+  text <- gsub("[._-]+", " ", text)
+  text <- tolower(text)
+  tokens <- unlist(strsplit(text, "\\s+"))
+  tokens[nzchar(tokens)]
+}
+
+.ms_values_look_yearish <- function(col) {
+  values <- as.character(col)
+  values <- trimws(values[!is.na(values)])
+  values <- values[nzchar(values)]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+  if (!all(grepl("^[12][0-9]{3}$", values))) {
+    return(FALSE)
+  }
+  years <- suppressWarnings(as.integer(values))
+  all(!is.na(years) & years >= 1800 & years <= 2500)
+}
+
 #' Infer column role from name and data
 #'
 #' @param col_name Column name
@@ -518,6 +554,7 @@ infer_value_type <- function(col) {
 #' @keywords internal
 infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
+  name_tokens <- .ms_name_tokens(col_name)
 
   # Check for common identifier patterns
   if (grepl("^id$|_id$|^id_", name_lower)) {
@@ -526,9 +563,16 @@ infer_column_role <- function(col_name, col) {
   if (grepl("^key$|_key$|^key_", name_lower)) {
     return("identifier")
   }
+  if (any(name_tokens %in% c("id", "key"))) {
+    return("identifier")
+  }
 
   # Check for date/time patterns
-  if (grepl("date|time|dtt|timestamp", name_lower) || inherits(col, "Date") || inherits(col, "POSIXt")) {
+  temporal_tokens <- c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+  if (grepl("date|time|dtt|timestamp", name_lower) ||
+      inherits(col, "Date") || inherits(col, "POSIXt") ||
+      any(name_tokens %in% temporal_tokens) ||
+      .ms_values_look_yearish(col)) {
     return("temporal")
   }
 
@@ -538,12 +582,35 @@ infer_column_role <- function(col_name, col) {
   }
 
   # Check for measurement/quantity patterns
-  if (grepl("count|total|number|amount|quantity|measure", name_lower)) {
+  measurement_tokens <- c(
+    "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
+    "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
+    "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
+    "rate", "rates", "ratio", "ratios", "proportion", "proportions", "percent", "percentage",
+    "length", "lengths", "weight", "weights", "temperature", "temperatures"
+  )
+  if (grepl("count|total|number|amount|quantity|measure", name_lower) || any(name_tokens %in% measurement_tokens)) {
     return("measurement")
   }
 
   # Default to attribute
   "attribute"
+}
+
+.ms_infer_required_flag <- function(col_name, col, column_role = NA_character_) {
+  if (is.na(column_role) || !nzchar(trimws(column_role))) {
+    return(NA)
+  }
+  if (identical(column_role, "identifier")) {
+    return(TRUE)
+  }
+
+  name_lower <- tolower(col_name %||% "")
+  if (grepl("(^|_)(id|key)(_|$)", name_lower)) {
+    return(TRUE)
+  }
+
+  NA
 }
 
 #' Validate a salmon data dictionary

@@ -218,12 +218,22 @@ test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", 
   expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
 })
 
-test_that("create_sdp writes review files and auto-applies top column suggestions", {
+test_that("create_sdp writes review files and auto-applies compatible table suggestions", {
   resources <- list(
     catches = tibble::tibble(
       species = c("Coho", "Chinook"),
       count = c(10L, 20L)
     )
+  )
+  seed_table_meta <- tibble::tibble(
+    dataset_id = "review-demo",
+    table_id = "catches",
+    file_name = "data/catches.csv",
+    table_label = "Catches",
+    description = "Catch records for survey events.",
+    observation_unit = "Catch record",
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
   )
 
   fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
@@ -232,24 +242,26 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
                            table_meta = NULL, dataset_meta = NULL) {
     dict$property_iri[dict$column_name == "count"] <- "https://example.org/property-existing"
     attr(dict, "semantic_suggestions") <- tibble::tibble(
-      column_name = c("count", "count", "species"),
-      dictionary_role = c("variable", "property", "entity"),
-      table_id = c("catches", "catches", "catches"),
-      dataset_id = c("review-demo", "review-demo", "review-demo"),
-      target_scope = c("column", "column", "code"),
-      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "codes.csv"),
-      target_sdp_field = c("term_iri", "property_iri", "term_iri"),
-      target_row_key = c("review-demo/catches/count", "review-demo/catches/count", "review-demo/catches/species/POP1"),
-      code_value = c(NA_character_, NA_character_, "POP1"),
-      code_label = c(NA_character_, NA_character_, "POP1"),
-      code_description = c(NA_character_, NA_character_, NA_character_),
-      iri = c("https://example.org/term-top", "https://example.org/property-top", "https://example.org/pop1"),
-      label = c("Count term", "Count property", "Population One"),
-      source = c("smn", "smn", "smn"),
-      ontology = c("demo", "demo", "demo"),
-      role = c("variable", "property", "entity"),
-      match_type = c("label_exact", "label_exact", "label_exact"),
-      definition = c(NA_character_, NA_character_, NA_character_)
+      column_name = c("count", "count", "species", NA_character_),
+      dictionary_role = c("variable", "property", "entity", "entity"),
+      table_id = c("catches", "catches", "catches", "catches"),
+      dataset_id = c("review-demo", "review-demo", "review-demo", "review-demo"),
+      target_scope = c("column", "column", "code", "table"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "codes.csv", "tables.csv"),
+      target_sdp_field = c("term_iri", "property_iri", "term_iri", "observation_unit_iri"),
+      target_row_key = c("review-demo/catches/count", "review-demo/catches/count", "review-demo/catches/species/POP1", "review-demo/catches"),
+      target_query_basis = c(NA_character_, NA_character_, NA_character_, "observation_unit"),
+      target_query_context = c(NA_character_, NA_character_, NA_character_, "Catch record Catches catches"),
+      code_value = c(NA_character_, NA_character_, "POP1", NA_character_),
+      code_label = c(NA_character_, NA_character_, "POP1", NA_character_),
+      code_description = c(NA_character_, NA_character_, NA_character_, NA_character_),
+      iri = c("https://example.org/term-top", "https://example.org/property-top", "https://example.org/pop1", "https://example.org/table-unit"),
+      label = c("Count term", "Count property", "Population One", "Catch record"),
+      source = c("smn", "smn", "smn", "smn"),
+      ontology = c("demo", "demo", "demo", "demo"),
+      role = c("variable", "property", "entity", "entity"),
+      match_type = c("label_exact", "label_exact", "label_exact", "label_exact"),
+      definition = c(NA_character_, NA_character_, NA_character_, NA_character_)
     )
     dict
   }
@@ -263,6 +275,7 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
         path = file.path(withr::local_tempdir(), "review-package"),
         dataset_id = "review-demo",
         seed_semantics = TRUE,
+        seed_table_meta = seed_table_meta,
         overwrite = TRUE
       )
     }
@@ -279,23 +292,82 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
   expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
-  expect_true(all(suggestions_written$target_scope == "column"))
+  expect_setequal(unique(suggestions_written$target_scope), c("column", "table"))
 
   dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   count_row <- dict_written[dict_written$column_name == "count", , drop = FALSE]
   expect_equal(count_row$term_iri[[1]], "https://example.org/term-top")
   expect_equal(count_row$property_iri[[1]], "https://example.org/property-existing")
-  expect_true(startsWith(count_row$column_description[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(count_row$column_description[[1]], "MISSING DESCRIPTION:"))
 
   tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
   expect_true(all(startsWith(tables_written$file_name, "data/")))
-  expect_true(all(startsWith(tables_written$description, "REVIEW REQUIRED:")))
+  expect_equal(tables_written$description[[1]], "Catch records for survey events.")
+  expect_equal(tables_written$observation_unit_iri[[1]], "https://example.org/table-unit")
+  expect_equal(tables_written$observation_unit[[1]], "Catch record")
 
   dataset_written <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
-  expect_true(startsWith(dataset_written$creator[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$contact_name[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$contact_email[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$license[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(dataset_written$creator[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$contact_name[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$contact_email[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$license[[1]], "MISSING METADATA:"))
+})
+
+test_that("create_sdp leaves weak or bogus table observation-unit suggestions as review only", {
+  resources <- list(
+    catches = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L)
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = NA_character_,
+      dictionary_role = "entity",
+      table_id = "catches",
+      dataset_id = "review-demo",
+      target_scope = "table",
+      target_sdp_file = "tables.csv",
+      target_sdp_field = "observation_unit_iri",
+      target_row_key = "review-demo/catches",
+      target_query_basis = "table_label",
+      target_query_context = "Catches catches",
+      code_value = NA_character_,
+      code_label = NA_character_,
+      code_description = NA_character_,
+      iri = "https://example.org/bad-table-unit",
+      label = "Metadata note",
+      source = "smn",
+      ontology = "demo",
+      role = "entity",
+      match_type = "label_exact",
+      definition = NA_character_,
+      score = 2
+    )
+    dict
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "review-package-bad-table-unit"),
+        dataset_id = "review-demo",
+        seed_semantics = TRUE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
+  expect_true(is.na(tables_written$observation_unit_iri[[1]]) || tables_written$observation_unit_iri[[1]] == "")
+  expect_true(startsWith(tables_written$observation_unit[[1]], "MISSING METADATA:"))
 })
 
 test_that("create_sdp seed note explains slower semantic lookup", {
@@ -306,16 +378,17 @@ test_that("create_sdp seed note explains slower semantic lookup", {
   )
 
   expect_match(note, "may take a few minutes")
-  expect_match(note, "factor/categorical columns")
+  expect_match(note, "factor and low-cardinality character columns")
   expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = FALSE))
   expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = TRUE, seed_verbose = FALSE))
 })
 
-test_that("create_sdp limits default code-level semantic seeding to factor columns", {
+test_that("create_sdp default code-level semantic seeding includes low-cardinality character columns but skips free-text fields", {
   resources <- list(
     catches = tibble::tibble(
       run = factor(c("early", "late")),
       station = c("A", "B"),
+      survey_comment = c("looks odd", "double check"),
       count = c(10L, 20L)
     )
   )
@@ -345,7 +418,61 @@ test_that("create_sdp limits default code-level semantic seeding to factor colum
   )
 
   expect_s3_class(seen_codes, "tbl_df")
-  expect_setequal(unique(seen_codes$column_name), "run")
+  expect_setequal(unique(seen_codes$column_name), c("run", "station"))
+})
+
+test_that("create_sdp filters bad non-measurement term IRIs before auto-apply", {
+  fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
+  fraser_coho_fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      dataset_id = c("fraser-coho-2023-2024", "fraser-coho-2023-2024", "fraser-coho-2023-2024", "fraser-coho-2023-2024"),
+      table_id = c("escapement", "escapement", "escapement", "escapement"),
+      column_name = c("AREA", "SPECIES", "RUN_TYPE", "WATERBODY"),
+      dictionary_role = c("variable", "variable", "variable", "variable"),
+      target_scope = c("column", "column", "column", "column"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
+      target_sdp_field = c("term_iri", "term_iri", "term_iri", "term_iri"),
+      search_query = c("Area", "Species", "Run type", "Waterbody"),
+      column_label = c("AREA", "SPECIES", "RUN_TYPE", "WATERBODY"),
+      label = c("In River Mortality Rate", "Ampharete lindstroemi", "Fish Length Measurement Type", "Waterbody"),
+      iri = c(
+        "https://example.org/in-river-mortality-rate",
+        "https://example.org/ampharete-lindstroemi",
+        "https://example.org/fish-length-measurement-type",
+        "https://example.org/waterbody"
+      ),
+      match_type = c("label_exact", "label_exact", "label_exact", "label_exact"),
+      score = c(0.95, 0.95, 0.95, 0.95)
+    )
+    dict
+  }
+
+  pkg_path <- with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      create_sdp(
+        fraser_coho_fuller,
+        path = file.path(withr::local_tempdir(), "fraser-coho-fuller-seeded"),
+        dataset_id = "fraser-coho-2023-2024",
+        table_id = "escapement",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  expect_true(is.na(dict_written$term_iri[dict_written$column_name == "AREA"]) || dict_written$term_iri[dict_written$column_name == "AREA"] == "")
+  expect_true(is.na(dict_written$term_iri[dict_written$column_name == "SPECIES"]) || dict_written$term_iri[dict_written$column_name == "SPECIES"] == "")
+  expect_true(is.na(dict_written$term_iri[dict_written$column_name == "RUN_TYPE"]) || dict_written$term_iri[dict_written$column_name == "RUN_TYPE"] == "")
+  expect_equal(dict_written$term_iri[dict_written$column_name == "WATERBODY"], "https://example.org/waterbody")
 })
 
 test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {

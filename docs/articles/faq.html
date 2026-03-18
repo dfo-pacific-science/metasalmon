@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -369,8 +369,8 @@ descriptive IDs:</p>
 <code>SPECIES = "CO"</code> for Coho), you can add a code list:</p>
 <ul>
 <li>In the default <code><a href="../reference/create_sdp.html">create_sdp()</a></code> workflow, code-level
-semantic suggestions are seeded automatically only for
-factor/categorical source columns.</li>
+semantic suggestions are seeded automatically only for factor and
+low-cardinality character source columns.</li>
 <li>If you want broader code-level suggestion seeding, use
 <code>semantic_code_scope = "all"</code>.</li>
 </ul>

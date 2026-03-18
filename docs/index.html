@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,7 +89,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
-<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon#" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
+<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
 <p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
@@ -155,7 +155,45 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># - data/*.csv</span></span>
 <span><span class="co"># - semantic_suggestions.csv (if present)</span></span>
 <span><span class="co"># - README-review.txt</span></span></code></pre></div>
-<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, and only seeds code-level semantic suggestions by default for factor/categorical source columns. In interactive use it can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
+<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. In interactive use it can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
+</div>
+<div class="section level2">
+<h2 id="built-in-nuseds-examples">Built-in NuSEDS Examples<a class="anchor" aria-label="anchor" href="#built-in-nuseds-examples"></a>
+</h2>
+<p><code>metasalmon</code> now ships two Fraser coho example tables so you can pick speed vs realism:</p>
+<table style="width:100%;" class="table">
+<colgroup>
+<col width="23%">
+<col width="30%">
+<col width="23%">
+<col width="23%">
+</colgroup>
+<thead><tr>
+<th>File</th>
+<th align="right">Rows</th>
+<th>Years</th>
+<th>Use it when</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>nuseds-fraser-coho-sample.csv</code></td>
+<td align="right">30</td>
+<td>1996-2024</td>
+<td>You want the smallest possible quickstart/demo dataset</td>
+</tr>
+<tr>
+<td><code>nuseds-fraser-coho-2023-2024.csv</code></td>
+<td align="right">173</td>
+<td>2023-2024</td>
+<td>You want a fuller official multi-year slice for more realistic workflows</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tiny_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">fuller_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">provenance_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example-data-README.md"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<p>The fuller example is derived from the Open Government Canada NuSEDS record using the Fraser and BC Interior workbook, filtered to <code>SPECIES == "Coho"</code> and <code>ANALYSIS_YR %in% c(2023, 2024)</code>. It keeps a compact analysis-friendly subset of columns and uses <code>NATURAL_ADULT_SPAWNERS</code> because <code>NATURAL_SPAWNERS_TOTAL</code> is blank for this official two-year slice. See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces it.</p>
 <p>To continue:</p>
 <ul>
 <li>
@@ -210,7 +248,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -283,7 +321,7 @@ concept schemes) while preserving your original data structure.
 <p>The high-level flow is:</p>
 <ul>
 <li>
-<strong>Start here:</strong> <code><a href="reference/create_sdp.html">create_sdp()</a></code> takes raw tables, infers the package metadata, writes a review-ready package, gives you a checklist, and keeps default code-level semantic seeding conservative by limiting it to factor/categorical source columns.</li>
+<strong>Start here:</strong> <code><a href="reference/create_sdp.html">create_sdp()</a></code> takes raw tables, infers the package metadata, writes a review-ready package, gives you a checklist, auto-fills top column/table semantic suggestions only where fields are blank, and keeps default code-level semantic seeding conservative by limiting it to factor and low-cardinality character source columns.</li>
 <li>
 <strong>Advanced/manual path:</strong> <code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code> is for cases where you already assembled <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, and optional <code>codes.csv</code> yourself.</li>
 <li>
@@ -342,7 +380,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -350,14 +388,14 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>
@@ -378,7 +416,7 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="salmon-domain-ontology">Salmon Domain Ontology<a class="anchor" aria-label="anchor" href="#salmon-domain-ontology"></a>
 </h3>
-<p>This package can link your data to the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> for shared terms and to the <a href="https://w3id.org/gcdfo/salmon#" class="external-link">DFO Salmon Ontology</a> for DFO-specific terms. Canonical IRIs are explicit: SMN uses <code>https://w3id.org/smn/&lt;Term&gt;</code> and GCDFO uses <code>https://w3id.org/gcdfo/salmon#&lt;Term&gt;</code>. metasalmon does not silently rewrite legacy <code>salmon:</code> IRIs.</p>
+<p>This package can link your data to the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> for shared terms and to the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> for DFO-specific terms. Canonical IRIs are explicit: SMN uses <code>https://w3id.org/smn/&lt;Term&gt;</code> and GCDFO uses <code>https://w3id.org/gcdfo/salmon#&lt;Term&gt;</code>. metasalmon does not silently rewrite legacy <code>salmon:</code> IRIs.</p>
 <p>See the <a href="articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a> guide for details.</p>
 
 </div>

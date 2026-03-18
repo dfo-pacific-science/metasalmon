@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -165,8 +165,9 @@ that explains what the code means.</p>
 Salmon Ontology), include the matching IRI in <code>term_iri</code> so
 automated tools can link to the definition. In the one-shot
 <code><a href="../reference/create_sdp.html">create_sdp()</a></code> workflow, code-level semantic suggestions are
-seeded automatically only for factor/categorical source columns unless
-you opt into <code>semantic_code_scope = "all"</code>.</p>
+seeded automatically for factor and low-cardinality character source
+columns unless you opt into
+<code>semantic_code_scope = "all"</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="create-the-package">5) Create the package<a class="anchor" aria-label="anchor" href="#create-the-package"></a>
