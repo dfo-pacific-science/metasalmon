@@ -55,7 +55,8 @@ so the original dictionary term is visible before the candidate match.
 It also includes \code{target_scope}, \code{target_sdp_file}, and
 \code{target_sdp_field} so users can see exactly where each accepted suggestion
 would land in the Salmon Data Package. Additional columns include
-\code{search_query}, \code{column_label}, \code{column_description}, \code{label}, \code{iri},
+\code{search_query}, \code{target_query_basis}, \code{target_query_context},
+\code{column_label}, \code{column_description}, \code{label}, \code{iri},
 \code{source}, \code{ontology}, and \code{definition}. If the underlying search results
 include a \code{score} column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
@@ -83,6 +84,8 @@ and controlled low-cardinality attribute rows inferred through \code{codes.csv}.
 Identifier and temporal columns are skipped by default. When \code{codes},
 \code{table_meta}, or \code{dataset_meta} are supplied, additional target rows are
 generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv} respectively.
+Table-level observation-unit queries ignore review placeholders such as
+\verb{MISSING METADATA:} and fall back to real table metadata context instead.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

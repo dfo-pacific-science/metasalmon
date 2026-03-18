@@ -59,6 +59,20 @@ test_that("infer_dictionary marks obvious identifier columns as required", {
   expect_true(is.na(dict$required[dict$column_name == "species"]))
 })
 
+test_that("infer_dictionary better distinguishes temporal and measurement NuSEDS-style fields", {
+  df <- tibble::tibble(
+    ANALYSIS_YR = c("2023", "2024"),
+    NATURAL_ADULT_SPAWNERS = c(12, 15),
+    POP_ID = c("A", "B")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "ANALYSIS_YR"], "temporal")
+  expect_equal(dict$column_role[dict$column_name == "NATURAL_ADULT_SPAWNERS"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "POP_ID"], "identifier")
+})
+
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
@@ -291,33 +305,91 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
   expect_true(any(call_df$role == "entity" & call_df$query == "population"))
 })
 
+test_that("suggest_semantics ignores review placeholders when building table observation-unit queries", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "escapement",
+    column_name = c("population", "count"),
+    column_label = c("Population", "Spawner count"),
+    column_description = c("Population identifier", "Spawner count estimate"),
+    column_role = c("categorical", "measurement"),
+    value_type = c("string", "number"),
+    unit_label = c(NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_)
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "escapement",
+    table_label = "Escapement",
+    description = "MISSING DESCRIPTION: describe what each row in table 'escapement' represents.",
+    observation_unit = "MISSING METADATA: describe the observation unit for table 'escapement'.",
+    observation_unit_iri = NA_character_
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    table_meta = table_meta
+  )
+  suggestions <- attr(res, "semantic_suggestions")
+  table_suggestions <- suggestions[suggestions$target_scope == "table", , drop = FALSE]
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+
+  expect_true(any(call_df$role == "entity" & call_df$query == "Escapement"))
+  expect_false(any(grepl("MISSING METADATA|describe the observation unit", table_suggestions$search_query, ignore.case = TRUE)))
+  expect_equal(unique(table_suggestions$target_query_basis), "table_label")
+  expect_equal(unique(table_suggestions$target_query_context), "Escapement escapement")
+})
+
 test_that("suggest_semantics adds lighter non-measurement term suggestions for categorical and controlled attributes", {
   dict <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1"),
-    column_name = c("species", "origin", "record_id"),
-    column_label = c("Species", "Origin", "Record ID"),
-    column_description = c("Observed species", "Origin code", "Internal record id"),
-    column_role = c("categorical", "attribute", "identifier"),
-    value_type = c("string", "string", "string"),
-    unit_label = c(NA_character_, NA_character_, NA_character_),
-    unit_iri = c(NA_character_, NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_, NA_character_),
-    property_iri = c(NA_character_, NA_character_, NA_character_),
-    entity_iri = c(NA_character_, NA_character_, NA_character_),
-    constraint_iri = c(NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_)
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("species", "origin", "record_id", "survey_comment"),
+    column_label = c("Species", "Origin", "Record ID", "Survey comment"),
+    column_description = c("Observed species", "Origin code", "Internal record id", "Free-text review note"),
+    column_role = c("categorical", "attribute", "identifier", "attribute"),
+    value_type = c("string", "string", "string", "string"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
   codes <- tibble::tibble(
-    dataset_id = c("d1", "d1"),
-    table_id = c("t1", "t1"),
-    column_name = c("species", "origin"),
-    code_value = c("CO", "NAT"),
-    code_label = c("Coho", "Natural"),
-    code_description = c("Coho salmon", "Natural origin"),
-    vocabulary_iri = c(NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_),
-    term_type = c(NA_character_, NA_character_)
+    dataset_id = c("d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1"),
+    column_name = c("species", "origin", "survey_comment"),
+    code_value = c("CO", "NAT", "looks odd"),
+    code_label = c("Coho", "Natural", "looks odd"),
+    code_description = c("Coho salmon", "Natural origin", "Free-text note"),
+    vocabulary_iri = c(NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_),
+    term_type = c(NA_character_, NA_character_, NA_character_)
   )
 
   fake_search <- function(query, role, sources) {
@@ -346,6 +418,50 @@ test_that("suggest_semantics adds lighter non-measurement term suggestions for c
   expect_true(any(non_measurement$column_name == "species"))
   expect_true(any(non_measurement$column_name == "origin"))
   expect_false(any(non_measurement$column_name == "record_id"))
+  expect_false(any(non_measurement$column_name == "survey_comment"))
+})
+
+test_that("apply_semantic_suggestions keeps compatible non-measurement term IRIs and skips bad fits", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("origin", "AREA", "year", "count"),
+    column_label = c("Origin", "Area", "Year", "Count"),
+    column_description = c("Origin code", "Area code", "Analysis year", "Spawner count"),
+    column_role = c("attribute", "attribute", "temporal", "measurement"),
+    value_type = c("string", "string", "string", "integer"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_type = c(NA_character_, NA_character_, NA_character_, NA_character_)
+  )
+
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("origin", "AREA", "year", "count"),
+    dictionary_role = c("variable", "variable", "variable", "variable"),
+    target_scope = c("column", "column", "column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("term_iri", "term_iri", "term_iri", "term_iri"),
+    search_query = c("Origin", "Area", "Year", "Spawner abundance"),
+    column_label = c("Origin", "Area", "Year", "Count"),
+    label = c("Origin", "In River Mortality Rate", "Year", "Spawner abundance"),
+    iri = c("https://example.org/origin", "https://example.org/in-river-mortality-rate", "https://example.org/year", "https://example.org/spawner-abundance"),
+    match_type = c("label_exact", "label_exact", "label_exact", "label_exact"),
+    score = c(0.95, 0.95, 0.95, 0.95)
+  )
+
+  out <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
+
+  expect_equal(out$term_iri[out$column_name == "origin"], "https://example.org/origin")
+  expect_true(is.na(out$term_iri[out$column_name == "AREA"]) || out$term_iri[out$column_name == "AREA"] == "")
+  expect_true(is.na(out$term_iri[out$column_name == "year"]) || out$term_iri[out$column_name == "year"] == "")
+  expect_equal(out$term_iri[out$column_name == "count"], "https://example.org/spawner-abundance")
 })
 
 test_that("suggest_semantics skips unit guesses when measurement has no unit clue", {

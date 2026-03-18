@@ -521,6 +521,31 @@ infer_value_type <- function(col) {
   "string"  # Default fallback
 }
 
+# Helper: tokenize column names for lightweight role inference heuristics.
+.ms_name_tokens <- function(x) {
+  text <- as.character(x %||% "")
+  text[is.na(text)] <- ""
+  text <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", text)
+  text <- gsub("[._-]+", " ", text)
+  text <- tolower(text)
+  tokens <- unlist(strsplit(text, "\\s+"))
+  tokens[nzchar(tokens)]
+}
+
+.ms_values_look_yearish <- function(col) {
+  values <- as.character(col)
+  values <- trimws(values[!is.na(values)])
+  values <- values[nzchar(values)]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+  if (!all(grepl("^[12][0-9]{3}$", values))) {
+    return(FALSE)
+  }
+  years <- suppressWarnings(as.integer(values))
+  all(!is.na(years) & years >= 1800 & years <= 2500)
+}
+
 #' Infer column role from name and data
 #'
 #' @param col_name Column name
@@ -529,6 +554,7 @@ infer_value_type <- function(col) {
 #' @keywords internal
 infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
+  name_tokens <- .ms_name_tokens(col_name)
 
   # Check for common identifier patterns
   if (grepl("^id$|_id$|^id_", name_lower)) {
@@ -537,9 +563,16 @@ infer_column_role <- function(col_name, col) {
   if (grepl("^key$|_key$|^key_", name_lower)) {
     return("identifier")
   }
+  if (any(name_tokens %in% c("id", "key"))) {
+    return("identifier")
+  }
 
   # Check for date/time patterns
-  if (grepl("date|time|dtt|timestamp", name_lower) || inherits(col, "Date") || inherits(col, "POSIXt")) {
+  temporal_tokens <- c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+  if (grepl("date|time|dtt|timestamp", name_lower) ||
+      inherits(col, "Date") || inherits(col, "POSIXt") ||
+      any(name_tokens %in% temporal_tokens) ||
+      .ms_values_look_yearish(col)) {
     return("temporal")
   }
 
@@ -549,7 +582,14 @@ infer_column_role <- function(col_name, col) {
   }
 
   # Check for measurement/quantity patterns
-  if (grepl("count|total|number|amount|quantity|measure", name_lower)) {
+  measurement_tokens <- c(
+    "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
+    "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
+    "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
+    "rate", "rates", "ratio", "ratios", "proportion", "proportions", "percent", "percentage",
+    "length", "lengths", "weight", "weights", "temperature", "temperatures"
+  )
+  if (grepl("count|total|number|amount|quantity|measure", name_lower) || any(name_tokens %in% measurement_tokens)) {
     return("measurement")
   }
 

@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -136,7 +136,8 @@ so the original dictionary term is visible before the candidate match.
 It also includes <code>target_scope</code>, <code>target_sdp_file</code>, and
 <code>target_sdp_field</code> so users can see exactly where each accepted suggestion
 would land in the Salmon Data Package. Additional columns include
-<code>search_query</code>, <code>column_label</code>, <code>column_description</code>, <code>label</code>, <code>iri</code>,
+<code>search_query</code>, <code>target_query_basis</code>, <code>target_query_context</code>,
+<code>column_label</code>, <code>column_description</code>, <code>label</code>, <code>iri</code>,
 <code>source</code>, <code>ontology</code>, and <code>definition</code>. If the underlying search results
 include a <code>score</code> column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
@@ -155,7 +156,9 @@ only missing <code>term_iri</code> values are considered, focused on categorical
 and controlled low-cardinality attribute rows inferred through <code>codes.csv</code>.
 Identifier and temporal columns are skipped by default. When <code>codes</code>,
 <code>table_meta</code>, or <code>dataset_meta</code> are supplied, additional target rows are
-generated for <code>codes.csv</code>, <code>tables.csv</code>, and <code>dataset.csv</code> respectively.</p>
+generated for <code>codes.csv</code>, <code>tables.csv</code>, and <code>dataset.csv</code> respectively.
+Table-level observation-unit queries ignore review placeholders such as
+<code>MISSING METADATA:</code> and fall back to real table metadata context instead.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

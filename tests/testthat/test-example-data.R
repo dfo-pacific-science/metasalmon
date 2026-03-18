@@ -25,6 +25,21 @@ test_that("bundled Fraser coho examples are available and sized as documented", 
   expect_true("NATURAL_ADULT_SPAWNERS" %in% names(fuller))
 })
 
+test_that("infer_dictionary treats key fuller Fraser coho fields as measurement/temporal", {
+  fuller_path <- example_extdata_path("nuseds-fraser-coho-2023-2024.csv")
+  fraser_coho_fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)
+
+  dict <- infer_dictionary(
+    fraser_coho_fuller,
+    dataset_id = "fraser-coho-2023-2024",
+    table_id = "escapement",
+    seed_semantics = FALSE
+  )
+
+  expect_equal(dict$column_role[dict$column_name == "ANALYSIS_YR"], "temporal")
+  expect_equal(dict$column_role[dict$column_name == "NATURAL_ADULT_SPAWNERS"], "measurement")
+})
+
 test_that("create_sdp works with the fuller Fraser coho example", {
   tmp <- withr::local_tempdir()
 

@@ -1,3 +1,13 @@
+metasalmon 0.0.19
+----------------
+
+- Hardened table observation-unit auto-apply in `create_sdp()`: table-level observation-unit suggestions are now ignored when driven by placeholder review text and only auto-applied when lexical compatibility checks pass against non-placeholder table metadata.
+- Improved non-measurement `term_iri` auto-apply quality without disabling the feature: incompatible candidates are now filtered using role-hint mismatch checks, match-type/score guards, and token-level lexical compatibility with the target column context.
+- Strengthened `infer_column_role()` heuristics for NuSEDS-like fields: year-like columns are now classified as temporal more reliably, and `NATURAL_ADULT_SPAWNERS`-style quantity columns are inferred as measurement.
+- Tightened default code-level seeding gates to reduce free-text noise while preserving useful low-cardinality categorical/attribute suggestions: text-like field names and non-code-like all-unique short character values are excluded from the default factor-scope code seeding path.
+- Added regression coverage for the above hardening paths, including placeholder-driven table seeding prevention, bad non-measurement suggestion filtering, improved role inference for fuller examples, and free-text seeding guardrails.
+- Rebuilt reference docs, tests, package artifacts, and pkgdown site for the 0.0.19 patch release.
+
 metasalmon 0.0.18
 ----------------
 

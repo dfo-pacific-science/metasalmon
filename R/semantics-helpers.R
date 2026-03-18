@@ -40,7 +40,8 @@
 #'   It also includes `target_scope`, `target_sdp_file`, and
 #'   `target_sdp_field` so users can see exactly where each accepted suggestion
 #'   would land in the Salmon Data Package. Additional columns include
-#'   `search_query`, `column_label`, `column_description`, `label`, `iri`,
+#'   `search_query`, `target_query_basis`, `target_query_context`,
+#'   `column_label`, `column_description`, `label`, `iri`,
 #'   `source`, `ontology`, and `definition`. If the underlying search results
 #'   include a `score` column, it is preserved for downstream filtering.
 #'   For non-column targets, the tibble also includes explicit destination
@@ -56,6 +57,8 @@
 #' Identifier and temporal columns are skipped by default. When `codes`,
 #' `table_meta`, or `dataset_meta` are supplied, additional target rows are
 #' generated for `codes.csv`, `tables.csv`, and `dataset.csv` respectively.
+#' Table-level observation-unit queries ignore review placeholders such as
+#' `MISSING METADATA:` and fall back to real table metadata context instead.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -142,6 +145,8 @@ suggest_semantics <- function(df,
     "target_sdp_file",
     "target_sdp_field",
     "search_query",
+    "target_query_basis",
+    "target_query_context",
     "column_label",
     "column_description",
     "code_value",
@@ -283,6 +288,41 @@ suggest_semantics <- function(df,
     name_query <- strip_review_placeholder(row$column_name[[1]])
     clean_query(first_non_empty(list(desc_query, label_query, name_query)))
   }
+  table_target_query <- function(row) {
+    observation_unit <- if ("observation_unit" %in% names(row) && !is_review_placeholder(row$observation_unit[[1]])) {
+      strip_review_placeholder(row$observation_unit[[1]])
+    } else {
+      ""
+    }
+    table_description <- if ("description" %in% names(row) && !is_review_placeholder(row$description[[1]])) {
+      strip_review_placeholder(row$description[[1]])
+    } else {
+      ""
+    }
+    table_label <- if ("table_label" %in% names(row)) strip_review_placeholder(row$table_label[[1]]) else ""
+    table_id_query <- if ("table_id" %in% names(row)) strip_review_placeholder(row$table_id[[1]]) else ""
+
+    query_basis <- if (nzchar(observation_unit)) {
+      "observation_unit"
+    } else if (nzchar(table_description)) {
+      "description"
+    } else if (nzchar(table_label)) {
+      "table_label"
+    } else if (nzchar(table_id_query)) {
+      "table_id"
+    } else {
+      ""
+    }
+
+    query_context_parts <- c(observation_unit, table_description, table_label, table_id_query)
+    query_context_parts <- query_context_parts[nzchar(query_context_parts)]
+
+    tibble::tibble(
+      search_query = clean_query(first_non_empty(list(observation_unit, table_description, table_label, table_id_query))),
+      target_query_basis = query_basis,
+      target_query_context = clean_query(paste(query_context_parts, collapse = " "))
+    )
+  }
   has_low_card_codes <- function(row, codes) {
     if (nrow(codes) == 0) return(FALSE)
     keep <- rep(TRUE, nrow(codes))
@@ -297,12 +337,13 @@ suggest_semantics <- function(df,
   non_measurement_roles <- function(row, codes) {
     role <- tolower(as.character(row$column_role[[1]] %||% ""))
     if (!nzchar(role) || role %in% c("identifier", "temporal")) return(character())
+    if (.ms_is_text_like_field_name(row$column_name[[1]] %||% "")) return(character())
 
     term_missing <- "term_iri" %in% names(row) && is_missing(row$term_iri[[1]])
     if (!term_missing) return(character())
+    if (!has_low_card_codes(row, codes)) return(character())
 
-    if (role == "categorical") return(c(term_iri = "variable"))
-    if (role == "attribute" && has_low_card_codes(row, codes)) return(c(term_iri = "variable"))
+    if (role %in% c("categorical", "attribute")) return(c(term_iri = "variable"))
     character()
   }
   split_role_hints <- function(x) {
@@ -433,8 +474,8 @@ suggest_semantics <- function(df,
       table_id <- if ("table_id" %in% names(row)) row$table_id[[1]] else NA_character_
       table_label <- if ("table_label" %in% names(row)) row$table_label[[1]] else table_id
       table_description <- if ("description" %in% names(row)) row$description[[1]] else NA_character_
-      observation_unit <- if ("observation_unit" %in% names(row)) row$observation_unit[[1]] else NA_character_
-      query <- clean_query(first_non_empty(list(observation_unit, table_description, table_label, table_id)))
+      query_info <- table_target_query(row)
+      query <- query_info$search_query[[1]]
       if (!nzchar(query)) return(tibble::tibble())
 
       tibble::tibble(
@@ -450,6 +491,8 @@ suggest_semantics <- function(df,
         target_label = table_label,
         target_description = table_description,
         search_query = query,
+        target_query_basis = query_info$target_query_basis[[1]],
+        target_query_context = query_info$target_query_context[[1]],
         column_label = NA_character_,
         column_description = NA_character_,
         code_label = NA_character_,
@@ -491,6 +534,13 @@ suggest_semantics <- function(df,
       )
     })
     targets <- dplyr::bind_rows(targets, dataset_targets)
+  }
+
+  missing_target_cols <- setdiff(suggestion_leading_cols, names(targets))
+  if (length(missing_target_cols) > 0) {
+    for (nm in missing_target_cols) {
+      targets[[nm]] <- NA_character_
+    }
   }
 
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
@@ -764,6 +814,8 @@ apply_semantic_suggestions <- function(dict,
   if (!is.null(min_score)) {
     suggestions <- suggestions[!is.na(suggestions$score) & suggestions$score >= min_score, , drop = FALSE]
   }
+
+  suggestions <- .ms_filter_auto_apply_suggestions(out, suggestions)
 
   unknown_roles <- unique(suggestions$dictionary_role[!is.na(suggestions$dictionary_role) &
     !suggestions$dictionary_role %in% names(role_to_field)])

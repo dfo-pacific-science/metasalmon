@@ -87,14 +87,14 @@ starts with `column_name`, `dictionary_role`, `table_id`, and
 candidate match. It also includes `target_scope`, `target_sdp_file`, and
 `target_sdp_field` so users can see exactly where each accepted
 suggestion would land in the Salmon Data Package. Additional columns
-include `search_query`, `column_label`, `column_description`, `label`,
-`iri`, `source`, `ontology`, and `definition`. If the underlying search
-results include a `score` column, it is preserved for downstream
-filtering. For non-column targets, the tibble also includes explicit
-destination context (`target_row_key`, `target_label`,
-`target_description`, `code_value`, `code_label`, `code_description`) so
-table-, dataset-, and code-level rows are inspectable without extra
-joins.
+include `search_query`, `target_query_basis`, `target_query_context`,
+`column_label`, `column_description`, `label`, `iri`, `source`,
+`ontology`, and `definition`. If the underlying search results include a
+`score` column, it is preserved for downstream filtering. For non-column
+targets, the tibble also includes explicit destination context
+(`target_row_key`, `target_label`, `target_description`, `code_value`,
+`code_label`, `code_description`) so table-, dataset-, and code-level
+rows are inspectable without extra joins.
 
 ## Details
 
@@ -110,7 +110,9 @@ categorical rows and controlled low-cardinality attribute rows inferred
 through `codes.csv`. Identifier and temporal columns are skipped by
 default. When `codes`, `table_meta`, or `dataset_meta` are supplied,
 additional target rows are generated for `codes.csv`, `tables.csv`, and
-`dataset.csv` respectively.
+`dataset.csv` respectively. Table-level observation-unit queries ignore
+review placeholders such as `MISSING METADATA:` and fall back to real
+table metadata context instead.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a

@@ -139,12 +139,14 @@ Invisibly returns the package path.
 
 This one-shot helper creates a review-ready package by default: semantic
 suggestions are seeded and the top-ranked column-level suggestions are
-auto-applied only into missing dictionary IRI fields. Top table-level
-observation-unit suggestions are also auto-applied into missing
-`tables.csv$observation_unit_iri` values (and can backfill
-`tables.csv$observation_unit` labels when missing). To reduce review
-noise conservatively, code-level suggestions default to factor and
-low-cardinality character source columns only; set
+auto-applied only into missing dictionary IRI fields. Table-level
+observation-unit suggestions stay enabled, but `create_sdp()` only
+auto-applies them into missing `tables.csv$observation_unit_iri` values
+when they are backed by non-placeholder table metadata and still look
+lexically compatible with that context; compatible suggestions can also
+backfill `tables.csv$observation_unit` labels when missing. To reduce
+review noise conservatively, code-level suggestions default to factor
+and low-cardinality character source columns only; set
 `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
 The package root contains `README-review.txt`,
 `semantic_suggestions.csv` (when available), `datapackage.json`,
