@@ -79,10 +79,10 @@ infer_salmon_datapackage_artifacts(
 
   Character string controlling which `codes.csv` rows are sent through
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-  during one-shot seeding. `"factor"` (default) only analyzes codes
-  sourced from factor/categorical columns in the original data frame(s);
-  `"all"` analyzes all inferred or supplied code rows; `"none"` skips
-  code-level semantic suggestions.
+  during one-shot seeding. `"factor"` (default) analyzes codes sourced
+  from factor columns and low-cardinality character columns in the
+  original data frame(s); `"all"` analyzes all inferred or supplied code
+  rows; `"none"` skips code-level semantic suggestions.
 
 ## Value
 

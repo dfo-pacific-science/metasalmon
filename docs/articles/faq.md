@@ -205,7 +205,7 @@ you can add a code list:
 - In the default
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   workflow, code-level semantic suggestions are seeded automatically
-  only for factor/categorical source columns.
+  only for factor and low-cardinality character source columns.
 - If you want broader code-level suggestion seeding, use
   `semantic_code_scope = "all"`.
 

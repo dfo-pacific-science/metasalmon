@@ -1,12 +1,11 @@
 # Suggest semantic annotations for a dictionary
 
-Searches external vocabularies to suggest IRIs for measurement columns
-that are missing semantic annotations. For each measurement column with
-missing I-ADOPT component fields (`term_iri`, `property_iri`,
-`entity_iri`, `unit_iri`, `constraint_iri`), this function queries
-vocabulary services and ranks results by relevance, with SMN queried
-first for salmon-domain roles and GCDFO retained as a distinct
-DFO-specific source.
+Searches external vocabularies to suggest IRIs for semantic gaps in the
+dictionary and package metadata. Measurement columns keep full I-ADOPT
+decomposition (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
+`constraint_iri`), while selected non-measurement columns can receive
+lighter `term_iri` coverage when they are categorical or controlled
+low-cardinality attributes.
 
 ## Usage
 
@@ -104,10 +103,13 @@ and returns suggestions as an attribute on the dictionary tibble. This
 allows you to review candidates before accepting them into your
 dictionary.
 
-Column targets keep the existing behavior: only columns with
-`column_role == "measurement"` are processed for missing I-ADOPT fields.
-When `codes`, `table_meta`, or `dataset_meta` are supplied, additional
-target rows are generated for `codes.csv`, `tables.csv`, and
+Column targets keep full I-ADOPT behavior for
+`column_role == "measurement"` rows. Non-measurement coverage is
+lighter: only missing `term_iri` values are considered, focused on
+categorical rows and controlled low-cardinality attribute rows inferred
+through `codes.csv`. Identifier and temporal columns are skipped by
+default. When `codes`, `table_meta`, or `dataset_meta` are supplied,
+additional target rows are generated for `codes.csv`, `tables.csv`, and
 `dataset.csv` respectively.
 
 A term can legitimately appear more than once with different

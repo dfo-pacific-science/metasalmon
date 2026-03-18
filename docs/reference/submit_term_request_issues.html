@@ -9,7 +9,7 @@ render_ontology_term_request() to the ontology repository."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -131,9 +131,11 @@ GitHub API response fields (<code>issue_number</code>, <code>issue_url</code>).<
 <span class="r-in"><span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>  profile_name <span class="op">=</span> <span class="st">"local-program"</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in render_ontology_term_request(sample_gap, scope = "auto", ask = FALSE,     profile_name = "local-program"):</span> could not find function "render_ontology_term_request"</span>
 <span class="r-in"><span><span class="fu">submit_term_request_issues</span><span class="op">(</span><span class="va">reqs</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in submit_term_request_issues(reqs, dry_run = TRUE):</span> could not find function "submit_term_request_issues"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 6</span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   request_title         request_body request_scope issue_number issue_url status</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> Request new local-pr… <span style="color: #949494;">"</span>## Propose… profile                 <span style="color: #BB0000;">NA</span> <span style="color: #BB0000;">NA</span>        dry_r…</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

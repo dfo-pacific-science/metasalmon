@@ -1,3 +1,16 @@
+metasalmon 0.0.18
+----------------
+
+- Reworked review placeholders so missing descriptions/metadata are labeled explicitly (`MISSING DESCRIPTION:` / `MISSING METADATA:`) instead of the more ambiguous generic review wording.
+- `create_sdp()` and related inference paths now seed table-level observation-unit review content and auto-apply the top table semantic suggestion into `tables.csv`, including `observation_unit_iri` and a backfilled `observation_unit` label when needed.
+- Broadened default semantic suggestion coverage beyond measurement columns in a conservative way: categorical and controlled low-cardinality attribute columns can now receive lighter `term_iri` suggestions, while identifier and temporal columns remain excluded from default non-measurement suggestion seeding.
+- Broadened default code-level semantic seeding so ordinary low-cardinality character columns from typical CSV imports are considered, rather than relying on R factor inputs.
+- Made inferred `required` flags less misleading by marking obvious identifier columns as required and leaving other columns unknown (`NA`) until reviewed, instead of defaulting everything to `FALSE`.
+- Improved auto-filled `term_type` values when `term_iri` suggestions are applied and kept the `target_description` vs `column_description` distinction explicit in suggestion outputs.
+- Added a second bundled official NuSEDS example dataset: `nuseds-fraser-coho-2023-2024.csv` (173 rows across 2023–2024), while keeping the existing 30-row demo sample intact.
+- Added reproducible provenance for bundled NuSEDS examples via `data-raw/nuseds_fraser_coho_examples.R` and documented the upstream Open Government Canada record/resource and licensing.
+- Updated README, vignettes, reference docs, and tests to reflect the broader semantic seeding behavior, required-flag review stance, observation-unit handling, and the tiny-vs-fuller example-data workflow.
+
 metasalmon 0.0.17
 ----------------
 

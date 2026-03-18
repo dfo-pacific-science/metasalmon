@@ -91,10 +91,10 @@ create_sdp(
 
   Character string controlling which `codes.csv` rows are sent through
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
-  during one-shot seeding. `"factor"` (default) only analyzes codes
-  sourced from factor/categorical columns in the original data frame(s);
-  `"all"` analyzes all inferred or supplied code rows; `"none"` skips
-  code-level semantic suggestions.
+  during one-shot seeding. `"factor"` (default) analyzes codes sourced
+  from factor columns and low-cardinality character columns in the
+  original data frame(s); `"all"` analyzes all inferred or supplied code
+  rows; `"none"` skips code-level semantic suggestions.
 
 - check_updates:
 
@@ -139,10 +139,12 @@ Invisibly returns the package path.
 
 This one-shot helper creates a review-ready package by default: semantic
 suggestions are seeded and the top-ranked column-level suggestions are
-auto-applied only into missing dictionary IRI fields. Table-level
-suggestions remain available when table metadata is present. To reduce
-review noise conservatively, code-level suggestions default to
-factor/categorical source columns only; set
+auto-applied only into missing dictionary IRI fields. Top table-level
+observation-unit suggestions are also auto-applied into missing
+`tables.csv$observation_unit_iri` values (and can backfill
+`tables.csv$observation_unit` labels when missing). To reduce review
+noise conservatively, code-level suggestions default to factor and
+low-cardinality character source columns only; set
 `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
 The package root contains `README-review.txt`,
 `semantic_suggestions.csv` (when available), `datapackage.json`,
@@ -151,7 +153,15 @@ The package root contains `README-review.txt`,
 enough human-readable context to review safely. Required-field review
 placeholders are also inserted into the inferred metadata files. In
 interactive use, `create_sdp()` can also mention an available package
-update; set `check_updates = FALSE` to skip that network check.
+update; set `check_updates = FALSE` to skip that network check. The
+package bundles two Fraser coho examples:
+`nuseds-fraser-coho-sample.csv` (30 rows across 1996-2024) for the
+quickest demo, and `nuseds-fraser-coho-2023-2024.csv` (173 rows from the
+official Open Government Canada Fraser and BC Interior workbook) for a
+fuller multi-year example. The bundled
+`system.file("extdata", "example-data-README.md", package = "metasalmon")`
+note points to the upstream record/resource URLs, licensing, and the
+repository `data-raw/` script used to derive the fuller example.
 
 ## Examples
 

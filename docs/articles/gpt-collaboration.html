@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -409,7 +409,7 @@ and writes <code>datapackage.json</code> at the package root.</p>
 
 For each column, please:
 1. Write a clear description (1-2 sentences)
-2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon# and put it in the right field:
+2. Suggest the appropriate DFO Salmon Ontology IRI from https://w3id.org/gcdfo/salmon/ (using canonical term IRIs like `https://w3id.org/gcdfo/salmon#&lt;Term&gt;`) and put it in the right field:
    - term_iri for the best-matching term (use a SKOS concept for compound variables)
    - term_type: `skos_concept` when the match is a SKOS concept (a controlled vocabulary term); use `owl_class` only when the column represents a class/type rather than a variable
    - If there is no reasonable match, leave the IRI blank and draft a proposed term (see below)
@@ -604,7 +604,8 @@ candidates.</p>
 </h2>
 <ul>
 <li>
-<strong>DFO Salmon Ontology</strong>: <a href="https://w3id.org/gcdfo/salmon#" class="external-link uri">https://w3id.org/gcdfo/salmon#</a>
+<strong>DFO Salmon Ontology</strong>: <a href="https://w3id.org/gcdfo/salmon/" class="external-link uri">https://w3id.org/gcdfo/salmon/</a> (canonical term IRIs use
+<code>https://w3id.org/gcdfo/salmon#&lt;Term&gt;</code>)
 <ul>
 <li>Key classes: <code>ConservationUnit</code>, <code>Stock</code>,
 <code>BroodYear</code>, <code>CatchYear</code>

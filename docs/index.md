@@ -18,7 +18,7 @@ You’ve spent years collecting salmon data. But when you try to share it:
 travels with it—explaining every column, every code, and linking to
 standard scientific definitions. These definitions come from the [Salmon
 Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO
-Salmon Ontology](https://w3id.org/gcdfo/salmon#) (DFO-specific layer),
+Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer),
 alongside other published controlled vocabularies, and the data is
 packaged according to the [Salmon Data Package
 Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md).
@@ -77,10 +77,38 @@ pkg_path <- create_sdp(
 
 [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
 is the main path. It writes the canonical `metadata/*.csv` files plus
-your `data/*.csv` tables, adds a review checklist, and only seeds
-code-level semantic suggestions by default for factor/categorical source
-columns. In interactive use it can also mention an available package
-update; set `check_updates = FALSE` to skip that check.
+your `data/*.csv` tables, adds a review checklist, auto-applies top
+column-level and table observation-unit suggestions into blank fields,
+and seeds code-level semantic suggestions conservatively by default for
+factor and low-cardinality character source columns. In interactive use
+it can also mention an available package update; set
+`check_updates = FALSE` to skip that check.
+
+## Built-in NuSEDS Examples
+
+`metasalmon` now ships two Fraser coho example tables so you can pick
+speed vs realism:
+
+| File | Rows | Years | Use it when |
+|----|---:|----|----|
+| `nuseds-fraser-coho-sample.csv` | 30 | 1996-2024 | You want the smallest possible quickstart/demo dataset |
+| `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023-2024 | You want a fuller official multi-year slice for more realistic workflows |
+
+``` r
+
+tiny_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
+provenance_path <- system.file("extdata", "example-data-README.md", package = "metasalmon")
+```
+
+The fuller example is derived from the Open Government Canada NuSEDS
+record using the Fraser and BC Interior workbook, filtered to
+`SPECIES == "Coho"` and `ANALYSIS_YR %in% c(2023, 2024)`. It keeps a
+compact analysis-friendly subset of columns and uses
+`NATURAL_ADULT_SPAWNERS` because `NATURAL_SPAWNERS_TOTAL` is blank for
+this official two-year slice. See `example-data-README.md` for the
+record/resource URLs, row counts, licensing note, and the `data-raw/`
+script that reproduces it.
 
 To continue:
 
@@ -222,9 +250,10 @@ The high-level flow is:
 - **Start here:**
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   takes raw tables, infers the package metadata, writes a review-ready
-  package, gives you a checklist, and keeps default code-level semantic
-  seeding conservative by limiting it to factor/categorical source
-  columns.
+  package, gives you a checklist, auto-fills top column/table semantic
+  suggestions only where fields are blank, and keeps default code-level
+  semantic seeding conservative by limiting it to factor and
+  low-cardinality character source columns.
 - **Advanced/manual path:**
   [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
   is for cases where you already assembled `dataset.csv`, `tables.csv`,
@@ -283,7 +312,7 @@ pkgdown::build_site()
 
 This package can link your data to the [Salmon Domain
 Ontology](https://w3id.org/smn/) for shared terms and to the [DFO Salmon
-Ontology](https://w3id.org/gcdfo/salmon#) for DFO-specific terms.
+Ontology](https://w3id.org/gcdfo/salmon/) for DFO-specific terms.
 Canonical IRIs are explicit: SMN uses `https://w3id.org/smn/<Term>` and
 GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not
 silently rewrite legacy `salmon:` IRIs.
