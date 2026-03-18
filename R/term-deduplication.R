@@ -48,6 +48,16 @@
 #' # Write cleaned output
 #' readr::write_csv(deduped, "work/semantics/gpt_proposed_terms_deduped.csv")
 #' }
+.ms_term_label_pattern <- function(x) {
+  x <- as.character(x)
+  x[is.na(x)] <- ""
+  x <- gsub("([A-Z]+)([A-Z][a-z])", "\\1 \\2", x)
+  x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
+  x <- tolower(x)
+  x <- gsub("[^a-z0-9]+", " ", x)
+  trimws(gsub("\\s+", " ", x))
+}
+
 deduplicate_proposed_terms <- function(proposed_terms, warn_threshold = 30L) {
   if (!is.data.frame(proposed_terms) || nrow(proposed_terms) == 0) {
     return(tibble::tibble(
@@ -77,17 +87,17 @@ if (nrow(proposed_terms) > warn_threshold) {
 
   # Normalize term_label for comparison
   df$label_normalized <- tolower(trimws(df$term_label))
-  # A pattern-friendly normalization (underscores/punctuation -> spaces) for regex detection.
-  df$label_pattern <- trimws(gsub("\\s+", " ", gsub("[^a-z0-9]+", " ", df$label_normalized)))
+  # A pattern-friendly normalization (underscores/punctuation/CamelCase -> spaces) for regex detection.
+  df$label_pattern <- .ms_term_label_pattern(df$term_label)
 
   # Detect age-stratified patterns (e.g., "Spawners Age 1", "Catch Age 3")
   df$is_age_variant <- grepl("\\bage\\s*\\d+\\b", df$label_pattern, ignore.case = TRUE)
   df$age_base_label <- gsub("\\s*age\\s*\\d+\\s*", " ", df$label_pattern, ignore.case = TRUE)
   df$age_base_label <- trimws(gsub("\\s+", " ", df$age_base_label))
 
-  # Detect phase-stratified patterns (e.g., "Ocean Catch", "Terminal Run")
-  phase_prefixes <- c("ocean", "terminal", "mainstem", "marine", "freshwater", "in[- ]?river")
-  phase_pattern <- paste0("^(", paste(phase_prefixes, collapse = "|"), ")\\s+")
+  # Detect phase-stratified patterns (e.g., "Ocean Catch", "Terminal Run", "OceanPhaseCount")
+  phase_prefixes <- c("ocean", "terminal", "mainstem", "marine", "freshwater", "in river")
+  phase_pattern <- paste0("^(", paste(phase_prefixes, collapse = "|"), ")(\\s+phase)?\\s+")
   df$is_phase_variant <- grepl(phase_pattern, df$label_pattern, ignore.case = TRUE)
   df$phase_base_label <- gsub(phase_pattern, "", df$label_pattern, ignore.case = TRUE)
   df$phase_base_label <- trimws(df$phase_base_label)
@@ -175,15 +185,15 @@ if (nrow(proposed_terms) > warn_threshold) {
   result <- df |>
     dplyr::filter(.data$is_base_term) |>
     dplyr::select(
-      term_label = .data$term_label,
-      term_definition = .data$term_definition,
-      term_type = .data$term_type,
-      suggested_parent_iri = .data$suggested_parent_iri,
-      is_base_term = .data$is_base_term,
-      needs_age_facet = .data$needs_age_facet,
-      needs_phase_facet = .data$needs_phase_facet,
-      collapsed_from = .data$collapsed_from,
-      dedup_notes = .data$dedup_notes,
+      "term_label",
+      "term_definition",
+      "term_type",
+      "suggested_parent_iri",
+      "is_base_term",
+      "needs_age_facet",
+      "needs_phase_facet",
+      "collapsed_from",
+      "dedup_notes",
       dplyr::everything(),
       -dplyr::any_of(c(
         "label_normalized", "is_age_variant", "age_base_label",
@@ -236,12 +246,12 @@ suggest_facet_schemes <- function(proposed_terms) {
     ))
   }
 
-  labels <- tolower(proposed_terms$term_label)
+  labels <- .ms_term_label_pattern(proposed_terms$term_label)
 
   schemes <- list()
 
   # Check for age patterns
-  age_matches <- grep("(\\bage\\s*\\d+\\b|\\bage\\d+class\\b|\\bage\\d+\\b)", labels, ignore.case = TRUE, value = TRUE)
+  age_matches <- grep("\\bage\\s*\\d+\\b", labels, ignore.case = TRUE, value = TRUE)
   if (length(age_matches) >= 3) {
     age_num_tokens <- unlist(regmatches(
       age_matches,
@@ -256,12 +266,18 @@ suggest_facet_schemes <- function(proposed_terms) {
   }
 
   # Check for phase patterns
-  phase_patterns <- c("ocean", "terminal", "mainstem", "marine", "freshwater")
+  phase_patterns <- c(
+    ocean = "OceanPhase",
+    terminal = "TerminalPhase",
+    mainstem = "MainstemPhase",
+    marine = "MarinePhase",
+    freshwater = "FreshwaterPhase",
+    `in river` = "InRiverPhase"
+  )
   phases_found <- character()
-  for (phase in phase_patterns) {
-    # Accept both "ocean" and "oceanphase" style tokens
-    if (any(grepl(paste0("\\b", phase, "(phase)?\\b"), labels, ignore.case = TRUE))) {
-      phases_found <- c(phases_found, paste0(tools::toTitleCase(phase), "Phase"))
+  for (phase in names(phase_patterns)) {
+    if (any(grepl(paste0("\\b", phase, "(\\s+phase)?\\b"), labels, ignore.case = TRUE))) {
+      phases_found <- c(phases_found, phase_patterns[[phase]])
     }
   }
   if (length(phases_found) >= 2) {
@@ -275,10 +291,10 @@ suggest_facet_schemes <- function(proposed_terms) {
   # Check for benchmark level patterns (lower/upper).
   # Prefer a generic facet scheme rather than CU-specific terms like CULowerBenchmark.
   benchmark_levels <- character()
-  if (any(grepl("\\blowerbenchmark\\b|\\blower\\s+benchmark\\b", labels, ignore.case = TRUE))) {
+  if (any(grepl("\\blower\\s+benchmark\\b", labels, ignore.case = TRUE))) {
     benchmark_levels <- c(benchmark_levels, "LowerBenchmark")
   }
-  if (any(grepl("\\bupperbenchmark\\b|\\bupper\\s+benchmark\\b", labels, ignore.case = TRUE))) {
+  if (any(grepl("\\bupper\\s+benchmark\\b", labels, ignore.case = TRUE))) {
     benchmark_levels <- c(benchmark_levels, "UpperBenchmark")
   }
   if (length(unique(benchmark_levels)) >= 2) {
