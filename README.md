@@ -58,7 +58,7 @@ pkg_path <- create_sdp(
 # - README-review.txt
 ```
 
-`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, and only seeds code-level semantic suggestions by default for factor/categorical source columns. In interactive use it can also mention an available package update; set `check_updates = FALSE` to skip that check.
+`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. In interactive use it can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
 To continue:
 
@@ -150,7 +150,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 The high-level flow is:
 
-- **Start here:** `create_sdp()` takes raw tables, infers the package metadata, writes a review-ready package, gives you a checklist, and keeps default code-level semantic seeding conservative by limiting it to factor/categorical source columns.
+- **Start here:** `create_sdp()` takes raw tables, infers the package metadata, writes a review-ready package, gives you a checklist, auto-fills top column/table semantic suggestions only where fields are blank, and keeps default code-level semantic seeding conservative by limiting it to factor and low-cardinality character source columns.
 - **Advanced/manual path:** `write_salmon_datapackage()` is for cases where you already assembled `dataset.csv`, `tables.csv`, `column_dictionary.csv`, and optional `codes.csv` yourself.
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.

@@ -28,7 +28,7 @@ validate_semantics <- function(dict,
                                entity_defaults = NULL,
                                vocab_priority = NULL) {
   if (!"required" %in% names(dict)) {
-    dict$required <- FALSE
+    dict$required <- rep(NA, nrow(dict))
   }
 
   issues <- tibble::tibble()

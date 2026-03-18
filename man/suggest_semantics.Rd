@@ -64,23 +64,25 @@ context (\code{target_row_key}, \code{target_label}, \code{target_description},
 code-level rows are inspectable without extra joins.
 }
 \description{
-Searches external vocabularies to suggest IRIs for measurement columns that
-are missing semantic annotations. For each measurement column with missing
-I-ADOPT component fields (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri},
-\code{constraint_iri}), this function queries vocabulary services and ranks
-results by relevance, with SMN queried first for salmon-domain roles and
-GCDFO retained as a distinct DFO-specific source.
+Searches external vocabularies to suggest IRIs for semantic gaps in the
+dictionary and package metadata. Measurement columns keep full I-ADOPT
+decomposition (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri},
+\code{constraint_iri}), while selected non-measurement columns can receive
+lighter \code{term_iri} coverage when they are categorical or controlled
+low-cardinality attributes.
 }
 \details{
 The function uses the column's label or description as the search query and
 returns suggestions as an attribute on the dictionary tibble. This allows
 you to review candidates before accepting them into your dictionary.
 
-Column targets keep the existing behavior: only columns with
-\code{column_role == "measurement"} are processed for missing I-ADOPT fields.
-When \code{codes}, \code{table_meta}, or \code{dataset_meta} are supplied, additional
-target rows are generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv}
-respectively.
+Column targets keep full I-ADOPT behavior for
+\code{column_role == "measurement"} rows. Non-measurement coverage is lighter:
+only missing \code{term_iri} values are considered, focused on categorical rows
+and controlled low-cardinality attribute rows inferred through \code{codes.csv}.
+Identifier and temporal columns are skipped by default. When \code{codes},
+\code{table_meta}, or \code{dataset_meta} are supplied, additional target rows are
+generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv} respectively.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

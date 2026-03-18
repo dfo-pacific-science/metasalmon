@@ -48,6 +48,17 @@ test_that("infer_dictionary marks factor columns as categorical", {
   expect_equal(dict$column_role[dict$column_name == "count"], "measurement")
 })
 
+test_that("infer_dictionary marks obvious identifier columns as required", {
+  df <- data.frame(
+    station_id = c("A", "B"),
+    species = c("Coho", "Chinook")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+  expect_true(isTRUE(dict$required[dict$column_name == "station_id"]))
+  expect_true(is.na(dict$required[dict$column_name == "species"]))
+})
+
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
@@ -242,7 +253,7 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
     column_name = c("NATURAL_SPAWNERS_TOTAL", "POPULATION"),
     column_label = c("NATURAL_SPAWNERS_TOTAL", "Population"),
     column_description = c(
-      "REVIEW REQUIRED: define what 'NATURAL_SPAWNERS_TOTAL' means in table 'escapement'.",
+      "MISSING DESCRIPTION: define what 'NATURAL_SPAWNERS_TOTAL' means in table 'escapement'.",
       "Population identifier"
     ),
     column_role = c("measurement", "categorical"),
@@ -278,6 +289,63 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
   expect_true(any(call_df$role == "property" & call_df$query == "abundance"))
   expect_true(any(call_df$role == "constraint" & call_df$query == "natural origin"))
   expect_true(any(call_df$role == "entity" & call_df$query == "population"))
+})
+
+test_that("suggest_semantics adds lighter non-measurement term suggestions for categorical and controlled attributes", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1"),
+    column_name = c("species", "origin", "record_id"),
+    column_label = c("Species", "Origin", "Record ID"),
+    column_description = c("Observed species", "Origin code", "Internal record id"),
+    column_role = c("categorical", "attribute", "identifier"),
+    value_type = c("string", "string", "string"),
+    unit_label = c(NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_)
+  )
+  codes <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("species", "origin"),
+    code_value = c("CO", "NAT"),
+    code_label = c("Coho", "Natural"),
+    code_description = c("Coho salmon", "Natural origin"),
+    vocabulary_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    term_type = c(NA_character_, NA_character_)
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    codes = codes
+  )
+  suggestions <- attr(res, "semantic_suggestions")
+
+  non_measurement <- suggestions[suggestions$target_scope == "column" & suggestions$target_sdp_field == "term_iri", , drop = FALSE]
+  expect_true(any(non_measurement$column_name == "species"))
+  expect_true(any(non_measurement$column_name == "origin"))
+  expect_false(any(non_measurement$column_name == "record_id"))
 })
 
 test_that("suggest_semantics skips unit guesses when measurement has no unit clue", {
@@ -678,10 +746,12 @@ test_that("apply_semantic_suggestions fills only missing fields unless overwrite
 
   out_safe <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
   expect_equal(out_safe$term_iri, "https://example.org/existing-term")
+  expect_equal(out_safe$term_type, "skos_concept")
   expect_equal(out_safe$property_iri, "https://example.org/property")
 
   out_overwrite <- apply_semantic_suggestions(dict, suggestions = suggestions, overwrite = TRUE, verbose = FALSE)
   expect_equal(out_overwrite$term_iri, "https://example.org/new-term")
+  expect_equal(out_overwrite$term_type, "skos_concept")
   expect_equal(out_overwrite$property_iri, "https://example.org/property")
 })
 

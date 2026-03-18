@@ -266,9 +266,10 @@ write_salmon_datapackage <- function(
 #' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
 #' @param semantic_code_scope Character string controlling which `codes.csv`
 #'   rows are sent through `suggest_semantics()` during one-shot seeding.
-#'   `"factor"` (default) only analyzes codes sourced from factor/categorical
-#'   columns in the original data frame(s); `"all"` analyzes all inferred or
-#'   supplied code rows; `"none"` skips code-level semantic suggestions.
+#'   `"factor"` (default) analyzes codes sourced from factor columns and
+#'   low-cardinality character columns in the original data frame(s); `"all"`
+#'   analyzes all inferred or supplied code rows; `"none"` skips code-level
+#'   semantic suggestions.
 #'
 #' @return A named list with the following components:
 #'   - `resources`: Named list of input tables
@@ -443,9 +444,10 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
 #' @param semantic_code_scope Character string controlling which `codes.csv`
 #'   rows are sent through `suggest_semantics()` during one-shot seeding.
-#'   `"factor"` (default) only analyzes codes sourced from factor/categorical
-#'   columns in the original data frame(s); `"all"` analyzes all inferred or
-#'   supplied code rows; `"none"` skips code-level semantic suggestions.
+#'   `"factor"` (default) analyzes codes sourced from factor columns and
+#'   low-cardinality character columns in the original data frame(s); `"all"`
+#'   analyzes all inferred or supplied code rows; `"none"` skips code-level
+#'   semantic suggestions.
 #' @param check_updates Logical; if `TRUE`, run a short, non-fatal
 #'   [check_for_updates()] call after writing the package and mention newer
 #'   releases only when one is available. Defaults to `interactive()`.
@@ -465,11 +467,14 @@ infer_salmon_datapackage_artifacts <- function(
 #'
 #' @details This one-shot helper creates a review-ready package by default:
 #' semantic suggestions are seeded and the top-ranked column-level suggestions
-#' are auto-applied only into missing dictionary IRI fields. Table-level
-#' suggestions remain available when table metadata is present. To reduce review
-#' noise conservatively, code-level suggestions default to factor/categorical
-#' source columns only; set `semantic_code_scope = "all"` to broaden that or
-#' `"none"` to disable it. The package root contains `README-review.txt`,
+#' are auto-applied only into missing dictionary IRI fields. Top table-level
+#' observation-unit suggestions are also auto-applied into missing
+#' `tables.csv$observation_unit_iri` values (and can backfill
+#' `tables.csv$observation_unit` labels when missing). To reduce review
+#' noise conservatively, code-level suggestions default to factor and
+#' low-cardinality character source columns only; set
+#' `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
+#' The package root contains `README-review.txt`,
 #' `semantic_suggestions.csv` (when available), `datapackage.json`,
 #' `metadata/`, and `data/`. To keep review files usable,
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
@@ -555,6 +560,11 @@ create_sdp <- function(
       overwrite = FALSE,
       verbose = FALSE
     )
+    artifacts$table_meta <- .ms_apply_table_semantic_suggestions(
+      artifacts$table_meta,
+      suggestions = suggestions,
+      overwrite = FALSE
+    )
   }
 
   pkg_path <- write_salmon_datapackage(
@@ -609,7 +619,7 @@ create_sdp <- function(
 
   info_lines <- c(
     "Created review-ready one-shot package with {.fn create_sdp}.",
-    "i" = "Top column-level semantic suggestions were auto-applied only where IRI fields were blank.",
+    "i" = "Top column-level and table-level semantic suggestions were auto-applied only where target fields were blank.",
     "i" = review_targets
   )
   if (!is.null(update_note)) {
@@ -977,14 +987,34 @@ read_salmon_datapackage <- function(path) {
 
   purrr::map_dfr(names(resources), function(tab_id) {
     df <- resources[[tab_id]]
-    factor_cols <- names(df)[vapply(df, inherits, logical(1), what = "factor")]
-    if (length(factor_cols) == 0) {
+    candidate_cols <- names(df)[vapply(names(df), function(col_name) {
+      col <- df[[col_name]]
+      if (inherits(col, "factor")) {
+        return(TRUE)
+      }
+      if (!inherits(col, "character")) {
+        return(FALSE)
+      }
+
+      vals <- as.character(col)
+      vals <- trimws(vals[!is.na(vals)])
+      vals <- vals[nzchar(vals)]
+      if (length(vals) == 0) {
+        return(FALSE)
+      }
+
+      n_unique <- length(unique(vals))
+      cardinality_ratio <- n_unique / length(vals)
+      n_unique <= 30 && (cardinality_ratio <= 0.5 || n_unique <= 5)
+    }, logical(1))]
+
+    if (length(candidate_cols) == 0) {
       return(tibble::tibble(table_id = character(), column_name = character()))
     }
 
     tibble::tibble(
       table_id = tab_id,
-      column_name = factor_cols
+      column_name = candidate_cols
     )
   })
 }
@@ -1021,7 +1051,7 @@ read_salmon_datapackage <- function(path) {
   semantic_code_scope <- match.arg(semantic_code_scope)
   scope_note <- switch(
     semantic_code_scope,
-    factor = "Code-level semantic suggestions are limited to factor/categorical columns for this first pass.",
+    factor = "Code-level semantic suggestions are limited to factor and low-cardinality character columns for this first pass.",
     all = "Code-level semantic suggestions are enabled for all inferred code lists in this run.",
     none = "Code-level semantic suggestions are skipped for this run."
   )
@@ -1102,7 +1132,7 @@ read_salmon_datapackage <- function(path) {
     "Before sharing your data, work through this short checklist so the package is complete, understandable, and ready for others to reuse.",
     "",
     "Checklist:",
-    "[ ] 1. Start in metadata/*.csv and replace every value that begins with 'REVIEW REQUIRED:'.",
+    "[ ] 1. Start in metadata/*.csv and replace every value that begins with 'MISSING DESCRIPTION:' or 'MISSING METADATA:'.",
     "[ ] 2. In metadata/dataset.csv and metadata/tables.csv, confirm title, description, creator/contact, license, file_name paths, labels, observation units, and primary keys.",
     "[ ] 3. Open data/*.csv and confirm each exported table and column name matches metadata/column_dictionary.csv exactly.",
     "[ ] 4. If metadata/codes.csv exists, confirm each coded value used in data/*.csv is listed and described clearly.",
@@ -1113,4 +1143,87 @@ read_salmon_datapackage <- function(path) {
     "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R."
   )
   writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
+}
+
+.ms_apply_table_semantic_suggestions <- function(table_meta, suggestions, overwrite = FALSE) {
+  table_meta <- .ms_normalize_table_meta(table_meta)
+  suggestions <- tibble::as_tibble(suggestions)
+
+  if (nrow(table_meta) == 0 || nrow(suggestions) == 0) {
+    return(table_meta)
+  }
+
+  required_cols <- c("target_scope", "target_sdp_file", "target_sdp_field", "iri")
+  if (!all(required_cols %in% names(suggestions))) {
+    return(table_meta)
+  }
+
+  table_suggestions <- suggestions %>%
+    dplyr::mutate(.row_id = dplyr::row_number()) %>%
+    dplyr::filter(
+      .data$target_scope == "table",
+      .data$target_sdp_file == "tables.csv",
+      .data$target_sdp_field == "observation_unit_iri",
+      !is.na(.data$iri),
+      .data$iri != ""
+    ) %>%
+    dplyr::arrange(.data$.row_id)
+
+  if (nrow(table_suggestions) == 0) {
+    return(table_meta)
+  }
+
+  key_cols <- intersect(c("dataset_id", "table_id"), names(table_suggestions))
+  if (length(key_cols) == 0) {
+    return(table_meta)
+  }
+
+  grouped_id <- do.call(
+    paste,
+    c(
+      lapply(table_suggestions[key_cols], function(x) ifelse(is.na(x), "<NA>", as.character(x))),
+      sep = "\r"
+    )
+  )
+  selected <- table_suggestions[!duplicated(grouped_id), , drop = FALSE]
+
+  out <- table_meta
+  for (i in seq_len(nrow(selected))) {
+    suggestion <- selected[i, , drop = FALSE]
+
+    matches <- rep(TRUE, nrow(out))
+    for (key in key_cols) {
+      key_value <- suggestion[[key]][[1]]
+      if (!is.na(key_value) && nzchar(as.character(key_value))) {
+        matches <- matches & !is.na(out[[key]]) & as.character(out[[key]]) == as.character(key_value)
+      }
+    }
+
+    row_ids <- which(matches)
+    if (length(row_ids) == 0) {
+      next
+    }
+
+    if (!isTRUE(overwrite)) {
+      row_ids <- row_ids[is.na(out$observation_unit_iri[row_ids]) | out$observation_unit_iri[row_ids] == ""]
+      if (length(row_ids) == 0) {
+        next
+      }
+    }
+
+    out$observation_unit_iri[row_ids] <- suggestion$iri[[1]]
+    if ("observation_unit" %in% names(out) && "label" %in% names(suggestion)) {
+      suggestion_label <- as.character(suggestion$label[[1]] %||% "")
+      if (!is.na(suggestion_label) && nzchar(trimws(suggestion_label))) {
+        existing_label <- as.character(out$observation_unit[row_ids] %||% "")
+        missing_label <- is.na(existing_label) | trimws(existing_label) == "" |
+          grepl("^\\s*(MISSING METADATA|MISSING DESCRIPTION|REVIEW REQUIRED)\\s*:", existing_label, ignore.case = TRUE)
+        if (any(missing_label)) {
+          out$observation_unit[row_ids[missing_label]] <- trimws(suggestion_label)
+        }
+      }
+    }
+  }
+
+  out
 }

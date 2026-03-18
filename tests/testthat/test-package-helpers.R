@@ -232,24 +232,24 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
                            table_meta = NULL, dataset_meta = NULL) {
     dict$property_iri[dict$column_name == "count"] <- "https://example.org/property-existing"
     attr(dict, "semantic_suggestions") <- tibble::tibble(
-      column_name = c("count", "count", "species"),
-      dictionary_role = c("variable", "property", "entity"),
-      table_id = c("catches", "catches", "catches"),
-      dataset_id = c("review-demo", "review-demo", "review-demo"),
-      target_scope = c("column", "column", "code"),
-      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "codes.csv"),
-      target_sdp_field = c("term_iri", "property_iri", "term_iri"),
-      target_row_key = c("review-demo/catches/count", "review-demo/catches/count", "review-demo/catches/species/POP1"),
-      code_value = c(NA_character_, NA_character_, "POP1"),
-      code_label = c(NA_character_, NA_character_, "POP1"),
-      code_description = c(NA_character_, NA_character_, NA_character_),
-      iri = c("https://example.org/term-top", "https://example.org/property-top", "https://example.org/pop1"),
-      label = c("Count term", "Count property", "Population One"),
-      source = c("smn", "smn", "smn"),
-      ontology = c("demo", "demo", "demo"),
-      role = c("variable", "property", "entity"),
-      match_type = c("label_exact", "label_exact", "label_exact"),
-      definition = c(NA_character_, NA_character_, NA_character_)
+      column_name = c("count", "count", "species", NA_character_),
+      dictionary_role = c("variable", "property", "entity", "entity"),
+      table_id = c("catches", "catches", "catches", "catches"),
+      dataset_id = c("review-demo", "review-demo", "review-demo", "review-demo"),
+      target_scope = c("column", "column", "code", "table"),
+      target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "codes.csv", "tables.csv"),
+      target_sdp_field = c("term_iri", "property_iri", "term_iri", "observation_unit_iri"),
+      target_row_key = c("review-demo/catches/count", "review-demo/catches/count", "review-demo/catches/species/POP1", "review-demo/catches"),
+      code_value = c(NA_character_, NA_character_, "POP1", NA_character_),
+      code_label = c(NA_character_, NA_character_, "POP1", NA_character_),
+      code_description = c(NA_character_, NA_character_, NA_character_, NA_character_),
+      iri = c("https://example.org/term-top", "https://example.org/property-top", "https://example.org/pop1", "https://example.org/table-unit"),
+      label = c("Count term", "Count property", "Population One", "Catch record"),
+      source = c("smn", "smn", "smn", "smn"),
+      ontology = c("demo", "demo", "demo", "demo"),
+      role = c("variable", "property", "entity", "entity"),
+      match_type = c("label_exact", "label_exact", "label_exact", "label_exact"),
+      definition = c(NA_character_, NA_character_, NA_character_, NA_character_)
     )
     dict
   }
@@ -279,23 +279,25 @@ test_that("create_sdp writes review files and auto-applies top column suggestion
   expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
-  expect_true(all(suggestions_written$target_scope == "column"))
+  expect_setequal(unique(suggestions_written$target_scope), c("column", "table"))
 
   dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   count_row <- dict_written[dict_written$column_name == "count", , drop = FALSE]
   expect_equal(count_row$term_iri[[1]], "https://example.org/term-top")
   expect_equal(count_row$property_iri[[1]], "https://example.org/property-existing")
-  expect_true(startsWith(count_row$column_description[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(count_row$column_description[[1]], "MISSING DESCRIPTION:"))
 
   tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
   expect_true(all(startsWith(tables_written$file_name, "data/")))
-  expect_true(all(startsWith(tables_written$description, "REVIEW REQUIRED:")))
+  expect_true(all(startsWith(tables_written$description, "MISSING DESCRIPTION:")))
+  expect_equal(tables_written$observation_unit_iri[[1]], "https://example.org/table-unit")
+  expect_equal(tables_written$observation_unit[[1]], "Catch record")
 
   dataset_written <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
-  expect_true(startsWith(dataset_written$creator[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$contact_name[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$contact_email[[1]], "REVIEW REQUIRED:"))
-  expect_true(startsWith(dataset_written$license[[1]], "REVIEW REQUIRED:"))
+  expect_true(startsWith(dataset_written$creator[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$contact_name[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$contact_email[[1]], "MISSING METADATA:"))
+  expect_true(startsWith(dataset_written$license[[1]], "MISSING METADATA:"))
 })
 
 test_that("create_sdp seed note explains slower semantic lookup", {
@@ -306,12 +308,12 @@ test_that("create_sdp seed note explains slower semantic lookup", {
   )
 
   expect_match(note, "may take a few minutes")
-  expect_match(note, "factor/categorical columns")
+  expect_match(note, "factor and low-cardinality character columns")
   expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = FALSE))
   expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = TRUE, seed_verbose = FALSE))
 })
 
-test_that("create_sdp limits default code-level semantic seeding to factor columns", {
+test_that("create_sdp default code-level semantic seeding includes low-cardinality character columns", {
   resources <- list(
     catches = tibble::tibble(
       run = factor(c("early", "late")),
@@ -345,7 +347,7 @@ test_that("create_sdp limits default code-level semantic seeding to factor colum
   )
 
   expect_s3_class(seen_codes, "tbl_df")
-  expect_setequal(unique(seen_codes$column_name), "run")
+  expect_setequal(unique(seen_codes$column_name), c("run", "station"))
 })
 
 test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {

@@ -180,7 +180,7 @@ dict_age <- infer_dictionary(df_age,
 
 If you have columns with coded values (like `SPECIES = "CO"` for Coho), you can add a code list:
 
-- In the default `create_sdp()` workflow, code-level semantic suggestions are seeded automatically only for factor/categorical source columns.
+- In the default `create_sdp()` workflow, code-level semantic suggestions are seeded automatically only for factor and low-cardinality character source columns.
 - If you want broader code-level suggestion seeding, use `semantic_code_scope = "all"`.
 
 ```{r}

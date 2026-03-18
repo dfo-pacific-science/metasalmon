@@ -16,6 +16,7 @@ test_that("validate_semantics adds required column and reports missing term_iri"
   )
   res <- validate_semantics(dict)
   expect_true("required" %in% names(res$dict))
+  expect_true(all(is.na(res$dict$required)))
   # structural issues may occur when semantic IRIs are blank; allow non-zero
   expect_gte(nrow(res$issues), 0)
   expect_equal(nrow(res$missing_terms), 1)

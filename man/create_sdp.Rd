@@ -61,9 +61,10 @@ semantic suggestions.}
 
 \item{semantic_code_scope}{Character string controlling which \code{codes.csv}
 rows are sent through \code{suggest_semantics()} during one-shot seeding.
-\code{"factor"} (default) only analyzes codes sourced from factor/categorical
-columns in the original data frame(s); \code{"all"} analyzes all inferred or
-supplied code rows; \code{"none"} skips code-level semantic suggestions.}
+\code{"factor"} (default) analyzes codes sourced from factor columns and
+low-cardinality character columns in the original data frame(s); \code{"all"}
+analyzes all inferred or supplied code rows; \code{"none"} skips code-level
+semantic suggestions.}
 
 \item{check_updates}{Logical; if \code{TRUE}, run a short, non-fatal
 \code{\link[=check_for_updates]{check_for_updates()}} call after writing the package and mention newer
@@ -96,11 +97,14 @@ Data Package.
 \details{
 This one-shot helper creates a review-ready package by default:
 semantic suggestions are seeded and the top-ranked column-level suggestions
-are auto-applied only into missing dictionary IRI fields. Table-level
-suggestions remain available when table metadata is present. To reduce review
-noise conservatively, code-level suggestions default to factor/categorical
-source columns only; set \code{semantic_code_scope = "all"} to broaden that or
-\code{"none"} to disable it. The package root contains \code{README-review.txt},
+are auto-applied only into missing dictionary IRI fields. Top table-level
+observation-unit suggestions are also auto-applied into missing
+\code{tables.csv$observation_unit_iri} values (and can backfill
+\code{tables.csv$observation_unit} labels when missing). To reduce review
+noise conservatively, code-level suggestions default to factor and
+low-cardinality character source columns only; set
+\code{semantic_code_scope = "all"} to broaden that or \code{"none"} to disable it.
+The package root contains \code{README-review.txt},
 \code{semantic_suggestions.csv} (when available), \code{datapackage.json},
 \verb{metadata/}, and \verb{data/}. To keep review files usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
