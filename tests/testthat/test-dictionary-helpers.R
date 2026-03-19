@@ -363,36 +363,35 @@ test_that("suggest_semantics ignores review placeholders when building table obs
   expect_equal(unique(table_suggestions$target_query_context), "Escapement escapement")
 })
 
-test_that("suggest_semantics adds lighter non-measurement term suggestions for categorical and controlled attributes", {
+test_that("suggest_semantics assigns role-aware search targets for attribute columns without code gating", {
   dict <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1", "t1"),
-    column_name = c("species", "origin", "record_id", "survey_comment"),
-    column_label = c("Species", "Origin", "Record ID", "Survey comment"),
-    column_description = c("Observed species", "Origin code", "Internal record id", "Free-text review note"),
-    column_role = c("categorical", "attribute", "identifier", "attribute"),
-    value_type = c("string", "string", "string", "string"),
-    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
-  )
-  codes <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1"),
-    column_name = c("species", "origin", "survey_comment"),
-    code_value = c("CO", "NAT", "looks odd"),
-    code_label = c("Coho", "Natural", "looks odd"),
-    code_description = c("Coho salmon", "Natural origin", "Free-text note"),
-    vocabulary_iri = c(NA_character_, NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_, NA_character_),
-    term_type = c(NA_character_, NA_character_, NA_character_)
+    dataset_id = rep("d1", 7),
+    table_id = rep("t1", 7),
+    column_name = c("species_code", "origin_cd", "waterbody_type", "run_type", "gear", "AREA", "survey_comment"),
+    column_label = c("Species code", "Origin", "Waterbody", "Run type", "Gear", "AREA", "Survey comment"),
+    column_description = c(
+      "Observed species",
+      "Origin code",
+      "Waterbody name",
+      "Run type classification",
+      "Sampling gear used",
+      "Area code",
+      "Free-text review note"
+    ),
+    column_role = c("categorical", "attribute", "attribute", "attribute", "attribute", "attribute", "attribute"),
+    value_type = rep("string", 7),
+    unit_label = rep(NA_character_, 7),
+    unit_iri = rep(NA_character_, 7),
+    term_iri = rep(NA_character_, 7),
+    property_iri = rep(NA_character_, 7),
+    entity_iri = rep(NA_character_, 7),
+    constraint_iri = rep(NA_character_, 7),
+    method_iri = rep(NA_character_, 7)
   )
 
+  calls <- list()
   fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
     tibble::tibble(
       label = paste("candidate", role),
       iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
@@ -409,16 +408,34 @@ test_that("suggest_semantics adds lighter non-measurement term suggestions for c
     dict,
     sources = "ols",
     max_per_role = 1,
-    search_fn = fake_search,
-    codes = codes
+    search_fn = fake_search
   )
   suggestions <- attr(res, "semantic_suggestions")
 
   non_measurement <- suggestions[suggestions$target_scope == "column" & suggestions$target_sdp_field == "term_iri", , drop = FALSE]
-  expect_true(any(non_measurement$column_name == "species"))
-  expect_true(any(non_measurement$column_name == "origin"))
-  expect_false(any(non_measurement$column_name == "record_id"))
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_true("search_role" %in% names(non_measurement))
+
+  expect_true(any(non_measurement$column_name == "species_code"))
+  expect_true(any(non_measurement$column_name == "origin_cd"))
+  expect_true(any(non_measurement$column_name == "waterbody_type"))
+  expect_true(any(non_measurement$column_name == "run_type"))
+  expect_true(any(non_measurement$column_name == "gear"))
+  expect_true(any(non_measurement$column_name == "AREA"))
   expect_false(any(non_measurement$column_name == "survey_comment"))
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "species_code"][[1]], "entity")
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "origin_cd"][[1]], "constraint")
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "waterbody_type"][[1]], "entity")
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "run_type"][[1]], "constraint")
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "gear"][[1]], "method")
+  expect_equal(non_measurement$search_role[non_measurement$column_name == "AREA"][[1]], "variable")
+
+  expect_true(any(call_df$role == "entity" & grepl("^species(\\s|$)", call_df$query)))
+  expect_true(any(call_df$role == "constraint" & grepl("origin", call_df$query)))
+  expect_true(any(call_df$role == "entity" & grepl("waterbody", call_df$query)))
+  expect_true(any(call_df$role == "constraint" & grepl("run", call_df$query)))
+  expect_true(any(call_df$role == "method" & grepl("gear", call_df$query)))
+  expect_true(any(call_df$role == "variable" & grepl("area", call_df$query)))
 })
 
 test_that("apply_semantic_suggestions keeps compatible non-measurement term IRIs and skips bad fits", {

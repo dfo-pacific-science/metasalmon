@@ -1180,10 +1180,43 @@ read_salmon_datapackage <- function(path) {
   ))
   label_tokens <- unique(.ms_non_measurement_target_tokens(label))
   if (length(query_tokens) == 0 || length(label_tokens) == 0) {
+    query_tokens <- unique(.ms_non_measurement_target_tokens(
+      if ("column_name" %in% names(dict_row)) dict_row$column_name else "",
+      if ("column_label" %in% names(dict_row)) dict_row$column_label else "",
+      if ("column_description" %in% names(dict_row)) dict_row$column_description else ""
+    ))
+    if (length(query_tokens) == 0 || length(label_tokens) == 0) {
+      return(FALSE)
+    }
+  }
+
+  # Keep generic dimension labels review-only unless there is clearer context.
+  if (all(query_tokens %in% c("area", "code", "codes", "type", "types", "cd"))) {
     return(FALSE)
   }
 
-  length(intersect(query_tokens, label_tokens)) > 0
+  if (length(intersect(query_tokens, label_tokens)) > 0) {
+    return(TRUE)
+  }
+
+  iri <- if ("iri" %in% names(suggestion)) .ms_scalar_text(suggestion$iri) else ""
+  role_hints <- if ("role_hints" %in% names(suggestion)) tolower(.ms_scalar_text(suggestion$role_hints)) else ""
+  search_role <- if ("search_role" %in% names(suggestion)) tolower(.ms_scalar_text(suggestion$search_role)) else ""
+  target_is_entity_like <- any(query_tokens %in% c("species", "taxon", "stock", "population", "river", "waterbody", "habitat"))
+  candidate_taxon_like <- (
+    grepl("^[A-Z][a-z]+ [a-z][a-z-]+$", label) ||
+      grepl("gbif\\.org/species|marinespecies\\.org|itis\\.gov|ncbi\\.nlm\\.nih\\.gov/taxonomy", iri, ignore.case = TRUE) ||
+      grepl("entity|taxon", role_hints, ignore.case = TRUE)
+  )
+  candidate_measurement_like <- grepl("measurement|abundance|count|rate|length|weight|concentration|biomass", label, ignore.case = TRUE)
+
+  if (target_is_entity_like && candidate_taxon_like && !candidate_measurement_like) {
+    if (!nzchar(search_role) || search_role %in% c("entity", "constraint", "variable")) {
+      return(TRUE)
+    }
+  }
+
+  FALSE
 }
 
 .ms_filter_auto_apply_suggestions <- function(dict, suggestions) {
