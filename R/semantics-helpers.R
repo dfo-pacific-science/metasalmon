@@ -612,6 +612,12 @@ suggest_semantics <- function(df,
       NA_character_
     )
   }
+  sources_for_target_role <- function(base_sources, search_role) {
+    if (length(base_sources) == 0) return(base_sources)
+    if (!identical(search_role, "unit")) return(base_sources)
+
+    unique(c(base_sources, sources_for_role("unit")))
+  }
   targets <- tibble::tibble()
 
   if (nrow(dict) > 0) {
@@ -788,7 +794,8 @@ suggest_semantics <- function(df,
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
     target <- targets[i, , drop = FALSE]
     search_role <- if ("search_role" %in% names(target)) target$search_role[[1]] else target$dictionary_role[[1]]
-    res <- search_fn(target$search_query[[1]], role = search_role, sources = sources)
+    target_sources <- sources_for_target_role(sources, search_role)
+    res <- search_fn(target$search_query[[1]], role = search_role, sources = target_sources)
     if (nrow(res) == 0) return(tibble::tibble())
     res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
     if (!"role_hints" %in% names(res)) {
