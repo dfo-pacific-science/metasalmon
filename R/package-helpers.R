@@ -1013,11 +1013,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   as.logical(out)
 }
 
-.ms_dictionary_from_input <- function(dict) {
+.ms_dictionary_from_input <- function(dict, normalize = TRUE) {
   if (inherits(dict, "data.frame")) {
-    dict <- .ms_normalize_dictionary(dict)
-    if ("required" %in% names(dict)) {
-      dict$required <- .ms_parse_logical(dict$required)
+    dict <- tibble::as_tibble(dict)
+    if (isTRUE(normalize)) {
+      dict <- .ms_normalize_dictionary(dict)
+      if ("required" %in% names(dict)) {
+        dict$required <- .ms_parse_logical(dict$required)
+      }
     }
     return(dict)
   }
@@ -1040,9 +1043,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
 
     dict <- .ms_read_metadata_csv(dict_path)
-    dict <- .ms_normalize_dictionary(dict)
-    if ("required" %in% names(dict)) {
-      dict$required <- .ms_parse_logical(dict$required)
+    if (isTRUE(normalize)) {
+      dict <- .ms_normalize_dictionary(dict)
+      if ("required" %in% names(dict)) {
+        dict$required <- .ms_parse_logical(dict$required)
+      }
     }
     return(dict)
   }

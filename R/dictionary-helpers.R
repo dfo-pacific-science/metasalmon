@@ -702,7 +702,7 @@ infer_column_role <- function(col_name, col) {
 #' validate_dictionary(dict)
 #' }
 validate_dictionary <- function(dict, require_iris = FALSE) {
-  dict <- .ms_dictionary_from_input(dict)
+  dict <- .ms_dictionary_from_input(dict, normalize = FALSE)
 
   # Required columns
   required_cols <- c(
@@ -715,6 +715,11 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
     cli::cli_abort(
       "Dictionary missing required columns: {.field {missing_cols}}"
     )
+  }
+
+  dict <- .ms_normalize_dictionary(dict)
+  if ("required" %in% names(dict)) {
+    dict$required <- .ms_parse_logical(dict$required)
   }
 
   # Ensure optional semantic columns exist (fill with NA if absent)
