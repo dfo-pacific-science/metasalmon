@@ -235,13 +235,20 @@ suggest_semantics <- function(df,
     for (text in texts) {
       matches <- gregexpr("\\(([^)]{1,20})\\)", text, perl = TRUE)
       pieces <- regmatches(text, matches)[[1]]
-      if (length(pieces) == 0) next
-      pieces <- trimws(gsub("^\\(|\\)$", "", pieces))
-      pieces <- pieces[nzchar(pieces)]
-      if (length(pieces) == 0) next
-      normalized <- normalize_measurement_unit_query(utils::tail(pieces, 1))
-      if (nzchar(normalized)) {
-        return(normalized)
+      if (length(pieces) > 0) {
+        pieces <- trimws(gsub("^\\(|\\)$", "", pieces))
+        pieces <- pieces[nzchar(pieces)]
+        if (length(pieces) > 0) {
+          normalized <- normalize_measurement_unit_query(utils::tail(pieces, 1))
+          if (nzchar(normalized)) {
+            return(normalized)
+          }
+        }
+      }
+
+      normalized_full_text <- normalize_measurement_unit_query(text)
+      if (nzchar(normalized_full_text)) {
+        return(normalized_full_text)
       }
     }
 

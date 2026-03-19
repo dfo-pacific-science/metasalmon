@@ -408,20 +408,20 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
 
 test_that("suggest_semantics normalizes wide measurement headers and header units", {
   dict <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1"),
-    column_name = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
-    column_label = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
-    column_description = c(NA_character_, NA_character_, NA_character_),
-    column_role = c("measurement", "measurement", "measurement"),
-    value_type = c("number", "number", "number"),
-    unit_label = c(NA_character_, NA_character_, NA_character_),
-    unit_iri = c(NA_character_, NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_, NA_character_),
-    property_iri = c(NA_character_, NA_character_, NA_character_),
-    entity_iri = c(NA_character_, NA_character_, NA_character_),
-    constraint_iri = c(NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_)
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)", "temperature_degree_c"),
+    column_label = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)", "temperature_degree_c"),
+    column_description = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    column_role = c("measurement", "measurement", "measurement", "measurement"),
+    value_type = c("number", "number", "number", "number"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
 
   calls <- list()
