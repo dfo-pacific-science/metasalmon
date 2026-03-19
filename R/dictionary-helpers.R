@@ -546,6 +546,67 @@ infer_value_type <- function(col) {
   all(!is.na(years) & years >= 1800 & years <= 2500)
 }
 
+.ms_values_look_numericish <- function(col, min_fraction = 0.8) {
+  if (inherits(col, c("integer", "numeric"))) {
+    return(TRUE)
+  }
+
+  values <- as.character(col)
+  values <- trimws(values[!is.na(values)])
+  values <- values[nzchar(values)]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+
+  lowered <- tolower(values)
+  missing_like <- lowered %in% c("na", "n/a", "nd", "null", "nil", "missing")
+  values <- values[!missing_like]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+
+  normalized <- gsub(",", "", values, fixed = TRUE)
+  normalized <- gsub("%", "", normalized, fixed = TRUE)
+  normalized <- gsub("^[<>]=?\\s*", "", normalized)
+  normalized <- trimws(normalized)
+  parsed <- suppressWarnings(as.numeric(normalized))
+  mean(!is.na(parsed)) >= min_fraction
+}
+
+.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
+  measurement_tokens <- c(
+    "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
+    "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
+    "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
+    "rate", "rates", "ratio", "ratios", "proportion", "proportions", "percent", "percentage",
+    "length", "lengths", "weight", "weights", "temperature", "temperatures", "temp",
+    "depth", "depths", "width", "widths", "height", "heights", "level", "levels",
+    "discharge", "flow", "flows", "mortality"
+  )
+  has_token_hint <- any(name_tokens %in% measurement_tokens)
+  has_regex_hint <- grepl(
+    "count|total|number|amount|quantity|measure|temp|temperature|depth|width|height|level|discharge|flow|mortality",
+    name_lower
+  )
+  has_unit_hint <- grepl(
+    "\\([^)]*(%|‰|°c|deg\\s*c|cms|m3/s|mm|cm|\\bm\\b|kg|g|mg/l|ug/l)[^)]*\\)",
+    name_lower,
+    perl = TRUE
+  )
+
+  has_token_hint || has_regex_hint || has_unit_hint
+}
+
+.ms_name_looks_identifierish <- function(name_tokens) {
+  number_tokens <- c("number", "numbers", "no", "num")
+  identifier_context_tokens <- c(
+    "reference", "facility", "station", "site", "sample", "licence", "license",
+    "permit", "record", "report", "release", "tag"
+  )
+
+  any(name_tokens %in% number_tokens) && any(name_tokens %in% identifier_context_tokens)
+}
+
 #' Infer column role from name and data
 #'
 #' @param col_name Column name
@@ -563,7 +624,7 @@ infer_column_role <- function(col_name, col) {
   if (grepl("^key$|_key$|^key_", name_lower)) {
     return("identifier")
   }
-  if (any(name_tokens %in% c("id", "key"))) {
+  if (any(name_tokens %in% c("id", "key")) || .ms_name_looks_identifierish(name_tokens)) {
     return("identifier")
   }
 
@@ -591,15 +652,9 @@ infer_column_role <- function(col_name, col) {
     return("attribute")
   }
 
-  # Check for measurement/quantity patterns
-  measurement_tokens <- c(
-    "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
-    "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
-    "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
-    "rate", "rates", "ratio", "ratios", "proportion", "proportions", "percent", "percentage",
-    "length", "lengths", "weight", "weights", "temperature", "temperatures"
-  )
-  if (grepl("count|total|number|amount|quantity|measure", name_lower) || any(name_tokens %in% measurement_tokens)) {
+  # Check for measurement/quantity patterns. Wide real-world tables often hide
+  # measurements behind unit-bearing headers or percent-like strings.
+  if (.ms_name_has_measurement_hint(name_lower, name_tokens) && .ms_values_look_numericish(col)) {
     return("measurement")
   }
 

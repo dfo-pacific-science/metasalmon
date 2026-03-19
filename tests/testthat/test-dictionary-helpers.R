@@ -89,6 +89,32 @@ test_that("infer_dictionary keeps method-like count fields out of measurement ro
   expect_equal(dict$column_role[dict$column_name == "avg_weight"], "measurement")
 })
 
+test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
+  df <- tibble::tibble(
+    `Facility Reference Number` = c(1001, 1002),
+    `Environmental (%/month)` = c("0.00%", "4.56%"),
+    `Water Level / Niveau d'eau (m)` = c(1.2, 1.4),
+    `Discharge / Débit (cms)` = c(10.5, 11.1),
+    water_temp_c__temp_eau_c = c(12.3, 12.8),
+    width_middle = c(4.2, 4.5),
+    depth_1_lower = c(0.5, 0.7),
+    `Grade...4` = c(10, 10),
+    `QA/QC...6` = c("Approved", "Approved")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "Facility Reference Number"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "Environmental (%/month)"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "Water Level / Niveau d'eau (m)"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "Discharge / Débit (cms)"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "water_temp_c__temp_eau_c"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "width_middle"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "depth_1_lower"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "Grade...4"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "QA/QC...6"], "attribute")
+})
+
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
