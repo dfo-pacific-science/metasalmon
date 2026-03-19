@@ -279,6 +279,47 @@ test_that("find_terms falls back to gcdfo when smn has no good hit", {
   expect_equal(res$label[[1]], "Stock")
 })
 
+test_that("find_terms does not short-circuit on lexical-poor local count hits", {
+  smn_rows <- tibble::tibble(
+    label = "Observed rate or abundance",
+    iri = "https://w3id.org/smn/ObservedRateOrAbundance",
+    source = "smn",
+    ontology = "smn",
+    role = "property",
+    match_type = "definition",
+    definition = "Observed count or abundance metric."
+  )
+  gcdfo_rows <- tibble::tibble(
+    label = "Spawner abundance",
+    iri = "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+    source = "gcdfo",
+    ontology = "gcdfo",
+    role = "property",
+    match_type = "label_partial",
+    definition = "Spawner abundance estimate."
+  )
+  ols_rows <- tibble::tibble(
+    label = "count",
+    iri = "http://purl.obolibrary.org/obo/STATO_0000047",
+    source = "ols",
+    ontology = "stato",
+    role = "property",
+    match_type = "label_exact",
+    definition = "count"
+  )
+
+  res <- with_mocked_bindings(
+    .search_smn = function(query, role) smn_rows,
+    .search_gcdfo = function(query, role) gcdfo_rows,
+    .search_ols = function(query, role) ols_rows,
+    .search_nvs = function(query, role) .empty_terms(role),
+    find_terms("count", role = "property", sources = c("smn", "gcdfo", "ols", "nvs"), expand_query = FALSE)
+  )
+
+  expect_true("ols" %in% res$source)
+  expect_equal(res$label[[1]], "count")
+})
+
 test_that("score_and_rank_terms boosts label overlap with query tokens", {
   df <- tibble::tibble(
     label = c("Spawner count", "Natural killer cell"),

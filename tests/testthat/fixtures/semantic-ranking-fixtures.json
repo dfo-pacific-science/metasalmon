@@ -817,5 +817,143 @@
         "backend_score": 1.0
       }
     ]
+  },
+  {
+    "case_id": "count-like-property-prefers-explicit-count",
+    "query": "count",
+    "role": "property",
+    "expected": {
+      "top": {
+        "candidate_id": "ols-count",
+        "source": "ols"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-observed-rate-abundance",
+        "label": "Observed rate or abundance",
+        "iri": "https://w3id.org/smn/ObservedRateOrAbundance",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "property",
+        "match_type": "definition",
+        "definition": "Observed count or abundance metric.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "gcdfo-spawner-abundance",
+        "label": "Spawner abundance",
+        "iri": "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "property",
+        "match_type": "label_partial",
+        "definition": "Spawner abundance estimate.",
+        "backend_score": 2.8
+      },
+      {
+        "candidate_id": "ols-count",
+        "label": "count",
+        "iri": "http://purl.obolibrary.org/obo/STATO_0000047",
+        "source": "ols",
+        "ontology": "stato",
+        "role": "property",
+        "match_type": "label_exact",
+        "definition": "Count of observed entities.",
+        "backend_score": 0.8
+      }
+    ]
+  },
+  {
+    "case_id": "count-like-variable-prefers-explicit-count-over-rate",
+    "query": "cwt 1st mark count",
+    "role": "variable",
+    "expected": {
+      "top": {
+        "candidate_id": "ols-count",
+        "source": "ols"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-observed-rate-abundance",
+        "label": "Observed rate or abundance",
+        "iri": "https://w3id.org/smn/ObservedRateOrAbundance",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Observed count or abundance metric.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "gcdfo-cwt-survival",
+        "label": "CWT marine survival rate",
+        "iri": "https://w3id.org/gcdfo/salmon#CWTMarineSurvivalRate",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Coded-wire-tag marine survival rate.",
+        "backend_score": 2.4
+      },
+      {
+        "candidate_id": "ols-count",
+        "label": "count",
+        "iri": "http://purl.obolibrary.org/obo/NCIT_C25463",
+        "source": "ols",
+        "ontology": "ncit",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Count of observed entities.",
+        "backend_score": 0.9
+      }
+    ]
+  },
+  {
+    "case_id": "count-like-spawner-query-prefers-spawner-abundance",
+    "query": "adult spawner count",
+    "role": "variable",
+    "expected": {
+      "top": {
+        "candidate_id": "gcdfo-spawner-abundance",
+        "source": "gcdfo"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-observed-rate-abundance",
+        "label": "Observed rate or abundance",
+        "iri": "https://w3id.org/smn/ObservedRateOrAbundance",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Observed count or abundance metric.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "smn-exploitation-rate",
+        "label": "Exploitation rate",
+        "iri": "https://w3id.org/smn/ExploitationRate",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Fishery exploitation rate.",
+        "backend_score": 2.9
+      },
+      {
+        "candidate_id": "gcdfo-spawner-abundance",
+        "label": "Spawner abundance",
+        "iri": "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Spawner abundance estimate.",
+        "backend_score": 2.7
+      }
+    ]
   }
 ]
