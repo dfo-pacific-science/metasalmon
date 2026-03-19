@@ -8,7 +8,8 @@ read_github_csv(path, ref = "main", repo = NULL, token = NULL, ...)
 }
 \arguments{
 \item{path}{Path to the CSV file inside the repository (e.g.,
-\code{"data/observations.csv"}), or a full GitHub URL (blob or raw format).}
+\code{"data/observations.csv"}), or a full GitHub URL (blob or raw format).
+Non-GitHub URLs are rejected.}
 
 \item{ref}{Git reference: branch name, tag, or commit SHA. Defaults to
 \code{"main"}. For reproducible analyses, prefer tags or commit SHAs.
@@ -36,9 +37,9 @@ the URL.
 This function supports automatic retries with exponential backoff for
 transient network errors.
 
-Before using this function, run \code{ms_setup_github()} once to configure
-authentication. For private repositories, your PAT must have the \code{repo}
-scope.
+Public GitHub content can be read without a PAT. For private repositories,
+run \code{ms_setup_github()} to configure authentication; your PAT must have the
+\code{repo} scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather than
 a branch name like \code{"main"}, since branch contents can change over time.

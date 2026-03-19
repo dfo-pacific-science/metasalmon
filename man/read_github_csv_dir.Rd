@@ -46,12 +46,12 @@ multiple local CSV files.
 }
 \details{
 This function uses the GitHub API to list directory contents, filters for CSV
-files, then reads each file using \code{read_github_csv()}. Authentication is
-required even for public repositories when using the API.
+files, then reads each file using \code{read_github_csv()}. For public
+repositories, directory listing can work without a PAT; when available, a
+token is used automatically.
 
-Before using this function, run \code{ms_setup_github()} once to configure
-authentication. For private repositories, your PAT must have the \code{repo}
-scope.
+For private repositories, run \code{ms_setup_github()} to configure
+authentication. Your PAT must have the \code{repo} scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather than
 a branch name like \code{"main"}, since branch contents can change over time.

@@ -38,14 +38,96 @@ test_that("GitHub path resolution handles blob and raw URLs", {
   expect_equal(raw$path, "path/to/file.csv")
 })
 
-test_that("read_github_csv errors early without a token", {
+test_that("GitHub helper URL parsing rejects non-GitHub remote URLs", {
   expect_error(
-    read_github_csv("data/gold/dimension_tables/dim_date.csv", repo = "owner/repo", token = ""),
-    "No GitHub PAT found"
+    metasalmon:::ms_resolve_path(
+      "https://example.com/data.csv",
+      ref = "main",
+      repo = NULL
+    ),
+    "URL inputs must use"
+  )
+
+  expect_error(
+    metasalmon:::ms_resolve_dir_path(
+      "https://example.com/data",
+      ref = "main",
+      repo = NULL
+    ),
+    "URL inputs must use"
   )
 })
 
-test_that("read_github_csv can fetch when a token is configured", {
+test_that("read_github_csv rejects non-GitHub URLs before any fetch", {
+  expect_error(
+    with_mocked_bindings(
+      ms_github_get = function(url, token = NULL) {
+        stop("network call should not happen")
+      },
+      read_github_csv("https://example.com/data.csv", token = "secret"),
+      .package = "metasalmon"
+    ),
+    "URL inputs must use"
+  )
+})
+
+test_that("read_github_csv can read public content without a token", {
+  out <- with_mocked_bindings(
+    ms_resolve_path = function(path, ref, repo) {
+      list(
+        url = "https://raw.githubusercontent.com/owner/repo/main/path/to/file.csv",
+        repo = "owner/repo",
+        ref = "main",
+        path = "path/to/file.csv"
+      )
+    },
+    ms_current_token = function() "",
+    ms_github_get = function(url, token = NULL) {
+      expect_equal(token, "")
+      httr2::response(
+        status_code = 200,
+        url = url,
+        body = charToRaw("a,b\n1,2\n")
+      )
+    },
+    read_github_csv("path/to/file.csv", repo = "owner/repo"),
+    .package = "metasalmon"
+  )
+
+  expect_s3_class(out, "data.frame")
+  expect_equal(nrow(out), 1)
+  expect_equal(ncol(out), 2)
+})
+
+test_that("read_github_csv_dir can list and read public content without a token", {
+  used_tokens <- character()
+  out <- with_mocked_bindings(
+    ms_resolve_dir_path = function(path, ref, repo) {
+      list(repo = "owner/repo", ref = "main", path = "data")
+    },
+    ms_current_token = function() "",
+    ms_github_list_contents = function(repo, path, ref, token = NULL) {
+      expect_equal(token, "")
+      list(
+        list(type = "file", name = "a.csv"),
+        list(type = "file", name = "b.txt"),
+        list(type = "file", name = "c.csv")
+      )
+    },
+    read_github_csv = function(path, ref = "main", repo = NULL, token = NULL, ...) {
+      used_tokens <<- c(used_tokens, token)
+      data.frame(x = 1, stringsAsFactors = FALSE)
+    },
+    read_github_csv_dir("data", repo = "owner/repo"),
+    .package = "metasalmon"
+  )
+
+  expect_type(out, "list")
+  expect_equal(names(out), c("a", "c"))
+  expect_equal(used_tokens, c("", ""))
+})
+
+test_that("read_github_csv can read remote content with a token", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping Qualark fetch test.")
 
@@ -78,11 +160,18 @@ test_that("read_github_csv can fetch when a token is configured", {
   expect_gt(ncol(df), 0)
 })
 
-test_that("read_github_csv_dir errors early without a token", {
-  expect_error(
-    read_github_csv_dir("data/observations", repo = "owner/repo", token = ""),
-    "No GitHub PAT found"
+test_that("read_github_csv without token can read a known public GitHub raw CSV", {
+  skip_if_offline()
+
+  df <- read_github_csv(
+    "https://raw.githubusercontent.com/dfo-pacific-science/metasalmon/main/inst/extdata/nuseds-fraser-coho-sample.csv",
+    token = "",
+    progress = FALSE
   )
+
+  expect_s3_class(df, "data.frame")
+  expect_gt(nrow(df), 0)
+  expect_gt(ncol(df), 0)
 })
 
 test_that("ms_resolve_dir_path handles directory paths correctly", {
@@ -129,7 +218,6 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
   dir_path <- Sys.getenv("METASALMON_QUALARK_TEST_DIR", "data/gold/dimension_tables")
   ref <- Sys.getenv("METASALMON_QUALARK_TEST_REF", "main")
 
-  # Verify we can access the repo
   tryCatch(
     gh::gh(sprintf("/repos/%s", repo), .token = token),
     error = function(e) {
@@ -137,7 +225,6 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
     }
   )
 
-  # Verify the directory exists and has contents
   tryCatch(
     {
       contents <- gh::gh(
@@ -145,11 +232,9 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
         .token = token,
         ref = ref
       )
-      # Check if it's actually a directory (array) or a single file
       if (!is.null(contents$type) && contents$type == "file") {
         testthat::skip(paste("Path", dir_path, "is a file, not a directory"))
       }
-      # Check if directory has any CSV files
       csv_files <- Filter(
         function(x) x$type == "file" && grepl("\\.csv$", x$name, ignore.case = TRUE),
         contents
@@ -163,18 +248,13 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
     }
   )
 
-  # Test reading the directory
   data_list <- read_github_csv_dir(dir_path, ref = ref, repo = repo, token = token)
 
   expect_type(data_list, "list")
   expect_gt(length(data_list), 0)
-
-  # Check that all elements are data frames
   for (i in seq_along(data_list)) {
     expect_s3_class(data_list[[i]], "data.frame")
   }
-
-  # Check that names are set (file names without .csv extension)
   expect_true(all(nchar(names(data_list)) > 0))
 })
 
@@ -185,31 +265,14 @@ test_that("read_github_csv_dir handles empty directories", {
   repo <- Sys.getenv("METASALMON_QUALARK_TEST_REPO", "dfo-pacific-science/qualark-data")
   ref <- Sys.getenv("METASALMON_QUALARK_TEST_REF", "main")
 
-  # Try to find an empty directory or create a test scenario
-  # For now, we'll test that it returns an empty list gracefully
-  # This test might skip if we can't find an appropriate test directory
-  tryCatch(
-    {
-      # Try root directory - might have files, but we can test the pattern matching
-      result <- read_github_csv_dir(
-        "nonexistent-directory-that-should-not-exist",
-        ref = ref,
-        repo = repo,
-        token = token,
-        pattern = "definitely_no_files_match_this_pattern_12345\\.csv$"
-      )
-      expect_type(result, "list")
-      expect_equal(length(result), 0)
-    },
-    error = function(e) {
-      # If directory doesn't exist, we get an error, which is expected
-      if (grepl("not found|404", conditionMessage(e), ignore.case = TRUE)) {
-        # This is expected behavior
-        expect_true(TRUE)
-      } else {
-        # Other errors should still be tested
-        testthat::skip(paste("Unexpected error:", conditionMessage(e)))
-      }
-    }
+  expect_error(
+    read_github_csv_dir(
+      "nonexistent-directory-that-should-not-exist",
+      ref = ref,
+      repo = repo,
+      token = token
+    ),
+    "not found|404",
+    ignore.case = TRUE
   )
 })

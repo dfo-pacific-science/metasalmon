@@ -9,7 +9,7 @@ github_raw_url(path, ref = "main", repo = NULL)
 \arguments{
 \item{path}{Character scalar path inside the repository (e.g.,
 \code{"data/myfile.csv"}), or a full GitHub URL (blob or raw) which will be
-normalized.}
+normalized. Non-GitHub URLs are rejected.}
 
 \item{ref}{Git reference: branch name, tag, or commit SHA. Defaults to
 \code{"main"}. For reproducible analyses, prefer tags or commit SHAs over
