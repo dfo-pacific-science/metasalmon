@@ -58,7 +58,7 @@ pkg_path <- create_sdp(
 # - README-review.txt
 ```
 
-`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. In interactive use it can also mention an available package update; set `check_updates = FALSE` to skip that check.
+`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
 ## Built-in NuSEDS Examples
 

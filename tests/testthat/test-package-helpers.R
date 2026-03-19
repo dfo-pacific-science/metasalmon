@@ -1080,3 +1080,139 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
   expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
 })
+
+test_that("validate_salmon_datapackage validates a CU/composite-style package", {
+  resources <- list(
+    cu_composite_escapement = tibble::tibble(
+      cu_id = c("CU-001", "CU-002"),
+      year = c(2023L, 2024L),
+      escapement = c(1250, 1325),
+      estimate_type = c("point", "point")
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    title = "CU composite escapement demo",
+    description = "Package-first CU/composite escapement example",
+    creator = "Test Author",
+    contact_name = "Test Contact",
+    contact_email = "test@example.org",
+    license = "Open Government Licence - Canada"
+  )
+
+  table_meta <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement",
+    file_name = "data/cu_composite_escapement.csv",
+    table_label = "CU Composite Escapement",
+    description = "One row per CU-year estimate.",
+    observation_unit = "CU-year escapement estimate",
+    observation_unit_iri = "https://w3id.org/smn/Observation",
+    primary_key = "cu_id,year"
+  )
+
+  dict <- infer_dictionary(
+    resources$cu_composite_escapement,
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement"
+  )
+  dict <- fill_measurement_components(dict)
+
+  codes <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement",
+    column_name = "estimate_type",
+    code_value = "point",
+    code_label = "Point estimate",
+    code_description = "Single-value escapement estimate.",
+    vocabulary_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_
+  )
+
+  temp_dir <- withr::local_tempdir()
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  result <- suppressMessages(validate_salmon_datapackage(temp_dir, require_iris = TRUE))
+
+  expect_true(is.list(result))
+  expect_equal(nrow(result$issues), 0)
+  expect_true("cu_composite_escapement" %in% names(result$package$resources))
+  expect_equal(nrow(result$semantic_validation$issues), 0)
+})
+
+test_that("validate_salmon_datapackage catches missing codes.csv values", {
+  resources <- list(
+    cu_composite_escapement = tibble::tibble(
+      cu_id = c("CU-001", "CU-002"),
+      year = c(2023L, 2024L),
+      escapement = c(1250, 1325),
+      estimate_type = c("point", "provisional")
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    title = "CU composite escapement demo",
+    description = "Package-first CU/composite escapement example",
+    creator = "Test Author",
+    contact_name = "Test Contact",
+    contact_email = "test@example.org",
+    license = "Open Government Licence - Canada"
+  )
+
+  table_meta <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement",
+    file_name = "data/cu_composite_escapement.csv",
+    table_label = "CU Composite Escapement",
+    description = "One row per CU-year estimate.",
+    observation_unit = "CU-year escapement estimate",
+    observation_unit_iri = "https://w3id.org/smn/Observation",
+    primary_key = "cu_id,year"
+  )
+
+  dict <- infer_dictionary(
+    resources$cu_composite_escapement,
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement"
+  )
+  dict <- fill_measurement_components(dict)
+
+  codes <- tibble::tibble(
+    dataset_id = "cu-composite-demo",
+    table_id = "cu_composite_escapement",
+    column_name = "estimate_type",
+    code_value = "point",
+    code_label = "Point estimate",
+    code_description = "Single-value escapement estimate.",
+    vocabulary_iri = NA_character_,
+    term_iri = NA_character_,
+    term_type = NA_character_
+  )
+
+  temp_dir <- withr::local_tempdir()
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(temp_dir, require_iris = FALSE)),
+    "not listed in codes.csv"
+  )
+})

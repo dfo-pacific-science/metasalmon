@@ -8,7 +8,8 @@
 #' (`require_iris = FALSE`), semantic gaps emit warnings but do not fail
 #' the overall call.
 #'
-#' @param dict Dictionary tibble/data frame.
+#' @param dict Dictionary tibble/data frame, a package directory, or a path to
+#'   `column_dictionary.csv`.
 #' @param require_iris Logical; if TRUE, require non-empty semantic fields
 #'   (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`) for measurement
 #'   rows.
@@ -28,6 +29,8 @@ validate_semantics <- function(dict,
                                require_iris = FALSE,
                                entity_defaults = NULL,
                                vocab_priority = NULL) {
+  dict <- .ms_dictionary_from_input(dict)
+
   if (!is.null(entity_defaults)) {
     cli::cli_warn("{.arg entity_defaults} is deprecated in {.fn validate_semantics} and is ignored.")
   }
