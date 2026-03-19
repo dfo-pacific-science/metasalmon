@@ -1297,3 +1297,121 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
     "not listed in codes.csv"
   )
 })
+
+.ms_write_composite_guardrail_fixture <- function(
+    route_value = NULL,
+    datapackage_route_value = NULL,
+    populate_signal_column = FALSE
+) {
+  resources <- list(
+    cu_timeseries = tibble::tibble(
+      cu_id = c("CU-001", "CU-002"),
+      year = c(2023L, 2024L),
+      escapement = c(1250, 1325),
+      SPN_ABD_WILD = if (populate_signal_column) c("present", NA_character_) else c(NA_character_, NA_character_),
+      SPN_TREND_WILD = c(NA_character_, NA_character_),
+      RAPID_STATUS = c(NA_character_, NA_character_)
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "cu-composite-guardrail",
+    title = "CU composite guardrail demo",
+    description = "Fixture for composite-intent package validation.",
+    creator = "Test Author",
+    contact_name = "Test Contact",
+    contact_email = "test@example.org",
+    license = "Open Government Licence - Canada"
+  )
+  if (!is.null(route_value)) {
+    dataset_meta$route <- route_value
+  }
+
+  table_meta <- tibble::tibble(
+    dataset_id = "cu-composite-guardrail",
+    table_id = "cu_timeseries",
+    file_name = "data/cu_timeseries.csv",
+    table_label = "CU Timeseries",
+    description = "CU timeseries values for validation tests.",
+    observation_unit = "CU-year observation",
+    observation_unit_iri = "https://w3id.org/smn/Observation",
+    primary_key = "cu_id,year"
+  )
+
+  dict <- infer_dictionary(
+    resources$cu_timeseries,
+    dataset_id = "cu-composite-guardrail",
+    table_id = "cu_timeseries"
+  )
+  dict <- fill_measurement_components(dict)
+
+  temp_dir <- tempfile("composite-guardrail-")
+  dir.create(temp_dir, recursive = TRUE)
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  if (!is.null(datapackage_route_value)) {
+    datapackage_path <- file.path(temp_dir, "datapackage.json")
+    datapackage <- jsonlite::read_json(datapackage_path, simplifyVector = FALSE)
+    datapackage$route <- datapackage_route_value
+    jsonlite::write_json(
+      datapackage,
+      datapackage_path,
+      pretty = TRUE,
+      auto_unbox = TRUE,
+      null = "null"
+    )
+  }
+
+  temp_dir
+}
+
+test_that("validate_salmon_datapackage catches explicit composite route metadata without WSP signals", {
+  pkg_path <- .ms_write_composite_guardrail_fixture(route_value = "cu_composite")
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
+    "Explicit composite route intent detected"
+  )
+})
+
+test_that("validate_salmon_datapackage allows explicit composite route metadata when WSP signals are populated", {
+  pkg_path <- .ms_write_composite_guardrail_fixture(
+    route_value = "cu_composite",
+    populate_signal_column = TRUE
+  )
+
+  result <- suppressWarnings(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE))
+  )
+
+  expect_equal(nrow(result$issues), 0)
+  expect_true("cu_timeseries" %in% names(result$package$resources))
+})
+
+test_that("validate_salmon_datapackage does not require WSP signals without explicit composite intent", {
+  pkg_path <- .ms_write_composite_guardrail_fixture()
+
+  result <- suppressWarnings(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE))
+  )
+
+  expect_equal(nrow(result$issues), 0)
+})
+
+test_that("validate_salmon_datapackage catches datapackage route hints without WSP signals", {
+  pkg_path <- .ms_write_composite_guardrail_fixture(
+    datapackage_route_value = "cu_composite"
+  )
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
+    "Explicit composite route intent detected"
+  )
+})

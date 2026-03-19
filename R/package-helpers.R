@@ -896,7 +896,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     pkg$codes
   )
 
-  issues <- .ms_collect_package_validation_issues(pkg)
+  issues <- .ms_collect_package_validation_issues(pkg, path = path)
   if (nrow(issues) > 0) {
     .ms_abort_package_validation_issues(issues)
   }
@@ -1077,7 +1077,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   invisible(NULL)
 }
 
-.ms_collect_package_validation_issues <- function(pkg) {
+.ms_collect_package_validation_issues <- function(pkg, path = NULL) {
   issues <- list()
 
   add_issue <- function(issue_type, message, table_id = NA_character_, column_name = NA_character_, value = NA_character_) {
@@ -1281,6 +1281,34 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
   }
 
+  composite_hints <- .ms_collect_composite_hint_values(
+    dataset_meta = pkg$dataset,
+    table_meta = pkg$tables,
+    datapackage_path = if (!is.null(path)) file.path(path, "datapackage.json") else NA_character_,
+    hint_fields = c("route", "route_key", "upload_route", "data_level"),
+    optional_hint_fields = "source_name"
+  )
+
+  if (.ms_values_indicate_composite_intent(composite_hints$value)) {
+    wsp_signal <- .ms_detect_wsp_composite_signal(pkg$resources)
+    if (!wsp_signal$any_populated) {
+      hint_fields_detected <- paste(unique(composite_hints$field), collapse = ", ")
+      hint_values_detected <- paste(unique(composite_hints$value), collapse = ", ")
+      add_issue(
+        "composite_intent",
+        sprintf(
+          "Explicit composite route intent detected in %s (%s), but no populated WSP composite signal columns were found in cu_timeseries. Populate at least one of: %s.",
+          hint_fields_detected,
+          hint_values_detected,
+          paste(wsp_signal$required_columns, collapse = ", ")
+        ),
+        table_id = "cu_timeseries",
+        column_name = paste(wsp_signal$required_columns, collapse = ", "),
+        value = hint_values_detected
+      )
+    }
+  }
+
   if (length(issues) == 0) {
     return(tibble::tibble(
       issue_type = character(),
@@ -1357,6 +1385,157 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(NA_character_)
   }
   hits[[1]]
+}
+
+.ms_collect_composite_hint_values <- function(
+    dataset_meta,
+    table_meta,
+    datapackage_path,
+    hint_fields,
+    optional_hint_fields = character()
+) {
+  all_fields <- unique(c(hint_fields, optional_hint_fields))
+
+  collect_from_df <- function(df, source_label) {
+    if (is.null(df) || nrow(df) == 0) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    present <- intersect(names(df), all_fields)
+    if (length(present) == 0) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    purrr::map_dfr(present, function(field_name) {
+      values <- .ms_nonempty_text_values(df[[field_name]])
+      if (length(values) == 0) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+
+      tibble::tibble(
+        source = source_label,
+        field = field_name,
+        value = values
+      )
+    })
+  }
+
+  collect_from_json <- function(path) {
+    if (!is.character(path) || length(path) != 1 || is.na(path) || !nzchar(path) || !file.exists(path)) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    datapackage <- tryCatch(
+      jsonlite::read_json(path, simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+    if (is.null(datapackage)) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    top_values <- purrr::map_dfr(all_fields, function(field_name) {
+      if (is.null(datapackage[[field_name]])) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+
+      values <- .ms_nonempty_text_values(datapackage[[field_name]])
+      if (length(values) == 0) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+
+      tibble::tibble(
+        source = "datapackage",
+        field = field_name,
+        value = values
+      )
+    })
+
+    resource_values <- purrr::map_dfr(datapackage$resources %||% list(), function(resource) {
+      resource_name <- resource$name %||% "<unnamed_resource>"
+      purrr::map_dfr(all_fields, function(field_name) {
+        if (is.null(resource[[field_name]])) {
+          return(tibble::tibble(source = character(), field = character(), value = character()))
+        }
+
+        values <- .ms_nonempty_text_values(resource[[field_name]])
+        if (length(values) == 0) {
+          return(tibble::tibble(source = character(), field = character(), value = character()))
+        }
+
+        tibble::tibble(
+          source = paste0("datapackage_resource:", resource_name),
+          field = field_name,
+          value = values
+        )
+      })
+    })
+
+    dplyr::bind_rows(top_values, resource_values)
+  }
+
+  dplyr::bind_rows(
+    collect_from_df(dataset_meta, "dataset.csv"),
+    collect_from_df(table_meta, "tables.csv"),
+    collect_from_json(datapackage_path)
+  ) %>%
+    dplyr::distinct()
+}
+
+.ms_nonempty_text_values <- function(x) {
+  values <- as.character(unlist(x, use.names = FALSE))
+  values <- trimws(values)
+  values <- values[!is.na(values) & nzchar(values)]
+  unique(values)
+}
+
+.ms_values_indicate_composite_intent <- function(values) {
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+
+  any(grepl("composite", values, ignore.case = TRUE))
+}
+
+.ms_column_has_populated_values <- function(x) {
+  values <- x[!is.na(x)]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+
+  if (inherits(values, "factor") || is.character(values)) {
+    values <- trimws(as.character(values))
+    return(any(nzchar(values)))
+  }
+
+  TRUE
+}
+
+.ms_detect_wsp_composite_signal <- function(resources) {
+  required_columns <- c("SPN_ABD_WILD", "SPN_TREND_WILD", "RAPID_STATUS")
+  resource_names <- names(resources %||% list())
+  idx <- which(tolower(resource_names) == "cu_timeseries")
+
+  if (length(idx) == 0) {
+    return(list(
+      cu_timeseries_present = FALSE,
+      required_columns = required_columns,
+      populated_columns = character(),
+      any_populated = FALSE
+    ))
+  }
+
+  cu_tbl <- resources[[idx[[1]]]]
+  present_columns <- intersect(required_columns, names(cu_tbl))
+  populated_columns <- present_columns[vapply(present_columns, function(col_name) {
+    .ms_column_has_populated_values(cu_tbl[[col_name]])
+  }, logical(1))]
+
+  list(
+    cu_timeseries_present = TRUE,
+    required_columns = required_columns,
+    populated_columns = populated_columns,
+    any_populated = length(populated_columns) > 0
+  )
 }
 
 .ms_scalar_text <- function(value) {
