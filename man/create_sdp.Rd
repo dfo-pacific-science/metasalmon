@@ -72,7 +72,9 @@ releases only when one is available. Defaults to \code{interactive()}.}
 
 \item{format}{Character; resource format: \code{"csv"} (default, only format supported)}
 
-\item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists}
+\item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists. If
+\code{TRUE}, replacement is only allowed for empty directories or directories
+previously written by \code{metasalmon}.}
 
 \item{include_edh_xml}{Logical; when \code{TRUE}, writes an EDH XML metadata file into
 \verb{metadata/} using \code{edh_build_iso19139_xml()}.}

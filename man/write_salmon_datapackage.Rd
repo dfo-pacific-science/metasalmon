@@ -30,7 +30,9 @@ write_salmon_datapackage(
 
 \item{format}{Character; resource format: \code{"csv"} (default, only format supported)}
 
-\item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists}
+\item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists. If
+\code{TRUE}, replacement is only allowed for empty directories or directories
+previously written by \code{metasalmon}.}
 }
 \value{
 Invisibly returns the path to the created package

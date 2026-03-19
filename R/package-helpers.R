@@ -18,7 +18,9 @@
 #' @param codes Optional tibble with code lists
 #' @param path Character; directory path where package will be written
 #' @param format Character; resource format: `"csv"` (default, only format supported)
-#' @param overwrite Logical; if `FALSE` (default), errors if path exists
+#' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
+#'   `TRUE`, replacement is only allowed for empty directories or directories
+#'   previously written by `metasalmon`.
 #'
 #' @return Invisibly returns the path to the created package
 #'
@@ -86,20 +88,7 @@ write_salmon_datapackage <- function(
 
   dataset_id <- dataset_meta$dataset_id[1]
 
-  # Check if path exists
-  if (dir.exists(path) && !overwrite) {
-    cli::cli_abort(
-      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
-    )
-  }
-
-  # Create directory
-  if (!dir.exists(path)) {
-    dir.create(path, recursive = TRUE, showWarnings = FALSE)
-  } else if (overwrite) {
-    existing_files <- list.files(path, full.names = TRUE)
-    unlink(existing_files, recursive = TRUE)
-  }
+  .ms_prepare_package_write_dir(path, overwrite = overwrite)
 
   dir.create(.ms_metadata_dir(path), recursive = TRUE, showWarnings = FALSE)
 
@@ -233,8 +222,73 @@ write_salmon_datapackage <- function(
     auto_unbox = TRUE,
     null = "null"
   )
+  .ms_mark_package_ownership(path)
 
   cli::cli_alert_success("Created Salmon Data Package at {.path {path}}")
+  invisible(path)
+}
+
+.ms_package_sentinel_file <- function(path) {
+  file.path(path, ".metasalmon-package")
+}
+
+.ms_mark_package_ownership <- function(path) {
+  writeLines("metasalmon-owned", .ms_package_sentinel_file(path), useBytes = TRUE)
+  invisible(path)
+}
+
+.ms_dir_entries <- function(path) {
+  list.files(path, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+}
+
+.ms_is_metasalmon_package_dir <- function(path) {
+  if (!dir.exists(path)) {
+    return(FALSE)
+  }
+
+  if (file.exists(.ms_package_sentinel_file(path))) {
+    return(TRUE)
+  }
+
+  has_sdp_csvs <- all(file.exists(c(
+    .ms_metadata_path(path, "dataset.csv"),
+    .ms_metadata_path(path, "tables.csv"),
+    .ms_metadata_path(path, "column_dictionary.csv")
+  )))
+  if (has_sdp_csvs) {
+    return(TRUE)
+  }
+
+  file.exists(file.path(path, "datapackage.json")) &&
+    dir.exists(file.path(path, "data")) &&
+    dir.exists(.ms_metadata_dir(path))
+}
+
+.ms_prepare_package_write_dir <- function(path, overwrite = FALSE) {
+  if (!dir.exists(path)) {
+    dir.create(path, recursive = TRUE, showWarnings = FALSE)
+    return(invisible(path))
+  }
+
+  if (!isTRUE(overwrite)) {
+    cli::cli_abort(
+      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
+    )
+  }
+
+  existing_files <- .ms_dir_entries(path)
+  if (length(existing_files) == 0) {
+    return(invisible(path))
+  }
+
+  if (!.ms_is_metasalmon_package_dir(path)) {
+    cli::cli_abort(c(
+      "Refusing to overwrite non-metasalmon directory {.path {path}}.",
+      "i" = "Use a new/empty directory, or manually clean this directory first."
+    ))
+  }
+
+  unlink(existing_files, recursive = TRUE, force = TRUE)
   invisible(path)
 }
 
@@ -452,7 +506,9 @@ infer_salmon_datapackage_artifacts <- function(
 #'   [check_for_updates()] call after writing the package and mention newer
 #'   releases only when one is available. Defaults to `interactive()`.
 #' @param format Character; resource format: `"csv"` (default, only format supported)
-#' @param overwrite Logical; if `FALSE` (default), errors if path exists
+#' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
+#'   `TRUE`, replacement is only allowed for empty directories or directories
+#'   previously written by `metasalmon`.
 #' @param include_edh_xml Logical; when `TRUE`, writes an EDH XML metadata file into
 #'   `metadata/` using `edh_build_iso19139_xml()`.
 #' @param edh_profile One of "dfo_edh_hnap" (default) or "iso19139". Determines
