@@ -1,5 +1,27 @@
 # Changelog
 
+## metasalmon 0.0.20
+
+- Hardened GitHub helper security: GitHub readers now reject non-GitHub
+  remote URLs and avoid attaching GitHub auth headers to non-GitHub
+  hosts; improved public/private auth behavior and related tests.
+- Hardened package writing + export reliability: safer overwrite
+  behavior for package outputs, fixed DwC validator execution path, and
+  improved ontology fetch robustness with explicit timeout handling and
+  cache fallback behavior.
+- Fixed
+  [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+  batch routing so per-row `ontology_repo` values are honored instead of
+  posting all rows to the first repo.
+- Clarified
+  [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+  API by explicitly deprecating ignored legacy arguments
+  (`entity_defaults`, `vocab_priority`) with coverage for warning
+  behavior.
+- Improved release/test hygiene: dependency bootstrap script hardening,
+  tighter warning assertions in brittle tests, and refreshed package
+  description wording.
+
 ## metasalmon 0.0.19
 
 - Hardened table observation-unit auto-apply in

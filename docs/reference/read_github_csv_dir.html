@@ -11,7 +11,7 @@ multiple local CSV files."><meta property="og:image" content="https://dfo-pacifi
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -108,11 +108,11 @@ the <code>.csv</code> extension). Returns an empty list if no CSV files are foun
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function uses the GitHub API to list directory contents, filters for CSV
-files, then reads each file using <code><a href="read_github_csv.html">read_github_csv()</a></code>. Authentication is
-required even for public repositories when using the API.</p>
-<p>Before using this function, run <code><a href="ms_setup_github.html">ms_setup_github()</a></code> once to configure
-authentication. For private repositories, your PAT must have the <code>repo</code>
-scope.</p>
+files, then reads each file using <code><a href="read_github_csv.html">read_github_csv()</a></code>. For public
+repositories, directory listing can work without a PAT; when available, a
+token is used automatically.</p>
+<p>For private repositories, run <code><a href="ms_setup_github.html">ms_setup_github()</a></code> to configure
+authentication. Your PAT must have the <code>repo</code> scope.</p>
 <p>For reproducible analyses, pin to a specific tag or commit SHA rather than
 a branch name like <code>"main"</code>, since branch contents can change over time.</p>
 <p><strong>Manual alternative</strong>: You can achieve the same result by using <code><a href="https://gh.r-lib.org/reference/gh.html" class="external-link">gh::gh()</a></code>

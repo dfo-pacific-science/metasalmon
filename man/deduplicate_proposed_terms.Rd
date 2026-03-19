@@ -42,9 +42,9 @@ further manual review.
 
 \strong{Anti-patterns detected}:
 \itemize{
-\item "Spawners Age 1", "Spawners Age 2", ... patterns → collapsed to "SpawnerCount"
-\item Duplicate term_labels across different tables → deduplicated
-\item Phase-stratified variants (Ocean X, Terminal X) → collapsed to base term
+\item "Spawners Age 1", "Spawners Age 2", ... patterns -> collapsed to "SpawnerCount"
+\item Duplicate term_labels across different tables -> deduplicated
+\item Phase-stratified variants (Ocean X, Terminal X) -> collapsed to base term
 }
 }
 \examples{

@@ -18,7 +18,7 @@ github_raw_url(path, ref = "main", repo = NULL)
 
   Character scalar path inside the repository (e.g.,
   `"data/myfile.csv"`), or a full GitHub URL (blob or raw) which will be
-  normalized.
+  normalized. Non-GitHub URLs are rejected.
 
 - ref:
 

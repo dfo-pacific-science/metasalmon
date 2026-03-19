@@ -1,3 +1,13 @@
+.ms_term_label_pattern <- function(x) {
+  x <- as.character(x)
+  x[is.na(x)] <- ""
+  x <- gsub("([A-Z]+)([A-Z][a-z])", "\\1 \\2", x)
+  x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
+  x <- tolower(x)
+  x <- gsub("[^a-z0-9]+", " ", x)
+  trimws(gsub("\\s+", " ", x))
+}
+
 #' Deduplicate proposed ontology terms
 #'
 #' Applies I-ADOPT compositional deduplication to a gpt_proposed_terms dataframe.
@@ -23,14 +33,13 @@
 #'
 #' @details
 #' **Target ratio**: For a dictionary with N measurement columns, expect ~N/10 to N/5
-
 #' distinct base terms, NOT N terms. If the output still has >30 rows, consider
 #' further manual review.
 #'
 #' **Anti-patterns detected**:
-#' - "Spawners Age 1", "Spawners Age 2", ... patterns → collapsed to "SpawnerCount"
-#' - Duplicate term_labels across different tables → deduplicated
-#' - Phase-stratified variants (Ocean X, Terminal X) → collapsed to base term
+#' - "Spawners Age 1", "Spawners Age 2", ... patterns -> collapsed to "SpawnerCount"
+#' - Duplicate term_labels across different tables -> deduplicated
+#' - Phase-stratified variants (Ocean X, Terminal X) -> collapsed to base term
 #'
 #' @export
 #'
@@ -48,16 +57,6 @@
 #' # Write cleaned output
 #' readr::write_csv(deduped, "work/semantics/gpt_proposed_terms_deduped.csv")
 #' }
-.ms_term_label_pattern <- function(x) {
-  x <- as.character(x)
-  x[is.na(x)] <- ""
-  x <- gsub("([A-Z]+)([A-Z][a-z])", "\\1 \\2", x)
-  x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
-  x <- tolower(x)
-  x <- gsub("[^a-z0-9]+", " ", x)
-  trimws(gsub("\\s+", " ", x))
-}
-
 deduplicate_proposed_terms <- function(proposed_terms, warn_threshold = 30L) {
   if (!is.data.frame(proposed_terms) || nrow(proposed_terms) == 0) {
     return(tibble::tibble(

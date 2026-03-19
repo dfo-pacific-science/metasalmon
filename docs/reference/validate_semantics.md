@@ -34,12 +34,13 @@ validate_semantics(
 
 - entity_defaults:
 
-  Optional data frame with `table_prefix` and `entity_iri` (not applied
-  automatically here but reserved for future use).
+  Deprecated and ignored. Previously reserved for future default entity
+  mapping.
 
 - vocab_priority:
 
-  Optional character vector of vocab sources (reserved).
+  Deprecated and ignored. Previously reserved for future vocabulary
+  ordering.
 
 ## Value
 
