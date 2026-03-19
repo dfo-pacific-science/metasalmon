@@ -760,6 +760,21 @@ test_that("query expansion extracts genus for entity role", {
   expect_true("Oncorhynchus" %in% expanded)
 })
 
+test_that("query expansion adds hydrometric variants for variable/property roles", {
+  level_expanded <- metasalmon:::.expand_query("water level", "variable")
+  expect_true("stage height" %in% level_expanded)
+  expect_true("gauge height" %in% level_expanded)
+  expect_true("surface elevation" %in% level_expanded)
+
+  discharge_expanded <- metasalmon:::.expand_query("water discharge", "variable")
+  expect_true("discharge" %in% discharge_expanded)
+  expect_true("riverine discharge" %in% discharge_expanded)
+  expect_true("streamflow" %in% discharge_expanded)
+
+  property_expanded <- metasalmon:::.expand_query("water discharge", "property")
+  expect_true("water discharge measurement" %in% property_expanded)
+})
+
 test_that("query expansion returns original when role is NA", {
   expanded <- metasalmon:::.expand_query("salmon", NA)
   expect_equal(expanded, "salmon")

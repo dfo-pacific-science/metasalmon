@@ -58,10 +58,46 @@
       genus <- sub(" .*", "", query)
       queries <- c(queries, genus)
     }
-  } else if (role == "property") {
-    # Add "measurement" or "observation" context if not present
-    if (!grepl("measurement|observation|count|abundance|length|weight|size", query, ignore.case = TRUE)) {
-      queries <- c(queries, paste(query, "measurement"))
+  } else if (role %in% c("variable", "property")) {
+    q_lower <- tolower(trimws(query))
+    focus <- .physical_query_focus(query)
+
+    if (focus == "level") {
+      if (!grepl("\\b(stage height|gauge height)\\b", q_lower)) {
+        queries <- c(queries, "stage height", "gauge height")
+      }
+      if (!grepl("\\b(surface elevation)\\b", q_lower)) {
+        queries <- c(queries, "surface elevation")
+      }
+      if (!grepl("\\b(river level|stream level)\\b", q_lower)) {
+        queries <- c(queries, "river level", "stream level")
+      }
+    }
+
+    if (focus == "discharge") {
+      if (!identical(q_lower, "discharge")) {
+        queries <- c(queries, "discharge")
+      }
+      if (!grepl("\\b(stream discharge|streamflow)\\b", q_lower)) {
+        queries <- c(queries, "stream discharge", "streamflow")
+      }
+      if (!grepl("\\b(water discharge|river discharge)\\b", q_lower)) {
+        queries <- c(queries, "water discharge", "river discharge")
+      }
+      if (!grepl("\\briverine discharge\\b", q_lower)) {
+        queries <- c(queries, "riverine discharge")
+      }
+    }
+
+    if (focus == "temperature" && grepl("\\btemp\\b", q_lower) && !grepl("temperature", q_lower)) {
+      queries <- c(queries, "water temperature")
+    }
+
+    if (role == "property") {
+      # Add "measurement" context for property searches if absent.
+      if (!grepl("measurement|observation|count|abundance|length|weight|size", query, ignore.case = TRUE)) {
+        queries <- c(queries, paste(query, "measurement"))
+      }
     }
   }
 
@@ -1090,24 +1126,41 @@ pattern <- paste(tokens, collapse = ".*")
   }
 
   if (focus == "level") {
-    if (grepl("water level|level of water|river level|stage height|gauge height", label_text)) {
-      bonus <- bonus + 2
+    if (grepl("water level|level of water|river level|stream level|stage height|gauge height", label_text)) {
+      bonus <- bonus + 2.8
+    } else if (grepl("surface elevation", label_text) && grepl("water|river|stream", label_text)) {
+      bonus <- bonus + 2.2
+    } else if (grepl("\\blevel\\b", label_text) && grepl("water|river|stream|stage|gauge", label_text)) {
+      bonus <- bonus + 0.6
     } else {
-      bonus <- bonus - 1.8
+      bonus <- bonus - 2.2
     }
-    if (grepl("wave|period|pressure|ice|freeboard|radar|organic carbon|concentration|uptake|production", label_text)) {
-      bonus <- bonus - 2.5
+    if (grepl("\\b(discharge|streamflow|flow rate|riverine discharge)\\b", label_text)) {
+      bonus <- bonus - 4.2
+    }
+    if (grepl("wave|period|pressure|ice|freeboard|radar|spectral|organic carbon|concentration|uptake|production", label_text)) {
+      bonus <- bonus - 3.6
     }
   }
 
   if (focus == "discharge") {
-    if (grepl("discharge|flow rate|streamflow|riverine discharge|flow", label_text)) {
-      bonus <- bonus + 1.8
+    if (grepl("stream discharge|water discharge|river discharge|riverine discharge|streamflow|flow rate", label_text)) {
+      bonus <- bonus + 2.2
+    } else if (grepl("\\bdischarge\\b", label_text) && grepl("water|river|stream", label_text)) {
+      bonus <- bonus + 1.2
+    } else if (grepl("\\bflow\\b", label_text)) {
+      bonus <- bonus + 0.2
     } else {
-      bonus <- bonus - 1.3
+      bonus <- bonus - 1.4
     }
-    if (grepl("pollution|shoreline|proportion|coverage", label_text)) {
-      bonus <- bonus - 2.2
+    if (is_local && !grepl("discharge|flow", label_text)) {
+      bonus <- bonus - 2.8
+    }
+    if (any(query_tokens %in% c("stream", "river", "water")) && !grepl("stream|river|water", label_text)) {
+      bonus <- bonus - 1.2
+    }
+    if (grepl("electrical|pollution|shoreline|proportion|coverage|sediment|nutrient", label_text)) {
+      bonus <- bonus - 2.4
     }
   }
 
