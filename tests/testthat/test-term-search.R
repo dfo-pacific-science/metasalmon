@@ -451,6 +451,25 @@ test_that("score_and_rank_terms demotes local salmon drift for physical/environm
 
   entity_ranked <- metasalmon:::`.score_and_rank_terms`(entity_df, "entity", vocab, "freshwater body")
   expect_equal(entity_ranked$iri[[1]], "http://purl.obolibrary.org/obo/ENVO_01001320")
+
+  method_df <- tibble::tibble(
+    label = c("Electrofishing Count", "Catch method", "Sampling protocol"),
+    iri = c(
+      "https://w3id.org/gcdfo/salmon#ElectrofishingCount",
+      "https://w3id.org/smn/CatchMethod",
+      "https://w3id.org/smn/SamplingProtocol"
+    ),
+    source = c("gcdfo", "smn", "smn"),
+    ontology = c("gcdfo", "smn", "smn"),
+    role = c("method", "method", "method"),
+    match_type = c("namedindividual", "class", "class"),
+    definition = c("Electrofishing count metric.", "Method used to catch fish.", "Protocol used to sample fish."),
+    backend_score = c(2.8, 1.6, 1.4)
+  )
+
+  method_ranked <- metasalmon:::`.score_and_rank_terms`(method_df, "method", vocab, "catch method")
+  expect_true(grepl("method|protocol", tolower(method_ranked$label[[1]])))
+  expect_false(grepl("count", tolower(method_ranked$label[[1]])))
 })
 
 test_that("score_and_rank_terms is deterministic on ties", {

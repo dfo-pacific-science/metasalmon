@@ -1078,5 +1078,83 @@
         "backend_score": 1.5
       }
     ]
+  },
+  {
+    "case_id": "water-level-specificity-beats-noisy-physical-labels",
+    "query": "water level",
+    "role": "variable",
+    "expected": {
+      "top": {
+        "candidate_id": "water-level-clean",
+        "source": "nvs"
+      },
+      "disallow_top_matches": [
+        "ICESFB01",
+        "GTPKRD01",
+        "PRESPS01"
+      ]
+    },
+    "candidates": [
+      {
+        "candidate_id": "water-level-clean",
+        "label": "Water level",
+        "iri": "http://vocab.nerc.ac.uk/collection/P01/current/WTRLEV01/",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Height of water surface.",
+        "backend_score": 1.8
+      },
+      {
+        "candidate_id": "water-level-noisy",
+        "label": "Thickness (above water level) of ice {freeboard} on the water body by ice profiler",
+        "iri": "http://vocab.nerc.ac.uk/collection/P01/current/ICESFB01/",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "variable",
+        "match_type": "concept",
+        "definition": "Ice freeboard measurement over water level context.",
+        "backend_score": 1.8
+      }
+    ]
+  },
+  {
+    "case_id": "method-query-demotes-count-drift",
+    "query": "catch method",
+    "role": "method",
+    "expected": {
+      "top": {
+        "candidate_id": "catch-method",
+        "source": "smn"
+      },
+      "disallow_top_matches": [
+        "ElectrofishingCount"
+      ]
+    },
+    "candidates": [
+      {
+        "candidate_id": "electrofishing-count",
+        "label": "Electrofishing Count",
+        "iri": "https://w3id.org/gcdfo/salmon#ElectrofishingCount",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "method",
+        "match_type": "namedindividual",
+        "definition": "A count observed during electrofishing monitoring.",
+        "backend_score": 2.8
+      },
+      {
+        "candidate_id": "catch-method",
+        "label": "Catch method",
+        "iri": "https://w3id.org/smn/CatchMethod",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "method",
+        "match_type": "label_exact",
+        "definition": "Method used to catch fish.",
+        "backend_score": 1.6
+      }
+    ]
   }
 ]
