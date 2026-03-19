@@ -73,6 +73,22 @@ test_that("infer_dictionary better distinguishes temporal and measurement NuSEDS
   expect_equal(dict$column_role[dict$column_name == "POP_ID"], "identifier")
 })
 
+test_that("infer_dictionary keeps method-like count fields out of measurement role", {
+  df <- tibble::tibble(
+    counting_method = c("Visual", "Electronic"),
+    measurement_method = c("Direct", "Estimated"),
+    cwt_1st_mark_count = c(12, 15),
+    avg_weight = c(0.3, 0.5)
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "counting_method"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "measurement_method"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "cwt_1st_mark_count"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "avg_weight"], "measurement")
+})
+
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
