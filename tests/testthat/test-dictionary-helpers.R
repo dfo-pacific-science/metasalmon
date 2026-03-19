@@ -89,6 +89,24 @@ test_that("infer_dictionary keeps method-like count fields out of measurement ro
   expect_equal(dict$column_role[dict$column_name == "avg_weight"], "measurement")
 })
 
+test_that("infer_dictionary promotes explicit sample-size and partition-size counts without reopening nearby helper fields", {
+  df <- tibble::tibble(
+    mr_1st_sample_size = c(12, 15),
+    mr_1st_partition_size = c(20, 24),
+    sample_type = c("A", "B"),
+    sample_reference_number = c("REF-1", "REF-2"),
+    sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "mr_1st_sample_size"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "mr_1st_partition_size"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "sample_type"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "sample_reference_number"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "sample_date"], "temporal")
+})
+
 test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
   df <- tibble::tibble(
     `Facility Reference Number` = c(1001, 1002),
