@@ -550,7 +550,7 @@ submit_term_request_issues <- function(
     cli::cli_abort("Missing required request columns: {paste(missing, collapse = ', ')}")
   }
 
-  repo <- ms_normalize_repo(ifelse("ontology_repo" %in% names(requests), requests$ontology_repo[[1]], repo))
+  default_repo <- ms_normalize_repo(repo)
 
   pending <- requests[requests$request_scope %in% c("smn", "profile"), , drop = FALSE]
   if (nrow(pending) == 0L) {
@@ -580,6 +580,12 @@ submit_term_request_issues <- function(
     scope <- pending$request_scope[[i]]
     title <- pending$request_title[[i]]
     body <- pending$request_body[[i]]
+    repo_value <- pending$ontology_repo[[i]]
+    repo_i <- if (is.na(repo_value) || !nzchar(trimws(repo_value))) {
+      default_repo
+    } else {
+      ms_normalize_repo(repo_value)
+    }
     lbls <- if ("issue_labels" %in% names(pending)) pending$issue_labels[[i]] else NULL
 
     if (is.list(lbls) && length(lbls) == 0L) {
@@ -597,7 +603,7 @@ submit_term_request_issues <- function(
     }
 
     resp <- .metasalmon_post_issue(
-      repo = repo,
+      repo = repo_i,
       title = title,
       body = body,
       labels = lbls,

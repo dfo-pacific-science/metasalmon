@@ -49,6 +49,34 @@ test_that("validate_semantics flags non-canonical salmon ontology IRIs", {
   expect_true(any(grepl("non-canonical GCDFO CURIE form", res$issues$message, fixed = TRUE)))
 })
 
+test_that("validate_semantics warns that deprecated arguments are ignored", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    column_label = "Count",
+    column_description = "Fish count",
+    column_role = "measurement",
+    value_type = "integer",
+    term_iri = "",
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    unit_iri = NA_character_,
+    constraint_iri = "",
+    method_iri = ""
+  )
+
+  expect_warning(
+    res <- validate_semantics(dict, entity_defaults = tibble::tibble(table_prefix = "t", entity_iri = "https://w3id.org/smn/Stock")),
+    "entity_defaults.*deprecated.*ignored"
+  )
+  expect_warning(
+    res <- validate_semantics(dict, vocab_priority = c("smn", "gcdfo")),
+    "vocab_priority.*deprecated.*ignored"
+  )
+  expect_equal(nrow(res$missing_terms), 1L)
+})
+
 test_that("fetch_salmon_ontology returns a ttl path", {
   testthat::skip_if_offline("w3id.org")
   path <- fetch_salmon_ontology()

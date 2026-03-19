@@ -129,3 +129,31 @@ test_that("submit_term_request_issues dry run and mock post", {
     }
   )
 })
+
+test_that("submit_term_request_issues posts each request to its row-level ontology repo", {
+  reqs <- tibble::tibble(
+    request_title = c("Request A", "Request B"),
+    request_body = c("body a", "body b"),
+    request_scope = c("smn", "profile"),
+    ontology_repo = c(
+      "dfo-pacific-science/dfo-salmon-ontology",
+      "dfo-pacific-science/salmon-profile-ontology"
+    ),
+    issue_labels = list(NULL, NULL)
+  )
+
+  called_repos <- character()
+  with_mocked_bindings(
+    .metasalmon_post_issue = function(repo, ...) {
+      called_repos <<- c(called_repos, repo)
+      list(number = 1L, html_url = paste0("https://github.com/", repo, "/issues/1"))
+    },
+    {
+      submitted <- submit_term_request_issues(reqs, dry_run = FALSE, confirm = FALSE, token = "test-token")
+      expect_equal(nrow(submitted), 2L)
+      expect_equal(submitted$status, c("submitted", "submitted"))
+    }
+  )
+
+  expect_equal(called_repos, reqs$ontology_repo)
+})

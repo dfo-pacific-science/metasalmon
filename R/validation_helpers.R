@@ -12,9 +12,10 @@
 #' @param require_iris Logical; if TRUE, require non-empty semantic fields
 #'   (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`) for measurement
 #'   rows.
-#' @param entity_defaults Optional data frame with `table_prefix` and `entity_iri`
-#'   (not applied automatically here but reserved for future use).
-#' @param vocab_priority Optional character vector of vocab sources (reserved).
+#' @param entity_defaults Deprecated and ignored. Previously reserved for future
+#'   default entity mapping.
+#' @param vocab_priority Deprecated and ignored. Previously reserved for future
+#'   vocabulary ordering.
 #'
 #' @return A list with elements:
 #'   - `dict`: normalized dictionary with `required` column.
@@ -27,6 +28,13 @@ validate_semantics <- function(dict,
                                require_iris = FALSE,
                                entity_defaults = NULL,
                                vocab_priority = NULL) {
+  if (!is.null(entity_defaults)) {
+    cli::cli_warn("{.arg entity_defaults} is deprecated in {.fn validate_semantics} and is ignored.")
+  }
+  if (!is.null(vocab_priority)) {
+    cli::cli_warn("{.arg vocab_priority} is deprecated in {.fn validate_semantics} and is ignored.")
+  }
+
   if (!"required" %in% names(dict)) {
     dict$required <- rep(NA, nrow(dict))
   }

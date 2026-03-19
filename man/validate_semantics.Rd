@@ -18,10 +18,11 @@ validate_semantics(
 (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri}) for measurement
 rows.}
 
-\item{entity_defaults}{Optional data frame with \code{table_prefix} and \code{entity_iri}
-(not applied automatically here but reserved for future use).}
+\item{entity_defaults}{Deprecated and ignored. Previously reserved for future
+default entity mapping.}
 
-\item{vocab_priority}{Optional character vector of vocab sources (reserved).}
+\item{vocab_priority}{Deprecated and ignored. Previously reserved for future
+vocabulary ordering.}
 }
 \value{
 A list with elements:
