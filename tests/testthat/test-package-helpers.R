@@ -546,6 +546,189 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
   expect_equal(count_row$property_iri[[1]], "http://purl.obolibrary.org/obo/STATO_0000047")
 })
 
+test_that("create_sdp keeps camelCase physical DwC property suggestions review-only but still applies unit hits", {
+  resources <- list(
+    event = tibble::tibble(
+      minimumDepthInMeters = c(12.4, 15.1)
+    )
+  )
+
+  fake_find_terms <- function(query, role = NA_character_, sources = c("smn", "gcdfo", "ols", "nvs"), ...) {
+    query <- tolower(query)
+
+    if (identical(role, "unit") && identical(query, "meter")) {
+      return(tibble::tibble(
+        label = "Meter",
+        iri = "http://qudt.org/vocab/unit/M",
+        source = "qudt",
+        ontology = "qudt",
+        role = "unit",
+        match_type = "label_exact",
+        definition = "Length unit",
+        score = 4.5
+      ))
+    }
+
+    if (identical(role, "variable") && grepl("minimum depth", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Minimum Depth In Meters",
+        iri = "http://rs.tdwg.org/dwc/terms/minimumDepthInMeters",
+        source = "ols",
+        ontology = "dwc",
+        role = "variable",
+        match_type = "dataProperty",
+        definition = "Darwin Core publication property",
+        score = 2.5
+      ))
+    }
+
+    if (identical(role, "property") && grepl("minimum depth", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Total length measurement",
+        iri = "https://w3id.org/smn/TotalLengthMeasurement",
+        source = "smn",
+        ontology = "smn",
+        role = "property",
+        match_type = "class",
+        definition = "Wrong fish-length property candidate",
+        score = 6.8
+      ))
+    }
+
+    if (identical(role, "entity") && grepl("minimum depth", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Minimum Depth In Meters",
+        iri = "http://rs.tdwg.org/dwc/terms/minimumDepthInMeters",
+        source = "ols",
+        ontology = "dwc",
+        role = "entity",
+        match_type = "dataProperty",
+        definition = "Darwin Core publication property",
+        score = 2.5
+      ))
+    }
+
+    if (identical(role, "method") && grepl("minimum depth", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Enumeration method",
+        iri = "https://w3id.org/smn/EnumerationMethod",
+        source = "smn",
+        ontology = "smn",
+        role = "method",
+        match_type = "class",
+        definition = "Generic method class",
+        score = 6.1
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "dwc-camel-guard"),
+        dataset_id = "dwc-depth-demo",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  depth_row <- dict_written[dict_written$column_name == "minimumDepthInMeters", , drop = FALSE]
+
+  expect_equal(depth_row$column_role[[1]], "measurement")
+  expect_true(is.na(depth_row$term_iri[[1]]) || depth_row$term_iri[[1]] == "")
+  expect_true(is.na(depth_row$property_iri[[1]]) || depth_row$property_iri[[1]] == "")
+  expect_true(is.na(depth_row$entity_iri[[1]]) || depth_row$entity_iri[[1]] == "")
+  expect_true(is.na(depth_row$method_iri[[1]]) || depth_row$method_iri[[1]] == "")
+  expect_equal(depth_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+})
+
+test_that("create_sdp paired value/unit measurements auto-apply only the unit hit", {
+  resources <- list(
+    event = tibble::tibble(
+      sampleSizeValue = c(2046.33, 131340.85),
+      sampleSizeUnit = c("square metre", "square metre"),
+      eventType = c("deployment", "deployment")
+    )
+  )
+
+  fake_find_terms <- function(query, role = NA_character_, sources = c("smn", "gcdfo", "ols", "nvs"), ...) {
+    query <- tolower(query)
+
+    if (identical(role, "unit") && identical(query, "square meter")) {
+      return(tibble::tibble(
+        label = "Square Meter",
+        iri = "http://qudt.org/vocab/unit/M2",
+        source = "qudt",
+        ontology = "qudt",
+        role = "unit",
+        match_type = "label_exact",
+        definition = "Area unit",
+        score = 4.8
+      ))
+    }
+
+    if (identical(role, "variable") && grepl("sample size", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Sample size",
+        iri = "http://example.org/sample-size",
+        source = "ols",
+        ontology = "demo",
+        role = "variable",
+        match_type = "label_exact",
+        definition = "Still too generic to auto-apply safely here",
+        score = 3.2
+      ))
+    }
+
+    if (identical(role, "property") && grepl("sample size", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "collection size",
+        iri = "http://example.org/collection-size",
+        source = "ols",
+        ontology = "demo",
+        role = "property",
+        match_type = "label_exact",
+        definition = "Generic size property",
+        score = 3.2
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "paired-value-unit"),
+        dataset_id = "paired-value-demo",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  sample_row <- dict_written[dict_written$column_name == "sampleSizeValue", , drop = FALSE]
+
+  expect_equal(sample_row$column_role[[1]], "measurement")
+  expect_true(is.na(sample_row$term_iri[[1]]) || sample_row$term_iri[[1]] == "")
+  expect_true(is.na(sample_row$property_iri[[1]]) || sample_row$property_iri[[1]] == "")
+  expect_true(is.na(sample_row$entity_iri[[1]]) || sample_row$entity_iri[[1]] == "")
+  expect_equal(sample_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M2")
+})
+
 test_that("create_sdp unit seeding can use role-augmented unit sources", {
   resources <- list(
     hydro = tibble::tibble(

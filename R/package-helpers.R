@@ -1727,6 +1727,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
 .ms_measurement_query_looks_physical <- function(...) {
   text <- paste(unlist(list(...)), collapse = " ")
+  text <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", text, perl = TRUE)
   text <- tolower(text)
   grepl(
     "\\b(water|level|discharge|flow|temperature|temp|rain|rainfall|snow|snowfall|precip|gust|wind|speed|depth|width|height|meter|metre|celsius)\\b",
@@ -1737,6 +1738,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
 .ms_normalize_measurement_unit_text <- function(x) {
   text <- tolower(.ms_scalar_text(x))
+  text <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", text, perl = TRUE)
   text <- gsub("â", "", text, fixed = TRUE)
   text <- gsub("°", " degree ", text, fixed = TRUE)
   text <- gsub("³", "3", text, fixed = TRUE)
@@ -1749,6 +1751,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   if (grepl("^(cubic meter per second|cubic metre per second|m3/s|cms|cumec|cumecs)$", text)) return("cubic meter per second")
   if (grepl("^(degree celsius|degrees celsius|deg c|celsius)$", text)) return("degree celsius")
   if (grepl("^(kilometer per hour|kilometre per hour|km/h|kph)$", text)) return("kilometer per hour")
+  if (grepl("^(square meter|square metre|square meters|square metres|sq m|m2)$", text)) return("square meter")
   if (grepl("^millimet(er|re)s?$", text)) return("millimeter")
   if (grepl("^centimet(er|re)s?$", text)) return("centimeter")
   if (grepl("^met(er|re)s?$", text)) return("meter")
@@ -1756,7 +1759,25 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   text
 }
 
-.ms_measurement_suggestion_is_compatible <- function(suggestion, dict_row) {
+.ms_measurement_has_paired_unit_column <- function(dict_row, dict) {
+  col_name <- .ms_scalar_text(dict_row$column_name)
+  if (!nzchar(col_name) || !grepl("value$", col_name, ignore.case = TRUE)) {
+    return(FALSE)
+  }
+
+  table_matches <- rep(TRUE, nrow(dict))
+  for (key in intersect(c("dataset_id", "table_id"), names(dict_row))) {
+    row_value <- .ms_scalar_text(dict_row[[key]])
+    if (nzchar(row_value) && key %in% names(dict)) {
+      table_matches <- table_matches & !is.na(dict[[key]]) & as.character(dict[[key]]) == row_value
+    }
+  }
+
+  sibling_name <- paste0(sub("value$", "", col_name, ignore.case = TRUE), "unit")
+  any(table_matches & !is.na(dict$column_name) & tolower(as.character(dict$column_name)) == tolower(sibling_name))
+}
+
+.ms_measurement_suggestion_is_compatible <- function(suggestion, dict_row, dict = NULL) {
   role <- tolower(as.character(dict_row$column_role[[1]] %||% ""))
   if (!identical(role, "measurement")) {
     return(TRUE)
@@ -1768,6 +1789,16 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     if ("column_label" %in% names(suggestion)) .ms_scalar_text(suggestion$column_label) else "",
     if ("column_name" %in% names(suggestion)) .ms_scalar_text(suggestion$column_name) else ""
   )
+
+  target_field <- if ("target_sdp_field" %in% names(suggestion)) {
+    .ms_scalar_text(suggestion$target_sdp_field)
+  } else {
+    ""
+  }
+  if (!is.null(dict) && !identical(target_field, "unit_iri") && .ms_measurement_has_paired_unit_column(dict_row, dict)) {
+    return(FALSE)
+  }
+
   if (!.ms_measurement_query_looks_physical(query_text)) {
     return(TRUE)
   }
@@ -1864,7 +1895,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         return(FALSE)
       }
       if (identical(role, "measurement")) {
-        return(.ms_measurement_suggestion_is_compatible(suggestion, dict_row))
+        return(.ms_measurement_suggestion_is_compatible(suggestion, dict_row, dict = dict))
       }
       .ms_non_measurement_suggestion_is_compatible(suggestion, dict_row)
     }, logical(1)))
