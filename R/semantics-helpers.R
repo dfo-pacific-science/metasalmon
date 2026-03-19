@@ -215,10 +215,13 @@ suggest_semantics <- function(df,
 
     has_explicit_count <- grepl("\\b(count|counts|number|numbers|num|abundance)\\b", text)
     has_total <- grepl("\\btotal\\b", text)
-    has_organism <- grepl("\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|population|populations)\\b", text)
-    looks_integer <- value_type %in% c("integer", "int")
+    has_organism <- grepl("\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|population|populations|adult|adults)\\b", text)
+    looks_integer <- value_type %in% c("integer", "int", "number", "numeric", "double")
 
-    has_explicit_count || (has_total && has_organism) || (grepl("\\babundance\\b", text) && (has_organism || looks_integer))
+    has_explicit_count ||
+      (has_total && has_organism) ||
+      (grepl("\\babundance\\b", text) && (has_organism || looks_integer)) ||
+      (looks_integer && has_organism)
   }
   measurement_role_query <- function(row, dict, role_name) {
     desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
@@ -266,12 +269,22 @@ suggest_semantics <- function(df,
     }
 
     if (role_name %in% c("variable", "property")) {
-      if (grepl("spawner", base_lower) && grepl("total|count|number", base_lower)) {
-        if (identical(role_name, "variable")) return("spawner abundance")
-        return("abundance")
-      }
-      if (is_count_like_measurement(row, base_query) && identical(role_name, "property")) {
-        if (grepl("\\babundance\\b", base_lower)) return("abundance")
+      if (is_count_like_measurement(row, base_query)) {
+        if (grepl("spawner", base_lower)) {
+          if (identical(role_name, "variable")) {
+            if (grepl("adult", base_lower)) return("adult spawner count")
+            return("spawner abundance")
+          }
+          return("count")
+        }
+
+        if (grepl("\\babundance\\b", base_lower)) {
+          return("abundance")
+        }
+
+        if (identical(role_name, "variable")) {
+          return("count")
+        }
         return("count")
       }
     }

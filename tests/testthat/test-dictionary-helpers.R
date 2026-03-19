@@ -260,7 +260,7 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   expect_true(all(suggestions$table_id == "t1"))
   expect_true(all(suggestions$target_scope == "column"))
   expect_true(all(suggestions$target_sdp_file == "column_dictionary.csv"))
-  expect_equal(suggestions$search_query[suggestions$dictionary_role == "variable"], "Spawner abundance estimate")
+  expect_equal(suggestions$search_query[suggestions$dictionary_role == "variable"], "spawner abundance")
   expect_equal(suggestions$search_query[suggestions$dictionary_role == "unit"], "count")
   expect_equal(suggestions$search_query[suggestions$dictionary_role == "entity"], "population")
   expect_equal(
@@ -316,9 +316,50 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
   call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
   expect_true(any(call_df$role == "unit" & call_df$query == "count"))
   expect_true(any(call_df$role == "variable" & call_df$query == "spawner abundance"))
-  expect_true(any(call_df$role == "property" & call_df$query == "abundance"))
+  expect_true(any(call_df$role == "property" & call_df$query == "count"))
   expect_true(any(call_df$role == "constraint" & call_df$query == "natural origin"))
   expect_true(any(call_df$role == "entity" & call_df$query == "population"))
+})
+
+test_that("suggest_semantics uses count-like measurement queries for adult spawner and mark-count fields", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("NATURAL_ADULT_SPAWNERS", "cwt_1st_mark_count"),
+    column_label = c("NATURAL_ADULT_SPAWNERS", "cwt_1st_mark_count"),
+    column_description = c("Estimated natural-origin adult spawners", "First-mark coded-wire-tag count"),
+    column_role = c("measurement", "measurement"),
+    value_type = c("integer", "integer"),
+    unit_label = c(NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_)
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_true(any(call_df$role == "variable" & call_df$query == "adult spawner count"))
+  expect_true(any(call_df$role == "property" & call_df$query == "count"))
+  expect_true(any(call_df$role == "variable" & call_df$query == "count"))
+  expect_true(any(call_df$role == "unit" & call_df$query == "count"))
 })
 
 test_that("suggest_semantics ignores review placeholders when building table observation-unit queries", {

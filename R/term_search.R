@@ -232,7 +232,7 @@ find_terms <- function(query,
       for (local_src in local_pref_sources) {
         local_res <- run_source(local_src)
         query_results[[length(query_results) + 1]] <- local_res
-        local_good_hit <- nrow(local_res) > 0 && any(local_res$match_type %in% c("label_exact", "label_partial"))
+        local_good_hit <- .local_short_circuit_hit(q, local_res)
         if (local_good_hit) {
           return(query_results)
         }
@@ -756,6 +756,116 @@ pattern <- paste(tokens, collapse = ".*")
 .query_tokens <- function(x) {
   tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(x)), "\\s+")[[1]])
   tokens[nzchar(tokens)]
+}
+
+.label_token_overlap <- function(query, label) {
+  q_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  if (length(q_tokens) == 0 || length(label_tokens) == 0) {
+    return(0)
+  }
+
+  length(intersect(q_tokens, label_tokens))
+}
+
+.is_count_like_query <- function(query, role = NA_character_) {
+  role <- tolower(trimws(role %||% ""))
+  if (!role %in% c("variable", "property")) {
+    return(FALSE)
+  }
+
+  q_tokens <- .query_tokens(query %||% "")
+  if (length(q_tokens) == 0) {
+    return(FALSE)
+  }
+
+  any(q_tokens %in% c("count", "counts", "number", "numbers", "abundance", "spawner", "spawners"))
+}
+
+.count_like_query_bonus <- function(query, label, role = NA_character_) {
+  if (!.is_count_like_query(query, role)) {
+    return(0)
+  }
+
+  q_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  if (length(q_tokens) == 0 || length(label_tokens) == 0) {
+    return(0)
+  }
+
+  q_has_count <- any(q_tokens %in% c("count", "counts", "number", "numbers"))
+  q_has_abundance <- "abundance" %in% q_tokens
+  q_has_spawner <- any(q_tokens %in% c("spawner", "spawners"))
+  q_has_rate <- "rate" %in% q_tokens
+  q_has_mortality <- any(q_tokens %in% c("mortality", "mortalities"))
+  q_has_exploitation <- any(q_tokens %in% c("exploitation", "exploit"))
+  q_has_benchmark <- any(q_tokens %in% c("benchmark", "benchmarks"))
+
+  label_norm <- tolower(trimws(label %||% ""))
+  label_has_count <- any(label_tokens %in% c("count", "counts", "number", "numbers"))
+  label_has_abundance <- "abundance" %in% label_tokens
+  label_has_spawner <- any(label_tokens %in% c("spawner", "spawners"))
+  label_has_unit <- "unit" %in% label_tokens
+  label_has_rate <- "rate" %in% label_tokens
+  label_has_mortality <- any(label_tokens %in% c("mortality", "mortalities"))
+  label_has_exploitation <- any(label_tokens %in% c("exploitation", "exploit"))
+  label_has_benchmark <- any(label_tokens %in% c("benchmark", "benchmarks"))
+
+  bonus <- 0
+
+  if (q_has_count && label_has_count) {
+    bonus <- bonus + 4
+  }
+  if (q_has_abundance && label_has_abundance) {
+    bonus <- bonus + 3
+  }
+  if (q_has_spawner && label_has_spawner) {
+    bonus <- bonus + 2.5
+  }
+  if (q_has_count && q_has_spawner && label_has_abundance && label_has_spawner) {
+    bonus <- bonus + 1.5
+  }
+  if (q_has_count && identical(label_norm, "count")) {
+    bonus <- bonus + 3
+  }
+  if (q_has_abundance && identical(label_norm, "abundance")) {
+    bonus <- bonus + 3
+  }
+
+  if (q_has_count && !q_has_spawner && label_has_spawner) {
+    bonus <- bonus - 2.5
+  }
+  if (label_has_unit) {
+    bonus <- bonus - 4
+  }
+  if (!q_has_rate && label_has_rate) {
+    bonus <- bonus - 2.5
+  }
+  if (!q_has_mortality && label_has_mortality) {
+    bonus <- bonus - 3
+  }
+  if (!q_has_exploitation && label_has_exploitation) {
+    bonus <- bonus - 3
+  }
+  if (!q_has_benchmark && label_has_benchmark) {
+    bonus <- bonus - 3
+  }
+
+  bonus
+}
+
+.local_short_circuit_hit <- function(query, results) {
+  if (nrow(results) == 0) {
+    return(FALSE)
+  }
+
+  label_hits <- results$match_type %in% c("label_exact", "label_partial")
+  if (!any(label_hits)) {
+    return(FALSE)
+  }
+
+  overlaps <- vapply(results$label %||% "", function(lbl) .label_token_overlap(query, lbl), numeric(1))
+  any(label_hits & overlaps > 0)
 }
 
 .first_non_empty_chr <- function(x) {
@@ -1576,6 +1686,16 @@ sources_for_role <- function(role) {
         }
       }, numeric(1))
     }
+
+    if (.is_count_like_query(query, role_key)) {
+      df$score <- df$score + vapply(df$label, function(lbl) {
+        .count_like_query_bonus(query, lbl, role_key)
+      }, numeric(1))
+    }
+  }
+
+  if (identical(role_key, "variable") && "match_type" %in% names(df)) {
+    df$score <- df$score + ifelse(grepl("property$", df$match_type %||% "", ignore.case = TRUE), -0.5, 0)
   }
 
   # ZOOMA confidence weighting
