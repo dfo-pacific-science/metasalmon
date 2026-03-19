@@ -549,7 +549,8 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
 test_that("create_sdp unit seeding can use role-augmented unit sources", {
   resources <- list(
     hydro = tibble::tibble(
-      `Water Level / Niveau d'eau (m)` = c(1.2, 1.3)
+      `Water Level / Niveau d'eau (m)` = c(1.2, 1.3),
+      temperature_degree_c = c(6.1, 6.4)
     )
   )
 
@@ -563,6 +564,18 @@ test_that("create_sdp unit seeding can use role-augmented unit sources", {
 
     if (identical(role, "unit")) {
       if ("qudt" %in% sources) {
+        if (identical(query, "degree celsius")) {
+          return(tibble::tibble(
+            label = "Degree Celsius",
+            iri = "http://qudt.org/vocab/unit/DEG_C",
+            source = "qudt",
+            ontology = "qudt",
+            role = "unit",
+            match_type = "label_exact",
+            definition = "Temperature unit",
+            score = 4.5
+          ))
+        }
         return(tibble::tibble(
           label = "Meter",
           iri = "http://qudt.org/vocab/unit/M",
@@ -616,10 +629,14 @@ test_that("create_sdp unit seeding can use role-augmented unit sources", {
 
   dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   water_row <- dict_written[dict_written$column_name == "Water Level / Niveau d'eau (m)", , drop = FALSE]
+  temp_row <- dict_written[dict_written$column_name == "temperature_degree_c", , drop = FALSE]
 
   expect_equal(water_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
   expect_true(is.na(water_row$term_iri[[1]]) || water_row$term_iri[[1]] == "")
   expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
+  expect_equal(temp_row$unit_iri[[1]], "http://qudt.org/vocab/unit/DEG_C")
+  expect_true(is.na(temp_row$term_iri[[1]]) || temp_row$term_iri[[1]] == "")
+  expect_true(is.na(temp_row$property_iri[[1]]) || temp_row$property_iri[[1]] == "")
 
   call_df <- dplyr::bind_rows(calls)
   unit_sources <- call_df$sources[call_df$role == "unit"][[1]]
