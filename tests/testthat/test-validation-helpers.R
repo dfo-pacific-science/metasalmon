@@ -101,3 +101,33 @@ test_that("fetch_salmon_ontology falls back to stale cache when refresh fails", 
   )
   expect_equal(path, ttl_file)
 })
+
+test_that("validate_dictionary and validate_semantics accept dictionary CSV paths", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("cu_composite_escapement", "cu_composite_escapement"),
+    column_name = c("cu_id", "escapement"),
+    column_label = c("CU ID", "Escapement"),
+    column_description = c("CU identifier", "Spawner abundance estimate"),
+    column_role = c("identifier", "measurement"),
+    value_type = c("string", "number"),
+    term_iri = c(NA_character_, "https://w3id.org/smn/TargetOrLimitRateOrAbundance"),
+    property_iri = c(NA_character_, "https://qudt.org/vocab/quantitykind/Population"),
+    entity_iri = c(NA_character_, "https://w3id.org/smn/ConservationUnit"),
+    unit_iri = c(NA_character_, "https://qudt.org/vocab/unit/NUM"),
+    constraint_iri = c("", ""),
+    method_iri = c("", "https://w3id.org/gcdfo/salmon#SpawnerSurveyMethod"),
+    required = c(TRUE, FALSE)
+  )
+
+  dict_path <- file.path(withr::local_tempdir(), "column_dictionary.csv")
+  readr::write_csv(dict, dict_path, na = "")
+
+  validated <- suppressMessages(validate_dictionary(dict_path, require_iris = TRUE))
+  expect_true(is.logical(validated$required))
+  expect_equal(validated$required, c(TRUE, FALSE))
+
+  semantics <- suppressMessages(validate_semantics(dict_path, require_iris = TRUE))
+  expect_equal(nrow(semantics$issues), 0)
+  expect_equal(nrow(semantics$missing_terms), 0)
+})

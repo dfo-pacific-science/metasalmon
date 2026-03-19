@@ -858,6 +858,79 @@ read_salmon_datapackage <- function(path) {
   result
 }
 
+#' Validate a Salmon Data Package end to end
+#'
+#' Reads a package from disk, checks that metadata/data files stay aligned,
+#' verifies coded values against `codes.csv` when present, and then runs
+#' [validate_dictionary()] plus [validate_semantics()]. This is the quickest
+#' pre-flight check before sharing a package-first submission.
+#'
+#' @param path Character; directory containing the Salmon Data Package.
+#' @param require_iris Logical; if `TRUE`, require non-empty semantic IRIs for
+#'   measurement fields (`term_iri`, `property_iri`, `entity_iri`, and
+#'   `unit_iri`).
+#'
+#' @return Invisibly returns a list with components:
+#'   - `package`: loaded package list from [read_salmon_datapackage()].
+#'   - `semantic_validation`: result from [validate_semantics()].
+#'   - `issues`: package-structure issue tibble (empty when validation passes).
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' pkg_path <- create_sdp(
+#'   mtcars,
+#'   dataset_id = "demo-1",
+#'   table_id = "counts",
+#'   overwrite = TRUE
+#' )
+#' validate_salmon_datapackage(pkg_path, require_iris = FALSE)
+#' }
+validate_salmon_datapackage <- function(path, require_iris = FALSE) {
+  pkg <- read_salmon_datapackage(path)
+
+  .ms_validate_dataset_id_alignment(
+    pkg$dataset,
+    pkg$tables,
+    pkg$dictionary,
+    pkg$codes
+  )
+
+  issues <- .ms_collect_package_validation_issues(pkg)
+  if (nrow(issues) > 0) {
+    .ms_abort_package_validation_issues(issues)
+  }
+
+  dict <- validate_dictionary(pkg$dictionary, require_iris = require_iris)
+  semantic_validation <- validate_semantics(dict, require_iris = require_iris)
+
+  if (nrow(semantic_validation$issues) > 0) {
+    preview <- utils::head(unique(semantic_validation$issues$message), 3)
+    warn_lines <- c(
+      "Package structure is valid, but {.fn validate_semantics} reported issue{?s}.",
+      stats::setNames(preview, rep("!", length(preview)))
+    )
+    if (nrow(semantic_validation$issues) > length(preview)) {
+      warn_lines <- c(
+        warn_lines,
+        "i" = sprintf(
+          "%d more semantic issue%s returned in the result.",
+          nrow(semantic_validation$issues) - length(preview),
+          ifelse(nrow(semantic_validation$issues) - length(preview) == 1, "", "s")
+        )
+      )
+    }
+    cli::cli_warn(warn_lines)
+  }
+
+  cli::cli_alert_success("Salmon Data Package validation passed")
+  invisible(list(
+    package = pkg,
+    semantic_validation = semantic_validation,
+    issues = issues
+  ))
+}
+
 .ms_dataset_meta_cols <- function() {
   c(
     "dataset_id", "title", "description", "creator", "contact_name", "contact_email", "license",
@@ -940,6 +1013,45 @@ read_salmon_datapackage <- function(path) {
   as.logical(out)
 }
 
+.ms_dictionary_from_input <- function(dict) {
+  if (inherits(dict, "data.frame")) {
+    dict <- .ms_normalize_dictionary(dict)
+    if ("required" %in% names(dict)) {
+      dict$required <- .ms_parse_logical(dict$required)
+    }
+    return(dict)
+  }
+
+  if (is.character(dict) && length(dict) == 1 && !is.na(dict) && nzchar(trimws(dict))) {
+    dict_path <- trimws(dict)
+
+    if (dir.exists(dict_path)) {
+      located <- .ms_locate_metadata_file(dict_path, "column_dictionary.csv")
+      if (is.na(located)) {
+        cli::cli_abort(
+          "Directory {.path {dict_path}} does not contain {.file column_dictionary.csv}."
+        )
+      }
+      dict_path <- located
+    } else if (!file.exists(dict_path)) {
+      cli::cli_abort(
+        "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}."
+      )
+    }
+
+    dict <- .ms_read_metadata_csv(dict_path)
+    dict <- .ms_normalize_dictionary(dict)
+    if ("required" %in% names(dict)) {
+      dict$required <- .ms_parse_logical(dict$required)
+    }
+    return(dict)
+  }
+
+  cli::cli_abort(
+    "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}."
+  )
+}
+
 .ms_validate_dataset_id_alignment <- function(dataset_meta, table_meta, dict, codes = NULL) {
   dataset_id <- dataset_meta$dataset_id[1]
 
@@ -963,6 +1075,249 @@ read_salmon_datapackage <- function(path) {
   }
 
   invisible(NULL)
+}
+
+.ms_collect_package_validation_issues <- function(pkg) {
+  issues <- list()
+
+  add_issue <- function(issue_type, message, table_id = NA_character_, column_name = NA_character_, value = NA_character_) {
+    issues[[length(issues) + 1]] <<- tibble::tibble(
+      issue_type = issue_type,
+      table_id = table_id,
+      column_name = column_name,
+      value = value,
+      message = message
+    )
+    invisible(NULL)
+  }
+
+  trimmed_unique <- function(x) {
+    x <- trimws(as.character(x))
+    x <- unique(x[!is.na(x) & nzchar(x)])
+    x
+  }
+
+  if (nrow(pkg$dataset) != 1) {
+    add_issue(
+      "dataset",
+      sprintf("dataset.csv should contain exactly one row; found %s.", nrow(pkg$dataset))
+    )
+  }
+  if (nrow(pkg$tables) == 0) {
+    add_issue("tables", "No rows found in tables.csv.")
+  }
+  if (nrow(pkg$dictionary) == 0) {
+    add_issue("dictionary", "No rows found in column_dictionary.csv.")
+  }
+
+  dup_tables <- unique(pkg$tables$table_id[duplicated(pkg$tables$table_id)])
+  dup_tables <- dup_tables[!is.na(dup_tables) & nzchar(trimws(dup_tables))]
+  if (length(dup_tables) > 0) {
+    add_issue(
+      "tables",
+      sprintf("Duplicate table_id values in tables.csv: %s.", paste(dup_tables, collapse = ", "))
+    )
+  }
+
+  table_ids <- trimmed_unique(pkg$tables$table_id)
+  dict_table_ids <- trimmed_unique(pkg$dictionary$table_id)
+  extra_dict_tables <- setdiff(dict_table_ids, table_ids)
+  if (length(extra_dict_tables) > 0) {
+    add_issue(
+      "dictionary",
+      sprintf(
+        "column_dictionary.csv references table_id values not present in tables.csv: %s.",
+        paste(extra_dict_tables, collapse = ", ")
+      )
+    )
+  }
+
+  if (!is.null(pkg$codes) && nrow(pkg$codes) > 0) {
+    code_table_ids <- trimmed_unique(pkg$codes$table_id)
+    extra_code_tables <- setdiff(code_table_ids, table_ids)
+    if (length(extra_code_tables) > 0) {
+      add_issue(
+        "codes",
+        sprintf(
+          "codes.csv references table_id values not present in tables.csv: %s.",
+          paste(extra_code_tables, collapse = ", ")
+        )
+      )
+    }
+  }
+
+  for (i in seq_len(nrow(pkg$tables))) {
+    table_row <- pkg$tables[i, , drop = FALSE]
+    table_id <- .ms_scalar_text(table_row$table_id)
+    if (!nzchar(table_id)) {
+      next
+    }
+
+    file_name <- .ms_scalar_text(table_row$file_name)
+    if (!table_id %in% names(pkg$resources)) {
+      add_issue(
+        "resource",
+        sprintf(
+          "Table '%s' points to resource '%s', but that file could not be loaded.",
+          table_id,
+          file_name
+        ),
+        table_id = table_id
+      )
+      next
+    }
+
+    table_dict <- pkg$dictionary[pkg$dictionary$table_id == table_id, , drop = FALSE]
+    dict_cols <- trimmed_unique(table_dict$column_name)
+    if (length(dict_cols) == 0) {
+      add_issue(
+        "dictionary",
+        sprintf("No dictionary rows found for table '%s'.", table_id),
+        table_id = table_id
+      )
+      next
+    }
+
+    data_df <- pkg$resources[[table_id]]
+    data_cols <- names(data_df)
+
+    missing_in_data <- setdiff(dict_cols, data_cols)
+    if (length(missing_in_data) > 0) {
+      add_issue(
+        "columns",
+        sprintf(
+          "Table '%s' is missing dictionary columns in data: %s.",
+          table_id,
+          paste(missing_in_data, collapse = ", ")
+        ),
+        table_id = table_id,
+        column_name = paste(missing_in_data, collapse = ", ")
+      )
+    }
+
+    extra_in_data <- setdiff(data_cols, dict_cols)
+    if (length(extra_in_data) > 0) {
+      add_issue(
+        "columns",
+        sprintf(
+          "Table '%s' has data columns not listed in column_dictionary.csv: %s.",
+          table_id,
+          paste(extra_in_data, collapse = ", ")
+        ),
+        table_id = table_id,
+        column_name = paste(extra_in_data, collapse = ", ")
+      )
+    }
+
+    primary_key <- .ms_scalar_text(table_row$primary_key)
+    if (nzchar(primary_key)) {
+      pk_cols <- trimws(unlist(strsplit(primary_key, ",", fixed = TRUE)))
+      pk_cols <- pk_cols[nzchar(pk_cols)]
+      missing_pk <- setdiff(pk_cols, data_cols)
+      if (length(missing_pk) > 0) {
+        add_issue(
+          "primary_key",
+          sprintf(
+            "Table '%s' primary_key references columns not present in data: %s.",
+            table_id,
+            paste(missing_pk, collapse = ", ")
+          ),
+          table_id = table_id,
+          column_name = paste(missing_pk, collapse = ", ")
+        )
+      }
+    }
+
+    if (!is.null(pkg$codes) && nrow(pkg$codes) > 0) {
+      table_codes <- pkg$codes[pkg$codes$table_id == table_id, , drop = FALSE]
+      code_columns <- trimmed_unique(table_codes$column_name)
+
+      for (column_name in code_columns) {
+        if (!column_name %in% dict_cols) {
+          add_issue(
+            "codes",
+            sprintf(
+              "codes.csv references table '%s' column '%s', but that column is not in column_dictionary.csv.",
+              table_id,
+              column_name
+            ),
+            table_id = table_id,
+            column_name = column_name
+          )
+        }
+
+        if (!column_name %in% data_cols) {
+          add_issue(
+            "codes",
+            sprintf(
+              "codes.csv references table '%s' column '%s', but that column is not present in data.",
+              table_id,
+              column_name
+            ),
+            table_id = table_id,
+            column_name = column_name
+          )
+          next
+        }
+
+        data_values <- trimmed_unique(data_df[[column_name]])
+        code_values <- trimmed_unique(table_codes$code_value[table_codes$column_name == column_name])
+        missing_code_values <- setdiff(data_values, code_values)
+        if (length(missing_code_values) > 0) {
+          add_issue(
+            "codes",
+            sprintf(
+              "Table '%s' column '%s' has data values not listed in codes.csv: %s.",
+              table_id,
+              column_name,
+              paste(missing_code_values, collapse = ", ")
+            ),
+            table_id = table_id,
+            column_name = column_name,
+            value = paste(missing_code_values, collapse = ", ")
+          )
+        }
+      }
+    }
+  }
+
+  if (length(issues) == 0) {
+    return(tibble::tibble(
+      issue_type = character(),
+      table_id = character(),
+      column_name = character(),
+      value = character(),
+      message = character()
+    ))
+  }
+
+  dplyr::bind_rows(issues)
+}
+
+.ms_abort_package_validation_issues <- function(issues) {
+  preview_n <- min(10, nrow(issues))
+  messages <- issues$message[seq_len(preview_n)]
+  cli_lines <- c(
+    sprintf(
+      "Salmon Data Package validation failed with %d structural issue%s.",
+      nrow(issues),
+      ifelse(nrow(issues) == 1, "", "s")
+    ),
+    stats::setNames(messages, rep("x", length(messages)))
+  )
+
+  if (nrow(issues) > preview_n) {
+    cli_lines <- c(
+      cli_lines,
+      "i" = sprintf(
+        "%d more issue%s not shown.",
+        nrow(issues) - preview_n,
+        ifelse(nrow(issues) - preview_n == 1, "", "s")
+      )
+    )
+  }
+
+  cli::cli_abort(cli_lines)
 }
 
 .ms_read_metadata_csv <- function(path) {
@@ -1450,7 +1805,7 @@ read_salmon_datapackage <- function(path) {
     "[ ] 3. Open data/*.csv and confirm each exported table and column name matches metadata/column_dictionary.csv exactly.",
     "[ ] 4. If metadata/codes.csv exists, confirm each coded value used in data/*.csv is listed and described clearly.",
     if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv, then finalize semantic IRIs in metadata/column_dictionary.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; manually review semantic IRIs in metadata/column_dictionary.csv.",
-    "[ ] 6. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_dictionary(pkg$dictionary, require_iris = TRUE) and validate_semantics(pkg$dictionary, require_iris = TRUE).",
+    "[ ] 6. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). If you want the lower-level pieces too, run validate_dictionary(pkg$dictionary, require_iris = TRUE) and validate_semantics(pkg$dictionary, require_iris = TRUE).",
     "[ ] 7. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
     "",
     "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R."

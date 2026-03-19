@@ -12,7 +12,8 @@ validate_semantics(
 )
 }
 \arguments{
-\item{dict}{Dictionary tibble/data frame.}
+\item{dict}{Dictionary tibble/data frame, a package directory, or a path to
+\code{column_dictionary.csv}.}
 
 \item{require_iris}{Logical; if TRUE, require non-empty semantic fields
 (\code{term_iri}, \code{property_iri}, \code{entity_iri}, \code{unit_iri}) for measurement

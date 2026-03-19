@@ -7,7 +7,8 @@
 validate_dictionary(dict, require_iris = FALSE)
 }
 \arguments{
-\item{dict}{A tibble or data.frame with dictionary schema columns}
+\item{dict}{A tibble/data.frame with dictionary schema columns, a package
+directory, or a path to \code{column_dictionary.csv}.}
 
 \item{require_iris}{Logical; if \code{TRUE}, requires non-empty semantic IRIs for
 measurement columns (\code{term_iri}, \code{property_iri}, \code{entity_iri}, and \code{unit_iri}).

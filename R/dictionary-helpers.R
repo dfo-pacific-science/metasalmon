@@ -684,7 +684,8 @@ infer_column_role <- function(col_name, col) {
 #' Checks required columns, value types, required flags, and optionally
 #' validates IRIs. Reports issues using `cli` messaging.
 #'
-#' @param dict A tibble or data.frame with dictionary schema columns
+#' @param dict A tibble/data.frame with dictionary schema columns, a package
+#'   directory, or a path to `column_dictionary.csv`.
 #' @param require_iris Logical; if `TRUE`, requires non-empty semantic IRIs for
 #'   measurement columns (`term_iri`, `property_iri`, `entity_iri`, and `unit_iri`).
 #'   With the default `FALSE`, those fields are optional; missing values emit a strong
@@ -701,9 +702,7 @@ infer_column_role <- function(col_name, col) {
 #' validate_dictionary(dict)
 #' }
 validate_dictionary <- function(dict, require_iris = FALSE) {
-  if (!inherits(dict, "data.frame")) {
-    cli::cli_abort("{.arg dict} must be a data frame or tibble")
-  }
+  dict <- .ms_dictionary_from_input(dict)
 
   # Required columns
   required_cols <- c(
