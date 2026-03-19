@@ -335,6 +335,65 @@ test_that("score_and_rank_terms boosts label overlap with query tokens", {
   expect_equal(ranked$label[[1]], "Spawner count")
 })
 
+test_that("score_and_rank_terms demotes generic entity drift and boosts trusted generic entity matches", {
+  vocab <- metasalmon:::`.iadopt_vocab`()
+
+  species_df <- tibble::tibble(
+    label = c("Population", "species", "species"),
+    iri = c(
+      "https://w3id.org/smn/Population",
+      "http://purl.obolibrary.org/obo/APOLLO_SV_00000121",
+      "http://purl.obolibrary.org/obo/NCBITaxon_species"
+    ),
+    source = c("smn", "ols", "ols"),
+    ontology = c("smn", "apollo_sv", "genepio"),
+    role = "entity",
+    match_type = c("definition", "class", "class"),
+    definition = c(
+      "A group of organisms of the same species occupying a defined area that interbreed and share a gene pool.",
+      "Species concept.",
+      "NCBI taxonomy species rank."
+    )
+  )
+
+  species_ranked <- metasalmon:::`.score_and_rank_terms`(species_df, "entity", vocab, "species")
+  expect_equal(species_ranked$iri[[1]], "http://purl.obolibrary.org/obo/NCBITaxon_species")
+  expect_false(identical(species_ranked$iri[[1]], "https://w3id.org/smn/Population"))
+
+  spatial_df <- tibble::tibble(
+    label = c("Body shape", "Escapement", "water body"),
+    iri = c(
+      "https://w3id.org/smn/BodyShape",
+      "https://w3id.org/smn/Escapement",
+      "http://purl.obolibrary.org/obo/ENVO_00000063"
+    ),
+    source = c("smn", "smn", "ols"),
+    ontology = c("smn", "smn", "envo"),
+    role = "entity",
+    match_type = c("class", "class", "class"),
+    definition = c("Fish body shape.", "Escapement counts.", "A body of water.")
+  )
+
+  spatial_ranked <- metasalmon:::`.score_and_rank_terms`(spatial_df, "entity", vocab, "water body")
+  expect_equal(spatial_ranked$iri[[1]], "http://purl.obolibrary.org/obo/ENVO_00000063")
+
+  local_exact_df <- tibble::tibble(
+    label = c("Conservation Unit", "watershed"),
+    iri = c(
+      "https://w3id.org/gcdfo/salmon#ConservationUnit",
+      "http://purl.obolibrary.org/obo/ENVO_00000292"
+    ),
+    source = c("gcdfo", "ols"),
+    ontology = c("gcdfo", "envo"),
+    role = "entity",
+    match_type = c("label_exact", "class"),
+    definition = c("A group of fish sufficiently isolated from other groups...", "A watershed.")
+  )
+
+  local_exact_ranked <- metasalmon:::`.score_and_rank_terms`(local_exact_df, "entity", vocab, "conservation unit")
+  expect_equal(local_exact_ranked$iri[[1]], "https://w3id.org/gcdfo/salmon#ConservationUnit")
+})
+
 test_that("score_and_rank_terms boosts I-ADOPT vocab matches for role", {
   vocab <- metasalmon:::`.iadopt_vocab`()
   df <- tibble::tibble(
