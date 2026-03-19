@@ -546,6 +546,87 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
   expect_equal(count_row$property_iri[[1]], "http://purl.obolibrary.org/obo/STATO_0000047")
 })
 
+test_that("create_sdp unit seeding can use role-augmented unit sources", {
+  resources <- list(
+    hydro = tibble::tibble(
+      `Water Level / Niveau d'eau (m)` = c(1.2, 1.3)
+    )
+  )
+
+  calls <- list()
+  fake_find_terms <- function(query, role = NA_character_, sources = c("smn", "gcdfo", "ols", "nvs"), ...) {
+    calls[[length(calls) + 1]] <<- tibble::tibble(
+      query = query,
+      role = role,
+      sources = list(sources)
+    )
+
+    if (identical(role, "unit")) {
+      if ("qudt" %in% sources) {
+        return(tibble::tibble(
+          label = "Meter",
+          iri = "http://qudt.org/vocab/unit/M",
+          source = "qudt",
+          ontology = "qudt",
+          role = "unit",
+          match_type = "label_exact",
+          definition = "Length unit",
+          score = 4.5
+        ))
+      }
+      return(tibble::tibble(
+        label = "Degrees Celsius kilogram per square metre",
+        iri = "http://vocab.nerc.ac.uk/collection/P06/current/UFAKE/",
+        source = "nvs",
+        ontology = "P06",
+        role = "unit",
+        match_type = "label_partial",
+        definition = "Bad blended candidate",
+        score = 0.1
+      ))
+    }
+
+    tibble::tibble(
+      label = "Escapement",
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = "Generic candidate",
+      score = 0.2
+    )
+  }
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "hydro-unit-sources"),
+        dataset_id = "hydro-unit-demo",
+        seed_semantics = TRUE,
+        semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  water_row <- dict_written[dict_written$column_name == "Water Level / Niveau d'eau (m)", , drop = FALSE]
+
+  expect_equal(water_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+  expect_true(is.na(water_row$term_iri[[1]]) || water_row$term_iri[[1]] == "")
+  expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
+
+  call_df <- dplyr::bind_rows(calls)
+  unit_sources <- call_df$sources[call_df$role == "unit"][[1]]
+  expect_true("qudt" %in% unit_sources)
+  expect_true(all(c("smn", "gcdfo", "ols", "nvs") %in% unit_sources))
+})
+
 test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {
   resources <- list(
     catches = tibble::tibble(

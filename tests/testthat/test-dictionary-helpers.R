@@ -431,6 +431,60 @@ test_that("suggest_semantics normalizes wide measurement headers and header unit
   expect_true(any(call_df$role == "unit" & call_df$query == "cubic meter per second"))
 })
 
+test_that("suggest_semantics augments unit-role sources with role defaults", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "Max Temp (°C)",
+    column_label = "Max Temp (°C)",
+    column_description = NA_character_,
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- tibble::tibble(
+      query = query,
+      role = role,
+      sources = list(sources)
+    )
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(
+    NULL,
+    dict,
+    sources = c("smn", "gcdfo", "ols", "nvs"),
+    max_per_role = 1,
+    search_fn = fake_search
+  )
+
+  call_df <- dplyr::bind_rows(calls)
+  unit_sources <- call_df$sources[call_df$role == "unit"][[1]]
+  variable_sources <- call_df$sources[call_df$role == "variable"][[1]]
+
+  expect_true("qudt" %in% unit_sources)
+  expect_true(all(c("smn", "gcdfo", "ols", "nvs") %in% unit_sources))
+  expect_false("qudt" %in% variable_sources)
+  expect_equal(variable_sources, c("smn", "gcdfo", "ols", "nvs"))
+})
+
 test_that("suggest_semantics ignores review placeholders when building table observation-unit queries", {
   dict <- tibble::tibble(
     dataset_id = "d1",
