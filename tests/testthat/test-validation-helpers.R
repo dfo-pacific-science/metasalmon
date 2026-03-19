@@ -55,3 +55,21 @@ test_that("fetch_salmon_ontology returns a ttl path", {
   expect_true(file.exists(path))
   expect_match(path, "salmon-ontology\\.ttl$")
 })
+
+test_that("fetch_salmon_ontology falls back to stale cache when refresh fails", {
+  cache_dir <- withr::local_tempdir()
+  ttl_file <- file.path(cache_dir, "salmon-ontology.ttl")
+  writeLines("cached", ttl_file)
+
+  expect_warning(
+    path <- fetch_salmon_ontology(
+      url = "http://127.0.0.1:9/smn",
+      cache_dir = cache_dir,
+      fallback_urls = character(),
+      timeout_seconds = 1
+    ),
+    "using cached copy",
+    ignore.case = TRUE
+  )
+  expect_equal(path, ttl_file)
+})

@@ -57,12 +57,16 @@ dwc_dp_build_descriptor <- function(resources,
     return(invisible(NULL))
   }
 
-  tmp <- tempfile(fileext = ".json")
-  jsonlite::write_json(descriptor, tmp, auto_unbox = TRUE, pretty = TRUE)
+  descriptor_path <- tempfile(fileext = ".json")
+  script_path <- tempfile(fileext = ".py")
+  on.exit(unlink(c(descriptor_path, script_path), force = TRUE), add = TRUE)
 
-  cmd <- c(
-    "- <<'PY'",
-    "import json, sys",
+  jsonlite::write_json(descriptor, descriptor_path, auto_unbox = TRUE, pretty = TRUE)
+
+  script_lines <- c(
+    "import json",
+    "import sys",
+    "",
     "try:",
     "    import frictionless",
     "except ImportError:",
@@ -71,15 +75,20 @@ dwc_dp_build_descriptor <- function(resources,
     "",
     "pkg = frictionless.Package(sys.argv[1])",
     "report = pkg.validate()",
-    "print(report.flatten(['taskName','valid','errors']))",
-    "sys.exit(0 if report.valid else 1)",
-    "PY",
-    shQuote(tmp)
+    "print(report.flatten(['taskName', 'valid', 'errors']))",
+    "sys.exit(0 if report.valid else 1)"
   )
+  writeLines(script_lines, script_path, useBytes = TRUE)
 
-  status <- system2(py, cmd, stdout = TRUE, stderr = TRUE)
-  if (length(status) > 0) {
-    cat(paste(status, collapse = "\n"), "\n")
+  output <- system2(py, c(script_path, descriptor_path), stdout = TRUE, stderr = TRUE)
+  if (length(output) > 0) {
+    cat(paste(output, collapse = "\n"), "\n")
   }
+
+  status <- attr(output, "status")
+  if (is.null(status)) {
+    status <- 0L
+  }
+
   invisible(status)
 }

@@ -908,3 +908,104 @@ test_that("write_salmon_datapackage errors on existing path without overwrite", 
     "already exists"
   )
 })
+
+test_that("write_salmon_datapackage refuses overwrite for non-metasalmon directories", {
+  temp_dir <- withr::local_tempdir()
+  writeLines("do not delete", file.path(temp_dir, "keep.txt"))
+
+  resources <- list(main_table = tibble::tibble(x = 1))
+  dataset_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    title = "Test",
+    description = "Test",
+    creator = NA_character_,
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = NA_character_,
+    temporal_start = NA_character_,
+    temporal_end = NA_character_,
+    spatial_extent = NA_character_,
+    dataset_type = NA_character_,
+    source_citation = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    table_id = "main_table",
+    file_name = "data/main_table.csv",
+    table_label = "Main",
+    description = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+  dict <- infer_dictionary(resources$main_table, dataset_id = "test-1", table_id = "main_table")
+  dict <- fill_measurement_components(dict)
+
+  expect_error(
+    write_salmon_datapackage(
+      resources,
+      dataset_meta,
+      table_meta,
+      dict,
+      path = temp_dir,
+      overwrite = TRUE
+    ),
+    "Refusing to overwrite non-metasalmon directory"
+  )
+  expect_true(file.exists(file.path(temp_dir, "keep.txt")))
+})
+
+test_that("write_salmon_datapackage can overwrite an existing metasalmon package", {
+  temp_dir <- withr::local_tempdir()
+
+  resources <- list(main_table = tibble::tibble(x = 1))
+  dataset_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    title = "Test",
+    description = "Test",
+    creator = NA_character_,
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = NA_character_,
+    temporal_start = NA_character_,
+    temporal_end = NA_character_,
+    spatial_extent = NA_character_,
+    dataset_type = NA_character_,
+    source_citation = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "test-1",
+    table_id = "main_table",
+    file_name = "data/main_table.csv",
+    table_label = "Main",
+    description = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+  dict <- infer_dictionary(resources$main_table, dataset_id = "test-1", table_id = "main_table")
+  dict <- fill_measurement_components(dict)
+
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+  writeLines("stale", file.path(temp_dir, "stale.txt"))
+
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_false(file.exists(file.path(temp_dir, "stale.txt")))
+  expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
+  expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
+})

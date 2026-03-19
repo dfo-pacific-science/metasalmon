@@ -7,7 +7,8 @@
 fetch_salmon_ontology(
   url = "https://w3id.org/smn/",
   accept = "text/turtle, application/rdf+xml;q=0.8",
-  cache_dir = file.path(tempdir(), "metasalmon-ontology-cache"),
+  cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
+  timeout_seconds = 30,
   fallback_urls = c("https://w3id.org/smn",
     "https://dfo-pacific-science.github.io/salmon-domain-ontology/smn.ttl")
 )
@@ -17,7 +18,10 @@ fetch_salmon_ontology(
 
 \item{accept}{Accept header; defaults to turtle with RDF/XML fallback.}
 
-\item{cache_dir}{Directory to store cached ontology and headers.}
+\item{cache_dir}{Directory to store cached ontology and headers. Defaults to
+a persistent user cache path.}
+
+\item{timeout_seconds}{Numeric timeout in seconds for each HTTP request.}
 
 \item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url} fails.}
 }
