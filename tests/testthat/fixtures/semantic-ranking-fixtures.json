@@ -955,5 +955,52 @@
         "backend_score": 2.7
       }
     ]
+  },
+  {
+    "case_id": "specific-taxon-entity-prefers-authoritative-taxon",
+    "query": "atlantic salmon",
+    "role": "entity",
+    "expected": {
+      "top": {
+        "candidate_id": "ncbitaxon-atlantic-salmon",
+        "source": "ols",
+        "iri_contains": "NCBITaxon_8030"
+      }
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-salmon-population-group",
+        "label": "Salmon population group",
+        "iri": "https://w3id.org/smn/SalmonPopulationGroup",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "entity",
+        "match_type": "class",
+        "definition": "A grouping of salmon populations used for reporting and management.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "gcdfo-spawner-abundance",
+        "label": "Spawner abundance",
+        "iri": "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+        "source": "gcdfo",
+        "ontology": "gcdfo",
+        "role": "entity",
+        "match_type": "class",
+        "definition": "Adult salmon abundance metric.",
+        "backend_score": 2.6
+      },
+      {
+        "candidate_id": "ncbitaxon-atlantic-salmon",
+        "label": "atlantic salmon",
+        "iri": "http://purl.obolibrary.org/obo/NCBITaxon_8030",
+        "source": "ols",
+        "ontology": "mro",
+        "role": "entity",
+        "match_type": "class",
+        "definition": "Atlantic salmon taxon.",
+        "backend_score": 0.8
+      }
+    ]
   }
 ]

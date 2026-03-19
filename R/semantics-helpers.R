@@ -314,6 +314,35 @@ suggest_semantics <- function(df,
 
     clean_query(text)
   }
+  extract_taxon_like_phrase <- function(x) {
+    text <- expand_attribute_tokens(x)
+    if (!nzchar(text)) return("")
+
+    named_patterns <- c(
+      "atlantic salmon",
+      "chinook salmon",
+      "coho salmon",
+      "sockeye salmon",
+      "chum salmon",
+      "pink salmon",
+      "steelhead trout",
+      "rainbow trout",
+      "cutthroat trout",
+      "salmo salar"
+    )
+    for (pattern in named_patterns) {
+      if (grepl(paste0("\\b", pattern, "\\b"), text, perl = TRUE)) {
+        return(pattern)
+      }
+    }
+
+    latin_match <- regmatches(text, regexpr("\\boncorhynchus\\s+[a-z]+\\b", text, perl = TRUE))
+    if (length(latin_match) == 1 && nzchar(latin_match)) {
+      return(latin_match)
+    }
+
+    ""
+  }
   non_measurement_search_role <- function(row, dict) {
     desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
       ""
@@ -326,7 +355,11 @@ suggest_semantics <- function(df,
     if (!nzchar(query_text)) return("variable")
 
     ctx <- table_context(row, dict)
+    taxon_query <- extract_taxon_like_phrase(query_text)
 
+    if (nzchar(taxon_query) && grepl("\\b(confirm|confirmed|identify|identified|species|taxon)\\b", query_text, perl = TRUE)) {
+      return("entity")
+    }
     if (grepl("\\b(method|protocol|procedure|gear|enumeration)\\b", query_text, perl = TRUE)) {
       return("method")
     }
@@ -368,6 +401,8 @@ suggest_semantics <- function(df,
     }
 
     if (identical(search_role, "entity")) {
+      taxon_query <- extract_taxon_like_phrase(all_text)
+      if (nzchar(taxon_query)) return(taxon_query)
       if (grepl("\\bconservation unit\\b", all_text, perl = TRUE)) return("conservation unit")
       if (grepl("\\bspecies\\b|\\btaxon\\b", all_text, perl = TRUE)) return("species")
       if (grepl("\\bpopulation\\b", all_text, perl = TRUE)) return("population")
