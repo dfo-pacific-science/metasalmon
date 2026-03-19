@@ -204,6 +204,77 @@ suggest_semantics <- function(df,
     if (length(candidates) == 0) return(FALSE)
     any(grepl(pattern, candidates, ignore.case = TRUE))
   }
+  normalize_measurement_unit_query <- function(x) {
+    text <- tolower(as.character(x %||% ""))
+    text[is.na(text)] <- ""
+    text <- gsub("â", "", text, fixed = TRUE)
+    text <- gsub("°", " degree ", text, fixed = TRUE)
+    text <- gsub("³", "3", text, fixed = TRUE)
+    text <- clean_query(text)
+    text <- gsub("[^a-z0-9/ ]+", " ", text)
+    text <- clean_query(text)
+    if (!nzchar(text)) return("")
+
+    if (grepl("\\b(degree\\s*c|deg\\s*c|celsius)\\b", text)) return("degree celsius")
+    if (grepl("^(cms|cumec|cumecs|m3/s|m\\^3/s|m3 s)$", text)) return("cubic meter per second")
+    if (grepl("^(km/h|km h|kph)$", text)) return("kilometer per hour")
+    if (grepl("^(mm|millimet(er|re)s?)$", text)) return("millimeter")
+    if (grepl("^(cm|centimet(er|re)s?)$", text)) return("centimeter")
+    if (grepl("^(m|met(er|re)s?)$", text)) return("meter")
+    if (grepl("^(g|gram(me)?s?)$", text)) return("gram")
+    if (grepl("^(kg|kilogram(me)?s?)$", text)) return("kilogram")
+
+    ""
+  }
+  extract_measurement_header_unit <- function(...) {
+    texts <- unlist(list(...), use.names = FALSE)
+    texts <- as.character(texts)
+    texts <- texts[!is.na(texts) & nzchar(trimws(texts))]
+    if (length(texts) == 0) return("")
+
+    for (text in texts) {
+      matches <- gregexpr("\\(([^)]{1,20})\\)", text, perl = TRUE)
+      pieces <- regmatches(text, matches)[[1]]
+      if (length(pieces) == 0) next
+      pieces <- trimws(gsub("^\\(|\\)$", "", pieces))
+      pieces <- pieces[nzchar(pieces)]
+      if (length(pieces) == 0) next
+      normalized <- normalize_measurement_unit_query(utils::tail(pieces, 1))
+      if (nzchar(normalized)) {
+        return(normalized)
+      }
+    }
+
+    ""
+  }
+  normalize_measurement_header_query <- function(x) {
+    text <- clean_query(x)
+    if (!nzchar(text)) return("")
+
+    text <- gsub("\\([^)]*\\)", " ", text)
+    if (grepl("\\s/\\s", text)) {
+      text <- strsplit(text, "\\s/\\s", perl = TRUE)[[1]][1]
+    }
+    text <- tolower(clean_query(text))
+    replacements <- c(
+      "\\btemp\\b" = "temperature",
+      "\\bspd\\b" = "speed",
+      "\\bdir\\b" = "direction",
+      "\\bmax\\b" = "maximum",
+      "\\bmin\\b" = "minimum",
+      "\\bgrnd\\b" = "ground"
+    )
+    for (pattern in names(replacements)) {
+      text <- gsub(pattern, replacements[[pattern]], text, perl = TRUE)
+    }
+
+    if (grepl("\\btotal rain\\b", text)) return("rainfall")
+    if (grepl("\\btotal snow\\b", text)) return("snowfall")
+    if (grepl("\\bwater level\\b", text)) return("water level")
+    if (grepl("\\bdischarge\\b", text)) return("discharge")
+
+    clean_query(text)
+  }
   is_count_like_measurement <- function(row, base_query) {
     value_type <- tolower(as.character(row$value_type[[1]] %||% ""))
     text <- tolower(clean_query(paste(
@@ -231,7 +302,11 @@ suggest_semantics <- function(df,
     }
     label_query <- strip_review_placeholder(row$column_label[[1]])
     name_query <- strip_review_placeholder(row$column_name[[1]])
-    base_query <- clean_query(first_non_empty(list(desc_query, label_query, name_query)))
+    base_query <- if (nzchar(desc_query)) {
+      clean_query(desc_query)
+    } else {
+      normalize_measurement_header_query(first_non_empty(list(label_query, name_query)))
+    }
     if (!nzchar(base_query)) return("")
 
     base_lower <- tolower(base_query)
@@ -239,6 +314,9 @@ suggest_semantics <- function(df,
 
     if (identical(role_name, "unit")) {
       unit_query <- strip_review_placeholder(row$unit_label[[1]])
+      if (!nzchar(unit_query)) {
+        unit_query <- extract_measurement_header_unit(row$column_label[[1]], row$column_name[[1]])
+      }
       if (nzchar(unit_query)) {
         return(unit_query)
       }

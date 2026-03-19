@@ -475,6 +475,77 @@ test_that("create_sdp filters bad non-measurement term IRIs before auto-apply", 
   expect_equal(dict_written$term_iri[dict_written$column_name == "WATERBODY"], "https://example.org/waterbody")
 })
 
+test_that("create_sdp keeps broad physical measurement matches review-only but still applies unit hits", {
+  resources <- list(
+    hydro = tibble::tibble(
+      water_level = c(1.2, 1.3),
+      spawner_count = c(10L, 20L)
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      dataset_id = c(rep("hydro-demo", 5), rep("hydro-demo", 2)),
+      table_id = c(rep("hydro", 5), rep("hydro", 2)),
+      column_name = c(rep("water_level", 5), rep("spawner_count", 2)),
+      dictionary_role = c("variable", "property", "entity", "method", "unit", "variable", "property"),
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "method_iri", "unit_iri", "term_iri", "property_iri"),
+      search_query = c("water level", "water level", "water level", "water level", "meter", "adult spawner count", "count"),
+      column_label = c(rep("Water Level (m)", 5), rep("Spawner Count", 2)),
+      label = c("Escapement", "Mainstem phase", "Population", "uses observation procedure", "Meter", "Spawner abundance", "count"),
+      iri = c(
+        "https://w3id.org/smn/Escapement",
+        "https://w3id.org/smn/MainstemPhase",
+        "https://w3id.org/smn/Population",
+        "https://w3id.org/smn/usesObservationProcedure",
+        "http://qudt.org/vocab/unit/M",
+        "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+        "http://purl.obolibrary.org/obo/STATO_0000047"
+      ),
+      source = c("smn", "smn", "smn", "smn", "qudt", "gcdfo", "ols"),
+      ontology = c("smn", "smn", "smn", "smn", "qudt", "gcdfo", "stato"),
+      role = c("variable", "property", "entity", "method", "unit", "variable", "property"),
+      match_type = c("class", "concept", "class", "objectproperty", "unit", "class", "label_exact"),
+      definition = NA_character_,
+      score = c(8, 8, 8, 8, 4.4, 3, 0.8)
+    )
+    dict
+  }
+
+  pkg_path <- with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "hydro-review-only"),
+        dataset_id = "hydro-demo",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  water_row <- dict_written[dict_written$column_name == "water_level", , drop = FALSE]
+  count_row <- dict_written[dict_written$column_name == "spawner_count", , drop = FALSE]
+
+  expect_true(is.na(water_row$term_iri[[1]]) || water_row$term_iri[[1]] == "")
+  expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
+  expect_true(is.na(water_row$entity_iri[[1]]) || water_row$entity_iri[[1]] == "")
+  expect_true(is.na(water_row$method_iri[[1]]) || water_row$method_iri[[1]] == "")
+  expect_equal(water_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+
+  expect_equal(count_row$term_iri[[1]], "https://w3id.org/gcdfo/salmon#SpawnerAbundance")
+  expect_equal(count_row$property_iri[[1]], "http://purl.obolibrary.org/obo/STATO_0000047")
+})
+
 test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {
   resources <- list(
     catches = tibble::tibble(

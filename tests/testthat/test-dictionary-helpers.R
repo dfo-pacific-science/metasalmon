@@ -388,6 +388,49 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
   expect_true(any(call_df$role == "unit" & call_df$query == "count"))
 })
 
+test_that("suggest_semantics normalizes wide measurement headers and header units", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1"),
+    column_name = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
+    column_label = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
+    column_description = c(NA_character_, NA_character_, NA_character_),
+    column_role = c("measurement", "measurement", "measurement"),
+    value_type = c("number", "number", "number"),
+    unit_label = c(NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_)
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_true(any(call_df$role == "variable" & call_df$query == "water level"))
+  expect_true(any(call_df$role == "unit" & call_df$query == "meter"))
+  expect_true(any(call_df$role == "variable" & call_df$query == "maximum temperature"))
+  expect_true(any(call_df$role == "unit" & call_df$query == "degree celsius"))
+  expect_true(any(call_df$role == "variable" & call_df$query == "discharge"))
+  expect_true(any(call_df$role == "unit" & call_df$query == "cubic meter per second"))
+})
+
 test_that("suggest_semantics ignores review placeholders when building table observation-unit queries", {
   dict <- tibble::tibble(
     dataset_id = "d1",

@@ -1186,6 +1186,107 @@ read_salmon_datapackage <- function(path) {
   length(intersect(query_tokens, label_tokens)) > 0
 }
 
+.ms_measurement_query_looks_physical <- function(...) {
+  text <- paste(unlist(list(...)), collapse = " ")
+  text <- tolower(text)
+  grepl(
+    "\\b(water|level|discharge|flow|temperature|temp|rain|rainfall|snow|snowfall|precip|gust|wind|speed|depth|width|height|meter|metre|celsius)\\b",
+    text,
+    perl = TRUE
+  )
+}
+
+.ms_normalize_measurement_unit_text <- function(x) {
+  text <- tolower(.ms_scalar_text(x))
+  text <- gsub("â", "", text, fixed = TRUE)
+  text <- gsub("°", " degree ", text, fixed = TRUE)
+  text <- gsub("³", "3", text, fixed = TRUE)
+  text <- gsub("[^a-z0-9/ ]+", " ", text)
+  text <- trimws(gsub("\\s+", " ", text))
+  if (!nzchar(text)) {
+    return("")
+  }
+
+  if (grepl("^(cubic meter per second|cubic metre per second|m3/s|cms|cumec|cumecs)$", text)) return("cubic meter per second")
+  if (grepl("^(degree celsius|degrees celsius|deg c|celsius)$", text)) return("degree celsius")
+  if (grepl("^(kilometer per hour|kilometre per hour|km/h|kph)$", text)) return("kilometer per hour")
+  if (grepl("^millimet(er|re)s?$", text)) return("millimeter")
+  if (grepl("^centimet(er|re)s?$", text)) return("centimeter")
+  if (grepl("^met(er|re)s?$", text)) return("meter")
+
+  text
+}
+
+.ms_measurement_suggestion_is_compatible <- function(suggestion, dict_row) {
+  role <- tolower(as.character(dict_row$column_role[[1]] %||% ""))
+  if (!identical(role, "measurement")) {
+    return(TRUE)
+  }
+
+  query_text <- paste(
+    if ("search_query" %in% names(suggestion)) .ms_scalar_text(suggestion$search_query) else "",
+    if ("target_label" %in% names(suggestion)) .ms_scalar_text(suggestion$target_label) else "",
+    if ("column_label" %in% names(suggestion)) .ms_scalar_text(suggestion$column_label) else "",
+    if ("column_name" %in% names(suggestion)) .ms_scalar_text(suggestion$column_name) else ""
+  )
+  if (!.ms_measurement_query_looks_physical(query_text)) {
+    return(TRUE)
+  }
+
+  label <- .ms_scalar_text(suggestion$label)
+  if (!nzchar(label) || .ms_is_review_placeholder(label)) {
+    return(FALSE)
+  }
+
+  target_field <- if ("target_sdp_field" %in% names(suggestion)) {
+    .ms_scalar_text(suggestion$target_sdp_field)
+  } else {
+    ""
+  }
+
+  match_type <- if ("match_type" %in% names(suggestion)) {
+    tolower(.ms_scalar_text(suggestion$match_type))
+  } else {
+    ""
+  }
+
+  if (identical(target_field, "unit_iri")) {
+    query_unit <- .ms_normalize_measurement_unit_text(
+      if ("search_query" %in% names(suggestion)) suggestion$search_query else ""
+    )
+    label_unit <- .ms_normalize_measurement_unit_text(label)
+    if (!nzchar(query_unit) || !nzchar(label_unit) || !identical(query_unit, label_unit)) {
+      return(FALSE)
+    }
+    if ("score" %in% names(suggestion)) {
+      score <- suppressWarnings(as.numeric(suggestion$score[[1]]))
+      if (!is.na(score) && score < 0.75) {
+        return(FALSE)
+      }
+    }
+    return(TRUE)
+  }
+
+  if (nzchar(match_type) && !grepl("label|unit", match_type)) {
+    return(FALSE)
+  }
+
+  if ("score" %in% names(suggestion)) {
+    score <- suppressWarnings(as.numeric(suggestion$score[[1]]))
+    if (!is.na(score) && score < 0.75) {
+      return(FALSE)
+    }
+  }
+
+  query_tokens <- unique(.ms_non_measurement_target_tokens(query_text))
+  label_tokens <- unique(.ms_non_measurement_target_tokens(label))
+  if (length(query_tokens) == 0 || length(label_tokens) == 0) {
+    return(FALSE)
+  }
+
+  length(intersect(query_tokens, label_tokens)) > 0
+}
+
 .ms_filter_auto_apply_suggestions <- function(dict, suggestions) {
   if (is.null(suggestions) || nrow(suggestions) == 0) {
     return(suggestions)
@@ -1197,9 +1298,6 @@ read_salmon_datapackage <- function(path) {
       .ms_scalar_text(suggestion$target_sdp_field)
     } else {
       ""
-    }
-    if (nzchar(target_field) && !identical(target_field, "term_iri")) {
-      return(TRUE)
     }
     if (!nzchar(target_field)) {
       return(TRUE)
@@ -1225,6 +1323,9 @@ read_salmon_datapackage <- function(path) {
       role <- tolower(as.character(dict_row$column_role[[1]] %||% ""))
       if (role %in% c("identifier", "temporal")) {
         return(FALSE)
+      }
+      if (identical(role, "measurement")) {
+        return(.ms_measurement_suggestion_is_compatible(suggestion, dict_row))
       }
       .ms_non_measurement_suggestion_is_compatible(suggestion, dict_row)
     }, logical(1)))
