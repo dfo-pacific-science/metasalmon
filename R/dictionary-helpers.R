@@ -581,6 +581,16 @@ infer_column_role <- function(col_name, col) {
     return("categorical")
   }
 
+  # Method/protocol-like fields are metadata, not measurements, even when
+  # their names contain count/measure substrings (for example counting_method).
+  method_tokens <- c(
+    "method", "methods", "protocol", "protocols", "procedure", "procedures",
+    "technique", "techniques", "gear", "enumeration"
+  )
+  if (any(name_tokens %in% method_tokens)) {
+    return("attribute")
+  }
+
   # Check for measurement/quantity patterns
   measurement_tokens <- c(
     "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
