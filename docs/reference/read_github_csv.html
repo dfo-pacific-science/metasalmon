@@ -13,7 +13,7 @@ the URL."><meta property="og:image" content="https://dfo-pacific-science.github.
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -97,9 +97,9 @@ token from <code><a href="https://gh.r-lib.org/reference/gh_token.html" class="e
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>This function supports automatic retries with exponential backoff for
 transient network errors.</p>
-<p>Before using this function, run <code><a href="ms_setup_github.html">ms_setup_github()</a></code> once to configure
-authentication. For private repositories, your PAT must have the <code>repo</code>
-scope.</p>
+<p>Public GitHub content can be read without a PAT. For private repositories,
+run <code><a href="ms_setup_github.html">ms_setup_github()</a></code> to configure authentication; your PAT must have the
+<code>repo</code> scope.</p>
 <p>For reproducible analyses, pin to a specific tag or commit SHA rather than
 a branch name like <code>"main"</code>, since branch contents can change over time.</p>
     </div>

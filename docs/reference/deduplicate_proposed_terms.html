@@ -21,7 +21,7 @@ Identifying terms that should use constraint_iri instead of new term_iri
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -96,9 +96,9 @@ issue a warning about potential over-engineering. Default is 30.</p></dd>
 <p><strong>Target ratio</strong>: For a dictionary with N measurement columns, expect ~N/10 to N/5
 distinct base terms, NOT N terms. If the output still has &gt;30 rows, consider
 further manual review.</p>
-<p><strong>Anti-patterns detected</strong>:</p><ul><li><p>"Spawners Age 1", "Spawners Age 2", ... patterns → collapsed to "SpawnerCount"</p></li>
-<li><p>Duplicate term_labels across different tables → deduplicated</p></li>
-<li><p>Phase-stratified variants (Ocean X, Terminal X) → collapsed to base term</p></li>
+<p><strong>Anti-patterns detected</strong>:</p><ul><li><p>"Spawners Age 1", "Spawners Age 2", ... patterns -&gt; collapsed to "SpawnerCount"</p></li>
+<li><p>Duplicate term_labels across different tables -&gt; deduplicated</p></li>
+<li><p>Phase-stratified variants (Ocean X, Terminal X) -&gt; collapsed to base term</p></li>
 </ul></div>
 
     <div class="section level2">

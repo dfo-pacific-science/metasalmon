@@ -55,7 +55,9 @@ write_salmon_datapackage(
 
 - overwrite:
 
-  Logical; if `FALSE` (default), errors if path exists
+  Logical; if `FALSE` (default), errors if path exists. If `TRUE`,
+  replacement is only allowed for empty directories or directories
+  previously written by `metasalmon`.
 
 ## Value
 

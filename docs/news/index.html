@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,14 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.20" id="metasalmon-0020">metasalmon 0.0.20<a class="anchor" aria-label="anchor" href="#metasalmon-0020"></a></h2>
+<ul><li>Hardened GitHub helper security: GitHub readers now reject non-GitHub remote URLs and avoid attaching GitHub auth headers to non-GitHub hosts; improved public/private auth behavior and related tests.</li>
+<li>Hardened package writing + export reliability: safer overwrite behavior for package outputs, fixed DwC validator execution path, and improved ontology fetch robustness with explicit timeout handling and cache fallback behavior.</li>
+<li>Fixed <code><a href="../reference/submit_term_request_issues.html">submit_term_request_issues()</a></code> batch routing so per-row <code>ontology_repo</code> values are honored instead of posting all rows to the first repo.</li>
+<li>Clarified <code><a href="../reference/validate_semantics.html">validate_semantics()</a></code> API by explicitly deprecating ignored legacy arguments (<code>entity_defaults</code>, <code>vocab_priority</code>) with coverage for warning behavior.</li>
+<li>Improved release/test hygiene: dependency bootstrap script hardening, tighter warning assertions in brittle tests, and refreshed package description wording.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.19" id="metasalmon-0019">metasalmon 0.0.19<a class="anchor" aria-label="anchor" href="#metasalmon-0019"></a></h2>
 <ul><li>Hardened table observation-unit auto-apply in <code><a href="../reference/create_sdp.html">create_sdp()</a></code>: table-level observation-unit suggestions are now ignored when driven by placeholder review text and only auto-applied when lexical compatibility checks pass against non-placeholder table metadata.</li>

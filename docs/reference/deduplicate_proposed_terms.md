@@ -57,12 +57,12 @@ facet handling.
 
 **Anti-patterns detected**:
 
-- "Spawners Age 1", "Spawners Age 2", ... patterns → collapsed to
+- "Spawners Age 1", "Spawners Age 2", ... patterns -\> collapsed to
   "SpawnerCount"
 
-- Duplicate term_labels across different tables → deduplicated
+- Duplicate term_labels across different tables -\> deduplicated
 
-- Phase-stratified variants (Ocean X, Terminal X) → collapsed to base
+- Phase-stratified variants (Ocean X, Terminal X) -\> collapsed to base
   term
 
 ## Examples

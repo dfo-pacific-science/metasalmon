@@ -52,10 +52,10 @@ A tibble containing the CSV data.
 This function supports automatic retries with exponential backoff for
 transient network errors.
 
-Before using this function, run
+Public GitHub content can be read without a PAT. For private
+repositories, run
 [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
-once to configure authentication. For private repositories, your PAT
-must have the `repo` scope.
+to configure authentication; your PAT must have the `repo` scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather
 than a branch name like `"main"`, since branch contents can change over

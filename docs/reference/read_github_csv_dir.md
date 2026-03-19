@@ -67,13 +67,12 @@ A named list of tibbles, where names are the CSV file names (without the
 This function uses the GitHub API to list directory contents, filters
 for CSV files, then reads each file using
 [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
-Authentication is required even for public repositories when using the
-API.
+For public repositories, directory listing can work without a PAT; when
+available, a token is used automatically.
 
-Before using this function, run
+For private repositories, run
 [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
-once to configure authentication. For private repositories, your PAT
-must have the `repo` scope.
+to configure authentication. Your PAT must have the `repo` scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather
 than a branch name like `"main"`, since branch contents can change over

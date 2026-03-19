@@ -8,8 +8,7 @@ read_github_csv(path, ref = "main", repo = NULL, token = NULL, ...)
 }
 \arguments{
 \item{path}{Path to the CSV file inside the repository (e.g.,
-\code{"data/observations.csv"}), or a full GitHub URL (blob or raw format).
-Non-GitHub URLs are rejected.}
+\code{"data/observations.csv"}), or a full GitHub URL (blob or raw format).}
 
 \item{ref}{Git reference: branch name, tag, or commit SHA. Defaults to
 \code{"main"}. For reproducible analyses, prefer tags or commit SHAs.
