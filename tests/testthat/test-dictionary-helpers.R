@@ -612,6 +612,66 @@ test_that("suggest_semantics keeps site and management-unit attributes on entity
   expect_true(any(call_df$role == "method" & call_df$query == "capture method"))
 })
 
+test_that("suggest_semantics seeds location-like attribute term suggestions without low-cardinality codes", {
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("WATERSHED_CDE", "release_location_code", "SYSTEM_SITE", "SPECIES_QUALIFIED"),
+    column_label = c("WATERSHED_CDE", "release_location_code", "SYSTEM_SITE", "SPECIES_QUALIFIED"),
+    column_description = c(
+      "Watershed code",
+      "Release location code",
+      "System site label",
+      "Qualified species label"
+    ),
+    column_role = c("attribute", "attribute", "attribute", "attribute"),
+    value_type = c("string", "string", "string", "string"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_type = c(NA_character_, NA_character_, NA_character_, NA_character_)
+  )
+  codes <- tibble::tibble()
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    codes = codes
+  )
+
+  suggestions <- attr(res, "semantic_suggestions")
+  column_suggestions <- suggestions[suggestions$target_scope == "column" & suggestions$target_sdp_field == "term_iri", , drop = FALSE]
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+
+  expect_true(any(column_suggestions$column_name == "WATERSHED_CDE"))
+  expect_true(any(column_suggestions$column_name == "release_location_code"))
+  expect_true(any(column_suggestions$column_name == "SYSTEM_SITE"))
+  expect_false(any(column_suggestions$column_name == "SPECIES_QUALIFIED"))
+  expect_true(any(call_df$role == "entity" & call_df$query == "watershed"))
+  expect_true(any(call_df$role == "entity" & call_df$query == "site"))
+})
+
 test_that("suggest_semantics uses taxon-style entity queries for species confirmation attributes", {
   dict <- tibble::tibble(
     dataset_id = "d1",

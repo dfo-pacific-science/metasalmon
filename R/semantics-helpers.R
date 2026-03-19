@@ -469,6 +469,25 @@ suggest_semantics <- function(df,
     }
     any(keep)
   }
+  has_location_like_column_signal <- function(row, dict) {
+    if (!identical(non_measurement_search_role(row, dict), "entity")) {
+      return(FALSE)
+    }
+
+    desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
+      ""
+    } else {
+      strip_review_placeholder(row$column_description[[1]])
+    }
+    label_query <- strip_review_placeholder(row$column_label[[1]])
+    name_query <- strip_review_placeholder(row$column_name[[1]])
+    query_text <- expand_attribute_tokens(paste(desc_query, label_query, name_query, collapse = " "))
+    if (!nzchar(query_text)) {
+      return(FALSE)
+    }
+
+    grepl("\\b(watershed|waterbody|river|stream|location|site)\\b", query_text, perl = TRUE)
+  }
   non_measurement_roles <- function(row, codes, dict) {
     role <- tolower(as.character(row$column_role[[1]] %||% ""))
     if (!nzchar(role) || role %in% c("identifier", "temporal")) return(character())
@@ -476,7 +495,10 @@ suggest_semantics <- function(df,
 
     term_missing <- "term_iri" %in% names(row) && is_missing(row$term_iri[[1]])
     if (!term_missing) return(character())
-    if (!has_low_card_codes(row, codes)) return(character())
+
+    has_codes <- has_low_card_codes(row, codes)
+    location_fallback <- has_location_like_column_signal(row, dict)
+    if (!has_codes && !location_fallback) return(character())
 
     if (role %in% c("categorical", "attribute")) {
       return(c(term_iri = non_measurement_search_role(row, dict)))
