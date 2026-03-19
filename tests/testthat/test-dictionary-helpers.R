@@ -1046,7 +1046,8 @@ test_that("validate_dictionary warns when measurement semantic fields are missin
 
   expect_warning(
     expect_invisible(validate_dictionary(dict)),
-    "Hey, you definitely should fill those out before publishing"
+    "Missing semantic fields for measurement columns",
+    fixed = TRUE
   )
 })
 

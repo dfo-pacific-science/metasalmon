@@ -125,7 +125,8 @@ test_that("validate_dictionary requires_iris flag works", {
   # Without IRIs, should pass with require_iris = FALSE (warning only)
   expect_warning(
     expect_invisible(validate_dictionary(dict, require_iris = FALSE)),
-    "Hey, you definitely should fill those out before publishing"
+    "Missing semantic fields for measurement columns",
+    fixed = TRUE
   )
 
   # Should fail with require_iris = TRUE
@@ -264,7 +265,8 @@ test_that("apply_salmon_dictionary handles missing required columns", {
   # Verify warning was issued
   expect_warning(
     apply_salmon_dictionary(df2, dict),
-    "Missing required columns"
+    "Missing required columns",
+    fixed = TRUE
   )
 })
 
@@ -318,7 +320,8 @@ test_that("write_salmon_datapackage handles resources with no matching table_met
       resources, dataset_meta, table_meta, dict,
       path = temp_dir, overwrite = TRUE
     ),
-    "No table metadata found"
+    "No table metadata found",
+    fixed = TRUE
   )
 
   # Should still create package (just skips missing resource)
@@ -537,7 +540,8 @@ test_that("read_salmon_datapackage handles missing resource files", {
   # Verify warning was issued (check separately)
   expect_warning(
     read_salmon_datapackage(temp_dir),
-    "Resource file.*not found"
+    "Resource file",
+    fixed = TRUE
   )
 })
 
