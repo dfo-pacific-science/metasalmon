@@ -1161,3 +1161,109 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
   expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
 })
+
+.ms_write_composite_validation_fixture <- function(path, explicit_hint = FALSE, spn_abd_values = c(NA, NA)) {
+  dir.create(file.path(path, "metadata"), recursive = TRUE, showWarnings = FALSE)
+  dir.create(file.path(path, "data"), recursive = TRUE, showWarnings = FALSE)
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "cu-test",
+    title = "CU test package",
+    description = "Fixture for composite-intent validation",
+    route = if (isTRUE(explicit_hint)) "cu_composite" else NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "cu-test",
+    table_id = "cu_timeseries",
+    file_name = "data/cu_timeseries.csv",
+    table_label = "CU timeseries",
+    description = NA_character_
+  )
+  dict <- tibble::tibble(
+    dataset_id = "cu-test",
+    table_id = "cu_timeseries",
+    column_name = c("cu_id", "SPN_ABD_WILD", "SPN_TREND_WILD", "RAPID_STATUS")
+  )
+  resource <- tibble::tibble(
+    cu_id = c("cu-1", "cu-2"),
+    SPN_ABD_WILD = spn_abd_values,
+    SPN_TREND_WILD = c(NA_character_, NA_character_),
+    RAPID_STATUS = c(NA_character_, NA_character_)
+  )
+
+  readr::write_csv(dataset_meta, file.path(path, "metadata", "dataset.csv"), na = "")
+  readr::write_csv(table_meta, file.path(path, "metadata", "tables.csv"), na = "")
+  readr::write_csv(dict, file.path(path, "metadata", "column_dictionary.csv"), na = "")
+  readr::write_csv(resource, file.path(path, "data", "cu_timeseries.csv"), na = "")
+
+  datapackage <- list(
+    profile = "data-package",
+    name = "cu-test",
+    title = "CU test package",
+    description = "Fixture for composite-intent validation",
+    route = if (isTRUE(explicit_hint)) "cu_composite" else NULL,
+    resources = list(list(
+      name = "cu_timeseries",
+      path = "data/cu_timeseries.csv"
+    ))
+  )
+  jsonlite::write_json(
+    datapackage,
+    file.path(path, "datapackage.json"),
+    pretty = TRUE,
+    auto_unbox = TRUE,
+    null = "null"
+  )
+}
+
+test_that("validate_salmon_datapackage fails when explicit composite hint has no populated WSP columns", {
+  temp_dir <- withr::local_tempdir()
+  .ms_write_composite_validation_fixture(
+    path = temp_dir,
+    explicit_hint = TRUE,
+    spn_abd_values = c(NA_character_, NA_character_)
+  )
+
+  expect_error(
+    validate_salmon_datapackage(temp_dir),
+    "Explicit composite route intent detected"
+  )
+
+  result <- validate_salmon_datapackage(temp_dir, strict = FALSE)
+  expect_false(result$valid)
+  expect_true(any(result$issues$code == "composite_intent_missing_wsp_signal"))
+  expect_true(result$composite_intent$explicit)
+  expect_false(result$composite_intent$wsp_signal_detected)
+})
+
+test_that("validate_salmon_datapackage passes when explicit composite hint has populated SPN_ABD_WILD", {
+  temp_dir <- withr::local_tempdir()
+  .ms_write_composite_validation_fixture(
+    path = temp_dir,
+    explicit_hint = TRUE,
+    spn_abd_values = c("42", NA_character_)
+  )
+
+  result <- validate_salmon_datapackage(temp_dir)
+  expect_true(result$valid)
+  expect_equal(nrow(result$issues), 0L)
+  expect_true(result$composite_intent$explicit)
+  expect_true(result$composite_intent$wsp_signal_detected)
+  expect_true("SPN_ABD_WILD" %in% result$composite_intent$populated_wsp_columns)
+})
+
+test_that("validate_salmon_datapackage does not fail when WSP columns are populated without explicit composite hint", {
+  temp_dir <- withr::local_tempdir()
+  .ms_write_composite_validation_fixture(
+    path = temp_dir,
+    explicit_hint = FALSE,
+    spn_abd_values = c("15", NA_character_)
+  )
+
+  result <- validate_salmon_datapackage(temp_dir)
+  expect_true(result$valid)
+  expect_equal(nrow(result$issues), 0L)
+  expect_false(result$composite_intent$explicit)
+  expect_true(result$composite_intent$wsp_signal_detected)
+  expect_true(result$composite_intent$inferred)
+})

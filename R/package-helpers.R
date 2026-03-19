@@ -858,6 +858,94 @@ read_salmon_datapackage <- function(path) {
   result
 }
 
+#' Validate a Salmon Data Package for composite-intent routing readiness
+#'
+#' Runs a focused pre-upload validation pass for CU/composite-intent packages.
+#' The validator scans canonical metadata and `datapackage.json` route hints
+#' (`route`, `route_key`, `upload_route`, `data_level`, and optional
+#' `source_name`) and checks whether `cu_timeseries` contains at least one
+#' populated WSP composite signal column (`SPN_ABD_WILD`, `SPN_TREND_WILD`,
+#' `RAPID_STATUS`).
+#'
+#' If explicit composite intent is present but none of the required-any-of WSP
+#' signal columns are populated, the package is flagged as invalid.
+#'
+#' @param path Character; path to a Salmon Data Package directory.
+#' @param strict Logical; if `TRUE` (default), abort on validation errors.
+#'
+#' @return A structured list with:
+#'   - `valid`: `TRUE` when no error-level issues were found.
+#'   - `issues`: Tibble of detected issues (`severity`, `code`, `message`).
+#'   - `composite_intent`: List with explicit-hint/signal details.
+#'
+#' @export
+validate_salmon_datapackage <- function(path, strict = TRUE) {
+  pkg <- read_salmon_datapackage(path)
+
+  hint_fields <- c("route", "route_key", "upload_route", "data_level")
+  optional_hint_fields <- c("source_name")
+
+  hint_values <- .ms_collect_composite_hint_values(
+    dataset_meta = pkg$dataset,
+    table_meta = pkg$tables,
+    datapackage_path = file.path(path, "datapackage.json"),
+    hint_fields = hint_fields,
+    optional_hint_fields = optional_hint_fields
+  )
+
+  has_explicit_composite_intent <- .ms_values_indicate_composite_intent(hint_values$value)
+
+  wsp_signal <- .ms_detect_wsp_composite_signal(pkg$resources)
+
+  issues <- tibble::tibble(
+    severity = character(),
+    code = character(),
+    message = character()
+  )
+
+  if (has_explicit_composite_intent && !wsp_signal$any_populated) {
+    missing_msg <- paste(
+      "Explicit composite route intent detected, but no populated WSP composite",
+      "signal columns were found in cu_timeseries.",
+      "Populate at least one of:",
+      paste(wsp_signal$required_columns, collapse = ", ")
+    )
+    issues <- dplyr::bind_rows(
+      issues,
+      tibble::tibble(
+        severity = "error",
+        code = "composite_intent_missing_wsp_signal",
+        message = missing_msg
+      )
+    )
+  }
+
+  has_errors <- any(issues$severity == "error")
+  result <- list(
+    valid = !has_errors,
+    issues = issues,
+    composite_intent = list(
+      explicit = has_explicit_composite_intent,
+      explicit_hints = hint_values,
+      wsp_signal_detected = wsp_signal$any_populated,
+      cu_timeseries_present = wsp_signal$cu_timeseries_present,
+      required_wsp_columns = wsp_signal$required_columns,
+      present_wsp_columns = wsp_signal$present_columns,
+      populated_wsp_columns = wsp_signal$populated_columns,
+      inferred = has_explicit_composite_intent || wsp_signal$any_populated
+    )
+  )
+
+  if (isTRUE(strict) && has_errors) {
+    cli::cli_abort(c(
+      "Salmon data package validation failed.",
+      setNames(issues$message, rep("x", nrow(issues)))
+    ))
+  }
+
+  result
+}
+
 .ms_dataset_meta_cols <- function() {
   c(
     "dataset_id", "title", "description", "creator", "contact_name", "contact_email", "license",
@@ -1002,6 +1090,150 @@ read_salmon_datapackage <- function(path) {
     return(NA_character_)
   }
   hits[[1]]
+}
+
+.ms_collect_composite_hint_values <- function(
+    dataset_meta,
+    table_meta,
+    datapackage_path,
+    hint_fields,
+    optional_hint_fields = character()
+) {
+  all_fields <- unique(c(hint_fields, optional_hint_fields))
+
+  collect_from_df <- function(df, source_label) {
+    present <- intersect(names(df), all_fields)
+    if (length(present) == 0 || nrow(df) == 0) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    purrr::map_dfr(present, function(field_name) {
+      values <- .ms_nonempty_text_values(df[[field_name]])
+      if (length(values) == 0) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+
+      tibble::tibble(
+        source = source_label,
+        field = field_name,
+        value = values
+      )
+    })
+  }
+
+  collect_from_json <- function(path) {
+    if (!file.exists(path)) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    datapackage <- tryCatch(
+      jsonlite::read_json(path, simplifyVector = FALSE),
+      error = function(e) NULL
+    )
+    if (is.null(datapackage)) {
+      return(tibble::tibble(source = character(), field = character(), value = character()))
+    }
+
+    top_values <- purrr::map_dfr(all_fields, function(field_name) {
+      if (is.null(datapackage[[field_name]])) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+      values <- .ms_nonempty_text_values(datapackage[[field_name]])
+      if (length(values) == 0) {
+        return(tibble::tibble(source = character(), field = character(), value = character()))
+      }
+      tibble::tibble(
+        source = "datapackage",
+        field = field_name,
+        value = values
+      )
+    })
+
+    resource_values <- purrr::map_dfr(datapackage$resources %||% list(), function(resource) {
+      resource_name <- resource$name %||% "<unnamed_resource>"
+      purrr::map_dfr(all_fields, function(field_name) {
+        if (is.null(resource[[field_name]])) {
+          return(tibble::tibble(source = character(), field = character(), value = character()))
+        }
+        values <- .ms_nonempty_text_values(resource[[field_name]])
+        if (length(values) == 0) {
+          return(tibble::tibble(source = character(), field = character(), value = character()))
+        }
+        tibble::tibble(
+          source = paste0("datapackage_resource:", resource_name),
+          field = field_name,
+          value = values
+        )
+      })
+    })
+
+    dplyr::bind_rows(top_values, resource_values)
+  }
+
+  dplyr::bind_rows(
+    collect_from_df(dataset_meta, "dataset.csv"),
+    collect_from_df(table_meta, "tables.csv"),
+    collect_from_json(datapackage_path)
+  ) %>%
+    dplyr::distinct()
+}
+
+.ms_nonempty_text_values <- function(x) {
+  values <- as.character(unlist(x, use.names = FALSE))
+  values <- trimws(values)
+  values <- values[!is.na(values) & nzchar(values)]
+  unique(values)
+}
+
+.ms_values_indicate_composite_intent <- function(values) {
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+  any(grepl("composite", values, ignore.case = TRUE))
+}
+
+.ms_column_has_populated_values <- function(x) {
+  values <- x[!is.na(x)]
+  if (length(values) == 0) {
+    return(FALSE)
+  }
+
+  if (inherits(values, "factor") || is.character(values)) {
+    values <- trimws(as.character(values))
+    return(any(nzchar(values)))
+  }
+
+  TRUE
+}
+
+.ms_detect_wsp_composite_signal <- function(resources) {
+  required_columns <- c("SPN_ABD_WILD", "SPN_TREND_WILD", "RAPID_STATUS")
+  resource_names <- names(resources %||% list())
+  idx <- which(tolower(resource_names) == "cu_timeseries")
+
+  if (length(idx) == 0) {
+    return(list(
+      cu_timeseries_present = FALSE,
+      required_columns = required_columns,
+      present_columns = character(),
+      populated_columns = character(),
+      any_populated = FALSE
+    ))
+  }
+
+  cu_tbl <- resources[[idx[[1]]]]
+  present_columns <- intersect(required_columns, names(cu_tbl))
+  populated_columns <- present_columns[vapply(present_columns, function(col_name) {
+    .ms_column_has_populated_values(cu_tbl[[col_name]])
+  }, logical(1))]
+
+  list(
+    cu_timeseries_present = TRUE,
+    required_columns = required_columns,
+    present_columns = present_columns,
+    populated_columns = populated_columns,
+    any_populated = length(populated_columns) > 0
+  )
 }
 
 .ms_scalar_text <- function(value) {
