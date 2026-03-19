@@ -993,6 +993,28 @@ pattern <- paste(tokens, collapse = ".*")
   any(query_tokens %in% physical_tokens)
 }
 
+.physical_query_focus <- function(query) {
+  q <- tolower(trimws(query %||% ""))
+  if (!nzchar(q)) {
+    return("other")
+  }
+
+  if (grepl("\\b(temp|temperature)\\b", q)) {
+    return("temperature")
+  }
+  if (grepl("\\b(discharge|flow)\\b", q)) {
+    return("discharge")
+  }
+  if (grepl("\\b(level|stage)\\b", q)) {
+    return("level")
+  }
+  if (grepl("\\b(freshwater|water body|river|stream|lake|water)\\b", q)) {
+    return("water")
+  }
+
+  "other"
+}
+
 .physical_environment_query_adjustment <- function(query, label, iri, source, ontology, role = NA_character_) {
   if (!.is_physical_environment_query(query, role)) {
     return(0)
@@ -1010,6 +1032,7 @@ pattern <- paste(tokens, collapse = ".*")
   ontology <- tolower(trimws(ontology %||% ""))
   iri <- iri %||% ""
   label_text <- tolower(trimws(label %||% ""))
+  focus <- .physical_query_focus(query)
 
   environmental_tokens <- c(
     "water", "freshwater", "river", "stream", "lake", "discharge", "flow",
@@ -1047,6 +1070,110 @@ pattern <- paste(tokens, collapse = ".*")
 
   if (identical(role, "constraint") && is_envo && has_environmental_label) {
     bonus <- bonus + 2
+  }
+
+  # De-noise broad, verbose labels that happen to share one token.
+  token_count <- length(label_tokens)
+  if (token_count > 16 && coverage < 1) {
+    bonus <- bonus - min(2.5, (token_count - 16) * 0.15)
+  }
+
+  if (focus == "temperature") {
+    if (grepl("water temperature|temperature of water|river temperature|sea water temperature", label_text)) {
+      bonus <- bonus + 2
+    } else {
+      bonus <- bonus - 1.8
+    }
+    if (grepl("copepoda|faecal|pellet|incubation|ph\\b|organic carbon|concentration|uptake|production", label_text)) {
+      bonus <- bonus - 2.8
+    }
+  }
+
+  if (focus == "level") {
+    if (grepl("water level|level of water|river level|stage height|gauge height", label_text)) {
+      bonus <- bonus + 2
+    } else {
+      bonus <- bonus - 1.8
+    }
+    if (grepl("wave|period|pressure|ice|freeboard|radar|organic carbon|concentration|uptake|production", label_text)) {
+      bonus <- bonus - 2.5
+    }
+  }
+
+  if (focus == "discharge") {
+    if (grepl("discharge|flow rate|streamflow|riverine discharge|flow", label_text)) {
+      bonus <- bonus + 1.8
+    } else {
+      bonus <- bonus - 1.3
+    }
+    if (grepl("pollution|shoreline|proportion|coverage", label_text)) {
+      bonus <- bonus - 2.2
+    }
+  }
+
+  if (focus %in% c("temperature", "level", "discharge") && grepl("\\{|\\}", label_text)) {
+    bonus <- bonus - 1.2
+  }
+
+  if (coverage < 0.5 && role %in% c("variable", "property")) {
+    bonus <- bonus - 1.2
+  }
+
+  bonus
+}
+
+.is_method_intent_query <- function(query, role = NA_character_) {
+  role <- tolower(trimws(role %||% ""))
+  if (!identical(role, "method")) {
+    return(FALSE)
+  }
+  query_tokens <- .query_tokens(query %||% "")
+  if (length(query_tokens) == 0) {
+    return(FALSE)
+  }
+  any(query_tokens %in% c("method", "protocol", "catch", "capture", "sampling", "gear", "technique"))
+}
+
+.method_query_adjustment <- function(query, label, source, role = NA_character_) {
+  if (!.is_method_intent_query(query, role)) {
+    return(0)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  coverage <- if (length(query_tokens) == 0) {
+    0
+  } else {
+    length(intersect(query_tokens, label_tokens)) / length(query_tokens)
+  }
+
+  label_text <- tolower(trimws(label %||% ""))
+  query_text <- paste(query_tokens, collapse = " ")
+
+  has_method_signal <- any(label_tokens %in% c("method", "protocol", "technique", "gear", "capture", "sampling", "census", "documentation"))
+  has_count_signal <- any(label_tokens %in% c("count", "counts", "enumeration", "measurement", "abundance", "escapement"))
+  query_wants_count <- any(query_tokens %in% c("count", "counts", "enumeration", "abundance", "escapement"))
+
+  bonus <- 0
+
+  if (has_method_signal && coverage > 0) {
+    bonus <- bonus + 2
+  }
+
+  if (grepl("catch|capture", query_text) && grepl("catch|capture|fishing|gear|method", label_text)) {
+    bonus <- bonus + 1.5
+  }
+
+  if (!query_wants_count && has_count_signal) {
+    bonus <- bonus - 3.5
+  }
+
+  if (!query_wants_count && grepl("electrofishing count", label_text, fixed = TRUE)) {
+    bonus <- bonus - 2
+  }
+
+  if (!has_method_signal && coverage < 0.5 && tolower(trimws(source %||% "")) %in% c("smn", "gcdfo")) {
+    bonus <- bonus - 0.8
   }
 
   bonus
@@ -1899,6 +2026,17 @@ sources_for_role <- function(role) {
           iri = df$iri[[i]],
           source = df$source[[i]],
           ontology = df$ontology[[i]],
+          role = role_key
+        )
+      }, numeric(1))
+    }
+
+    if (identical(role_key, "method")) {
+      df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+        .method_query_adjustment(
+          query = query,
+          label = df$label[[i]],
+          source = df$source[[i]],
           role = role_key
         )
       }, numeric(1))
