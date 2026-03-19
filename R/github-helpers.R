@@ -8,7 +8,7 @@
 #'
 #' @param path Character scalar path inside the repository (e.g.,
 #'   `"data/myfile.csv"`), or a full GitHub URL (blob or raw) which will be
-#'   normalized.
+#'   normalized. Non-GitHub URLs are rejected.
 #' @param ref Git reference: branch name, tag, or commit SHA. Defaults to
 #'   `"main"`. For reproducible analyses, prefer tags or commit SHAs over
 #'   branch names.
@@ -155,9 +155,9 @@ ms_setup_github <- function(repo = "dfo-pacific-science/qualark-data") {
 #' @return A tibble containing the CSV data.
 #'
 #' @details
-#' Before using this function, run `ms_setup_github()` once to configure
-#' authentication. For private repositories, your PAT must have the `repo`
-#' scope.
+#' Public GitHub content can be read without a PAT. For private repositories,
+#' run `ms_setup_github()` to configure authentication; your PAT must have the
+#' `repo` scope.
 #'
 #' For reproducible analyses, pin to a specific tag or commit SHA rather than
 #' a branch name like `"main"`, since branch contents can change over time.
@@ -210,20 +210,13 @@ read_github_csv <- function(
 ) {
   target <- ms_resolve_path(path, ref = ref, repo = repo)
   token <- if (is.null(token)) ms_current_token() else token
-
-  if (!nzchar(token)) {
-    cli::cli_abort("No GitHub PAT found. Run {.code metasalmon::ms_setup_github()} first.")
-  }
-
-  resp <- httr2::request(target$url) |>
-    httr2::req_headers(Authorization = paste("token", token)) |>
-    httr2::req_user_agent(ms_user_agent()) |>
-    httr2::req_retry(backoff = ~2^.x, max_tries = 4) |>
-    httr2::req_perform()
+  resp <- ms_github_get(target$url, token = token)
 
   status <- httr2::resp_status(resp)
   if (status == 401) {
-    cli::cli_abort("GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT.")
+    cli::cli_abort(
+      "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT."
+    )
   }
 
   if (status == 403) {
@@ -233,10 +226,20 @@ read_github_csv <- function(
         "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}."
       )
     }
-    cli::cli_abort("Access to {.val {target$repo}} was denied (status 403).")
+    if (nzchar(token)) {
+      cli::cli_abort("Access to {.val {target$repo}} was denied (status 403).")
+    }
+    cli::cli_abort(
+      "Access to {.val {target$repo}} was denied without authentication (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry."
+    )
   }
 
   if (status == 404) {
+    if (!nzchar(token)) {
+      cli::cli_abort(
+        "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}. If this repository is private, configure a PAT with {.code metasalmon::ms_setup_github()} and retry."
+      )
+    }
     cli::cli_abort(
       "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}."
     )
@@ -273,12 +276,12 @@ read_github_csv <- function(
 #'
 #' @details
 #' This function uses the GitHub API to list directory contents, filters for CSV
-#' files, then reads each file using `read_github_csv()`. Authentication is
-#' required even for public repositories when using the API.
+#' files, then reads each file using `read_github_csv()`. For public
+#' repositories, directory listing can work without a PAT; when available, a
+#' token is used automatically.
 #'
-#' Before using this function, run `ms_setup_github()` once to configure
-#' authentication. For private repositories, your PAT must have the `repo`
-#' scope.
+#' For private repositories, run `ms_setup_github()` to configure
+#' authentication. Your PAT must have the `repo` scope.
 #'
 #' For reproducible analyses, pin to a specific tag or commit SHA rather than
 #' a branch name like `"main"`, since branch contents can change over time.
@@ -335,20 +338,14 @@ read_github_csv_dir <- function(
 ) {
   target <- ms_resolve_dir_path(path, ref = ref, repo = repo)
   token <- if (is.null(token)) ms_current_token() else token
-
-  if (!nzchar(token)) {
-    cli::cli_abort("No GitHub PAT found. Run {.code metasalmon::ms_setup_github()} first.")
-  }
-
-  # List directory contents using GitHub API
-  if (target$path == "") {
-    api_path <- sprintf("/repos/%s/contents", target$repo)
-  } else {
-    api_path <- sprintf("/repos/%s/contents/%s", target$repo, target$path)
-  }
   tryCatch(
     {
-      contents <- gh::gh(api_path, .token = token, ref = target$ref)
+      contents <- ms_github_list_contents(
+        repo = target$repo,
+        path = target$path,
+        ref = target$ref,
+        token = token
+      )
     },
     error = function(e) {
       if (grepl("404", conditionMessage(e))) {
@@ -356,8 +353,27 @@ read_github_csv_dir <- function(
           "Directory {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}."
         )
       }
-      if (grepl("401|403", conditionMessage(e))) {
-        cli::cli_abort("GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT.")
+      headers <- tryCatch(e$response$headers, error = function(...) list())
+      sso <- headers[["x-github-sso"]]
+      if (!is.null(sso)) {
+        cli::cli_abort(
+          "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}."
+        )
+      }
+      if (grepl("401", conditionMessage(e))) {
+        cli::cli_abort(
+          "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT."
+        )
+      }
+      if (grepl("403", conditionMessage(e))) {
+        if (nzchar(token)) {
+          cli::cli_abort(
+            "Access to {.val {target$repo}} was denied (status 403)."
+          )
+        }
+        cli::cli_abort(
+          "Anonymous access to {.val {target$repo}} was denied (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry."
+        )
       }
       cli::cli_abort("Unable to list directory contents: {conditionMessage(e)}")
     }
@@ -437,9 +453,17 @@ ms_resolve_dir_path <- function(path, ref, repo) {
 
   if (grepl("^https?://", path)) {
     clean_url <- sub("\\?.*$", "", path)
+    if (!ms_is_github_host(clean_url)) {
+      cli::cli_abort(
+        "URL inputs must use {.url github.com} (tree/blob) or {.url raw.githubusercontent.com}."
+      )
+    }
 
     # Handle blob URLs (directory)
-    blob_match <- regexec("^https?://github\\.com/([^/]+)/([^/]+)/(?:blob|tree)/([^/]+)/(.*)$", clean_url)
+    blob_match <- regexec(
+      "^https?://(?:www\\.)?github\\.com/([^/]+)/([^/]+)/(?:blob|tree)/([^/]+)/(.*)$",
+      clean_url
+    )
     blob_parts <- regmatches(clean_url, blob_match)[[1]]
     if (length(blob_parts) == 5) {
       return(list(
@@ -462,7 +486,9 @@ ms_resolve_dir_path <- function(path, ref, repo) {
       ))
     }
 
-    cli::cli_abort("Unable to parse GitHub URL: {.val {path}}")
+    cli::cli_abort(
+      "Unable to parse GitHub URL: {.val {path}}. Use a github.com tree/blob URL or raw.githubusercontent.com URL."
+    )
   }
 
   if (is.null(clean_repo)) {
@@ -505,8 +531,13 @@ ms_resolve_path <- function(path, ref, repo) {
 
   if (grepl("^https?://", path)) {
     clean_url <- sub("\\?.*$", "", path)
+    if (!ms_is_github_host(clean_url)) {
+      cli::cli_abort(
+        "URL inputs must use {.url github.com} (blob) or {.url raw.githubusercontent.com}."
+      )
+    }
 
-    blob_match <- regexec("^https?://github\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)$", clean_url)
+    blob_match <- regexec("^https?://(?:www\\.)?github\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.+)$", clean_url)
     blob_parts <- regmatches(clean_url, blob_match)[[1]]
     if (length(blob_parts) == 5) {
       return(list(
@@ -534,7 +565,9 @@ ms_resolve_path <- function(path, ref, repo) {
       ))
     }
 
-    return(list(url = clean_url, repo = clean_repo %||% "", ref = clean_ref, path = path))
+    cli::cli_abort(
+      "Unable to parse GitHub URL: {.val {path}}. Use a github.com blob URL or raw.githubusercontent.com URL."
+    )
   }
 
   if (is.null(clean_repo)) {
@@ -548,6 +581,41 @@ ms_resolve_path <- function(path, ref, repo) {
     ref = clean_ref,
     path = clean_path
   )
+}
+
+ms_is_github_host <- function(url) {
+  parsed <- httr2::url_parse(url)
+  host <- tolower(parsed$hostname %||% "")
+  host %in% c("github.com", "www.github.com", "raw.githubusercontent.com")
+}
+
+ms_github_get <- function(url, token = NULL) {
+  req <- httr2::request(url) |>
+    httr2::req_user_agent(ms_user_agent()) |>
+    httr2::req_retry(backoff = ~2^.x, max_tries = 4)
+
+  if (is.null(token)) {
+    token <- ""
+  }
+  if (nzchar(token) && ms_is_github_host(url)) {
+    req <- httr2::req_headers(req, Authorization = paste("token", token))
+  }
+
+  httr2::req_perform(req)
+}
+
+ms_github_list_contents <- function(repo, path, ref, token = NULL) {
+  if (path == "") {
+    api_path <- sprintf("/repos/%s/contents", repo)
+  } else {
+    api_path <- sprintf("/repos/%s/contents/%s", repo, path)
+  }
+
+  if (is.null(token) || !nzchar(token)) {
+    gh::gh(api_path, ref = ref)
+  } else {
+    gh::gh(api_path, .token = token, ref = ref)
+  }
 }
 
 ms_user_agent <- function() {
