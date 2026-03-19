@@ -618,7 +618,26 @@ test_that("suggest_semantics adds lighter non-measurement term suggestions for c
 })
 
 test_that("suggest_semantics keeps long-format observation helpers review-only", {
-  dict <- tibble::tibble(
+  fake_search <- local({
+    calls <- list()
+    list(
+      fn = function(query, role, sources) {
+        calls[[length(calls) + 1]] <<- list(query = query, role = role)
+        tibble::tibble(
+          label = paste("candidate", role),
+          iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
+          source = "ols",
+          ontology = "demo",
+          role = role,
+          match_type = "label_partial",
+          definition = ""
+        )
+      },
+      calls = function() tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+    )
+  })
+
+  fraser_dict <- tibble::tibble(
     dataset_id = c(rep("d1", 8), "d1"),
     table_id = c(rep("water_quality", 8), "water_quality"),
     column_name = c(
@@ -674,7 +693,7 @@ test_that("suggest_semantics keeps long-format observation helpers review-only",
     constraint_iri = rep(NA_character_, 9),
     method_iri = rep(NA_character_, 9)
   )
-  codes <- tibble::tibble(
+  fraser_codes <- tibble::tibble(
     dataset_id = rep("d1", 7),
     table_id = rep("water_quality", 7),
     column_name = c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name", "sample_type"),
@@ -694,38 +713,81 @@ test_that("suggest_semantics keeps long-format observation helpers review-only",
     term_type = rep(NA_character_, 7)
   )
 
-  calls <- list()
-  fake_search <- function(query, role, sources) {
-    calls[[length(calls) + 1]] <<- list(query = query, role = role)
-    tibble::tibble(
-      label = paste("candidate", role),
-      iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
-      source = "ols",
-      ontology = "demo",
-      role = role,
-      match_type = "label_partial",
-      definition = ""
-    )
-  }
-
-  res <- suggest_semantics(
+  fraser_res <- suggest_semantics(
     NULL,
-    dict,
+    fraser_dict,
     sources = "ols",
     max_per_role = 1,
-    search_fn = fake_search,
-    codes = codes
+    search_fn = fake_search$fn,
+    codes = fraser_codes
   )
 
-  suggestions <- attr(res, "semantic_suggestions")
-  helper_cols <- c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name")
-  column_suggestions <- suggestions[suggestions$target_scope == "column" & suggestions$target_sdp_field == "term_iri", , drop = FALSE]
+  fraser_suggestions <- attr(fraser_res, "semantic_suggestions")
+  fraser_helper_cols <- c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name")
+  fraser_column_suggestions <- fraser_suggestions[fraser_suggestions$target_scope == "column" & fraser_suggestions$target_sdp_field == "term_iri", , drop = FALSE]
 
-  expect_false(any(column_suggestions$column_name %in% helper_cols))
-  expect_true(any(column_suggestions$column_name == "sample_type"))
+  expect_false(any(fraser_column_suggestions$column_name %in% fraser_helper_cols))
+  expect_true(any(fraser_column_suggestions$column_name == "sample_type"))
 
-  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
-  expect_false(any(call_df$query %in% c("unit code", "vmv code", "flag", "status", "method detect limit", "station name")))
+  stage_dict <- tibble::tibble(
+    dataset_id = rep("d2", 7),
+    table_id = rep("stage_archive", 7),
+    column_name = c("Location ID", "Location Name", "Date/Time(UTC)", "Parameter", "Value", "Unit", "Grade"),
+    column_label = c("Location ID", "Location Name", "Date/Time(UTC)", "Parameter", "Value", "Unit", "Grade"),
+    column_description = c(
+      "Hydrometric station identifier",
+      "Hydrometric station name",
+      "Observation timestamp",
+      "Reported parameter label",
+      "Observed value",
+      "Reported unit label",
+      "Hydrometric QA grade"
+    ),
+    column_role = c("identifier", "attribute", "temporal", "attribute", "measurement", "attribute", "attribute"),
+    value_type = c("string", "string", "date", "string", "number", "string", "string"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_, "Meter", NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, "http://qudt.org/vocab/unit/M", NA_character_, NA_character_),
+    term_iri = rep(NA_character_, 7),
+    property_iri = rep(NA_character_, 7),
+    entity_iri = rep(NA_character_, 7),
+    constraint_iri = rep(NA_character_, 7),
+    method_iri = rep(NA_character_, 7)
+  )
+  stage_codes <- tibble::tibble(
+    dataset_id = rep("d2", 4),
+    table_id = rep("stage_archive", 4),
+    column_name = c("Location Name", "Parameter", "Unit", "Grade"),
+    code_value = c("Bear River at Glacier Hwy (37A) Bridge", "Stage", "m", "Undefined"),
+    code_label = c("Bear River at Glacier Hwy (37A) Bridge", "Stage", "Meter", "Undefined"),
+    code_description = c(
+      "Hydrometric station name",
+      "Reported parameter label",
+      "Reported unit label",
+      "Hydrometric QA grade"
+    ),
+    vocabulary_iri = rep(NA_character_, 4),
+    term_iri = rep(NA_character_, 4),
+    term_type = rep(NA_character_, 4)
+  )
+
+  stage_res <- suggest_semantics(
+    NULL,
+    stage_dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search$fn,
+    codes = stage_codes
+  )
+
+  stage_suggestions <- attr(stage_res, "semantic_suggestions")
+  stage_helper_cols <- c("Location Name", "Parameter", "Unit", "Grade")
+  stage_column_suggestions <- stage_suggestions[stage_suggestions$target_scope == "column" & stage_suggestions$target_sdp_field == "term_iri", , drop = FALSE]
+
+  expect_false(any(stage_column_suggestions$column_name %in% stage_helper_cols))
+  expect_true(any(stage_suggestions$column_name == "Value" & stage_suggestions$target_sdp_field == "term_iri"))
+
+  call_df <- fake_search$calls()
+  expect_false(any(call_df$query %in% c("unit code", "vmv code", "flag", "status", "method detect limit", "station name", "parameter", "unit", "grade", "location name")))
   expect_true(any(call_df$query == "sample type"))
 })
 

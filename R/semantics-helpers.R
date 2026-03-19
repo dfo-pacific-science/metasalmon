@@ -642,7 +642,7 @@ suggest_semantics <- function(df,
     }
 
     has_value <- "value" %in% cols
-    has_variable <- any(cols %in% c("variable_name", "measurement_name", "parameter_name", "analyte_name"))
+    has_variable <- any(cols %in% c("variable_name", "measurement_name", "parameter_name", "parameter", "analyte_name"))
     has_unit <- any(cols %in% c("unit_code", "unit", "unit_label"))
 
     has_value && has_variable && has_unit
@@ -653,7 +653,18 @@ suggest_semantics <- function(df,
       return(FALSE)
     }
 
-    col_name %in% c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name")
+    col_name %in% c(
+      "parameter",
+      "unit",
+      "unit_code",
+      "vmv_code",
+      "flag",
+      "status",
+      "grade",
+      "method_detect_limit",
+      "station_name",
+      "location name"
+    )
   }
   non_measurement_roles <- function(row, codes, dict) {
     role <- tolower(as.character(row$column_role[[1]] %||% ""))
