@@ -363,10 +363,13 @@ suggest_semantics <- function(df,
     if (grepl("\\b(method|protocol|procedure|gear|enumeration)\\b", query_text, perl = TRUE)) {
       return("method")
     }
+    if (grepl("\\b(watershed|waterbody|river|stream|location|site|area|conservation unit|management unit)\\b", query_text, perl = TRUE)) {
+      return("entity")
+    }
     if (grepl("\\b(stage|classification|class|type|status|context|origin|accuracy|precision|reliability|index)\\b", query_text, perl = TRUE)) {
       return("constraint")
     }
-    if (grepl("\\b(species|taxon|population|stock|watershed|waterbody|river|stream|location|site|area|conservation unit)\\b", query_text, perl = TRUE)) {
+    if (grepl("\\b(species|taxon|population|stock)\\b", query_text, perl = TRUE)) {
       return("entity")
     }
 
@@ -389,6 +392,7 @@ suggest_semantics <- function(df,
     if (identical(search_role, "method")) {
       if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bmethod\\b", all_text, perl = TRUE)) return("estimate method")
       if (grepl("\\bcount(ing)?\\b", all_text, perl = TRUE) && grepl("\\bmethod\\b", all_text, perl = TRUE)) return("counting method")
+      if (grepl("\\bcatch\\b", all_text, perl = TRUE) && grepl("\\bmethod\\b", all_text, perl = TRUE)) return("capture method")
       return(base_query)
     }
 
@@ -404,6 +408,8 @@ suggest_semantics <- function(df,
       taxon_query <- extract_taxon_like_phrase(all_text)
       if (nzchar(taxon_query)) return(taxon_query)
       if (grepl("\\bconservation unit\\b", all_text, perl = TRUE)) return("conservation unit")
+      if (grepl("\\baquaculture management unit\\b", all_text, perl = TRUE)) return("aquaculture management unit")
+      if (grepl("\\bmanagement unit\\b", all_text, perl = TRUE)) return("management unit")
       if (grepl("\\bspecies\\b|\\btaxon\\b", all_text, perl = TRUE)) return("species")
       if (grepl("\\bpopulation\\b", all_text, perl = TRUE)) return("population")
       if (grepl("\\bwatershed\\b", all_text, perl = TRUE)) return("watershed")
