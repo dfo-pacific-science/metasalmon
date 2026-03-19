@@ -854,6 +854,66 @@ pattern <- paste(tokens, collapse = ".*")
   bonus
 }
 
+.is_generic_entity_query <- function(query, role = NA_character_) {
+  role <- tolower(trimws(role %||% ""))
+  if (!identical(role, "entity")) {
+    return(FALSE)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  if (length(query_tokens) == 0) {
+    return(FALSE)
+  }
+
+  generic_tokens <- c(
+    "species", "taxon", "population", "stock", "conservation", "unit",
+    "watershed", "water", "body", "river", "stream", "site", "location", "area"
+  )
+
+  all(query_tokens %in% generic_tokens)
+}
+
+.generic_entity_query_adjustment <- function(query, label, iri, source, match_type, role = NA_character_) {
+  if (!.is_generic_entity_query(query, role)) {
+    return(0)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  coverage <- if (length(query_tokens) == 0) {
+    0
+  } else {
+    length(intersect(query_tokens, label_tokens)) / length(query_tokens)
+  }
+
+  iri <- iri %||% ""
+  source <- tolower(trimws(source %||% ""))
+  match_type <- tolower(trimws(match_type %||% ""))
+
+  is_local <- source %in% c("smn", "gcdfo")
+  has_taxon_signal <- any(query_tokens %in% c("species", "taxon"))
+  has_spatial_signal <- any(query_tokens %in% c("watershed", "water", "body", "river", "stream", "site", "location", "area"))
+
+  bonus <- 0
+
+  if (is_local && coverage < 1) {
+    bonus <- bonus - (4 * (1 - coverage))
+  }
+  if (identical(match_type, "definition") && coverage == 0) {
+    bonus <- bonus - 2
+  }
+
+  if (has_taxon_signal && grepl("http://purl\\.obolibrary\\.org/obo/NCBITaxon_", iri, ignore.case = TRUE)) {
+    bonus <- bonus + 3
+  }
+
+  if (has_spatial_signal && grepl("http://purl\\.obolibrary\\.org/obo/ENVO_", iri, ignore.case = TRUE) && coverage > 0) {
+    bonus <- bonus + 2.5
+  }
+
+  bonus
+}
+
 .local_short_circuit_hit <- function(query, results) {
   if (nrow(results) == 0) {
     return(FALSE)
@@ -1690,6 +1750,19 @@ sources_for_role <- function(role) {
     if (.is_count_like_query(query, role_key)) {
       df$score <- df$score + vapply(df$label, function(lbl) {
         .count_like_query_bonus(query, lbl, role_key)
+      }, numeric(1))
+    }
+
+    if (identical(role_key, "entity")) {
+      df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+        .generic_entity_query_adjustment(
+          query = query,
+          label = df$label[[i]],
+          iri = df$iri[[i]],
+          source = df$source[[i]],
+          match_type = df$match_type[[i]],
+          role = role_key
+        )
       }, numeric(1))
     }
   }

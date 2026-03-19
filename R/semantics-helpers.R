@@ -299,6 +299,7 @@ suggest_semantics <- function(df,
     replacements <- c(
       "\\bcu\\b" = "conservation unit",
       "\\bcus\\b" = "conservation units",
+      "\\bwaterbody\\b" = "water body",
       "\\bcde\\b" = "code",
       "\\bdtt\\b" = "date time",
       "\\byr\\b" = "year",
@@ -371,10 +372,10 @@ suggest_semantics <- function(df,
       if (grepl("\\bspecies\\b|\\btaxon\\b", all_text, perl = TRUE)) return("species")
       if (grepl("\\bpopulation\\b", all_text, perl = TRUE)) return("population")
       if (grepl("\\bwatershed\\b", all_text, perl = TRUE)) return("watershed")
-      if (grepl("\\bwaterbody\\b|\\briver\\b|\\bstream\\b", all_text, perl = TRUE)) return("waterbody")
+      if (grepl("\\bwaterbody\\b|\\briver\\b|\\bstream\\b", all_text, perl = TRUE)) return("water body")
       if (grepl("\\bsite\\b|\\blocation\\b", all_text, perl = TRUE)) return("site")
       if (grepl("\\barea\\b", all_text, perl = TRUE)) {
-        if (context_has(ctx, "waterbody|watershed|river|stream")) return("waterbody")
+        if (context_has(ctx, "waterbody|watershed|river|stream")) return("water body")
         return("area")
       }
     }
