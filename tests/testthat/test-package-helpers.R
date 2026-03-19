@@ -470,7 +470,7 @@ test_that("create_sdp filters bad non-measurement term IRIs before auto-apply", 
 
   dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   expect_true(is.na(dict_written$term_iri[dict_written$column_name == "AREA"]) || dict_written$term_iri[dict_written$column_name == "AREA"] == "")
-  expect_equal(dict_written$term_iri[dict_written$column_name == "SPECIES"], "https://example.org/ampharete-lindstroemi")
+  expect_true(is.na(dict_written$term_iri[dict_written$column_name == "SPECIES"]) || dict_written$term_iri[dict_written$column_name == "SPECIES"] == "")
   expect_true(is.na(dict_written$term_iri[dict_written$column_name == "RUN_TYPE"]) || dict_written$term_iri[dict_written$column_name == "RUN_TYPE"] == "")
   expect_equal(dict_written$term_iri[dict_written$column_name == "WATERBODY"], "https://example.org/waterbody")
 })

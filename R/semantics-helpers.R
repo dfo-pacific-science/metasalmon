@@ -4,7 +4,8 @@
 #' dictionary and package metadata. Measurement columns keep full I-ADOPT
 #' decomposition (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`,
 #' `constraint_iri`), while selected non-measurement columns can receive
-#' lighter `term_iri` coverage when they are categorical or attribute-like.
+#' lighter `term_iri` coverage when they are categorical or controlled
+#' low-cardinality attributes.
 #'
 #' The function uses the column's label or description as the search query and
 #' returns suggestions as an attribute on the dictionary tibble. This allows
@@ -51,8 +52,8 @@
 #' @details
 #' Column targets keep full I-ADOPT behavior for
 #' `column_role == "measurement"` rows. Non-measurement coverage is lighter:
-#' only missing `term_iri` values are considered, focused on categorical and
-#' attribute-like rows.
+#' only missing `term_iri` values are considered, focused on categorical rows
+#' and controlled low-cardinality attribute rows inferred through `codes.csv`.
 #' Identifier and temporal columns are skipped by default. When `codes`,
 #' `table_meta`, or `dataset_meta` are supplied, additional target rows are
 #' generated for `codes.csv`, `tables.csv`, and `dataset.csv` respectively.
@@ -137,7 +138,6 @@ suggest_semantics <- function(df,
     "dictionary_role",
     "table_id",
     "dataset_id",
-    "search_role",
     "target_row_key",
     "target_label",
     "target_description",
@@ -169,36 +169,6 @@ suggest_semantics <- function(df,
     x <- gsub("[._]+", " ", x)
     x <- gsub("\\s+", " ", x)
     trimws(x)
-  }
-  split_snake_tokens <- function(x) {
-    x <- as.character(x %||% "")
-    x[is.na(x)] <- ""
-    x <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", x)
-    x <- gsub("[^A-Za-z0-9]+", " ", x)
-    x <- trimws(tolower(x))
-    if (!nzchar(x)) return(character())
-    tokens <- unlist(strsplit(x, "\\s+"), use.names = FALSE)
-    tokens[nzchar(tokens)]
-  }
-  collapse_unique_tokens <- function(x) {
-    tokens <- split_snake_tokens(x)
-    tokens <- unique(tokens)
-    if (length(tokens) == 0) return("")
-    paste(tokens, collapse = " ")
-  }
-  trim_code_suffix <- function(x) {
-    tokens <- split_snake_tokens(x)
-    if (length(tokens) == 0) return("")
-    suffixes <- c("code", "codes", "cd", "type", "types")
-    while (length(tokens) > 1 && tokens[[length(tokens)]] %in% suffixes) {
-      tokens <- tokens[-length(tokens)]
-    }
-    paste(tokens, collapse = " ")
-  }
-  contains_any_token <- function(text, tokens) {
-    if (!nzchar(text) || length(tokens) == 0) return(FALSE)
-    pattern <- paste0("\\b(", paste(tokens, collapse = "|"), ")\\b")
-    grepl(pattern, text, ignore.case = TRUE)
   }
   is_review_placeholder <- function(x) {
     if (is_missing(x)) return(FALSE)
@@ -308,54 +278,95 @@ suggest_semantics <- function(df,
 
     base_query
   }
-  non_measurement_search_role <- function(row) {
-    name_query <- trim_code_suffix(row$column_name[[1]])
-    label_query <- strip_review_placeholder(row$column_label[[1]])
+  expand_attribute_tokens <- function(x) {
+    text <- clean_query(x)
+    if (!nzchar(text)) return("")
+
+    text <- tolower(text)
+    replacements <- c(
+      "\\bcu\\b" = "conservation unit",
+      "\\bcus\\b" = "conservation units",
+      "\\bcde\\b" = "code",
+      "\\bdtt\\b" = "date time",
+      "\\byr\\b" = "year",
+      "\\bpfma\\b" = "pacific fisheries management area",
+      "\\byn\\b" = "indicator",
+      "\\bavg\\b" = "average"
+    )
+
+    for (pattern in names(replacements)) {
+      text <- gsub(pattern, replacements[[pattern]], text, perl = TRUE)
+    }
+
+    clean_query(text)
+  }
+  non_measurement_search_role <- function(row, dict) {
     desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
       ""
     } else {
       strip_review_placeholder(row$column_description[[1]])
     }
-    txt <- collapse_unique_tokens(paste(name_query, label_query, desc_query, collapse = " "))
-    if (!nzchar(txt)) return("variable")
+    label_query <- strip_review_placeholder(row$column_label[[1]])
+    name_query <- strip_review_placeholder(row$column_name[[1]])
+    query_text <- expand_attribute_tokens(paste(desc_query, label_query, name_query, collapse = " "))
+    if (!nzchar(query_text)) return("variable")
 
-    method_tokens <- c("method", "protocol", "procedure", "gear", "survey", "sampling", "enumeration", "counting")
-    entity_tokens <- c("species", "taxon", "stock", "population", "river", "waterbody", "habitat", "tributary", "basin")
-    constraint_tokens <- c("origin", "run", "stage", "status", "zone", "class", "category", "type", "group")
+    ctx <- table_context(row, dict)
 
-    if (contains_any_token(txt, method_tokens)) return("method")
-    if (contains_any_token(txt, entity_tokens)) return("entity")
-    if (contains_any_token(txt, constraint_tokens)) return("constraint")
+    if (grepl("\\b(method|protocol|procedure|gear|enumeration)\\b", query_text, perl = TRUE)) {
+      return("method")
+    }
+    if (grepl("\\b(stage|classification|class|type|status|context|origin|accuracy|precision|reliability|index)\\b", query_text, perl = TRUE)) {
+      return("constraint")
+    }
+    if (grepl("\\b(species|taxon|population|stock|watershed|waterbody|river|stream|location|site|area|conservation unit)\\b", query_text, perl = TRUE)) {
+      return("entity")
+    }
+
     "variable"
   }
-  non_measurement_query_info <- function(row) {
+  non_measurement_query <- function(row, dict, search_role = non_measurement_search_role(row, dict)) {
     desc_query <- if (is_review_placeholder(row$column_description[[1]])) {
       ""
     } else {
       strip_review_placeholder(row$column_description[[1]])
     }
     label_query <- strip_review_placeholder(row$column_label[[1]])
-    name_query <- trim_code_suffix(strip_review_placeholder(row$column_name[[1]]))
-    query_parts <- unique(c(
-      clean_query(name_query),
-      clean_query(label_query),
-      clean_query(desc_query)
-    ))
-    query_parts <- query_parts[nzchar(query_parts)]
-    basis <- if (length(query_parts) >= 2) {
-      "name_label_description"
-    } else if (nzchar(desc_query)) {
-      "column_description"
-    } else if (nzchar(label_query)) {
-      "column_label"
-    } else {
-      "column_name"
+    name_query <- strip_review_placeholder(row$column_name[[1]])
+    base_query <- expand_attribute_tokens(first_non_empty(list(desc_query, label_query, name_query)))
+    all_text <- expand_attribute_tokens(paste(desc_query, label_query, name_query, collapse = " "))
+    if (!nzchar(base_query)) return("")
+
+    ctx <- table_context(row, dict)
+
+    if (identical(search_role, "method")) {
+      if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bmethod\\b", all_text, perl = TRUE)) return("estimate method")
+      if (grepl("\\bcount(ing)?\\b", all_text, perl = TRUE) && grepl("\\bmethod\\b", all_text, perl = TRUE)) return("counting method")
+      return(base_query)
     }
-    tibble::tibble(
-      search_query = clean_query(paste(query_parts, collapse = " ")),
-      target_query_basis = basis,
-      target_query_context = clean_query(paste(query_parts, collapse = " "))
-    )
+
+    if (identical(search_role, "constraint")) {
+      if (grepl("\\brun\\b", all_text, perl = TRUE) && grepl("\\btype\\b", all_text, perl = TRUE)) return("run context")
+      if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bstage\\b", all_text, perl = TRUE)) return("spawner stage context")
+      if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bclassification\\b", all_text, perl = TRUE)) return("downgrade criteria")
+      if (grepl("\\borigin\\b", all_text, perl = TRUE)) return("origin")
+      return(base_query)
+    }
+
+    if (identical(search_role, "entity")) {
+      if (grepl("\\bconservation unit\\b", all_text, perl = TRUE)) return("conservation unit")
+      if (grepl("\\bspecies\\b|\\btaxon\\b", all_text, perl = TRUE)) return("species")
+      if (grepl("\\bpopulation\\b", all_text, perl = TRUE)) return("population")
+      if (grepl("\\bwatershed\\b", all_text, perl = TRUE)) return("watershed")
+      if (grepl("\\bwaterbody\\b|\\briver\\b|\\bstream\\b", all_text, perl = TRUE)) return("waterbody")
+      if (grepl("\\bsite\\b|\\blocation\\b", all_text, perl = TRUE)) return("site")
+      if (grepl("\\barea\\b", all_text, perl = TRUE)) {
+        if (context_has(ctx, "waterbody|watershed|river|stream")) return("waterbody")
+        return("area")
+      }
+    }
+
+    base_query
   }
   table_target_query <- function(row) {
     observation_unit <- if ("observation_unit" %in% names(row) && !is_review_placeholder(row$observation_unit[[1]])) {
@@ -392,23 +403,30 @@ suggest_semantics <- function(df,
       target_query_context = clean_query(paste(query_context_parts, collapse = " "))
     )
   }
-  non_measurement_roles <- function(row, codes) {
+  has_low_card_codes <- function(row, codes) {
+    if (nrow(codes) == 0) return(FALSE)
+    keep <- rep(TRUE, nrow(codes))
+    for (key in intersect(c("dataset_id", "table_id", "column_name"), names(codes))) {
+      value <- row[[key]][[1]]
+      if (!is.na(value) && nzchar(as.character(value))) {
+        keep <- keep & !is.na(codes[[key]]) & as.character(codes[[key]]) == as.character(value)
+      }
+    }
+    any(keep)
+  }
+  non_measurement_roles <- function(row, codes, dict) {
     role <- tolower(as.character(row$column_role[[1]] %||% ""))
     if (!nzchar(role) || role %in% c("identifier", "temporal")) return(character())
     if (.ms_is_text_like_field_name(row$column_name[[1]] %||% "")) return(character())
 
     term_missing <- "term_iri" %in% names(row) && is_missing(row$term_iri[[1]])
     if (!term_missing) return(character())
-    if (role %in% c("categorical", "attribute")) return(c(term_iri = non_measurement_search_role(row)))
+    if (!has_low_card_codes(row, codes)) return(character())
+
+    if (role %in% c("categorical", "attribute")) {
+      return(c(term_iri = non_measurement_search_role(row, dict)))
+    }
     character()
-  }
-  role_aware_sources <- function(role_name, selected_sources) {
-    role_name <- as.character(role_name %||% "")
-    if (!nzchar(role_name)) return(selected_sources)
-    role_pref <- tryCatch(sources_for_role(role_name), error = function(e) character())
-    if (length(role_pref) == 0) return(selected_sources)
-    scoped <- intersect(role_pref, selected_sources)
-    if (length(scoped) == 0) selected_sources else scoped
   }
   split_role_hints <- function(x) {
     if (is_missing(x)) return(character())
@@ -439,24 +457,6 @@ suggest_semantics <- function(df,
       NA_character_
     )
   }
-  attribute_score_adjustment <- function(search_role, label, definition, ontology, iri) {
-    txt <- tolower(clean_query(paste(label %||% "", definition %||% "", ontology %||% "", iri %||% "", collapse = " ")))
-    if (!nzchar(txt)) return(0)
-    measurement_like <- grepl("\\b(measurement|abundance|count|counts|rate|length|weight|concentration|biomass|temperature)\\b", txt)
-    entity_like <- grepl("\\b(species|taxon|stock|population|river|waterbody|habitat|organism)\\b", txt) ||
-      grepl("\\b[A-Z][a-z]+\\s+[a-z][a-z-]+\\b", label %||% "")
-    constraint_like <- grepl("\\b(origin|run|stage|status|zone|class|category|life\\s*stage)\\b", txt)
-    method_like <- grepl("\\b(method|protocol|procedure|gear|survey|sampling|enumeration|counting)\\b", txt)
-
-    switch(
-      as.character(search_role %||% ""),
-      entity = (if (entity_like) 0.45 else 0) + (if (measurement_like) -0.5 else 0),
-      constraint = (if (constraint_like) 0.45 else 0) + (if (measurement_like) -0.45 else 0),
-      method = (if (method_like) 0.5 else 0) + (if (measurement_like) -0.5 else 0),
-      variable = if (measurement_like) -0.15 else 0,
-      0
-    )
-  }
   targets <- tibble::tibble()
 
   if (nrow(dict) > 0) {
@@ -465,33 +465,28 @@ suggest_semantics <- function(df,
       role_targets <- if (identical(row$column_role[[1]], "measurement")) {
         roles
       } else {
-        non_measurement_roles(row, codes)
+        non_measurement_roles(row, codes, dict)
       }
       if (length(role_targets) == 0) return(tibble::tibble())
 
-      purrr::imap_dfr(role_targets, function(role_name, col_name) {
+      purrr::imap_dfr(role_targets, function(search_role, col_name) {
         if (!col_name %in% names(row)) return(tibble::tibble())
         if (is_present(row[[col_name]][[1]])) return(tibble::tibble())
 
+        dictionary_role <- roles[[col_name]] %||% search_role
         role_query <- if (identical(row$column_role[[1]], "measurement")) {
-          measurement_role_query(row, dict, role_name)
+          measurement_role_query(row, dict, search_role)
         } else {
-          non_measurement_query_info(row)$search_query[[1]]
+          non_measurement_query(row, dict, search_role = search_role)
         }
         if (!nzchar(role_query)) return(tibble::tibble())
-        non_measurement_query_info_tbl <- if (!identical(row$column_role[[1]], "measurement")) {
-          non_measurement_query_info(row)
-        } else {
-          tibble::tibble(target_query_basis = NA_character_, target_query_context = NA_character_)
-        }
         tibble::tibble(
           dataset_id = row$dataset_id[[1]],
           table_id = row$table_id[[1]],
           column_name = row$column_name[[1]],
           code_value = NA_character_,
-          dictionary_role = if (identical(col_name, "term_iri")) "variable" else role_name,
-          search_role = role_name,
-          column_role = row$column_role[[1]],
+          dictionary_role = dictionary_role,
+          search_role = search_role,
           target_scope = "column",
           target_sdp_file = "column_dictionary.csv",
           target_sdp_field = col_name,
@@ -499,8 +494,6 @@ suggest_semantics <- function(df,
           target_label = row$column_label[[1]],
           target_description = row$column_description[[1]],
           search_query = role_query,
-          target_query_basis = non_measurement_query_info_tbl$target_query_basis[[1]],
-          target_query_context = non_measurement_query_info_tbl$target_query_context[[1]],
           column_label = row$column_label[[1]],
           column_description = row$column_description[[1]],
           code_label = NA_character_,
@@ -540,7 +533,6 @@ suggest_semantics <- function(df,
         code_value = code_value,
         dictionary_role = role_set,
         search_role = role_set,
-        column_role = parent_role,
         target_scope = "code",
         target_sdp_file = "codes.csv",
         target_sdp_field = "term_iri",
@@ -578,7 +570,6 @@ suggest_semantics <- function(df,
         code_value = NA_character_,
         dictionary_role = "entity",
         search_role = "entity",
-        column_role = NA_character_,
         target_scope = "table",
         target_sdp_file = "tables.csv",
         target_sdp_field = "observation_unit_iri",
@@ -616,7 +607,6 @@ suggest_semantics <- function(df,
         code_value = NA_character_,
         dictionary_role = "entity",
         search_role = "entity",
-        column_role = NA_character_,
         target_scope = "dataset",
         target_sdp_file = "dataset.csv",
         target_sdp_field = "keywords",
@@ -642,9 +632,8 @@ suggest_semantics <- function(df,
 
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
     target <- targets[i, , drop = FALSE]
-    effective_role <- as.character(target$search_role[[1]] %||% target$dictionary_role[[1]])
-    effective_sources <- role_aware_sources(effective_role, sources)
-    res <- search_fn(target$search_query[[1]], role = effective_role, sources = effective_sources)
+    search_role <- if ("search_role" %in% names(target)) target$search_role[[1]] else target$dictionary_role[[1]]
+    res <- search_fn(target$search_query[[1]], role = search_role, sources = sources)
     if (nrow(res) == 0) return(tibble::tibble())
     res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
     if (!"role_hints" %in% names(res)) {
@@ -652,40 +641,20 @@ suggest_semantics <- function(df,
     }
     res$role_hint_status <- vapply(
       res$role_hints,
-      function(h) role_hint_status(effective_role, h),
+      function(h) role_hint_status(search_role, h),
       character(1)
     )
     res$role_hint_bonus <- vapply(res$role_hint_status, role_hint_bonus, numeric(1))
     res$role_hint_explanation <- vapply(
       res$role_hint_status,
-      function(s) role_hint_explanation(s, effective_role),
+      function(s) role_hint_explanation(s, search_role),
       character(1)
     )
-    is_attribute_column_target <- identical(target$target_scope[[1]], "column") &&
-      identical(target$target_sdp_field[[1]], "term_iri") &&
-      tolower(as.character(target$column_role[[1]] %||% "")) %in% c("attribute", "categorical")
-    if (isTRUE(is_attribute_column_target)) {
-      res$attribute_role_bonus <- vapply(
-        seq_len(nrow(res)),
-        function(j) {
-          attribute_score_adjustment(
-            search_role = effective_role,
-            label = res$label[[j]],
-            definition = if ("definition" %in% names(res)) res$definition[[j]] else "",
-            ontology = if ("ontology" %in% names(res)) res$ontology[[j]] else "",
-            iri = res$iri[[j]]
-          )
-        },
-        numeric(1)
-      )
-    } else {
-      res$attribute_role_bonus <- 0
-    }
     if ("score" %in% names(res)) {
-      res$score <- res$score + res$role_hint_bonus + res$attribute_role_bonus
+      res$score <- res$score + res$role_hint_bonus
       res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
     } else {
-      res <- res[order(-(res$role_hint_bonus + res$attribute_role_bonus), res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+      res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
     }
     res <- utils::head(res, max_per_role)
 
