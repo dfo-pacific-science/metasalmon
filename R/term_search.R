@@ -973,6 +973,85 @@ pattern <- paste(tokens, collapse = ".*")
   bonus
 }
 
+.is_physical_environment_query <- function(query, role = NA_character_) {
+  role <- tolower(trimws(role %||% ""))
+  if (!role %in% c("variable", "property", "entity", "constraint")) {
+    return(FALSE)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  if (length(query_tokens) == 0) {
+    return(FALSE)
+  }
+
+  physical_tokens <- c(
+    "water", "freshwater", "river", "stream", "lake", "discharge", "flow",
+    "level", "temperature", "temp", "hydrometric", "salinity", "turbidity",
+    "quality", "depth"
+  )
+
+  any(query_tokens %in% physical_tokens)
+}
+
+.physical_environment_query_adjustment <- function(query, label, iri, source, ontology, role = NA_character_) {
+  if (!.is_physical_environment_query(query, role)) {
+    return(0)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  coverage <- if (length(query_tokens) == 0) {
+    0
+  } else {
+    length(intersect(query_tokens, label_tokens)) / length(query_tokens)
+  }
+
+  source <- tolower(trimws(source %||% ""))
+  ontology <- tolower(trimws(ontology %||% ""))
+  iri <- iri %||% ""
+  label_text <- tolower(trimws(label %||% ""))
+
+  environmental_tokens <- c(
+    "water", "freshwater", "river", "stream", "lake", "discharge", "flow",
+    "level", "temperature", "salinity", "turbidity", "quality", "depth"
+  )
+  misleading_local_terms <- c(
+    "escapement", "spawner", "recruit", "stock", "conservation unit",
+    "mortality", "survey event", "body shape"
+  )
+
+  has_environmental_label <- any(label_tokens %in% environmental_tokens)
+  is_local <- source %in% c("smn", "gcdfo")
+  is_nvs <- identical(source, "nvs")
+  is_envo <- grepl("http://purl\\.obolibrary\\.org/obo/ENVO_", iri, ignore.case = TRUE) || identical(ontology, "envo")
+  is_cf <- grepl("http://mmisw\\.org/ont/cf/parameter/", iri, ignore.case = TRUE) || identical(ontology, "cf")
+  is_ecso <- grepl("http://purl\\.dataone\\.org/odo/ECSO_", iri, ignore.case = TRUE) || identical(ontology, "ecso")
+
+  bonus <- 0
+
+  if (is_local && coverage < 1 && !has_environmental_label) {
+    bonus <- bonus - 5
+  }
+
+  if (is_local && any(vapply(misleading_local_terms, function(x) grepl(x, label_text, fixed = TRUE), logical(1)))) {
+    bonus <- bonus - 3
+  }
+
+  if (role %in% c("variable", "property") && (is_nvs || is_cf || is_ecso) && has_environmental_label) {
+    bonus <- bonus + 2.5
+  }
+
+  if (identical(role, "entity") && is_envo && has_environmental_label) {
+    bonus <- bonus + 4
+  }
+
+  if (identical(role, "constraint") && is_envo && has_environmental_label) {
+    bonus <- bonus + 2
+  }
+
+  bonus
+}
+
 .local_short_circuit_hit <- function(query, results) {
   if (nrow(results) == 0) {
     return(FALSE)
@@ -1809,6 +1888,19 @@ sources_for_role <- function(role) {
     if (.is_count_like_query(query, role_key)) {
       df$score <- df$score + vapply(df$label, function(lbl) {
         .count_like_query_bonus(query, lbl, role_key)
+      }, numeric(1))
+    }
+
+    if (role_key %in% c("variable", "property", "entity", "constraint")) {
+      df$score <- df$score + vapply(seq_len(nrow(df)), function(i) {
+        .physical_environment_query_adjustment(
+          query = query,
+          label = df$label[[i]],
+          iri = df$iri[[i]],
+          source = df$source[[i]],
+          ontology = df$ontology[[i]],
+          role = role_key
+        )
       }, numeric(1))
     }
 

@@ -1002,5 +1002,81 @@
         "backend_score": 0.8
       }
     ]
+  },
+  {
+    "case_id": "physical-query-demotes-local-salmon-drift",
+    "query": "water temperature",
+    "role": "variable",
+    "expected": {
+      "top": {
+        "candidate_id": "temp-nvs",
+        "source": "nvs"
+      },
+      "disallow_top_matches": [
+        "w3id.org/smn/Escapement"
+      ]
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-escapement",
+        "label": "Escapement",
+        "iri": "https://w3id.org/smn/Escapement",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "variable",
+        "match_type": "class",
+        "definition": "Count of salmon returning to spawn.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "temp-nvs",
+        "label": "Water temperature",
+        "iri": "https://vocab.nerc.ac.uk/collection/P01/TEMP01",
+        "source": "nvs",
+        "ontology": "P01",
+        "role": "variable",
+        "match_type": "label_exact",
+        "definition": "Temperature of water body.",
+        "backend_score": 1.8
+      }
+    ]
+  },
+  {
+    "case_id": "environment-entity-prefers-envo-water-body",
+    "query": "freshwater body",
+    "role": "entity",
+    "expected": {
+      "top": {
+        "candidate_id": "envo-freshwater-body",
+        "source": "ols"
+      },
+      "disallow_top_matches": [
+        "w3id.org/smn/BodyShape"
+      ]
+    },
+    "candidates": [
+      {
+        "candidate_id": "smn-body-shape",
+        "label": "Body shape",
+        "iri": "https://w3id.org/smn/BodyShape",
+        "source": "smn",
+        "ontology": "smn",
+        "role": "entity",
+        "match_type": "class",
+        "definition": "Fish body shape.",
+        "backend_score": 3.0
+      },
+      {
+        "candidate_id": "envo-freshwater-body",
+        "label": "fresh water body",
+        "iri": "http://purl.obolibrary.org/obo/ENVO_01001320",
+        "source": "ols",
+        "ontology": "envo",
+        "role": "entity",
+        "match_type": "class",
+        "definition": "A body of fresh water.",
+        "backend_score": 1.5
+      }
+    ]
   }
 ]

@@ -415,6 +415,44 @@ test_that("score_and_rank_terms boosts I-ADOPT vocab matches for role", {
   expect_match(ranked$iri[[1]], "vocab\\.nerc\\.ac\\.uk")
 })
 
+test_that("score_and_rank_terms demotes local salmon drift for physical/environmental queries", {
+  vocab <- metasalmon:::`.iadopt_vocab`()
+
+  variable_df <- tibble::tibble(
+    label = c("Escapement", "Water temperature"),
+    iri = c(
+      "https://w3id.org/smn/Escapement",
+      "https://vocab.nerc.ac.uk/collection/P01/TEMP01"
+    ),
+    source = c("smn", "nvs"),
+    ontology = c("smn", "P01"),
+    role = c("variable", "variable"),
+    match_type = c("class", "label_exact"),
+    definition = c("Count of salmon returning to spawn.", "Temperature of water body."),
+    backend_score = c(3.0, 1.8)
+  )
+
+  variable_ranked <- metasalmon:::`.score_and_rank_terms`(variable_df, "variable", vocab, "water temperature")
+  expect_equal(variable_ranked$iri[[1]], "https://vocab.nerc.ac.uk/collection/P01/TEMP01")
+
+  entity_df <- tibble::tibble(
+    label = c("Body shape", "fresh water body"),
+    iri = c(
+      "https://w3id.org/smn/BodyShape",
+      "http://purl.obolibrary.org/obo/ENVO_01001320"
+    ),
+    source = c("smn", "ols"),
+    ontology = c("smn", "envo"),
+    role = c("entity", "entity"),
+    match_type = c("class", "class"),
+    definition = c("Fish body shape.", "A body of fresh water."),
+    backend_score = c(3.0, 1.5)
+  )
+
+  entity_ranked <- metasalmon:::`.score_and_rank_terms`(entity_df, "entity", vocab, "freshwater body")
+  expect_equal(entity_ranked$iri[[1]], "http://purl.obolibrary.org/obo/ENVO_01001320")
+})
+
 test_that("score_and_rank_terms is deterministic on ties", {
   df <- tibble::tibble(
     label = c("B label", "A label"),
