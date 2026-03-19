@@ -566,10 +566,47 @@ suggest_semantics <- function(df,
 
     grepl("\\b(watershed|waterbody|river|stream|location|site)\\b", query_text, perl = TRUE)
   }
+  same_table_column_names <- function(row, dict) {
+    if (nrow(dict) == 0 || !all(c("dataset_id", "table_id", "column_name") %in% names(dict))) {
+      return(character())
+    }
+
+    keep <- rep(TRUE, nrow(dict))
+    for (key in intersect(c("dataset_id", "table_id"), names(dict))) {
+      value <- row[[key]][[1]]
+      if (!is.na(value) && nzchar(as.character(value))) {
+        keep <- keep & !is.na(dict[[key]]) & as.character(dict[[key]]) == as.character(value)
+      }
+    }
+
+    cols <- trimws(tolower(as.character(dict$column_name[keep])))
+    unique(cols[nzchar(cols)])
+  }
+  has_long_format_observation_value_pattern <- function(row, dict) {
+    cols <- same_table_column_names(row, dict)
+    if (length(cols) == 0) {
+      return(FALSE)
+    }
+
+    has_value <- "value" %in% cols
+    has_variable <- any(cols %in% c("variable_name", "measurement_name", "parameter_name", "analyte_name"))
+    has_unit <- any(cols %in% c("unit_code", "unit", "unit_label"))
+
+    has_value && has_variable && has_unit
+  }
+  is_long_format_observation_helper <- function(row, dict) {
+    col_name <- tolower(trimws(as.character(row$column_name[[1]] %||% "")))
+    if (!nzchar(col_name) || !has_long_format_observation_value_pattern(row, dict)) {
+      return(FALSE)
+    }
+
+    col_name %in% c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name")
+  }
   non_measurement_roles <- function(row, codes, dict) {
     role <- tolower(as.character(row$column_role[[1]] %||% ""))
     if (!nzchar(role) || role %in% c("identifier", "temporal")) return(character())
     if (.ms_is_text_like_field_name(row$column_name[[1]] %||% "")) return(character())
+    if (is_long_format_observation_helper(row, dict)) return(character())
 
     term_missing <- "term_iri" %in% names(row) && is_missing(row$term_iri[[1]])
     if (!term_missing) return(character())

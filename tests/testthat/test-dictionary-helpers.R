@@ -601,6 +601,118 @@ test_that("suggest_semantics adds lighter non-measurement term suggestions for c
   expect_false(any(non_measurement$column_name == "survey_comment"))
 })
 
+test_that("suggest_semantics keeps long-format observation helpers review-only", {
+  dict <- tibble::tibble(
+    dataset_id = c(rep("d1", 8), "d1"),
+    table_id = c(rep("water_quality", 8), "water_quality"),
+    column_name = c(
+      "value",
+      "variable_name",
+      "unit_code",
+      "vmv_code",
+      "flag",
+      "status",
+      "method_detect_limit",
+      "station_name",
+      "sample_type"
+    ),
+    column_label = c(
+      "value",
+      "variable_name",
+      "unit_code",
+      "vmv_code",
+      "flag",
+      "status",
+      "method_detect_limit",
+      "station_name",
+      "sample_type"
+    ),
+    column_description = c(
+      "Observed value",
+      "Reported variable name",
+      "Reported unit code",
+      "Variable method code",
+      "Quality flag",
+      "Record status",
+      "Method detection limit",
+      "Station name",
+      "Sample type"
+    ),
+    column_role = c(
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute",
+      "attribute"
+    ),
+    value_type = c("number", "string", "string", "string", "string", "string", "string", "string", "string"),
+    unit_label = rep(NA_character_, 9),
+    unit_iri = rep(NA_character_, 9),
+    term_iri = rep(NA_character_, 9),
+    property_iri = rep(NA_character_, 9),
+    entity_iri = rep(NA_character_, 9),
+    constraint_iri = rep(NA_character_, 9),
+    method_iri = rep(NA_character_, 9)
+  )
+  codes <- tibble::tibble(
+    dataset_id = rep("d1", 7),
+    table_id = rep("water_quality", 7),
+    column_name = c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name", "sample_type"),
+    code_value = c("MG/L", "97998", "U", "A", "0.2", "Fraser River at Hansard", "Routine"),
+    code_label = c("Milligrams per litre", "Aluminum total", "Unchecked", "Approved", "0.2", "Fraser River at Hansard", "Routine"),
+    code_description = c(
+      "Reported unit code",
+      "Variable code",
+      "Quality flag",
+      "Status code",
+      "Detection limit",
+      "Monitoring station name",
+      "Sample type"
+    ),
+    vocabulary_iri = rep(NA_character_, 7),
+    term_iri = rep(NA_character_, 7),
+    term_type = rep(NA_character_, 7)
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role, "/", gsub("\\s+", "-", tolower(query))),
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    codes = codes
+  )
+
+  suggestions <- attr(res, "semantic_suggestions")
+  helper_cols <- c("unit_code", "vmv_code", "flag", "status", "method_detect_limit", "station_name")
+  column_suggestions <- suggestions[suggestions$target_scope == "column" & suggestions$target_sdp_field == "term_iri", , drop = FALSE]
+
+  expect_false(any(column_suggestions$column_name %in% helper_cols))
+  expect_true(any(column_suggestions$column_name == "sample_type"))
+
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_false(any(call_df$query %in% c("unit code", "vmv code", "flag", "status", "method detect limit", "station name")))
+  expect_true(any(call_df$query == "sample type"))
+})
+
 test_that("suggest_semantics uses role-aware search roles for controlled attribute term suggestions", {
   dict <- tibble::tibble(
     dataset_id = c("d1", "d1", "d1", "d1", "d1"),
