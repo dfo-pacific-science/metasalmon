@@ -549,6 +549,61 @@ test_that("suggest_semantics uses role-aware search roles for controlled attribu
   expect_true(all(column_suggestions$target_sdp_field == "term_iri"))
 })
 
+test_that("suggest_semantics uses taxon-style entity queries for species confirmation attributes", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "confirmed_atlantic_salmon",
+    column_label = "Confirmed Atlantic Salmon?",
+    column_description = "Boolean confirmation that the capture was Atlantic salmon.",
+    column_role = "attribute",
+    value_type = "boolean",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_,
+    term_type = NA_character_
+  )
+  codes <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "confirmed_atlantic_salmon",
+    code_value = c("Yes", "No"),
+    code_label = c("Yes", "No"),
+    code_description = NA_character_,
+    term_iri = NA_character_
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, ...) {
+    calls[[length(calls) + 1L]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = "Atlantic salmon",
+      iri = "http://purl.obolibrary.org/obo/NCBITaxon_8030",
+      source = "ols",
+      ontology = "mro",
+      role = role,
+      match_type = "class",
+      definition = "Atlantic salmon taxon."
+    )
+  }
+
+  suggest_semantics(
+    NULL,
+    dict,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = fake_search,
+    codes = codes
+  )
+
+  call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
+  expect_true(any(call_df$role == "entity" & call_df$query == "atlantic salmon"))
+})
+
 test_that("suggest_semantics expands waterbody-style attribute queries for auto-apply compatibility", {
   dict <- tibble::tibble(
     dataset_id = "d1",

@@ -914,6 +914,65 @@ pattern <- paste(tokens, collapse = ".*")
   bonus
 }
 
+.is_specific_taxon_entity_query <- function(query, role = NA_character_) {
+  role <- tolower(trimws(role %||% ""))
+  if (!identical(role, "entity")) {
+    return(FALSE)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  if (length(query_tokens) == 0) {
+    return(FALSE)
+  }
+
+  if (grepl("^[a-z]+\\s+[a-z]+$", tolower(trimws(query %||% "")))) {
+    return(TRUE)
+  }
+
+  taxon_tokens <- c(
+    "salmon", "trout", "char", "steelhead", "atlantic",
+    "chinook", "coho", "sockeye", "chum", "pink", "kokanee",
+    "salmo", "oncorhynchus"
+  )
+  any(query_tokens %in% taxon_tokens) && length(query_tokens) >= 2
+}
+
+.specific_taxon_entity_adjustment <- function(query, label, iri, source, role = NA_character_) {
+  if (!.is_specific_taxon_entity_query(query, role)) {
+    return(0)
+  }
+
+  query_tokens <- .query_tokens(query %||% "")
+  label_tokens <- .query_tokens(label %||% "")
+  coverage <- if (length(query_tokens) == 0) {
+    0
+  } else {
+    length(intersect(query_tokens, label_tokens)) / length(query_tokens)
+  }
+
+  iri <- iri %||% ""
+  source <- tolower(trimws(source %||% ""))
+  label_text <- tolower(trimws(label %||% ""))
+  generic_local_tokens <- c("population", "group", "stock", "unit", "individual", "life", "stage", "stratum", "reporting", "management")
+  is_generic_local <- source %in% c("smn", "gcdfo") && any(label_tokens %in% generic_local_tokens)
+  is_taxon_authority <- grepl("http://purl\\.obolibrary\\.org/obo/NCBITaxon_", iri, ignore.case = TRUE) ||
+    grepl("marinespecies\\.org|gbif\\.org", iri, ignore.case = TRUE)
+
+  bonus <- 0
+
+  if (is_taxon_authority && coverage > 0) {
+    bonus <- bonus + 6
+  }
+  if (grepl(tolower(trimws(query %||% "")), label_text, fixed = TRUE) && is_taxon_authority) {
+    bonus <- bonus + 1.5
+  }
+  if (is_generic_local && coverage < 1) {
+    bonus <- bonus - 4
+  }
+
+  bonus
+}
+
 .local_short_circuit_hit <- function(query, results) {
   if (nrow(results) == 0) {
     return(FALSE)
@@ -1761,6 +1820,12 @@ sources_for_role <- function(role) {
           iri = df$iri[[i]],
           source = df$source[[i]],
           match_type = df$match_type[[i]],
+          role = role_key
+        ) + .specific_taxon_entity_adjustment(
+          query = query,
+          label = df$label[[i]],
+          iri = df$iri[[i]],
+          source = df$source[[i]],
           role = role_key
         )
       }, numeric(1))
