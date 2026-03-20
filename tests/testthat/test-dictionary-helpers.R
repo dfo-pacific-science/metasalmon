@@ -107,6 +107,22 @@ test_that("infer_dictionary promotes explicit sample-size and partition-size cou
   expect_equal(dict$column_role[dict$column_name == "sample_date"], "temporal")
 })
 
+test_that("infer_dictionary promotes paired value/unit numeric columns into measurement role", {
+  df <- tibble::tibble(
+    sampleSizeValue = c(2046.33, 131340.85),
+    sampleSizeUnit = c("square metre", "square metre"),
+    eventType = c("deployment", "deployment"),
+    commentValue = c("alpha", "beta"),
+    commentUnit = c("note", "note")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "sampleSizeValue"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "sampleSizeUnit"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "commentValue"], "attribute")
+})
+
 test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
   df <- tibble::tibble(
     `Facility Reference Number` = c(1001, 1002),

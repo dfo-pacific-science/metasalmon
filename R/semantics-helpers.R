@@ -163,9 +163,15 @@ suggest_semantics <- function(df,
     values <- values[!vapply(values, is_missing, logical(1))]
     if (length(values) == 0) "" else values[[1]]
   }
+  decamelize_text <- function(x) {
+    x <- as.character(x %||% "")
+    x[is.na(x)] <- ""
+    gsub("([a-z0-9])([A-Z])", "\\1 \\2", x, perl = TRUE)
+  }
   clean_query <- function(x) {
     x <- as.character(x %||% "")
     x[is.na(x)] <- ""
+    x <- decamelize_text(x)
     x <- gsub("[._]+", " ", x)
     x <- gsub("\\s+", " ", x)
     trimws(x)
@@ -207,6 +213,7 @@ suggest_semantics <- function(df,
   normalize_measurement_unit_query <- function(x) {
     text <- tolower(as.character(x %||% ""))
     text[is.na(text)] <- ""
+    text <- decamelize_text(text)
     text <- gsub("â", "", text, fixed = TRUE)
     text <- gsub("°", " degree ", text, fixed = TRUE)
     text <- gsub("³", "3", text, fixed = TRUE)
@@ -218,6 +225,7 @@ suggest_semantics <- function(df,
     if (grepl("\\b(degree\\s*c|deg\\s*c|celsius)\\b", text)) return("degree celsius")
     if (grepl("^(cms|cumec|cumecs|m3/s|m\\^3/s|m3 s)$", text)) return("cubic meter per second")
     if (grepl("^(km/h|km h|kph)$", text)) return("kilometer per hour")
+    if (grepl("^(square\\s+met(er|re)s?|sq\\s*m|m2)$", text)) return("square meter")
     if (grepl("^(mm|millimet(er|re)s?)$", text)) return("millimeter")
     if (grepl("^(cm|centimet(er|re)s?)$", text)) return("centimeter")
     if (grepl("^(m|met(er|re)s?)$", text)) return("meter")
@@ -250,9 +258,48 @@ suggest_semantics <- function(df,
       if (nzchar(normalized_full_text)) {
         return(normalized_full_text)
       }
+
+      suffix_text <- tolower(clean_query(gsub("\\([^)]*\\)", " ", text)))
+      suffix_match <- regmatches(
+        suffix_text,
+        regexpr("\\bin\\s+(square\\s+met(?:er|re)s?|met(?:er|re)s?|centimet(?:er|re)s?|millimet(?:er|re)s?|degree\\s+celsius|celsius|kilomet(?:er|re)\\s+per\\s+hour|km/h|cms|cumecs|m3/s)\\b", suffix_text, perl = TRUE)
+      )
+      if (length(suffix_match) == 1 && nzchar(suffix_match)) {
+        normalized <- normalize_measurement_unit_query(sub("^in\\s+", "", suffix_match))
+        if (nzchar(normalized)) {
+          return(normalized)
+        }
+      }
     }
 
     ""
+  }
+  paired_unit_query_from_data <- function(row) {
+    column_name <- as.character(row$column_name[[1]] %||% "")
+    if (!nzchar(column_name) || !grepl("value$", column_name, ignore.case = TRUE)) {
+      return("")
+    }
+
+    stem <- sub("value$", "", column_name, ignore.case = TRUE)
+    sibling_hits <- names(df)[tolower(names(df)) == paste0(tolower(stem), "unit")]
+    if (length(sibling_hits) == 0) {
+      return("")
+    }
+
+    sibling_values <- as.character(df[[sibling_hits[[1]]]])
+    sibling_values <- trimws(sibling_values[!is.na(sibling_values)])
+    sibling_values <- sibling_values[nzchar(sibling_values)]
+    if (length(sibling_values) == 0) {
+      return("")
+    }
+
+    sibling_values <- sort(table(sibling_values), decreasing = TRUE)
+    normalized <- normalize_measurement_unit_query(names(sibling_values)[[1]])
+    if (!nzchar(normalized)) {
+      return("")
+    }
+
+    normalized
   }
   normalize_measurement_header_query <- function(x) {
     text <- clean_query(x)
@@ -263,6 +310,7 @@ suggest_semantics <- function(df,
       text <- strsplit(text, "\\s/\\s", perl = TRUE)[[1]][1]
     }
     text <- tolower(clean_query(text))
+    text <- gsub("\\bin\\s+(square\\s+met(?:er|re)s?|met(?:er|re)s?|centimet(?:er|re)s?|millimet(?:er|re)s?|degree\\s+celsius|celsius|kilomet(?:er|re)\\s+per\\s+hour|km/h|cms|cumecs|m3/s)\\b", " ", text, perl = TRUE)
     replacements <- c(
       "\\btemp\\b" = "temperature",
       "\\bspd\\b" = "speed",
@@ -323,6 +371,9 @@ suggest_semantics <- function(df,
       unit_query <- strip_review_placeholder(row$unit_label[[1]])
       if (!nzchar(unit_query)) {
         unit_query <- extract_measurement_header_unit(row$column_label[[1]], row$column_name[[1]])
+      }
+      if (!nzchar(unit_query)) {
+        unit_query <- paired_unit_query_from_data(row)
       }
       if (nzchar(unit_query)) {
         return(unit_query)

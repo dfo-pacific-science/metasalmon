@@ -171,6 +171,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         dict$column_role[i] <- infer_column_role(col_names[i], col)
         dict$required[i] <- .ms_infer_required_flag(col_names[i], col, dict$column_role[i])
       }
+      dict <- .ms_promote_paired_value_unit_measurements(dict, df)
     }
 
     if (isTRUE(seed_semantics)) {
@@ -303,6 +304,57 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
   }
 
   dataset_meta
+}
+
+.ms_promote_paired_value_unit_measurements <- function(dict, df) {
+  if (!inherits(df, "data.frame") || nrow(dict) == 0) {
+    return(dict)
+  }
+
+  out <- dict
+  df_names <- names(df)
+  if (length(df_names) == 0) {
+    return(out)
+  }
+
+  for (i in seq_len(nrow(out))) {
+    role <- tolower(as.character(out$column_role[[i]] %||% ""))
+    if (!role %in% c("attribute", "categorical")) {
+      next
+    }
+
+    col_name <- out$column_name[[i]]
+    if (is.na(col_name) || !grepl("value$", col_name, ignore.case = TRUE)) {
+      next
+    }
+
+    if (!col_name %in% df_names || !.ms_values_look_numericish(df[[col_name]])) {
+      next
+    }
+
+    stem <- sub("value$", "", col_name, ignore.case = TRUE)
+    sibling_hits <- df_names[tolower(df_names) == paste0(tolower(stem), "unit")]
+    if (length(sibling_hits) == 0) {
+      next
+    }
+
+    sibling_name <- sibling_hits[[1]]
+    sibling_values <- as.character(df[[sibling_name]])
+    sibling_values <- trimws(sibling_values[!is.na(sibling_values)])
+    sibling_values <- sibling_values[nzchar(sibling_values)]
+    if (length(sibling_values) == 0) {
+      next
+    }
+
+    unique_units <- unique(sibling_values)
+    if (length(unique_units) > 10) {
+      next
+    }
+
+    out$column_role[[i]] <- "measurement"
+  }
+
+  out
 }
 
 infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset-1") {
