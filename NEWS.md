@@ -1,3 +1,13 @@
+metasalmon 0.0.23
+----------------
+
+- Added package-native LLM semantic review on top of deterministic retrieval: `suggest_semantics(..., llm_assess = TRUE)` can now assess shortlisted candidates with OpenAI-compatible providers, attach `llm_*` review columns to `semantic_suggestions`, and expose target-level results via `attr(dict, "semantic_llm_assessments")`.
+- Added local context-file support for LLM semantic review, including README/markdown/text-style files and optional PDF extraction via `pdftools`, with bounded chunking so reports are trimmed before prompting.
+- Added OpenRouter support for package-native LLM review, including pass-through model ids (so OpenRouter models ending in `:free` work without special branching).
+- Extended `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and `create_sdp()` to thread the optional LLM semantic review arguments through the start-here workflow.
+- Extended `apply_semantic_suggestions()` with `strategy = "llm"` and `min_llm_confidence` for explicit application of LLM-reviewed matches.
+- Updated README, GPT-collaboration vignette, entrypoint docs, tests, and generated documentation for the 0.0.23 feature release.
+
 metasalmon 0.0.22
 ----------------
 

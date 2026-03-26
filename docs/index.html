@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -174,6 +174,33 @@ concept schemes) while preserving your original data structure.
 </ul>
 </div>
 <div class="section level2">
+<h2 id="package-native-llm-semantic-review-optional">Package-native LLM semantic review (optional)<a class="anchor" aria-label="anchor" href="#package-native-llm-semantic-review-optional"></a>
+</h2>
+<p>If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"README.md"</span>, <span class="st">"methods-report.pdf"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
+<span>  df <span class="op">=</span> <span class="va">fraser_coho</span>,</span>
+<span>  dict <span class="op">=</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">fraser_coho</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"openrouter"</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="st">"openai/gpt-oss-20b:free"</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="va">context_files</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
+<span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Explicit apply step; still opt-in</span></span>
+<span><span class="va">reviewed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span></span>
+<span>  <span class="va">suggested</span>,</span>
+<span>  strategy <span class="op">=</span> <span class="st">"llm"</span>,</span>
+<span>  min_llm_confidence <span class="op">=</span> <span class="fl">0.8</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls.</p>
+</div>
+<div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
 </h2>
 <table class="table">
@@ -217,7 +244,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -268,6 +295,7 @@ concept schemes) while preserving your original data structure.
 </li>
 <li>Per-source diagnostics, scoring, and optional rerank explain why <code><a href="reference/find_terms.html">find_terms()</a></code> matches rank where they do and expose failures, so you can tune role-aware queries with confidence.</li>
 <li>End-to-end semantic QA loop with <code><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology()</a></code> + <code><a href="reference/validate_semantics.html">validate_semantics()</a></code>, plus <code><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms()</a></code> to prevent term proliferation before opening ontology issues.</li>
+<li>Optional package-native LLM review for semantic suggestions: <code>suggest_semantics(..., llm_assess = TRUE)</code> can judge retrieved candidates directly in R, include local README/report context files, and use OpenAI-compatible providers such as OpenRouter (including model ids ending in <code>:free</code>).</li>
 <li>NuSEDS method crosswalk helpers: <code><a href="reference/nuseds_enumeration_method_crosswalk.html">nuseds_enumeration_method_crosswalk()</a></code> and <code><a href="reference/nuseds_estimate_method_crosswalk.html">nuseds_estimate_method_crosswalk()</a></code> for mapping legacy values to canonical method families.</li>
 </ul>
 </div>
@@ -349,7 +377,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -357,14 +385,14 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>

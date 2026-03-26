@@ -17,7 +17,17 @@ infer_dictionary(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = NULL,
-  seed_dataset_meta = NULL
+  seed_dataset_meta = NULL,
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL
 )
 ```
 
@@ -82,6 +92,54 @@ infer_dictionary(
   Optional `dataset.csv`-style tibble forwarded to
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
   when `seed_semantics = TRUE`.
+
+- llm_assess:
+
+  Logical; if `TRUE`, run the optional LLM shortlist assessment inside
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_provider:
+
+  LLM provider preset forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_model:
+
+  Optional LLM model identifier forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_api_key:
+
+  Optional API key override forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_base_url:
+
+  Optional OpenAI-compatible base URL forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_top_n:
+
+  Maximum number of retrieved candidates sent to the LLM per target.
+
+- llm_context_files:
+
+  Optional local context files forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_context_text:
+
+  Optional inline context snippets forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_timeout_seconds:
+
+  Timeout for each LLM request in seconds.
+
+- llm_request_fn:
+
+  Advanced/test hook overriding the low-level OpenAI-compatible request
+  function.
 
 ## Value
 

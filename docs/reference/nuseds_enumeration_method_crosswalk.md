@@ -29,4 +29,18 @@ implementation.
 
 ``` r
 nuseds_enumeration_method_crosswalk()
+#> # A tibble: 25 × 4
+#>    nuseds_value            method_family ontology_term                   notes  
+#>    <chr>                   <chr>         <chr>                           <chr>  
+#>  1 Fixed Wing Aircraft     A             gcdfo:AerialSurveyCount         ""     
+#>  2 Helicopter              A             gcdfo:AerialSurveyCount         ""     
+#>  3 Broodstock Removal      FS            gcdfo:FixedSiteCensusManual     ""     
+#>  4 Electronic Counters     FS            gcdfo:FixedSiteCensusElectronic ""     
+#>  5 Enumeration by Hatchery FS            gcdfo:FixedSiteCensusManual     ""     
+#>  6 Fence                   FS            gcdfo:FixedSiteCensusManual     ""     
+#>  7 Tag Recovery            M             gcdfo:MarkRecaptureFieldProgram ""     
+#>  8 Based on Angling Catch  P             gcdfo:EnumerationMethod         "Catch…
+#>  9 Electroshocking         P             gcdfo:ElectrofishingCount       ""     
+#> 10 Redd Counts             R             gcdfo:ReddCount                 ""     
+#> # ℹ 15 more rows
 ```

@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,17 @@ low-cardinality attributes.</p>
 <span>  search_fn <span class="op">=</span> <span class="va">find_terms</span>,</span>
 <span>  codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  dataset_meta <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_api_key <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_base_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_top_n <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_context_text <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_timeout_seconds <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>  llm_request_fn <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -126,6 +136,58 @@ suggestions are generated for missing <code>tables.csv$observation_unit_iri</cod
 suggestions are generated for missing <code>dataset.csv$keywords</code> as candidate
 semantic keywords (IRIs intended for keyword curation).</p></dd>
 
+
+<dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, assess the top semantic candidates per
+target with an LLM after deterministic retrieval. Default is <code>FALSE</code>.</p></dd>
+
+
+<dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
+<dd><p>LLM provider preset. One of <code>"openai"</code>,
+<code>"openrouter"</code>, or <code>"openai_compatible"</code>.</p></dd>
+
+
+<dt id="arg-llm-model">llm_model<a class="anchor" aria-label="anchor" href="#arg-llm-model"></a></dt>
+<dd><p>Character model identifier. Required when
+<code>llm_assess = TRUE</code> unless supplied via <code>METASALMON_LLM_MODEL</code>.</p></dd>
+
+
+<dt id="arg-llm-api-key">llm_api_key<a class="anchor" aria-label="anchor" href="#arg-llm-api-key"></a></dt>
+<dd><p>Optional API key override. If omitted, provider-specific
+environment variables are used (<code>OPENAI_API_KEY</code>, <code>OPENROUTER_API_KEY</code>,
+or <code>METASALMON_LLM_API_KEY</code>).</p></dd>
+
+
+<dt id="arg-llm-base-url">llm_base_url<a class="anchor" aria-label="anchor" href="#arg-llm-base-url"></a></dt>
+<dd><p>Optional base URL override for the OpenAI-compatible
+chat endpoint. Required for <code>llm_provider = "openai_compatible"</code> when not
+set via <code>METASALMON_LLM_BASE_URL</code>.</p></dd>
+
+
+<dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
+<dd><p>Maximum number of retrieved candidates to send to the LLM
+per target. Default is <code>5</code>.</p></dd>
+
+
+<dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>
+<dd><p>Optional character vector of local context files
+(for example README files, markdown notes, or PDF reports) used to provide
+extra domain context to the LLM.</p></dd>
+
+
+<dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>
+<dd><p>Optional character vector of extra inline context
+snippets passed alongside <code>llm_context_files</code>.</p></dd>
+
+
+<dt id="arg-llm-timeout-seconds">llm_timeout_seconds<a class="anchor" aria-label="anchor" href="#arg-llm-timeout-seconds"></a></dt>
+<dd><p>Timeout for each LLM request in seconds.</p></dd>
+
+
+<dt id="arg-llm-request-fn">llm_request_fn<a class="anchor" aria-label="anchor" href="#arg-llm-request-fn"></a></dt>
+<dd><p>Advanced/test hook overriding the low-level
+OpenAI-compatible request function.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -143,7 +205,11 @@ include a <code>score</code> column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
 context (<code>target_row_key</code>, <code>target_label</code>, <code>target_description</code>,
 <code>code_value</code>, <code>code_label</code>, <code>code_description</code>) so table-, dataset-, and
-code-level rows are inspectable without extra joins.</p>
+code-level rows are inspectable without extra joins. When
+<code>llm_assess = TRUE</code>, the suggestions also include <code>llm_*</code> review columns
+such as <code>llm_decision</code>, <code>llm_confidence</code>, <code>llm_selected</code>, and
+<code>llm_candidate_rank</code>, and the dictionary gains a parallel
+<code>semantic_llm_assessments</code> attribute with one row per assessed target.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -159,6 +225,10 @@ Identifier and temporal columns are skipped by default. When <code>codes</code>,
 generated for <code>codes.csv</code>, <code>tables.csv</code>, and <code>dataset.csv</code> respectively.
 Table-level observation-unit queries ignore review placeholders such as
 <code>MISSING METADATA:</code> and fall back to real table metadata context instead.</p>
+<p>When <code>llm_assess = TRUE</code>, the LLM only judges the retrieved shortlist; it
+does not mint new IRIs. Local context files are read on disk, chunked, and
+lexically trimmed down before prompt assembly so large README/report files do
+not get dumped wholesale into the model call.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while
@@ -181,24 +251,25 @@ checking dictionary completeness.</p></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="co"># Create a starter dictionary</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">my_data</span>, dataset_id <span class="op">=</span> <span class="st">"example"</span>, table_id <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Get semantic suggestions for measurement columns</span></span>
-<span><span class="va">dict_with_suggestions</span> <span class="op">&lt;-</span> <span class="fu">suggest_semantics</span><span class="op">(</span><span class="va">my_data</span>, <span class="va">dict</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># View the suggestions</span></span>
-<span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Filter suggestions for a specific column</span></span>
-<span><span class="va">spawner_suggestions</span> <span class="op">&lt;-</span> <span class="va">suggestions</span><span class="op">[</span><span class="va">suggestions</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span>, <span class="op">]</span></span>
-<span></span>
-<span><span class="co"># Explicitly apply the top suggestion for one column without overwriting</span></span>
-<span><span class="co"># any existing IRIs in the dictionary</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, columns <span class="op">=</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># Create a starter dictionary</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">my_data</span>, dataset_id <span class="op">=</span> <span class="st">"example"</span>, table_id <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Get semantic suggestions for measurement columns</span></span></span>
+<span class="r-in"><span><span class="va">dict_with_suggestions</span> <span class="op">&lt;-</span> <span class="fu">suggest_semantics</span><span class="op">(</span><span class="va">my_data</span>, <span class="va">dict</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># View the suggestions</span></span></span>
+<span class="r-in"><span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Filter suggestions for a specific column</span></span></span>
+<span class="r-in"><span><span class="va">spawner_suggestions</span> <span class="op">&lt;-</span> <span class="va">suggestions</span><span class="op">[</span><span class="va">suggestions</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span>, <span class="op">]</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Explicitly apply the top suggestion for one column without overwriting</span></span></span>
+<span class="r-in"><span><span class="co"># any existing IRIs in the dictionary</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, columns <span class="op">=</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

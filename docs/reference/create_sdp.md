@@ -21,6 +21,16 @@ create_sdp(
   seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
   semantic_code_scope = c("factor", "all", "none"),
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL,
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
@@ -95,6 +105,54 @@ create_sdp(
   original data frame(s); `"all"` analyzes all inferred or supplied code
   rows; `"none"` skips code-level semantic suggestions.
 
+- llm_assess:
+
+  Logical; if `TRUE`, run the optional LLM shortlist assessment inside
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_provider:
+
+  LLM provider preset forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_model:
+
+  Optional LLM model identifier forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_api_key:
+
+  Optional API key override forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_base_url:
+
+  Optional OpenAI-compatible base URL forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_top_n:
+
+  Maximum number of retrieved candidates sent to the LLM per target.
+
+- llm_context_files:
+
+  Optional local context files forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_context_text:
+
+  Optional inline context snippets forwarded to
+  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+
+- llm_timeout_seconds:
+
+  Timeout for each LLM request in seconds.
+
+- llm_request_fn:
+
+  Advanced/test hook overriding the low-level OpenAI-compatible request
+  function.
+
 - check_updates:
 
   Logical; if `TRUE`, run a short, non-fatal
@@ -149,11 +207,13 @@ The package root contains `README-review.txt`,
 `semantic_suggestions.csv` (when available), `datapackage.json`,
 `metadata/`, and `data/`. To keep review files usable,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
-enough human-readable context to review safely. Required-field review
-placeholders are also inserted into the inferred metadata files. In
-interactive use, `create_sdp()` can also mention an available package
-update; set `check_updates = FALSE` to skip that network check. The
-package bundles two Fraser coho examples:
+enough human-readable context to review safely. When
+`llm_assess = TRUE`, the same review file also carries `llm_*` columns
+so the shortlisted LLM judgment stays explicit and reviewable.
+Required-field review placeholders are also inserted into the inferred
+metadata files. In interactive use, `create_sdp()` can also mention an
+available package update; set `check_updates = FALSE` to skip that
+network check. The package bundles two Fraser coho examples:
 `nuseds-fraser-coho-sample.csv` (30 rows across 1996-2024) for the
 quickest demo, and `nuseds-fraser-coho-2023-2024.csv` (173 rows from the
 official Open Government Canada Fraser and BC Interior workbook) for a

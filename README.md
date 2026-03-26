@@ -74,6 +74,35 @@ To continue:
 - [Publishing Data Packages](articles/data-dictionary-publication.html) — end-to-end publication checklist.
 - [Linking to Standard Vocabularies](articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
+## Package-native LLM semantic review (optional)
+
+If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:
+
+```r
+context_files <- c("README.md", "methods-report.pdf")
+
+suggested <- suggest_semantics(
+  df = fraser_coho,
+  dict = infer_dictionary(fraser_coho, dataset_id = "fraser-coho-2023-2024", table_id = "escapement"),
+  llm_assess = TRUE,
+  llm_provider = "openrouter",
+  llm_model = "openai/gpt-oss-20b:free",
+  llm_context_files = context_files
+)
+
+suggestions <- attr(suggested, "semantic_suggestions")
+assessments <- attr(suggested, "semantic_llm_assessments")
+
+# Explicit apply step; still opt-in
+reviewed <- apply_semantic_suggestions(
+  suggested,
+  strategy = "llm",
+  min_llm_confidence = 0.8
+)
+```
+
+This keeps `find_terms()` as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls.
+
 ## Who Is This For?
 
 | If you are...                           | Start here                                                                 |
@@ -141,6 +170,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why `find_terms()` matches rank where they do and expose failures, so you can tune role-aware queries with confidence.
 - End-to-end semantic QA loop with `fetch_salmon_ontology()` + `validate_semantics()`, plus `deduplicate_proposed_terms()` to prevent term proliferation before opening ontology issues.
+- Optional package-native LLM review for semantic suggestions: `suggest_semantics(..., llm_assess = TRUE)` can judge retrieved candidates directly in R, include local README/report context files, and use OpenAI-compatible providers such as OpenRouter (including model ids ending in `:free`).
 - NuSEDS method crosswalk helpers: `nuseds_enumeration_method_crosswalk()` and `nuseds_estimate_method_crosswalk()` for mapping legacy values to canonical method families.
 
 ## Getting Help

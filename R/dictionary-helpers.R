@@ -22,6 +22,24 @@
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
+#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
+#'   assessment inside `suggest_semantics()`.
+#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
+#' @param llm_model Optional LLM model identifier forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_api_key Optional API key override forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
+#'   target.
+#' @param llm_context_files Optional local context files forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_context_text Optional inline context snippets forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
+#' @param llm_request_fn Advanced/test hook overriding the low-level
+#'   OpenAI-compatible request function.
 #'
 #' @return A tibble with dictionary schema columns in canonical Salmon Data
 #'   Package order: `dataset_id`, `table_id`, `column_name`, `column_label`,
@@ -54,7 +72,25 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             seed_verbose = TRUE,
                             seed_codes = NULL,
                             seed_table_meta = NULL,
-                            seed_dataset_meta = NULL) {
+                            seed_dataset_meta = NULL,
+                            llm_assess = FALSE,
+                            llm_provider = c("openai", "openrouter", "openai_compatible"),
+                            llm_model = NULL,
+                            llm_api_key = NULL,
+                            llm_base_url = NULL,
+                            llm_top_n = 5L,
+                            llm_context_files = NULL,
+                            llm_context_text = NULL,
+                            llm_timeout_seconds = 60,
+                            llm_request_fn = NULL) {
+  llm_requested <- isTRUE(llm_assess) ||
+    !is.null(llm_context_files) ||
+    !is.null(llm_context_text) ||
+    !is.null(llm_model) ||
+    !is.null(llm_api_key) ||
+    !is.null(llm_base_url) ||
+    !is.null(llm_request_fn)
+
   if (is.list(df) && !inherits(df, "data.frame")) {
     resources <- df
     if (length(resources) == 0) {
@@ -118,7 +154,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       if (seed_verbose) {
         cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
       }
-      dict <- suggest_semantics(
+      suggest_args <- list(
         df = resources[[1]],
         dict = dict,
         sources = semantic_sources,
@@ -127,6 +163,21 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         table_meta = table_meta,
         dataset_meta = dataset_meta
       )
+      if (llm_requested) {
+        suggest_args <- c(suggest_args, list(
+          llm_assess = llm_assess,
+          llm_provider = llm_provider,
+          llm_model = llm_model,
+          llm_api_key = llm_api_key,
+          llm_base_url = llm_base_url,
+          llm_top_n = llm_top_n,
+          llm_context_files = llm_context_files,
+          llm_context_text = llm_context_text,
+          llm_timeout_seconds = llm_timeout_seconds,
+          llm_request_fn = llm_request_fn
+        ))
+      }
+      dict <- do.call(suggest_semantics, suggest_args)
       attr(dict, "inferred_table_meta") <- table_meta
       attr(dict, "inferred_codes") <- codes
       attr(dict, "inferred_dataset_meta") <- dataset_meta
@@ -178,7 +229,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       if (seed_verbose) {
         cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
       }
-      dict <- suggest_semantics(
+      suggest_args <- list(
         df = df,
         dict = dict,
         sources = semantic_sources,
@@ -187,6 +238,21 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         table_meta = seed_table_meta,
         dataset_meta = seed_dataset_meta
       )
+      if (llm_requested) {
+        suggest_args <- c(suggest_args, list(
+          llm_assess = llm_assess,
+          llm_provider = llm_provider,
+          llm_model = llm_model,
+          llm_api_key = llm_api_key,
+          llm_base_url = llm_base_url,
+          llm_top_n = llm_top_n,
+          llm_context_files = llm_context_files,
+          llm_context_text = llm_context_text,
+          llm_timeout_seconds = llm_timeout_seconds,
+          llm_request_fn = llm_request_fn
+        ))
+      }
+      dict <- do.call(suggest_semantics, suggest_args)
       if (!is.null(seed_table_meta)) {
         attr(dict, "seed_table_meta") <- seed_table_meta
       }

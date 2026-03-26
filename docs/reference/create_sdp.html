@@ -11,7 +11,7 @@ Data Package."><meta property="og:image" content="https://dfo-pacific-science.gi
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -67,6 +67,16 @@ Data Package.</p>
 <span>  seed_table_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  semantic_code_scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"factor"</span>, <span class="st">"all"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_api_key <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_base_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_top_n <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_context_text <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_timeout_seconds <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>  llm_request_fn <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  check_updates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  format <span class="op">=</span> <span class="st">"csv"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -144,6 +154,54 @@ analyzes all inferred or supplied code rows; <code>"none"</code> skips code-leve
 semantic suggestions.</p></dd>
 
 
+<dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, run the optional LLM shortlist
+assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
+<dd><p>LLM provider preset forwarded to <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-model">llm_model<a class="anchor" aria-label="anchor" href="#arg-llm-model"></a></dt>
+<dd><p>Optional LLM model identifier forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-api-key">llm_api_key<a class="anchor" aria-label="anchor" href="#arg-llm-api-key"></a></dt>
+<dd><p>Optional API key override forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-base-url">llm_base_url<a class="anchor" aria-label="anchor" href="#arg-llm-base-url"></a></dt>
+<dd><p>Optional OpenAI-compatible base URL forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
+<dd><p>Maximum number of retrieved candidates sent to the LLM per
+target.</p></dd>
+
+
+<dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>
+<dd><p>Optional local context files forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>
+<dd><p>Optional inline context snippets forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-timeout-seconds">llm_timeout_seconds<a class="anchor" aria-label="anchor" href="#arg-llm-timeout-seconds"></a></dt>
+<dd><p>Timeout for each LLM request in seconds.</p></dd>
+
+
+<dt id="arg-llm-request-fn">llm_request_fn<a class="anchor" aria-label="anchor" href="#arg-llm-request-fn"></a></dt>
+<dd><p>Advanced/test hook overriding the low-level
+OpenAI-compatible request function.</p></dd>
+
+
 <dt id="arg-check-updates">check_updates<a class="anchor" aria-label="anchor" href="#arg-check-updates"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, run a short, non-fatal
 <code><a href="check_for_updates.html">check_for_updates()</a></code> call after writing the package and mention newer
@@ -195,8 +253,10 @@ The package root contains <code>README-review.txt</code>,
 <code>semantic_suggestions.csv</code> (when available), <code>datapackage.json</code>,
 <code>metadata/</code>, and <code>data/</code>. To keep review files usable,
 <code>semantic_suggestions.csv</code> trims code-level suggestions that do not have
-enough human-readable context to review safely. Required-field review
-placeholders are also inserted into the inferred metadata files. In
+enough human-readable context to review safely. When <code>llm_assess = TRUE</code>,
+the same review file also carries <code>llm_*</code> columns so the shortlisted LLM
+judgment stays explicit and reviewable. Required-field review placeholders
+are also inserted into the inferred metadata files. In
 interactive use, <code>create_sdp()</code> can also mention an available package update;
 set <code>check_updates = FALSE</code> to skip that network check. The package bundles
 two Fraser coho examples: <code>nuseds-fraser-coho-sample.csv</code> (30 rows across
@@ -210,17 +270,18 @@ repository <code>data-raw/</code> script used to derive the fuller example.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu">create_sdp</span><span class="op">(</span></span>
-<span>  <span class="va">fraser_coho</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
-<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
-<span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu">create_sdp</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">fraser_coho</span>,</span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span></span>
+<span class="r-in"><span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span></span>
+<span class="r-in"><span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

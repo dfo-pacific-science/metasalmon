@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,10 @@
 propose semantic data dictionaries, IRIs, code lists, and metadata for
 your Salmon Data Packages. This workflow combines AI assistance with the
 deterministic R functions in <code>metasalmon</code> for a powerful,
-reproducible pipeline.</p>
+reproducible pipeline. It now also covers the package-native LLM review
+path inside <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, where the model judges
+only the retrieved shortlist rather than inventing IRIs from
+scratch.</p>
 <p><strong>See also:</strong> - The README’s “How It Fits Together”
 section for the full picture - <a href="data-dictionary-publication.html">Publishing Data Packages</a> for
 the metadata and publication workflow - <a href="reusing-standards-salmon-data-terms.html">Linking to Standard
@@ -332,10 +335,58 @@ the repo) and follows the same rules: measurement columns require
 <code>constraint_iri</code>.</p>
 </div>
 <div class="section level3">
+<h3 id="step-3c-ask-metasalmon-to-run-the-llm-review-directly">Step 3c: Ask <code>metasalmon</code> to run the LLM review
+directly<a class="anchor" aria-label="anchor" href="#step-3c-ask-metasalmon-to-run-the-llm-review-directly"></a>
+</h3>
+<p>If you want the package to call an LLM directly after retrieval, keep
+the deterministic shortlist and turn on the optional assessment
+layer.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Optional local context files: methods note, README, PDF report, etc.</span></span>
+<span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"README.md"</span>, <span class="st">"methods-report.pdf"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">suggested_llm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
+<span>  df <span class="op">=</span> <span class="va">df</span>,</span>
+<span>  dict <span class="op">=</span> <span class="va">dict</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"openrouter"</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="st">"openai/gpt-oss-20b:free"</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="va">context_files</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">suggestions_llm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested_llm</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
+<span><span class="va">assessments_llm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested_llm</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Review-only by default; explicit application step:</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span></span>
+<span>  <span class="va">suggested_llm</span>,</span>
+<span>  strategy <span class="op">=</span> <span class="st">"llm"</span>,</span>
+<span>  min_llm_confidence <span class="op">=</span> <span class="fl">0.8</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Provider notes:</p>
+<ul>
+<li>
+<code>llm_provider = "openai"</code> uses the default
+OpenAI-compatible path and reads <code>OPENAI_API_KEY</code> unless you
+pass <code>llm_api_key</code>.</li>
+<li>
+<code>llm_provider = "openrouter"</code> uses
+<code>https://openrouter.ai/api/v1</code> and reads
+<code>OPENROUTER_API_KEY</code> unless you pass
+<code>llm_api_key</code>.</li>
+<li>OpenRouter free models work by passing the model id through
+unchanged (for example a model name ending in <code>:free</code>).</li>
+<li>PDF context files require the optional <code>pdftools</code>
+package.</li>
+</ul>
+<p>This keeps the safe default intact: <code><a href="../reference/find_terms.html">find_terms()</a></code> remains
+the candidate generator, and the LLM only judges the shortlist.</p>
+</div>
+<div class="section level3">
 <h3 id="step-4-validate-and-refine">Step 4: Validate and Refine<a class="anchor" aria-label="anchor" href="#step-4-validate-and-refine"></a>
 </h3>
 <p>Always validate GPT’s suggestions:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Validate dictionary</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -358,7 +409,7 @@ the repo) and follows the same rules: measurement columns require
 <h3 id="step-5-create-your-package">Step 5: Create Your Package<a class="anchor" aria-label="anchor" href="#step-5-create-your-package"></a>
 </h3>
 <p>Use the enriched dictionary and codes:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># Prepare metadata (you can also ask GPT to help draft this)</span></span>
 <span><span class="va">dataset_meta</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
@@ -534,7 +585,7 @@ leave it blank and draft a term request (don’t invent IRIs).</li>
 function provides role-aware IRI suggestions using the bundled I-ADOPT
 terminology catalogue and external ontology services (GCDFO first for
 salmon-domain roles, then OLS/NVS/BioPortal as needed):</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dict_suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">df</span>, <span class="va">dict</span><span class="op">)</span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></code></pre></div>
 <p>This complements the GPT workflow by providing deterministic,
@@ -552,7 +603,7 @@ automatically expanded based on role context. For example, searching for
 “kg” with <code>role = "unit"</code> will also search for “kilogram”.
 Disable with <code>expand_query = FALSE</code> if you need exact
 matching only.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># With expansion (default)</span></span>
 <span><span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"kg"</span>, role <span class="op">=</span> <span class="st">"unit"</span>, sources <span class="op">=</span> <span class="fu"><a href="../reference/sources_for_role.html">sources_for_role</a></span><span class="op">(</span><span class="st">"unit"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -561,12 +612,12 @@ matching only.</p>
 <p><strong>Cross-source agreement</strong>: Terms appearing in multiple
 sources receive score boosts. Check the <code>agreement_sources</code>
 column to see how many sources returned the same term.</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"salmon"</span>, role <span class="op">=</span> <span class="st">"entity"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">results</span><span class="op">[</span><span class="va">results</span><span class="op">$</span><span class="va">agreement_sources</span> <span class="op">&gt;</span> <span class="fl">1</span>, <span class="op">]</span>  <span class="co"># Terms with multi-source agreement</span></span></code></pre></div>
 <p><strong>Diagnostics for debugging</strong>: When searches return
 unexpected results, inspect the diagnostics attribute:</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_terms.html">find_terms</a></span><span class="op">(</span><span class="st">"temperature"</span>, role <span class="op">=</span> <span class="st">"property"</span>, sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span>, <span class="st">"zooma"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">diagnostics</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">results</span>, <span class="st">"diagnostics"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">diagnostics</span><span class="op">)</span></span>
@@ -581,7 +632,7 @@ candidates.</p>
 <div class="section level2">
 <h2 id="example-complete-workflow">Example: Complete Workflow<a class="anchor" aria-label="anchor" href="#example-complete-workflow"></a>
 </h2>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span></span>
 <span><span class="co"># 1. Bootstrap</span></span>
 <span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">df</span>, dataset_id <span class="op">=</span> <span class="st">"my-dataset"</span>, table_id <span class="op">=</span> <span class="st">"my-table"</span><span class="op">)</span></span>

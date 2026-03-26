@@ -11,10 +11,11 @@ candidates are good enough.
 apply_semantic_suggestions(
   dict,
   suggestions = attr(dict, "semantic_suggestions"),
-  strategy = "top",
+  strategy = c("top", "llm"),
   columns = NULL,
   roles = NULL,
   min_score = NULL,
+  min_llm_confidence = NULL,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -36,8 +37,9 @@ apply_semantic_suggestions(
 
 - strategy:
 
-  Selection strategy per column-role pair. Currently only `"top"` is
-  supported, which uses the first suggestion in each matched group.
+  Selection strategy per column-role pair. `"top"` keeps the original
+  lexical ranking; `"llm"` applies only candidates marked with
+  `llm_selected = TRUE` by `suggest_semantics(..., llm_assess = TRUE)`.
 
 - columns:
 
@@ -54,6 +56,11 @@ apply_semantic_suggestions(
 
   Optional numeric threshold. Only available when `suggestions` includes
   a `score` column; otherwise the function errors.
+
+- min_llm_confidence:
+
+  Optional numeric threshold for `strategy = "llm"`. Requires
+  `llm_confidence` in `suggestions`.
 
 - overwrite:
 

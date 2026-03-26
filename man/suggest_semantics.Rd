@@ -13,7 +13,17 @@ suggest_semantics(
   search_fn = find_terms,
   codes = NULL,
   table_meta = NULL,
-  dataset_meta = NULL
+  dataset_meta = NULL,
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL
 )
 }
 \arguments{
@@ -46,6 +56,38 @@ suggestions are generated for missing \code{tables.csv$observation_unit_iri}.}
 \item{dataset_meta}{Optional \code{dataset.csv}-like tibble. When provided,
 suggestions are generated for missing \code{dataset.csv$keywords} as candidate
 semantic keywords (IRIs intended for keyword curation).}
+
+\item{llm_assess}{Logical; if \code{TRUE}, assess the top semantic candidates per
+target with an LLM after deterministic retrieval. Default is \code{FALSE}.}
+
+\item{llm_provider}{LLM provider preset. One of \code{"openai"},
+\code{"openrouter"}, or \code{"openai_compatible"}.}
+
+\item{llm_model}{Character model identifier. Required when
+\code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}.}
+
+\item{llm_api_key}{Optional API key override. If omitted, provider-specific
+environment variables are used (\code{OPENAI_API_KEY}, \code{OPENROUTER_API_KEY},
+or \code{METASALMON_LLM_API_KEY}).}
+
+\item{llm_base_url}{Optional base URL override for the OpenAI-compatible
+chat endpoint. Required for \code{llm_provider = "openai_compatible"} when not
+set via \code{METASALMON_LLM_BASE_URL}.}
+
+\item{llm_top_n}{Maximum number of retrieved candidates to send to the LLM
+per target. Default is \code{5}.}
+
+\item{llm_context_files}{Optional character vector of local context files
+(for example README files, markdown notes, or PDF reports) used to provide
+extra domain context to the LLM.}
+
+\item{llm_context_text}{Optional character vector of extra inline context
+snippets passed alongside \code{llm_context_files}.}
+
+\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
+
+\item{llm_request_fn}{Advanced/test hook overriding the low-level
+OpenAI-compatible request function.}
 }
 \value{
 The dictionary tibble (unchanged) with a \code{semantic_suggestions}
@@ -62,7 +104,11 @@ include a \code{score} column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
 context (\code{target_row_key}, \code{target_label}, \code{target_description},
 \code{code_value}, \code{code_label}, \code{code_description}) so table-, dataset-, and
-code-level rows are inspectable without extra joins.
+code-level rows are inspectable without extra joins. When
+\code{llm_assess = TRUE}, the suggestions also include \verb{llm_*} review columns
+such as \code{llm_decision}, \code{llm_confidence}, \code{llm_selected}, and
+\code{llm_candidate_rank}, and the dictionary gains a parallel
+\code{semantic_llm_assessments} attribute with one row per assessed target.
 }
 \description{
 Searches external vocabularies to suggest IRIs for semantic gaps in the
@@ -86,6 +132,11 @@ Identifier and temporal columns are skipped by default. When \code{codes},
 generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv} respectively.
 Table-level observation-unit queries ignore review placeholders such as
 \verb{MISSING METADATA:} and fall back to real table metadata context instead.
+
+When \code{llm_assess = TRUE}, the LLM only judges the retrieved shortlist; it
+does not mint new IRIs. Local context files are read on disk, chunked, and
+lexically trimmed down before prompt assembly so large README/report files do
+not get dumped wholesale into the model call.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

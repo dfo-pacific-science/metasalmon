@@ -79,4 +79,5 @@ dataset_meta <- tibble::tibble(
 
 out <- tempfile(fileext = ".xml")
 edh_build_hnap_xml(dataset_meta, output_path = out)
+#> Error in edh_build_hnap_xml(dataset_meta, output_path = out): could not find function "edh_build_hnap_xml"
 ```

@@ -16,7 +16,17 @@ infer_salmon_datapackage_artifacts(
   seed_codes = NULL,
   seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
-  semantic_code_scope = c("factor", "all", "none")
+  semantic_code_scope = c("factor", "all", "none"),
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL
 )
 }
 \arguments{
@@ -55,6 +65,34 @@ rows are sent through \code{suggest_semantics()} during one-shot seeding.
 low-cardinality character columns in the original data frame(s); \code{"all"}
 analyzes all inferred or supplied code rows; \code{"none"} skips code-level
 semantic suggestions.}
+
+\item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
+assessment inside \code{suggest_semantics()}.}
+
+\item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
+
+\item{llm_model}{Optional LLM model identifier forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_api_key}{Optional API key override forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_base_url}{Optional OpenAI-compatible base URL forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_top_n}{Maximum number of retrieved candidates sent to the LLM per
+target.}
+
+\item{llm_context_files}{Optional local context files forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_context_text}{Optional inline context snippets forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
+
+\item{llm_request_fn}{Advanced/test hook overriding the low-level
+OpenAI-compatible request function.}
 }
 \value{
 A named list with the following components:
@@ -65,6 +103,7 @@ A named list with the following components:
 \item \code{codes}: Inferred candidate codes tibble
 \item \code{dataset_meta}: Inferred dataset metadata one-row tibble
 \item \code{semantic_suggestions}: Semantic suggestion tibble (or \code{NULL})
+\item \code{semantic_llm_assessments}: Target-level LLM review summary tibble (or \code{NULL})
 }
 }
 \description{

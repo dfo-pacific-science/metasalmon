@@ -7,10 +7,11 @@
 apply_semantic_suggestions(
   dict,
   suggestions = attr(dict, "semantic_suggestions"),
-  strategy = "top",
+  strategy = c("top", "llm"),
   columns = NULL,
   roles = NULL,
   min_score = NULL,
+  min_llm_confidence = NULL,
   overwrite = FALSE,
   verbose = TRUE
 )
@@ -23,8 +24,9 @@ apply_semantic_suggestions(
 \code{attr(dict, "semantic_suggestions")}. If omitted, the function reads that
 attribute from \code{dict}.}
 
-\item{strategy}{Selection strategy per column-role pair. Currently only
-\code{"top"} is supported, which uses the first suggestion in each matched group.}
+\item{strategy}{Selection strategy per column-role pair. \code{"top"} keeps the
+original lexical ranking; \code{"llm"} applies only candidates marked with
+\code{llm_selected = TRUE} by \code{suggest_semantics(..., llm_assess = TRUE)}.}
 
 \item{columns}{Optional character vector limiting application to specific
 \code{column_name} values.}
@@ -35,6 +37,9 @@ suggestion roles: \code{"variable"}, \code{"property"}, \code{"entity"}, \code{"
 
 \item{min_score}{Optional numeric threshold. Only available when
 \code{suggestions} includes a \code{score} column; otherwise the function errors.}
+
+\item{min_llm_confidence}{Optional numeric threshold for \code{strategy = "llm"}.
+Requires \code{llm_confidence} in \code{suggestions}.}
 
 \item{overwrite}{Logical; if \code{FALSE} (default), only missing fields are
 filled. Set \code{TRUE} to intentionally replace existing IRIs.}

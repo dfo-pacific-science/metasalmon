@@ -324,6 +324,24 @@ write_salmon_datapackage <- function(
 #'   low-cardinality character columns in the original data frame(s); `"all"`
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
+#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
+#'   assessment inside `suggest_semantics()`.
+#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
+#' @param llm_model Optional LLM model identifier forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_api_key Optional API key override forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
+#'   target.
+#' @param llm_context_files Optional local context files forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_context_text Optional inline context snippets forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
+#' @param llm_request_fn Advanced/test hook overriding the low-level
+#'   OpenAI-compatible request function.
 #'
 #' @return A named list with the following components:
 #'   - `resources`: Named list of input tables
@@ -332,6 +350,7 @@ write_salmon_datapackage <- function(
 #'   - `codes`: Inferred candidate codes tibble
 #'   - `dataset_meta`: Inferred dataset metadata one-row tibble
 #'   - `semantic_suggestions`: Semantic suggestion tibble (or `NULL`)
+#'   - `semantic_llm_assessments`: Target-level LLM review summary tibble (or `NULL`)
 #' @export
 #'
 #' @examples
@@ -374,8 +393,26 @@ infer_salmon_datapackage_artifacts <- function(
     seed_codes = NULL,
     seed_table_meta = TRUE,
     seed_dataset_meta = NULL,
-    semantic_code_scope = c("factor", "all", "none")
+    semantic_code_scope = c("factor", "all", "none"),
+    llm_assess = FALSE,
+    llm_provider = c("openai", "openrouter", "openai_compatible"),
+    llm_model = NULL,
+    llm_api_key = NULL,
+    llm_base_url = NULL,
+    llm_top_n = 5L,
+    llm_context_files = NULL,
+    llm_context_text = NULL,
+    llm_timeout_seconds = 60,
+    llm_request_fn = NULL
 ) {
+  llm_requested <- isTRUE(llm_assess) ||
+    !is.null(llm_context_files) ||
+    !is.null(llm_context_text) ||
+    !is.null(llm_model) ||
+    !is.null(llm_api_key) ||
+    !is.null(llm_base_url) ||
+    !is.null(llm_request_fn)
+
   if (inherits(resources, "data.frame")) {
     resources <- list(resources)
     names(resources) <- table_id
@@ -436,12 +473,13 @@ infer_salmon_datapackage_artifacts <- function(
   )
 
   semantic_suggestions <- NULL
+  semantic_llm_assessments <- NULL
   if (isTRUE(seed_semantics)) {
     if (seed_verbose) {
       cli::cli_alert_info("Seeding semantic suggestions during infer_salmon_datapackage_artifacts().")
     }
 
-    dict <- suggest_semantics(
+    suggest_args <- list(
       df = resources[[1L]],
       dict = dict,
       sources = semantic_sources,
@@ -451,8 +489,24 @@ infer_salmon_datapackage_artifacts <- function(
       table_meta = table_meta,
       dataset_meta = dataset_meta
     )
+    if (llm_requested) {
+      suggest_args <- c(suggest_args, list(
+        llm_assess = llm_assess,
+        llm_provider = llm_provider,
+        llm_model = llm_model,
+        llm_api_key = llm_api_key,
+        llm_base_url = llm_base_url,
+        llm_top_n = llm_top_n,
+        llm_context_files = llm_context_files,
+        llm_context_text = llm_context_text,
+        llm_timeout_seconds = llm_timeout_seconds,
+        llm_request_fn = llm_request_fn
+      ))
+    }
+    dict <- do.call(suggest_semantics, suggest_args)
 
     semantic_suggestions <- attr(dict, "semantic_suggestions", exact = TRUE)
+    semantic_llm_assessments <- attr(dict, "semantic_llm_assessments", exact = TRUE)
   }
 
   dict <- .ms_fill_review_placeholders_dictionary(dict)
@@ -466,7 +520,8 @@ infer_salmon_datapackage_artifacts <- function(
     table_meta = table_meta,
     codes = codes,
     dataset_meta = dataset_meta,
-    semantic_suggestions = semantic_suggestions
+    semantic_suggestions = semantic_suggestions,
+    semantic_llm_assessments = semantic_llm_assessments
   )
 }
 
@@ -502,6 +557,24 @@ infer_salmon_datapackage_artifacts <- function(
 #'   low-cardinality character columns in the original data frame(s); `"all"`
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
+#' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
+#'   assessment inside `suggest_semantics()`.
+#' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
+#' @param llm_model Optional LLM model identifier forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_api_key Optional API key override forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
+#'   target.
+#' @param llm_context_files Optional local context files forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_context_text Optional inline context snippets forwarded to
+#'   `suggest_semantics()`.
+#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
+#' @param llm_request_fn Advanced/test hook overriding the low-level
+#'   OpenAI-compatible request function.
 #' @param check_updates Logical; if `TRUE`, run a short, non-fatal
 #'   [check_for_updates()] call after writing the package and mention newer
 #'   releases only when one is available. Defaults to `interactive()`.
@@ -535,8 +608,10 @@ infer_salmon_datapackage_artifacts <- function(
 #' `semantic_suggestions.csv` (when available), `datapackage.json`,
 #' `metadata/`, and `data/`. To keep review files usable,
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
-#' enough human-readable context to review safely. Required-field review
-#' placeholders are also inserted into the inferred metadata files. In
+#' enough human-readable context to review safely. When `llm_assess = TRUE`,
+#' the same review file also carries `llm_*` columns so the shortlisted LLM
+#' judgment stays explicit and reviewable. Required-field review placeholders
+#' are also inserted into the inferred metadata files. In
 #' interactive use, `create_sdp()` can also mention an available package update;
 #' set `check_updates = FALSE` to skip that network check. The package bundles
 #' two Fraser coho examples: `nuseds-fraser-coho-sample.csv` (30 rows across
@@ -575,6 +650,16 @@ create_sdp <- function(
     seed_table_meta = TRUE,
     seed_dataset_meta = NULL,
     semantic_code_scope = c("factor", "all", "none"),
+    llm_assess = FALSE,
+    llm_provider = c("openai", "openrouter", "openai_compatible"),
+    llm_model = NULL,
+    llm_api_key = NULL,
+    llm_base_url = NULL,
+    llm_top_n = 5L,
+    llm_context_files = NULL,
+    llm_context_text = NULL,
+    llm_timeout_seconds = 60,
+    llm_request_fn = NULL,
     check_updates = interactive(),
     format = "csv",
     overwrite = FALSE,
@@ -681,7 +766,17 @@ create_sdp <- function(
     seed_codes = seed_codes,
     seed_table_meta = seed_table_meta,
     seed_dataset_meta = seed_dataset_meta,
-    semantic_code_scope = semantic_code_scope
+    semantic_code_scope = semantic_code_scope,
+    llm_assess = llm_assess,
+    llm_provider = llm_provider,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_top_n = llm_top_n,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_timeout_seconds = llm_timeout_seconds,
+    llm_request_fn = llm_request_fn
   )
 
   suggestions <- artifacts$semantic_suggestions

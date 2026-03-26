@@ -32,6 +32,28 @@
 #' @param dataset_meta Optional `dataset.csv`-like tibble. When provided,
 #'   suggestions are generated for missing `dataset.csv$keywords` as candidate
 #'   semantic keywords (IRIs intended for keyword curation).
+#' @param llm_assess Logical; if `TRUE`, assess the top semantic candidates per
+#'   target with an LLM after deterministic retrieval. Default is `FALSE`.
+#' @param llm_provider LLM provider preset. One of `"openai"`,
+#'   `"openrouter"`, or `"openai_compatible"`.
+#' @param llm_model Character model identifier. Required when
+#'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`.
+#' @param llm_api_key Optional API key override. If omitted, provider-specific
+#'   environment variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+#'   or `METASALMON_LLM_API_KEY`).
+#' @param llm_base_url Optional base URL override for the OpenAI-compatible
+#'   chat endpoint. Required for `llm_provider = "openai_compatible"` when not
+#'   set via `METASALMON_LLM_BASE_URL`.
+#' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
+#'   per target. Default is `5`.
+#' @param llm_context_files Optional character vector of local context files
+#'   (for example README files, markdown notes, or PDF reports) used to provide
+#'   extra domain context to the LLM.
+#' @param llm_context_text Optional character vector of extra inline context
+#'   snippets passed alongside `llm_context_files`.
+#' @param llm_timeout_seconds Timeout for each LLM request in seconds.
+#' @param llm_request_fn Advanced/test hook overriding the low-level
+#'   OpenAI-compatible request function.
 #'
 #' @return The dictionary tibble (unchanged) with a `semantic_suggestions`
 #'   attribute containing a tibble of suggested IRIs. The suggestions tibble
@@ -47,7 +69,11 @@
 #'   For non-column targets, the tibble also includes explicit destination
 #'   context (`target_row_key`, `target_label`, `target_description`,
 #'   `code_value`, `code_label`, `code_description`) so table-, dataset-, and
-#'   code-level rows are inspectable without extra joins.
+#'   code-level rows are inspectable without extra joins. When
+#'   `llm_assess = TRUE`, the suggestions also include `llm_*` review columns
+#'   such as `llm_decision`, `llm_confidence`, `llm_selected`, and
+#'   `llm_candidate_rank`, and the dictionary gains a parallel
+#'   `semantic_llm_assessments` attribute with one row per assessed target.
 #'
 #' @details
 #' Column targets keep full I-ADOPT behavior for
@@ -59,6 +85,11 @@
 #' generated for `codes.csv`, `tables.csv`, and `dataset.csv` respectively.
 #' Table-level observation-unit queries ignore review placeholders such as
 #' `MISSING METADATA:` and fall back to real table metadata context instead.
+#'
+#' When `llm_assess = TRUE`, the LLM only judges the retrieved shortlist; it
+#' does not mint new IRIs. Local context files are read on disk, chunked, and
+#' lexically trimmed down before prompt assembly so large README/report files do
+#' not get dumped wholesale into the model call.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -111,7 +142,17 @@ suggest_semantics <- function(df,
                               search_fn = find_terms,
                               codes = NULL,
                               table_meta = NULL,
-                              dataset_meta = NULL) {
+                              dataset_meta = NULL,
+                              llm_assess = FALSE,
+                              llm_provider = c("openai", "openrouter", "openai_compatible"),
+                              llm_model = NULL,
+                              llm_api_key = NULL,
+                              llm_base_url = NULL,
+                              llm_top_n = 5L,
+                              llm_context_files = NULL,
+                              llm_context_text = NULL,
+                              llm_timeout_seconds = 60,
+                              llm_request_fn = NULL) {
   dict <- tibble::as_tibble(dict)
   codes <- if (is.null(codes)) tibble::tibble() else tibble::as_tibble(codes)
   table_meta <- if (is.null(table_meta)) tibble::tibble() else tibble::as_tibble(table_meta)
@@ -119,6 +160,9 @@ suggest_semantics <- function(df,
 
   if (nrow(dict) == 0 && nrow(codes) == 0 && nrow(table_meta) == 0 && nrow(dataset_meta) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
+    if (isTRUE(llm_assess)) {
+      attr(dict, "semantic_llm_assessments") <- tibble::tibble()
+    }
     if (isTRUE(include_dwc)) {
       attr(dict, "dwc_mappings") <- tibble::tibble()
     }
@@ -990,6 +1034,25 @@ suggest_semantics <- function(df,
       dplyr::select(-dplyr::any_of("candidate_label_norm"))
   }
 
+  if (isTRUE(llm_assess) && nrow(suggestions) > 0) {
+    llm_results <- .ms_assess_semantic_suggestions_llm(
+      suggestions,
+      provider = llm_provider,
+      model = llm_model,
+      api_key = llm_api_key,
+      base_url = llm_base_url,
+      top_n = llm_top_n,
+      context_files = llm_context_files,
+      context_text = llm_context_text,
+      timeout_seconds = llm_timeout_seconds,
+      request_fn = llm_request_fn
+    )
+    suggestions <- llm_results$suggestions
+    attr(dict, "semantic_llm_assessments") <- llm_results$assessments
+  } else if (isTRUE(llm_assess)) {
+    attr(dict, "semantic_llm_assessments") <- tibble::tibble()
+  }
+
   attr(dict, "semantic_suggestions") <- suggestions
 
   if (isTRUE(include_dwc)) {
@@ -1022,8 +1085,9 @@ suggest_semantics <- function(df,
 #' @param suggestions A suggestions tibble, usually
 #'   `attr(dict, "semantic_suggestions")`. If omitted, the function reads that
 #'   attribute from `dict`.
-#' @param strategy Selection strategy per column-role pair. Currently only
-#'   `"top"` is supported, which uses the first suggestion in each matched group.
+#' @param strategy Selection strategy per column-role pair. `"top"` keeps the
+#'   original lexical ranking; `"llm"` applies only candidates marked with
+#'   `llm_selected = TRUE` by `suggest_semantics(..., llm_assess = TRUE)`.
 #' @param columns Optional character vector limiting application to specific
 #'   `column_name` values.
 #' @param roles Optional character vector limiting application to specific
@@ -1031,6 +1095,8 @@ suggest_semantics <- function(df,
 #'   `"constraint"`, `"method"`.
 #' @param min_score Optional numeric threshold. Only available when
 #'   `suggestions` includes a `score` column; otherwise the function errors.
+#' @param min_llm_confidence Optional numeric threshold for `strategy = "llm"`.
+#'   Requires `llm_confidence` in `suggestions`.
 #' @param overwrite Logical; if `FALSE` (default), only missing fields are
 #'   filled. Set `TRUE` to intentionally replace existing IRIs.
 #' @param verbose Logical; if `TRUE` (default), print a short summary.
@@ -1051,10 +1117,11 @@ suggest_semantics <- function(df,
 #' }
 apply_semantic_suggestions <- function(dict,
                                        suggestions = attr(dict, "semantic_suggestions"),
-                                       strategy = "top",
+                                       strategy = c("top", "llm"),
                                        columns = NULL,
                                        roles = NULL,
                                        min_score = NULL,
+                                       min_llm_confidence = NULL,
                                        overwrite = FALSE,
                                        verbose = TRUE) {
   if (!inherits(dict, "data.frame")) {
@@ -1113,8 +1180,15 @@ apply_semantic_suggestions <- function(dict,
     )
   }
 
-  if (!identical(strategy, "top")) {
-    cli::cli_abort("Unsupported {.arg strategy}: {.val {strategy}}. Use {.val top}.")
+  strategy <- match.arg(strategy)
+
+  if (!is.null(min_llm_confidence) && !"llm_confidence" %in% names(suggestions)) {
+    cli::cli_abort(
+      c(
+        "{.arg min_llm_confidence} requires LLM-reviewed suggestions.",
+        "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} or pass a suggestions tibble that includes {.field llm_confidence}."
+      )
+    )
   }
 
   infer_term_type <- function(suggestion_row) {
@@ -1169,6 +1243,20 @@ apply_semantic_suggestions <- function(dict,
   }
   if (!is.null(min_score)) {
     suggestions <- suggestions[!is.na(suggestions$score) & suggestions$score >= min_score, , drop = FALSE]
+  }
+  if (identical(strategy, "llm")) {
+    if (!"llm_selected" %in% names(suggestions)) {
+      cli::cli_abort(
+        c(
+          "{.arg strategy = 'llm'} requires LLM-reviewed suggestions.",
+          "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} first."
+        )
+      )
+    }
+    suggestions <- suggestions[!is.na(suggestions$llm_selected) & suggestions$llm_selected, , drop = FALSE]
+  }
+  if (!is.null(min_llm_confidence)) {
+    suggestions <- suggestions[!is.na(suggestions$llm_confidence) & suggestions$llm_confidence >= min_llm_confidence, , drop = FALSE]
   }
 
   suggestions <- .ms_filter_auto_apply_suggestions(out, suggestions)

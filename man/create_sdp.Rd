@@ -18,6 +18,16 @@ create_sdp(
   seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
   semantic_code_scope = c("factor", "all", "none"),
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL,
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
@@ -65,6 +75,34 @@ low-cardinality character columns in the original data frame(s); \code{"all"}
 analyzes all inferred or supplied code rows; \code{"none"} skips code-level
 semantic suggestions.}
 
+\item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
+assessment inside \code{suggest_semantics()}.}
+
+\item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
+
+\item{llm_model}{Optional LLM model identifier forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_api_key}{Optional API key override forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_base_url}{Optional OpenAI-compatible base URL forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_top_n}{Maximum number of retrieved candidates sent to the LLM per
+target.}
+
+\item{llm_context_files}{Optional local context files forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_context_text}{Optional inline context snippets forwarded to
+\code{suggest_semantics()}.}
+
+\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
+
+\item{llm_request_fn}{Advanced/test hook overriding the low-level
+OpenAI-compatible request function.}
+
 \item{check_updates}{Logical; if \code{TRUE}, run a short, non-fatal
 \code{\link[=check_for_updates]{check_for_updates()}} call after writing the package and mention newer
 releases only when one is available. Defaults to \code{interactive()}.}
@@ -109,8 +147,10 @@ The package root contains \code{README-review.txt},
 \code{semantic_suggestions.csv} (when available), \code{datapackage.json},
 \verb{metadata/}, and \verb{data/}. To keep review files usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
-enough human-readable context to review safely. Required-field review
-placeholders are also inserted into the inferred metadata files. In
+enough human-readable context to review safely. When \code{llm_assess = TRUE},
+the same review file also carries \verb{llm_*} columns so the shortlisted LLM
+judgment stays explicit and reviewable. Required-field review placeholders
+are also inserted into the inferred metadata files. In
 interactive use, \code{create_sdp()} can also mention an available package update;
 set \code{check_updates = FALSE} to skip that network check. The package bundles
 two Fraser coho examples: \code{nuseds-fraser-coho-sample.csv} (30 rows across

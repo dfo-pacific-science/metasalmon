@@ -21,7 +21,9 @@ This vignette shows how to collaborate with GPT (or other LLMs) to
 propose semantic data dictionaries, IRIs, code lists, and metadata for
 your Salmon Data Packages. This workflow combines AI assistance with the
 deterministic R functions in `metasalmon` for a powerful, reproducible
-pipeline.
+pipeline. It now also covers the package-native LLM review path inside
+`suggest_semantics()`, where the model judges only the retrieved
+shortlist rather than inventing IRIs from scratch.
 
 **See also:**
 - The README's "How It Fits Together" section for the full picture
@@ -249,6 +251,43 @@ dict <- apply_semantic_suggestions(
 ```
 
 `smn-gpt` uses the same I-ADOPT catalogue (symlinked into the repo) and follows the same rules: measurement columns require `term_iri`, `property_iri`, `entity_iri`, `unit_iri`, with optional `constraint_iri`.
+
+### Step 3c: Ask `metasalmon` to run the LLM review directly
+
+If you want the package to call an LLM directly after retrieval, keep the deterministic shortlist and turn on the optional assessment layer.
+
+```{r eval=FALSE}
+# Optional local context files: methods note, README, PDF report, etc.
+context_files <- c("README.md", "methods-report.pdf")
+
+suggested_llm <- suggest_semantics(
+  df = df,
+  dict = dict,
+  llm_assess = TRUE,
+  llm_provider = "openrouter",
+  llm_model = "openai/gpt-oss-20b:free",
+  llm_context_files = context_files
+)
+
+suggestions_llm <- attr(suggested_llm, "semantic_suggestions")
+assessments_llm <- attr(suggested_llm, "semantic_llm_assessments")
+
+# Review-only by default; explicit application step:
+dict <- apply_semantic_suggestions(
+  suggested_llm,
+  strategy = "llm",
+  min_llm_confidence = 0.8
+)
+```
+
+Provider notes:
+
+- `llm_provider = "openai"` uses the default OpenAI-compatible path and reads `OPENAI_API_KEY` unless you pass `llm_api_key`.
+- `llm_provider = "openrouter"` uses `https://openrouter.ai/api/v1` and reads `OPENROUTER_API_KEY` unless you pass `llm_api_key`.
+- OpenRouter free models work by passing the model id through unchanged (for example a model name ending in `:free`).
+- PDF context files require the optional `pdftools` package.
+
+This keeps the safe default intact: `find_terms()` remains the candidate generator, and the LLM only judges the shortlist.
 
 ### Step 4: Validate and Refine
 

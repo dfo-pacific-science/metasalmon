@@ -114,6 +114,42 @@ To continue:
   Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
   — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
+## Package-native LLM semantic review (optional)
+
+If you want an LLM to judge the shortlisted semantic matches directly
+from R, keep the deterministic search path and add an opt-in review
+pass:
+
+``` r
+
+context_files <- c("README.md", "methods-report.pdf")
+
+suggested <- suggest_semantics(
+  df = fraser_coho,
+  dict = infer_dictionary(fraser_coho, dataset_id = "fraser-coho-2023-2024", table_id = "escapement"),
+  llm_assess = TRUE,
+  llm_provider = "openrouter",
+  llm_model = "openai/gpt-oss-20b:free",
+  llm_context_files = context_files
+)
+
+suggestions <- attr(suggested, "semantic_suggestions")
+assessments <- attr(suggested, "semantic_llm_assessments")
+
+# Explicit apply step; still opt-in
+reviewed <- apply_semantic_suggestions(
+  suggested,
+  strategy = "llm",
+  min_llm_confidence = 0.8
+)
+```
+
+This keeps
+[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+as the canonical candidate generator. The LLM only judges the retrieved
+shortlist, never invents raw IRIs, and can use local README/markdown/PDF
+context to make better calls.
+
 ## Who Is This For?
 
 | If you are… | Start here |
@@ -206,6 +242,11 @@ whole folder (or a zip of the whole folder), not just
   plus
   [`deduplicate_proposed_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
   to prevent term proliferation before opening ontology issues.
+- Optional package-native LLM review for semantic suggestions:
+  `suggest_semantics(..., llm_assess = TRUE)` can judge retrieved
+  candidates directly in R, include local README/report context files,
+  and use OpenAI-compatible providers such as OpenRouter (including
+  model ids ending in `:free`).
 - NuSEDS method crosswalk helpers:
   [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
   and

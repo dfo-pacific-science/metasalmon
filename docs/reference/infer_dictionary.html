@@ -9,7 +9,7 @@ guessing column types, roles, and basic metadata."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -61,7 +61,17 @@ guessing column types, roles, and basic metadata.</p>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed_table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_api_key <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_base_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_top_n <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_context_text <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  llm_timeout_seconds <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>  llm_request_fn <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -120,6 +130,54 @@ seeding semantic suggestions.</p></dd>
 <dd><p>Optional <code>dataset.csv</code>-style tibble forwarded to
 <code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>.</p></dd>
 
+
+<dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
+<dd><p>Logical; if <code>TRUE</code>, run the optional LLM shortlist
+assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
+<dd><p>LLM provider preset forwarded to <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-model">llm_model<a class="anchor" aria-label="anchor" href="#arg-llm-model"></a></dt>
+<dd><p>Optional LLM model identifier forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-api-key">llm_api_key<a class="anchor" aria-label="anchor" href="#arg-llm-api-key"></a></dt>
+<dd><p>Optional API key override forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-base-url">llm_base_url<a class="anchor" aria-label="anchor" href="#arg-llm-base-url"></a></dt>
+<dd><p>Optional OpenAI-compatible base URL forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
+<dd><p>Maximum number of retrieved candidates sent to the LLM per
+target.</p></dd>
+
+
+<dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>
+<dd><p>Optional local context files forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>
+<dd><p>Optional inline context snippets forwarded to
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+
+
+<dt id="arg-llm-timeout-seconds">llm_timeout_seconds<a class="anchor" aria-label="anchor" href="#arg-llm-timeout-seconds"></a></dt>
+<dd><p>Timeout for each LLM request in seconds.</p></dd>
+
+
+<dt id="arg-llm-request-fn">llm_request_fn<a class="anchor" aria-label="anchor" href="#arg-llm-request-fn"></a></dt>
+<dd><p>Advanced/test hook overriding the low-level
+OpenAI-compatible request function.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
@@ -132,23 +190,24 @@ Package order: <code>dataset_id</code>, <code>table_id</code>, <code>column_name
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Coho"</span>, <span class="st">"Chinook"</span><span class="op">)</span>,</span>
-<span>  count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span><span class="op">)</span>,</span>
-<span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="st">"2024-01-02"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Optional: seed semantic suggestions from vocabulary services</span></span>
-<span><span class="co"># (SMN is queried first; GCDFO is a distinct DFO-specific source)</span></span>
-<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span></span>
-<span>  <span class="va">df</span>,</span>
-<span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  species <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Coho"</span>, <span class="st">"Chinook"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  count <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span>, <span class="fl">200</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/as.Date.html" class="external-link">as.Date</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"2024-01-01"</span>, <span class="st">"2024-01-02"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Optional: seed semantic suggestions from vocabulary services</span></span></span>
+<span class="r-in"><span><span class="co"># (SMN is queried first; GCDFO is a distinct DFO-specific source)</span></span></span>
+<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">infer_dictionary</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">df</span>,</span></span>
+<span class="r-in"><span>  seed_semantics <span class="op">=</span> <span class="cn">TRUE</span>,</span></span>
+<span class="r-in"><span>  semantic_sources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"ols"</span>, <span class="st">"nvs"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -89,4 +89,8 @@ reqs <- render_ontology_term_request(
   profile_name = "local-program"
 )
 submit_term_request_issues(reqs, dry_run = TRUE)
+#> # A tibble: 1 × 6
+#>   request_title         request_body request_scope issue_number issue_url status
+#>   <chr>                 <chr>        <chr>                <int> <chr>     <chr> 
+#> 1 Request new local-pr… "## Propose… profile                 NA NA        dry_r…
 ```

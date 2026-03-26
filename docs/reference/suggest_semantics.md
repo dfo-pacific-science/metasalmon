@@ -19,7 +19,17 @@ suggest_semantics(
   search_fn = find_terms,
   codes = NULL,
   table_meta = NULL,
-  dataset_meta = NULL
+  dataset_meta = NULL,
+  llm_assess = FALSE,
+  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_model = NULL,
+  llm_api_key = NULL,
+  llm_base_url = NULL,
+  llm_top_n = 5L,
+  llm_context_files = NULL,
+  llm_context_text = NULL,
+  llm_timeout_seconds = 60,
+  llm_request_fn = NULL
 )
 ```
 
@@ -78,6 +88,58 @@ suggest_semantics(
   generated for missing `dataset.csv$keywords` as candidate semantic
   keywords (IRIs intended for keyword curation).
 
+- llm_assess:
+
+  Logical; if `TRUE`, assess the top semantic candidates per target with
+  an LLM after deterministic retrieval. Default is `FALSE`.
+
+- llm_provider:
+
+  LLM provider preset. One of `"openai"`, `"openrouter"`, or
+  `"openai_compatible"`.
+
+- llm_model:
+
+  Character model identifier. Required when `llm_assess = TRUE` unless
+  supplied via `METASALMON_LLM_MODEL`.
+
+- llm_api_key:
+
+  Optional API key override. If omitted, provider-specific environment
+  variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or
+  `METASALMON_LLM_API_KEY`).
+
+- llm_base_url:
+
+  Optional base URL override for the OpenAI-compatible chat endpoint.
+  Required for `llm_provider = "openai_compatible"` when not set via
+  `METASALMON_LLM_BASE_URL`.
+
+- llm_top_n:
+
+  Maximum number of retrieved candidates to send to the LLM per target.
+  Default is `5`.
+
+- llm_context_files:
+
+  Optional character vector of local context files (for example README
+  files, markdown notes, or PDF reports) used to provide extra domain
+  context to the LLM.
+
+- llm_context_text:
+
+  Optional character vector of extra inline context snippets passed
+  alongside `llm_context_files`.
+
+- llm_timeout_seconds:
+
+  Timeout for each LLM request in seconds.
+
+- llm_request_fn:
+
+  Advanced/test hook overriding the low-level OpenAI-compatible request
+  function.
+
 ## Value
 
 The dictionary tibble (unchanged) with a `semantic_suggestions`
@@ -94,7 +156,11 @@ include `search_query`, `target_query_basis`, `target_query_context`,
 targets, the tibble also includes explicit destination context
 (`target_row_key`, `target_label`, `target_description`, `code_value`,
 `code_label`, `code_description`) so table-, dataset-, and code-level
-rows are inspectable without extra joins.
+rows are inspectable without extra joins. When `llm_assess = TRUE`, the
+suggestions also include `llm_*` review columns such as `llm_decision`,
+`llm_confidence`, `llm_selected`, and `llm_candidate_rank`, and the
+dictionary gains a parallel `semantic_llm_assessments` attribute with
+one row per assessed target.
 
 ## Details
 
@@ -113,6 +179,11 @@ additional target rows are generated for `codes.csv`, `tables.csv`, and
 `dataset.csv` respectively. Table-level observation-unit queries ignore
 review placeholders such as `MISSING METADATA:` and fall back to real
 table metadata context instead.
+
+When `llm_assess = TRUE`, the LLM only judges the retrieved shortlist;
+it does not mint new IRIs. Local context files are read on disk,
+chunked, and lexically trimmed down before prompt assembly so large
+README/report files do not get dumped wholesale into the model call.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a
