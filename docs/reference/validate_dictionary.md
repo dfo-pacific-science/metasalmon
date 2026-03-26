@@ -14,7 +14,8 @@ validate_dictionary(dict, require_iris = FALSE)
 
 - dict:
 
-  A tibble or data.frame with dictionary schema columns
+  A tibble/data.frame with dictionary schema columns, a package
+  directory, or a path to `column_dictionary.csv`.
 
 - require_iris:
 

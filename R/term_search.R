@@ -247,6 +247,13 @@ find_terms <- function(query,
           res
         },
         error = function(e) {
+          err_msg <- conditionMessage(e)
+          if (.ms_is_timeout_error(err_msg)) {
+            cli::cli_warn(c(
+              "Vocabulary API lookup timed out for source {.val {src}} while searching {.val {q}}.",
+              "i" = "{.text {err_msg}}"
+            ))
+          }
           elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
           diagnostics[[length(diagnostics) + 1]] <<- list(
             source = src,
@@ -254,7 +261,7 @@ find_terms <- function(query,
             status = "error",
             count = 0L,
             elapsed_secs = round(elapsed, 2),
-            error = conditionMessage(e)
+            error = err_msg
           )
           .empty_terms(role)
         }
@@ -356,6 +363,15 @@ find_terms <- function(query,
 # Bindings for NSE columns used in dplyr pipelines
 alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NULL
 
+.ms_is_timeout_error <- function(message) {
+  if (is.null(message) || length(message) == 0) {
+    return(FALSE)
+  }
+
+  msg <- tolower(trimws(as.character(message[[1]])))
+  grepl("timeout|timed out|operation timed out|timeout exceeded|timedout", msg)
+}
+
 .safe_json <- function(url, headers = NULL, timeout_secs = 30) {
   tryCatch(
     {
@@ -365,12 +381,28 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
       } else {
         httr::GET(url, ua, httr::timeout(timeout_secs))
       }
-      if (httr::status_code(res) >= 300) {
+      status <- httr::status_code(res)
+      if (status >= 300) {
+        if (status == 408L) {
+          cli::cli_warn(c(
+            "Vocabulary API request timed out while querying {.url {url}}.",
+            "i" = "HTTP {.val 408} (Request Timeout)"
+          ))
+        }
         return(NULL)
       }
       jsonlite::fromJSON(httr::content(res, as = "text", encoding = "UTF-8"))
     },
-    error = function(...) NULL
+    error = function(e) {
+      err_msg <- conditionMessage(e)
+      if (.ms_is_timeout_error(err_msg)) {
+        cli::cli_warn(c(
+          "Vocabulary API request timed out while querying {.url {url}}.",
+          "i" = "{.text {err_msg}}"
+        ))
+      }
+      NULL
+    }
   )
 }
 

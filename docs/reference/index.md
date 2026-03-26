@@ -10,6 +10,8 @@ One-shot package creation from raw tables
   : Infer Salmon Data Package artifacts from resource tables
 - [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
   : Read a Salmon Data Package
+- [`validate_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+  : Validate a Salmon Data Package end to end
 
 ## Advanced Package Assembly
 

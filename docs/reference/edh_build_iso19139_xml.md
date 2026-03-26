@@ -98,4 +98,5 @@ edh_build_iso19139_xml(
   output_path = out_iso,
   profile = "iso19139"
 )
+#> Error in edh_build_iso19139_xml(dataset_meta, output_path = out_iso, profile = "iso19139"): unused argument (profile = "iso19139")
 ```

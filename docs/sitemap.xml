@@ -1,6 +1,5 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/404.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/AGENTS.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/CLAUDE.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE-text.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE.html</loc></url>
@@ -59,6 +58,7 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/suggest_facet_schemes.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/validate_salmon_datapackage.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.html</loc></url>
 </urlset>

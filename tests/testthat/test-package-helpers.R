@@ -197,6 +197,37 @@ test_that("create_sdp defaults path in getwd using dataset_id slug", {
   expect_true(file.exists(file.path(pkg_path, "data", "escapement.csv")))
 })
 
+test_that("create_sdp requires overwrite=TRUE to write into an existing directory", {
+  withr::local_tempdir() -> tmp
+  output_dir <- file.path(tmp, "existing-package")
+  dir.create(output_dir)
+  readr::write_csv(tibble::tibble(a = 1), file.path(output_dir, "already.csv"))
+
+  called <- 0L
+  fake_suggest <- function(...) {
+    called <<- called + 1L
+    stop("should not run")
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      expect_error(
+        create_sdp(
+          tibble::tibble(col = 1:2),
+          path = output_dir,
+          dataset_id = "dup-test",
+          table_id = "t1",
+          overwrite = FALSE
+        ),
+        "already exists"
+      )
+    }
+  )
+
+  expect_equal(called, 0L)
+})
+
 test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {
   withr::local_tempdir() -> tmp
 

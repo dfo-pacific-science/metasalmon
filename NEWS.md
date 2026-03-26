@@ -2,7 +2,8 @@ metasalmon 0.0.20
 ----------------
 
 - Hardened GitHub helper security: GitHub readers now reject non-GitHub remote URLs and avoid attaching GitHub auth headers to non-GitHub hosts; improved public/private auth behavior and related tests.
-- Hardened package writing + export reliability: safer overwrite behavior for package outputs, fixed DwC validator execution path, and improved ontology fetch robustness with explicit timeout handling and cache fallback behavior.
+- Hardened package writing + export reliability: `create_sdp()` now fails fast with an explicit `overwrite = TRUE` message when the target directory already exists, fixed DwC validator execution path, and improved ontology fetch robustness with explicit timeout handling and cache fallback behavior.
+- Surfaced clearer warning messages when online vocabulary API lookups time out, so empty `find_terms()` results are less opaque during semantic seeding.
 - Fixed `submit_term_request_issues()` batch routing so per-row `ontology_repo` values are honored instead of posting all rows to the first repo.
 - Clarified `validate_semantics()` API by explicitly deprecating ignored legacy arguments (`entity_defaults`, `vocab_priority`) with coverage for warning behavior.
 - Improved release/test hygiene: dependency bootstrap script hardening, tighter warning assertions in brittle tests, and refreshed package description wording.

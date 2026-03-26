@@ -144,7 +144,7 @@ concept schemes) while preserving your original data structure.
 <span>  <span class="va">fraser_coho</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Open pkg_path and review:</span></span>
@@ -155,7 +155,7 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># - data/*.csv</span></span>
 <span><span class="co"># - semantic_suggestions.csv (if present)</span></span>
 <span><span class="co"># - README-review.txt</span></span></code></pre></div>
-<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. In interactive use it can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
+<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code> to catch package/data/codes mismatches in one pass. In interactive use <code><a href="reference/create_sdp.html">create_sdp()</a></code> can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
 <h2 id="built-in-nuseds-examples">Built-in NuSEDS Examples<a class="anchor" aria-label="anchor" href="#built-in-nuseds-examples"></a>

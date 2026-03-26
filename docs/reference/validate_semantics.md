@@ -25,7 +25,8 @@ validate_semantics(
 
 - dict:
 
-  Dictionary tibble/data frame.
+  Dictionary tibble/data frame, a package directory, or a path to
+  `column_dictionary.csv`.
 
 - require_iris:
 

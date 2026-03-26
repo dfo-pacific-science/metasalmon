@@ -5,6 +5,45 @@ test_that("find_terms returns empty tibble when sources empty", {
   expect_true(all(c("label", "iri", "source", "ontology", "role", "match_type", "definition", "alignment_only") %in% names(res)))
 })
 
+test_that("find_terms surfaces timeout errors for online lookup", {
+  timed_out <- FALSE
+  res <- with_mocked_bindings(
+    .safe_json = function(url, headers = NULL, timeout_secs = 30) {
+      stop("Error in curl::curl_fetch_memory: Timeout was reached: Operation timed out")
+    },
+    withCallingHandlers(
+      find_terms("water temperature", sources = "ols", expand_query = FALSE),
+      warning = function(w) {
+        timed_out <<- grepl("timed out", conditionMessage(w), ignore.case = TRUE)
+      }
+    )
+  )
+
+  expect_true(timed_out)
+  expect_s3_class(res, "tbl_df")
+  expect_equal(nrow(res), 0L)
+  expect_true(all(c("label", "iri", "source", "ontology", "role", "match_type", "definition", "alignment_only") %in% names(res)))
+})
+
+test_that("find_terms surfaces timeout errors from source-level failures", {
+  timed_out <- FALSE
+  res <- with_mocked_bindings(
+    .search_ols = function(query, role) {
+      stop("Request timed out while resolving source")
+    },
+    withCallingHandlers(
+      find_terms("water temperature", sources = "ols", expand_query = FALSE),
+      warning = function(w) {
+        timed_out <<- grepl("timed out", conditionMessage(w), ignore.case = TRUE)
+      }
+    )
+  )
+
+  expect_true(timed_out)
+  expect_s3_class(res, "tbl_df")
+  expect_equal(nrow(res), 0L)
+})
+
 test_that("find_terms includes OLS rows hint and uses User-Agent", {
   url_called <- NULL
   fake <- list(response = list(docs = list(

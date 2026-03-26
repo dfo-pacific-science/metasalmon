@@ -62,7 +62,7 @@ pkg_path <- create_sdp(
   fraser_coho,
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  overwrite = TRUE
+  overwrite = FALSE
 )
 
 # Open pkg_path and review:
@@ -80,8 +80,11 @@ is the main path. It writes the canonical `metadata/*.csv` files plus
 your `data/*.csv` tables, adds a review checklist, auto-applies top
 column-level and table observation-unit suggestions into blank fields,
 and seeds code-level semantic suggestions conservatively by default for
-factor and low-cardinality character source columns. In interactive use
-it can also mention an available package update; set
+factor and low-cardinality character source columns. Before SPSR/EDH
+upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`
+to catch package/data/codes mismatches in one pass. In interactive use
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+can also mention an available package update; set
 `check_updates = FALSE` to skip that check.
 
 ## Built-in NuSEDS Examples

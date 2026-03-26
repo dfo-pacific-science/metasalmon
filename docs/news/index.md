@@ -5,10 +5,16 @@
 - Hardened GitHub helper security: GitHub readers now reject non-GitHub
   remote URLs and avoid attaching GitHub auth headers to non-GitHub
   hosts; improved public/private auth behavior and related tests.
-- Hardened package writing + export reliability: safer overwrite
-  behavior for package outputs, fixed DwC validator execution path, and
-  improved ontology fetch robustness with explicit timeout handling and
-  cache fallback behavior.
+- Hardened package writing + export reliability:
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  now fails fast with an explicit `overwrite = TRUE` message when the
+  target directory already exists, fixed DwC validator execution path,
+  and improved ontology fetch robustness with explicit timeout handling
+  and cache fallback behavior.
+- Surfaced clearer warning messages when online vocabulary API lookups
+  time out, so empty
+  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  results are less opaque during semantic seeding.
 - Fixed
   [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
   batch routing so per-row `ontology_repo` values are honored instead of

@@ -178,7 +178,7 @@ pkg <- create_sdp(
   fraser_coho,
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  overwrite = TRUE
+  overwrite = FALSE
 )
 } # }
 ```

@@ -559,7 +559,7 @@ infer_salmon_datapackage_artifacts <- function(
 #'   fraser_coho,
 #'   dataset_id = "fraser-coho-2024",
 #'   table_id = "escapement",
-#'   overwrite = TRUE
+#'   overwrite = FALSE
 #' )
 #' }
 create_sdp <- function(
@@ -585,6 +585,12 @@ create_sdp <- function(
 ) {
   if (is.null(path) || !nzchar(trimws(path))) {
     path <- file.path(getwd(), paste0(.ms_safe_path_slug(dataset_id), "-sdp"))
+  }
+
+  if (!isTRUE(overwrite) && dir.exists(path)) {
+    cli::cli_abort(
+      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
+    )
   }
 
   semantic_code_scope <- match.arg(semantic_code_scope)

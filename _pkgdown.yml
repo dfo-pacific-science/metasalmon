@@ -40,6 +40,7 @@ reference:
       - create_sdp
       - infer_salmon_datapackage_artifacts
       - read_salmon_datapackage
+      - validate_salmon_datapackage
 
   - title: "Advanced Package Assembly"
     desc: "Manual writing when you already have the SDP metadata tables assembled"
