@@ -89,6 +89,24 @@ test_that("infer_dictionary keeps method-like count fields out of measurement ro
   expect_equal(dict$column_role[dict$column_name == "avg_weight"], "measurement")
 })
 
+test_that("infer_dictionary promotes explicit sample-size and partition-size counts without reopening nearby helper fields", {
+  df <- tibble::tibble(
+    mr_1st_sample_size = c(12, 15),
+    mr_1st_partition_size = c(20, 24),
+    sample_type = c("A", "B"),
+    sample_reference_number = c("REF-1", "REF-2"),
+    sample_date = as.Date(c("2024-01-01", "2024-01-02"))
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "mr_1st_sample_size"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "mr_1st_partition_size"], "measurement")
+  expect_equal(dict$column_role[dict$column_name == "sample_type"], "attribute")
+  expect_equal(dict$column_role[dict$column_name == "sample_reference_number"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "sample_date"], "temporal")
+})
+
 test_that("infer_dictionary promotes paired value/unit numeric columns into measurement role", {
   df <- tibble::tibble(
     sampleSizeValue = c(2046.33, 131340.85),
@@ -406,20 +424,20 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
 
 test_that("suggest_semantics normalizes wide measurement headers and header units", {
   dict <- tibble::tibble(
-    dataset_id = c("d1", "d1", "d1"),
-    table_id = c("t1", "t1", "t1"),
-    column_name = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
-    column_label = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)"),
-    column_description = c(NA_character_, NA_character_, NA_character_),
-    column_role = c("measurement", "measurement", "measurement"),
-    value_type = c("number", "number", "number"),
-    unit_label = c(NA_character_, NA_character_, NA_character_),
-    unit_iri = c(NA_character_, NA_character_, NA_character_),
-    term_iri = c(NA_character_, NA_character_, NA_character_),
-    property_iri = c(NA_character_, NA_character_, NA_character_),
-    entity_iri = c(NA_character_, NA_character_, NA_character_),
-    constraint_iri = c(NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_)
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)", "temperature_degree_c"),
+    column_label = c("Water Level / Niveau d'eau (m)", "Max Temp (°C)", "Discharge / Débit (cms)", "temperature_degree_c"),
+    column_description = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    column_role = c("measurement", "measurement", "measurement", "measurement"),
+    value_type = c("number", "number", "number", "number"),
+    unit_label = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
 
   calls <- list()

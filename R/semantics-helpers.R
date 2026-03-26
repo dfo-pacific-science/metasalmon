@@ -254,6 +254,11 @@ suggest_semantics <- function(df,
         }
       }
 
+      normalized_full_text <- normalize_measurement_unit_query(text)
+      if (nzchar(normalized_full_text)) {
+        return(normalized_full_text)
+      }
+
       suffix_text <- tolower(clean_query(gsub("\\([^)]*\\)", " ", text)))
       suffix_match <- regmatches(
         suffix_text,

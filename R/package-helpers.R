@@ -1837,6 +1837,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(TRUE)
   }
 
+  suggestion_iri <- tolower(.ms_scalar_text(suggestion$iri))
+  suggestion_ontology <- tolower(.ms_scalar_text(suggestion$ontology))
+  suggestion_source <- tolower(.ms_scalar_text(suggestion$source))
+  if (grepl("rs\\.tdwg\\.org/dwc/terms/", suggestion_iri) ||
+      suggestion_ontology %in% c("dwc", "darwin core") ||
+      suggestion_source %in% c("dwc", "tdwg")) {
+    return(FALSE)
+  }
+
   if (nzchar(match_type) && !grepl("label|unit", match_type)) {
     return(FALSE)
   }

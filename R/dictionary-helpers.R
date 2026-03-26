@@ -659,6 +659,13 @@ infer_value_type <- function(col) {
   any(name_tokens %in% number_tokens) && any(name_tokens %in% identifier_context_tokens)
 }
 
+.ms_name_has_sample_size_hint <- function(name_tokens) {
+  size_tokens <- c("size", "sizes")
+  sample_context_tokens <- c("sample", "samples", "partition", "partitions")
+
+  any(name_tokens %in% size_tokens) && any(name_tokens %in% sample_context_tokens)
+}
+
 #' Infer column role from name and data
 #'
 #' @param col_name Column name
@@ -702,6 +709,12 @@ infer_column_role <- function(col_name, col) {
   )
   if (any(name_tokens %in% method_tokens)) {
     return("attribute")
+  }
+
+  # Explicit sample-size / partition-size count fields should stay in the
+  # measurement lane even when they lack generic count/amount tokens.
+  if (.ms_name_has_sample_size_hint(name_tokens) && .ms_values_look_numericish(col)) {
+    return("measurement")
   }
 
   # Check for measurement/quantity patterns. Wide real-world tables often hide
@@ -1030,3 +1043,4 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
 
   result
 }
+

@@ -415,6 +415,63 @@ test_that("score_and_rank_terms boosts I-ADOPT vocab matches for role", {
   expect_match(ranked$iri[[1]], "vocab\\.nerc\\.ac\\.uk")
 })
 
+test_that("score_and_rank_terms demotes local salmon drift for physical/environmental queries", {
+  vocab <- metasalmon:::`.iadopt_vocab`()
+
+  variable_df <- tibble::tibble(
+    label = c("Escapement", "Water temperature"),
+    iri = c(
+      "https://w3id.org/smn/Escapement",
+      "https://vocab.nerc.ac.uk/collection/P01/TEMP01"
+    ),
+    source = c("smn", "nvs"),
+    ontology = c("smn", "P01"),
+    role = c("variable", "variable"),
+    match_type = c("class", "label_exact"),
+    definition = c("Count of salmon returning to spawn.", "Temperature of water body."),
+    backend_score = c(3.0, 1.8)
+  )
+
+  variable_ranked <- metasalmon:::`.score_and_rank_terms`(variable_df, "variable", vocab, "water temperature")
+  expect_equal(variable_ranked$iri[[1]], "https://vocab.nerc.ac.uk/collection/P01/TEMP01")
+
+  entity_df <- tibble::tibble(
+    label = c("Body shape", "fresh water body"),
+    iri = c(
+      "https://w3id.org/smn/BodyShape",
+      "http://purl.obolibrary.org/obo/ENVO_01001320"
+    ),
+    source = c("smn", "ols"),
+    ontology = c("smn", "envo"),
+    role = c("entity", "entity"),
+    match_type = c("class", "class"),
+    definition = c("Fish body shape.", "A body of fresh water."),
+    backend_score = c(3.0, 1.5)
+  )
+
+  entity_ranked <- metasalmon:::`.score_and_rank_terms`(entity_df, "entity", vocab, "freshwater body")
+  expect_equal(entity_ranked$iri[[1]], "http://purl.obolibrary.org/obo/ENVO_01001320")
+
+  method_df <- tibble::tibble(
+    label = c("Electrofishing Count", "Catch method", "Sampling protocol"),
+    iri = c(
+      "https://w3id.org/gcdfo/salmon#ElectrofishingCount",
+      "https://w3id.org/smn/CatchMethod",
+      "https://w3id.org/smn/SamplingProtocol"
+    ),
+    source = c("gcdfo", "smn", "smn"),
+    ontology = c("gcdfo", "smn", "smn"),
+    role = c("method", "method", "method"),
+    match_type = c("namedindividual", "class", "class"),
+    definition = c("Electrofishing count metric.", "Method used to catch fish.", "Protocol used to sample fish."),
+    backend_score = c(2.8, 1.6, 1.4)
+  )
+
+  method_ranked <- metasalmon:::`.score_and_rank_terms`(method_df, "method", vocab, "catch method")
+  expect_true(grepl("method|protocol", tolower(method_ranked$label[[1]])))
+  expect_false(grepl("count", tolower(method_ranked$label[[1]])))
+})
+
 test_that("score_and_rank_terms is deterministic on ties", {
   df <- tibble::tibble(
     label = c("B label", "A label"),
@@ -701,6 +758,21 @@ test_that("query expansion extracts genus for entity role", {
   expanded <- metasalmon:::.expand_query("Oncorhynchus kisutch", "entity")
   expect_true("Oncorhynchus kisutch" %in% expanded)
   expect_true("Oncorhynchus" %in% expanded)
+})
+
+test_that("query expansion adds hydrometric variants for variable/property roles", {
+  level_expanded <- metasalmon:::.expand_query("water level", "variable")
+  expect_true("stage height" %in% level_expanded)
+  expect_true("gauge height" %in% level_expanded)
+  expect_true("surface elevation" %in% level_expanded)
+
+  discharge_expanded <- metasalmon:::.expand_query("water discharge", "variable")
+  expect_true("discharge" %in% discharge_expanded)
+  expect_true("riverine discharge" %in% discharge_expanded)
+  expect_true("streamflow" %in% discharge_expanded)
+
+  property_expanded <- metasalmon:::.expand_query("water discharge", "property")
+  expect_true("water discharge measurement" %in% property_expanded)
 })
 
 test_that("query expansion returns original when role is NA", {
