@@ -93,6 +93,7 @@ reference:
   - title: "Enterprise Data Hub (EDH)"
     desc: "HNAP-aware EDH XML export helper for Enterprise Data Hub workflows"
     contents:
+      - edh_build_hnap_xml
       - edh_build_iso19139_xml
 
   - title: "GitHub Access"

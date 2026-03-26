@@ -1,12 +1,12 @@
-# Deprecated alias for [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+# Build HNAP-aware metadata XML for DFO Enterprise Data Hub export
 
-Deprecated alias for
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+Generates HNAP-aware metadata XML from `dataset_meta` for DFO Enterprise
+Data Hub / GeoNetwork workflows.
 
 ## Usage
 
 ``` r
-edh_build_iso19139_xml(
+edh_build_hnap_xml(
   dataset_meta,
   output_path = NULL,
   file_identifier = NULL,
@@ -56,3 +56,27 @@ edh_build_iso19139_xml(
 ## Value
 
 Invisible list with elements `xml` (string) and `path`.
+
+## Details
+
+The produced XML should still be validated and enriched against your
+local EDH profile before production upload.
+
+## Examples
+
+``` r
+dataset_meta <- tibble::tibble(
+  dataset_id = "fraser-coho-2024",
+  title = "Fraser River Coho Escapement Data",
+  description = "Sample escapement monitoring data for coho salmon in PFMA 29",
+  contact_name = "Your Name",
+  contact_email = "your.email@dfo-mpo.gc.ca",
+  topic_categories = "biota;oceans",
+  keywords = "coho;escapement;Fraser River",
+  temporal_start = "2001",
+  temporal_end = "2024"
+)
+
+out <- tempfile(fileext = ".xml")
+edh_build_hnap_xml(dataset_meta, output_path = out)
+```

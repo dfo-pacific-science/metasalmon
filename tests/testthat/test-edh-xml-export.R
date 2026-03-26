@@ -1,4 +1,4 @@
-test_that("edh_build_iso19139_xml writes the HNAP-aware EDH export", {
+test_that("edh_build_hnap_xml writes the HNAP-aware EDH export", {
   dataset_meta <- tibble::tibble(
     dataset_id = "fraser-coho-2024",
     title = "Fraser River Coho Escapement Data",
@@ -20,7 +20,7 @@ test_that("edh_build_iso19139_xml writes the HNAP-aware EDH export", {
   )
 
   out <- tempfile(fileext = ".xml")
-  result <- edh_build_iso19139_xml(
+  result <- edh_build_hnap_xml(
     dataset_meta,
     output_path = out,
     date_stamp = as.Date("2026-03-03")
@@ -54,14 +54,14 @@ test_that("edh_build_iso19139_xml writes the HNAP-aware EDH export", {
     "nonGeographicDataset"
   )
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:topicCategory", ns)) == 2)
-  expect_true(length(xml2::xml_find_all(xml, ".//gmd:locale/gmd:PT_Locale", ns)) == 1)
+  expect_true(length(xml2::xml_find_all(xml, ".//gmd:locale/gmd:PT_Locale", ns)) == 2)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:EX_GeographicDescription", ns)) == 0)
   expect_true(length(xml2::xml_find_all(xml, ".//gml:TimePeriod", ns)) == 1)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:resourceMaintenance", ns)) == 1)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:classification", ns)) == 1)
 })
 
-test_that("edh_build_iso19139_xml defaults to HNAP-aware EDH structure", {
+test_that("edh_build_hnap_xml defaults to HNAP-aware EDH structure", {
   dataset_meta <- tibble::tibble(
     dataset_id = "pacific-marine-habitat-classes",
     title = "Pacific Marine Habitat Classes",
@@ -106,7 +106,7 @@ test_that("edh_build_iso19139_xml defaults to HNAP-aware EDH structure", {
   )
 
   out <- tempfile(fileext = ".xml")
-  edh_build_iso19139_xml(
+  edh_build_hnap_xml(
     dataset_meta,
     output_path = out
   )
@@ -134,7 +134,7 @@ test_that("edh_build_iso19139_xml defaults to HNAP-aware EDH structure", {
     xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:hierarchyLevel/*", ns)),
     "nonGeographicDataset"
   )
-  expect_true(length(xml2::xml_find_all(xml, ".//gmd:locale/gmd:PT_Locale", ns)) == 1)
+  expect_true(length(xml2::xml_find_all(xml, ".//gmd:locale/gmd:PT_Locale", ns)) == 2)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:PT_FreeText", ns)) >= 3)
   expect_equal(
     xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:status/*", ns)),
@@ -155,6 +155,14 @@ test_that("edh_build_iso19139_xml defaults to HNAP-aware EDH structure", {
 
   keyword_values <- xml2::xml_text(xml2::xml_find_all(xml, ".//gmd:descriptiveKeywords//gmd:keyword/gco:CharacterString", ns))
   expect_setequal(keyword_values, c("habitat", "marine", "Pacific"))
+  expect_equal(
+    xml2::xml_attr(xml2::xml_find_first(xml, ".//gmd:descriptiveKeywords//gmd:type/gmd:MD_KeywordTypeCode", ns), "codeListValue"),
+    "theme"
+  )
+  expect_equal(
+    xml2::xml_attr(xml2::xml_find_first(xml, ".//gmd:citedResponsibleParty//gmd:electronicMailAddress", ns), "nilReason"),
+    "missing"
+  )
 
   expect_match(
     xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:supplementalInformation/gco:CharacterString", ns)),
@@ -163,14 +171,60 @@ test_that("edh_build_iso19139_xml defaults to HNAP-aware EDH structure", {
   )
 })
 
-test_that("edh_build_iso19139_xml validates required columns", {
+test_that("edh_build_hnap_xml emits comprehensive placeholders for GeoNetwork editing", {
+  dataset_meta <- tibble::tibble(
+    dataset_id = "coho-placeholder-test",
+    title = "Coho Placeholder Test",
+    description = "Checks GeoNetwork-friendly placeholder nodes.",
+    creator = "DFO Pacific Science",
+    keywords = "coho;escapement",
+    keyword_thesaurus_title = "Local free keywords",
+    keyword_thesaurus_date = "2026-03-26"
+  )
+
+  out <- tempfile(fileext = ".xml")
+  edh_build_hnap_xml(dataset_meta, output_path = out)
+
+  xml <- xml2::read_xml(out)
+  ns <- xml2::xml_ns(xml)
+
+  expect_equal(
+    xml2::xml_attr(xml2::xml_find_first(xml, ".//gmd:topicCategory", ns), "nilReason"),
+    "missing"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:descriptiveKeywords//gmd:thesaurusName//gmd:title/gco:CharacterString", ns)),
+    "Local free keywords"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:descriptiveKeywords//gmd:thesaurusName//gmd:date/gmd:CI_Date/gmd:date/gco:Date", ns)),
+    "2026-03-26"
+  )
+})
+
+test_that("edh_build_hnap_xml validates required columns", {
   bad_meta <- tibble::tibble(
     dataset_id = "x",
     title = "Missing description"
   )
 
   expect_error(
-    edh_build_iso19139_xml(bad_meta),
+    edh_build_hnap_xml(bad_meta),
     "missing required"
   )
+})
+
+test_that("edh_build_iso19139_xml remains a deprecated compatibility alias", {
+  dataset_meta <- tibble::tibble(
+    dataset_id = "alias-check",
+    title = "Alias Check",
+    description = "Deprecated helper should still write XML."
+  )
+
+  out <- tempfile(fileext = ".xml")
+  expect_warning(
+    edh_build_iso19139_xml(dataset_meta, output_path = out),
+    "deprecated"
+  )
+  expect_true(file.exists(out))
 })

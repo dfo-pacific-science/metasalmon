@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -215,11 +215,11 @@ exporting a DwC-DP view.</p>
 <h3 id="optional-export-edh-xml-metadata">Optional: export EDH XML metadata<a class="anchor" aria-label="anchor" href="#optional-export-edh-xml-metadata"></a>
 </h3>
 <p>When your publication workflow includes DFO Enterprise Data Hub /
-GeoNetwork, <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> writes the HNAP-aware
-EDH export.</p>
+GeoNetwork, <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> writes the HNAP-aware EDH
+export.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">edh_hnap_xml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"metadata-edh-hnap.xml"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml</a></span><span class="op">(</span><span class="va">dataset_meta</span>, output_path <span class="op">=</span> <span class="va">edh_hnap_xml</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists</a></span><span class="op">(</span><span class="va">edh_hnap_xml</span><span class="op">)</span></span></code></pre></div>
 <p>The HNAP-aware export recognizes extra optional columns when present,

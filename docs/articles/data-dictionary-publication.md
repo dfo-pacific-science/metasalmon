@@ -155,13 +155,13 @@ exporting a DwC-DP view.
 
 When your publication workflow includes DFO Enterprise Data Hub /
 GeoNetwork,
-[`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 writes the HNAP-aware EDH export.
 
 ``` r
 
 edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
-edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml)
+edh_build_hnap_xml(dataset_meta, output_path = edh_hnap_xml)
 
 file.exists(edh_hnap_xml)
 ```

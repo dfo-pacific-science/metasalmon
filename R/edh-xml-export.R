@@ -12,11 +12,13 @@
 #'   Common optional columns include: `creator`, `contact_name`, `contact_email`,
 #'   `contact_org`, `contact_position`, `license`, `source_citation`,
 #'   `temporal_start`, `temporal_end`, `spatial_extent`, `update_frequency`,
-#'   `topic_categories`, `keywords`, `security_classification`, `created`,
-#'   `modified`, `provenance_note`, `status`, `distribution_url`, `download_url`,
-#'   `reference_system`, `bbox_west`, `bbox_east`, `bbox_south`, `bbox_north`,
-#'   plus optional French-localized fields such as `title_fr` and
-#'   `description_fr`.
+#'   `topic_categories`, `keywords`, `keyword_type`, `keyword_thesaurus_title`,
+#'   `keyword_thesaurus_date`, `keyword_thesaurus_date_type`,
+#'   `security_classification`, `created`, `modified`, `provenance_note`,
+#'   `status`, `distribution_url`, `download_url`, `reference_system`,
+#'   `bbox_west`, `bbox_east`, `bbox_south`, `bbox_north`, plus optional
+#'   French-localized fields such as `title_fr`, `description_fr`, and
+#'   `keyword_thesaurus_title_fr`.
 #' @param output_path Optional file path to write XML.
 #' @param file_identifier Optional metadata file identifier. Non-UUID
 #'   identifiers are converted to a deterministic UUID-like value and the
@@ -44,12 +46,12 @@
 #' )
 #'
 #' out <- tempfile(fileext = ".xml")
-#' edh_build_iso19139_xml(dataset_meta, output_path = out)
-edh_build_iso19139_xml <- function(dataset_meta,
-                                   output_path = NULL,
-                                   file_identifier = NULL,
-                                   language = "eng",
-                                   date_stamp = Sys.Date()) {
+#' edh_build_hnap_xml(dataset_meta, output_path = out)
+edh_build_hnap_xml <- function(dataset_meta,
+                               output_path = NULL,
+                               file_identifier = NULL,
+                               language = "eng",
+                               date_stamp = Sys.Date()) {
 
   if (!inherits(dataset_meta, "data.frame") || nrow(dataset_meta) != 1) {
     cli::cli_abort("{.arg dataset_meta} must be a single-row data frame/tibble")
@@ -207,6 +209,19 @@ edh_build_iso19139_xml <- function(dataset_meta,
     invisible(node)
   }
 
+  add_nil_text <- function(parent,
+                           node_name,
+                           nil_reason = "missing",
+                           xsi_type = NA_character_) {
+    node <- xml2::xml_add_child(parent, node_name)
+    xml2::xml_set_attr(node, "gco:nilReason", nil_reason)
+    if (non_empty(xsi_type)) {
+      xml2::xml_set_attr(node, "xsi:type", xsi_type)
+    }
+    xml2::xml_add_child(node, "gco:CharacterString", "")
+    invisible(node)
+  }
+
   add_localized_text <- function(parent,
                                  node_name,
                                  value,
@@ -251,6 +266,16 @@ edh_build_iso19139_xml <- function(dataset_meta,
       codeList = code_list,
       codeListValue = value
     )
+    invisible(node)
+  }
+
+  add_nil_code <- function(parent,
+                           node_name,
+                           child_name,
+                           nil_reason = "missing") {
+    node <- xml2::xml_add_child(parent, node_name)
+    xml2::xml_set_attr(node, "gco:nilReason", nil_reason)
+    xml2::xml_add_child(node, child_name, "")
     invisible(node)
   }
 
@@ -446,8 +471,11 @@ edh_build_iso19139_xml <- function(dataset_meta,
       include_locale = include_locale
     )
 
+    emit_missing_email <- TRUE
+
     if (non_empty(email) || non_empty(phone) || non_empty(delivery) || non_empty(city) ||
-        non_empty(admin) || non_empty(postal) || non_empty(country) || non_empty(url)) {
+        non_empty(admin) || non_empty(postal) || non_empty(country) || non_empty(url) ||
+        emit_missing_email) {
       ci_contact_parent <- xml2::xml_add_child(rp, "gmd:contactInfo")
       ci_contact <- xml2::xml_add_child(ci_contact_parent, "gmd:CI_Contact")
 
@@ -464,7 +492,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
       }
 
       if (non_empty(delivery) || non_empty(city) || non_empty(admin) || non_empty(postal) ||
-          non_empty(country) || non_empty(email)) {
+          non_empty(country) || non_empty(email) || emit_missing_email) {
         address_parent <- xml2::xml_add_child(ci_contact, "gmd:address")
         ci_address <- xml2::xml_add_child(address_parent, "gmd:CI_Address")
         add_localized_text(
@@ -496,13 +524,22 @@ edh_build_iso19139_xml <- function(dataset_meta,
           localized_value = meta_fr(paste0(prefix, "_country")),
           include_locale = include_locale
         )
-        add_localized_text(
-          ci_address,
-          "gmd:electronicMailAddress",
-          email,
-          localized_value = email,
-          include_locale = include_locale
-        )
+        if (non_empty(email)) {
+          add_localized_text(
+            ci_address,
+            "gmd:electronicMailAddress",
+            email,
+            localized_value = email,
+            include_locale = include_locale
+          )
+        } else if (emit_missing_email) {
+          add_nil_text(
+            ci_address,
+            "gmd:electronicMailAddress",
+            nil_reason = "missing",
+            xsi_type = if (include_locale) "gmd:PT_FreeText_PropertyType" else NA_character_
+          )
+        }
       }
 
       if (non_empty(url)) {
@@ -572,6 +609,14 @@ edh_build_iso19139_xml <- function(dataset_meta,
     "unknown" = "unclassified"
   )
 
+  keyword_type_map <- c(
+    "discipline" = "discipline",
+    "place" = "place",
+    "stratum" = "stratum",
+    "temporal" = "temporal",
+    "theme" = "theme"
+  )
+
   status_map <- c(
     "completed" = "completed",
     "complete" = "completed",
@@ -601,6 +646,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
   code_list_status <- hnap_code_list("MD_ProgressCode")
   code_list_restriction <- hnap_code_list("MD_RestrictionCode")
   code_list_classification <- hnap_code_list("MD_ClassificationCode")
+  code_list_keyword_type <- hnap_code_list("MD_KeywordTypeCode")
   code_list_online_function <- hnap_code_list("CI_OnLineFunctionCode")
 
   dataset_id <- meta("dataset_id")
@@ -719,33 +765,39 @@ edh_build_iso19139_xml <- function(dataset_meta,
     xml2::xml_add_child(uri_node, "gco:CharacterString", "")
   }
 
-  locale_node <- xml2::xml_add_child(root, "gmd:locale")
-  pt_locale <- xml2::xml_add_child(locale_node, "gmd:PT_Locale")
-  xml2::xml_set_attr(pt_locale, "id", locale_id)
-  lang_code <- xml2::xml_add_child(pt_locale, "gmd:languageCode")
-  xml2::xml_add_child(
-    lang_code,
-    "gmd:LanguageCode",
-    "French; Fran\u00e7ais",
-    codeList = hnap_code_list("LanguageCode"),
-    codeListValue = locale_id
-  )
-  country_node <- xml2::xml_add_child(pt_locale, "gmd:country")
-  xml2::xml_add_child(
-    country_node,
-    "gmd:Country",
-    "Canada; Canada",
-    codeList = hnap_code_list("Country"),
-    codeListValue = "CAN"
-  )
-  add_code(
-    pt_locale,
-    "gmd:characterEncoding",
-    "gmd:MD_CharacterSetCode",
-    value = "utf8",
-    code_list = code_list_charset,
-    text = "utf8; utf8"
-  )
+  add_metadata_locale <- function(root, locale_code, label) {
+    locale_node <- xml2::xml_add_child(root, "gmd:locale")
+    pt_locale <- xml2::xml_add_child(locale_node, "gmd:PT_Locale")
+    xml2::xml_set_attr(pt_locale, "id", locale_code)
+    lang_code <- xml2::xml_add_child(pt_locale, "gmd:languageCode")
+    xml2::xml_add_child(
+      lang_code,
+      "gmd:LanguageCode",
+      label,
+      codeList = hnap_code_list("LanguageCode"),
+      codeListValue = locale_code
+    )
+    country_node <- xml2::xml_add_child(pt_locale, "gmd:country")
+    xml2::xml_add_child(
+      country_node,
+      "gmd:Country",
+      "Canada; Canada",
+      codeList = hnap_code_list("Country"),
+      codeListValue = "CAN"
+    )
+    add_code(
+      pt_locale,
+      "gmd:characterEncoding",
+      "gmd:MD_CharacterSetCode",
+      value = "utf8",
+      code_list = code_list_charset,
+      text = "utf8; utf8"
+    )
+    invisible(pt_locale)
+  }
+
+  add_metadata_locale(root, locale_id, "French; Fran\u00e7ais")
+  add_metadata_locale(root, "eng", "English; Anglais")
 
   add_reference_system(
     root,
@@ -831,11 +883,61 @@ edh_build_iso19139_xml <- function(dataset_meta,
     keywords <- keywords[!duplicated(tolower(keywords))]
   }
   if (length(keywords) > 0) {
+    keyword_type <- normalize_codelist_value(
+      meta("keyword_type", default = "theme", aliases = c("keywords_type")),
+      keyword_type_map,
+      field = "keyword_type",
+      fallback = "theme"
+    )
     desc_keywords <- xml2::xml_add_child(data_ident, "gmd:descriptiveKeywords")
     md_keywords <- xml2::xml_add_child(desc_keywords, "gmd:MD_Keywords")
     for (kw in keywords) {
       kw_node <- xml2::xml_add_child(md_keywords, "gmd:keyword")
       xml2::xml_add_child(kw_node, "gco:CharacterString", kw)
+    }
+    add_code(
+      md_keywords,
+      "gmd:type",
+      "gmd:MD_KeywordTypeCode",
+      value = keyword_type,
+      code_list = code_list_keyword_type,
+      text = keyword_type
+    )
+
+    thesaurus_title <- meta(
+      "keyword_thesaurus_title",
+      aliases = c("keyword_thesaurus", "keyword_thesaurus_name", "keywords_thesaurus")
+    )
+    if (non_empty(thesaurus_title)) {
+      thesaurus <- xml2::xml_add_child(md_keywords, "gmd:thesaurusName")
+      thesaurus_citation <- xml2::xml_add_child(thesaurus, "gmd:CI_Citation")
+      add_localized_text(
+        thesaurus_citation,
+        "gmd:title",
+        thesaurus_title,
+        localized_value = meta_fr("keyword_thesaurus_title"),
+        include_locale = include_locale
+      )
+      thesaurus_date <- meta("keyword_thesaurus_date")
+      thesaurus_date_type <- normalize_codelist_value(
+        meta("keyword_thesaurus_date_type", default = "publication"),
+        c(
+          "creation" = "creation",
+          "publication" = "publication",
+          "revision" = "revision"
+        ),
+        field = "keyword_thesaurus_date_type",
+        fallback = "publication"
+      )
+      if (non_empty(thesaurus_date)) {
+        add_citation_date(
+          thesaurus_citation,
+          value = thesaurus_date,
+          date_type = thesaurus_date_type,
+          code_list = code_list_date_type,
+          text = thesaurus_date_type
+        )
+      }
     }
   }
 
@@ -845,6 +947,13 @@ edh_build_iso19139_xml <- function(dataset_meta,
       topic_node <- xml2::xml_add_child(data_ident, "gmd:topicCategory")
       xml2::xml_add_child(topic_node, "gmd:MD_TopicCategoryCode", topic)
     }
+  } else {
+    add_nil_code(
+      data_ident,
+      "gmd:topicCategory",
+      "gmd:MD_TopicCategoryCode",
+      nil_reason = "missing"
+    )
   }
 
   if (non_empty(status_value)) {
@@ -992,4 +1101,28 @@ edh_build_iso19139_xml <- function(dataset_meta,
   }
 
   invisible(list(xml = xml_text, path = output_path))
+}
+
+#' Deprecated alias for [edh_build_hnap_xml()]
+#'
+#' @inheritParams edh_build_hnap_xml
+#' @inherit edh_build_hnap_xml return
+#' @export
+edh_build_iso19139_xml <- function(dataset_meta,
+                                   output_path = NULL,
+                                   file_identifier = NULL,
+                                   language = "eng",
+                                   date_stamp = Sys.Date()) {
+  cli::cli_warn(c(
+    "{.fn edh_build_iso19139_xml} is deprecated.",
+    "i" = "Use {.fn edh_build_hnap_xml} instead; metasalmon now emits the HNAP-aware EDH XML export."
+  ))
+
+  edh_build_hnap_xml(
+    dataset_meta = dataset_meta,
+    output_path = output_path,
+    file_identifier = file_identifier,
+    language = language,
+    date_stamp = date_stamp
+  )
 }

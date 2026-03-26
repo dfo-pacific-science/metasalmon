@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -106,6 +106,20 @@ your working directory using a default folder name like
 <code>fraser-coho-2024-sdp</code>. In interactive use it can also
 mention when a newer <code>metasalmon</code> release is available; set
 <code>check_updates = FALSE</code> to skip that check.</p>
+<p>If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use
+the one-shot path:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
+<span>  <span class="va">fraser_coho</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
+<span>  include_edh_xml <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>That writes the HNAP-aware EDH XML to
+<code>metadata/metadata-edh-hnap.xml</code>. If you are working from an
+existing <code>dataset.csv</code> row instead of a one-shot package
+build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
 </div>
 <div class="section level2">
 <h2 id="pick-the-right-bundled-example">Pick The Right Bundled Example<a class="anchor" aria-label="anchor" href="#pick-the-right-bundled-example"></a>
@@ -139,7 +153,7 @@ mention when a newer <code>metasalmon</code> release is available; set
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fuller_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
 <span><span class="va">provenance_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example-data-README.md"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></code></pre></div>
 <p>The fuller table is an official Open Government Canada NuSEDS slice
@@ -213,7 +227,7 @@ copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
 <p>After Excel edits, save the metadata back to CSV, share the whole
 folder (or a zip of the whole folder) when you hand it to someone else,
 then run validation again before publishing:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span></code></pre></div>

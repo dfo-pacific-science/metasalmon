@@ -193,7 +193,7 @@ whole folder (or a zip of the whole folder), not just
   Data Package as the canonical deliverable.
 - Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub
   upload workflows via
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
   or `create_sdp(..., include_edh_xml = TRUE)`.
 - Role-aware vocabulary search with
   [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)

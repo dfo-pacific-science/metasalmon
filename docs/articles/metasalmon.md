@@ -38,6 +38,26 @@ writes to your working directory using a default folder name like
 newer `metasalmon` release is available; set `check_updates = FALSE` to
 skip that check.
 
+If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the
+one-shot path:
+
+``` r
+
+pkg_path <- create_sdp(
+  fraser_coho,
+  dataset_id = "fraser-coho-2024",
+  table_id = "escapement",
+  include_edh_xml = TRUE,
+  overwrite = FALSE
+)
+```
+
+That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`.
+If you are working from an existing `dataset.csv` row instead of a
+one-shot package build, call
+[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+directly.
+
 ## Pick The Right Bundled Example
 
 `metasalmon` ships two Fraser coho example tables:

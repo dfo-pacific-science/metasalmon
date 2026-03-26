@@ -94,8 +94,14 @@ Darwin Core Data Package mapping and export helpers
 
 HNAP-aware EDH XML export helper for Enterprise Data Hub workflows
 
-- [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+- [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
   : Build HNAP-aware metadata XML for DFO Enterprise Data Hub export
+
+- [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  :
+
+  Deprecated alias for
+  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 
 ## GitHub Access
 

@@ -107,16 +107,4 @@ gaps <- detect_semantic_term_gaps(
   include_dictionary_roles = "variable"
 )
 gaps
-#> # A tibble: 1 × 23
-#>   dataset_id table_id column_name code_value target_scope target_sdp_file      
-#>   <chr>      <chr>    <chr>       <chr>      <chr>        <chr>                
-#> 1 d1         t1       run_id      NA         column       column_dictionary.csv
-#> # ℹ 17 more variables: target_sdp_field <chr>, target_row_key <chr>,
-#> #   dictionary_role <chr>, search_query <chr>, column_label <chr>,
-#> #   column_description <chr>, top_non_smn_source <chr>,
-#> #   top_non_smn_label <chr>, top_non_smn_iri <chr>, top_non_smn_ontology <chr>,
-#> #   top_non_smn_match_type <chr>, top_non_smn_score <dbl>,
-#> #   candidate_count <int>, non_smn_sources <chr>,
-#> #   placement_recommendation <chr>, placement_confidence <dbl>, …
-
 ```

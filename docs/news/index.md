@@ -1,12 +1,13 @@
 # Changelog
 
-## metasalmon 0.0.21
+## metasalmon 0.0.22
 
 - Simplified EDH XML support down to the single DFO Enterprise Data Hub
   HNAP export we actually use:
+  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+  is now the canonical helper, while
   [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
-  now always writes the HNAP-aware structure and the older ISO 19139
-  fallback path has been removed.
+  remains only as a deprecated compatibility alias.
 - Simplified
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   EDH export behavior: `include_edh_xml = TRUE` now always writes
@@ -14,7 +15,7 @@
   / `EDH_profile` inputs are still accepted as deprecated compatibility
   shims, while `edh_xml_path` is deprecated and ignored.
 - Rebuilt reference docs, tests, package artifacts, and pkgdown site for
-  the 0.0.21 patch release.
+  the 0.0.22 patch release.
 
 ## metasalmon 0.0.20
 

@@ -134,11 +134,11 @@ Keep the SDP column names intact; use the DwC mappings only when exporting a DwC
 ## Optional: export EDH XML metadata
 
 When your publication workflow includes DFO Enterprise Data Hub / GeoNetwork,
-`edh_build_iso19139_xml()` writes the HNAP-aware EDH export.
+`edh_build_hnap_xml()` writes the HNAP-aware EDH export.
 
 ```{r}
 edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
-edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml)
+edh_build_hnap_xml(dataset_meta, output_path = edh_hnap_xml)
 
 file.exists(edh_hnap_xml)
 ```

@@ -117,7 +117,7 @@ create_sdp(
 
   Logical; when `TRUE`, writes an HNAP-aware EDH XML metadata file to
   `metadata/metadata-edh-hnap.xml` using
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md).
+  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
   The default is `FALSE`.
 
 - ...:

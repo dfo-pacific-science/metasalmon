@@ -77,7 +77,7 @@ previously written by \code{metasalmon}.}
 
 \item{include_edh_xml}{Logical; when \code{TRUE}, writes an HNAP-aware EDH XML
 metadata file to \code{metadata/metadata-edh-hnap.xml} using
-\code{edh_build_iso19139_xml()}. The default is \code{FALSE}.}
+\code{edh_build_hnap_xml()}. The default is \code{FALSE}.}
 
 \item{...}{Deprecated legacy EDH arguments accepted for backwards
 compatibility: \code{edh_profile}, \code{EDH_Profile}, and \code{EDH_profile} all enable

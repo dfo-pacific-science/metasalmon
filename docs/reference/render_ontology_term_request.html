@@ -9,7 +9,7 @@ creating GitHub issues against the DFO Salmon Ontology repository."><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -121,51 +121,39 @@ gap should be requested as a shared SMN term, a profile-specific term, or skippe
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">gap</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"d1"</span>,</span></span>
-<span class="r-in"><span>  table_id <span class="op">=</span> <span class="st">"t1"</span>,</span></span>
-<span class="r-in"><span>  column_name <span class="op">=</span> <span class="st">"run_id"</span>,</span></span>
-<span class="r-in"><span>  code_value <span class="op">=</span> <span class="cn">NA_character_</span>,</span></span>
-<span class="r-in"><span>  target_scope <span class="op">=</span> <span class="st">"column"</span>,</span></span>
-<span class="r-in"><span>  target_sdp_file <span class="op">=</span> <span class="st">"column_dictionary.csv"</span>,</span></span>
-<span class="r-in"><span>  target_sdp_field <span class="op">=</span> <span class="st">"term_iri"</span>,</span></span>
-<span class="r-in"><span>  target_row_key <span class="op">=</span> <span class="st">"run_id"</span>,</span></span>
-<span class="r-in"><span>  dictionary_role <span class="op">=</span> <span class="st">"variable"</span>,</span></span>
-<span class="r-in"><span>  search_query <span class="op">=</span> <span class="st">"run id"</span>,</span></span>
-<span class="r-in"><span>  column_label <span class="op">=</span> <span class="st">"Run ID"</span>,</span></span>
-<span class="r-in"><span>  column_description <span class="op">=</span> <span class="st">"Dataset-specific run identifier"</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_source <span class="op">=</span> <span class="st">"gbif"</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_label <span class="op">=</span> <span class="st">"Run event id"</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_iri <span class="op">=</span> <span class="cn">NA_character_</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_ontology <span class="op">=</span> <span class="cn">NA_character_</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_match_type <span class="op">=</span> <span class="st">"label"</span>,</span></span>
-<span class="r-in"><span>  top_non_smn_score <span class="op">=</span> <span class="fl">0.9</span>,</span></span>
-<span class="r-in"><span>  candidate_count <span class="op">=</span> <span class="fl">2</span>,</span></span>
-<span class="r-in"><span>  non_smn_sources <span class="op">=</span> <span class="st">"gbif, worms"</span>,</span></span>
-<span class="r-in"><span>  placement_recommendation <span class="op">=</span> <span class="st">"profile"</span>,</span></span>
-<span class="r-in"><span>  placement_confidence <span class="op">=</span> <span class="fl">0.82</span>,</span></span>
-<span class="r-in"><span>  placement_rationale <span class="op">=</span> <span class="st">"Contains internal identifier patterns."</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu">render_ontology_term_request</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  <span class="va">gap</span>,</span></span>
-<span class="r-in"><span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span></span>
-<span class="r-in"><span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
-<span class="r-in"><span>  profile_name <span class="op">=</span> <span class="st">"pacific-monitoring"</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># A tibble: 1 × 29</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   dataset_id table_id column_name code_value target_scope target_sdp_file      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #BCBCBC;">1</span> d1         t1       run_id      <span style="color: #BB0000;">NA</span>         column       column_dictionary.csv</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;"># ℹ 23 more variables: target_sdp_field &lt;chr&gt;, target_row_key &lt;chr&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   dictionary_role &lt;chr&gt;, search_query &lt;chr&gt;, column_label &lt;chr&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   column_description &lt;chr&gt;, top_non_smn_source &lt;chr&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   top_non_smn_label &lt;chr&gt;, top_non_smn_iri &lt;chr&gt;, top_non_smn_ontology &lt;chr&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   top_non_smn_match_type &lt;chr&gt;, top_non_smn_score &lt;dbl&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   candidate_count &lt;dbl&gt;, non_smn_sources &lt;chr&gt;,</span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> <span style="color: #949494;">#   placement_recommendation &lt;chr&gt;, placement_confidence &lt;dbl&gt;, …</span></span>
-<span class="r-in"><span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="va">gap</span> <span class="op">&lt;-</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"d1"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"t1"</span>,</span>
+<span>  column_name <span class="op">=</span> <span class="st">"run_id"</span>,</span>
+<span>  code_value <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  target_scope <span class="op">=</span> <span class="st">"column"</span>,</span>
+<span>  target_sdp_file <span class="op">=</span> <span class="st">"column_dictionary.csv"</span>,</span>
+<span>  target_sdp_field <span class="op">=</span> <span class="st">"term_iri"</span>,</span>
+<span>  target_row_key <span class="op">=</span> <span class="st">"run_id"</span>,</span>
+<span>  dictionary_role <span class="op">=</span> <span class="st">"variable"</span>,</span>
+<span>  search_query <span class="op">=</span> <span class="st">"run id"</span>,</span>
+<span>  column_label <span class="op">=</span> <span class="st">"Run ID"</span>,</span>
+<span>  column_description <span class="op">=</span> <span class="st">"Dataset-specific run identifier"</span>,</span>
+<span>  top_non_smn_source <span class="op">=</span> <span class="st">"gbif"</span>,</span>
+<span>  top_non_smn_label <span class="op">=</span> <span class="st">"Run event id"</span>,</span>
+<span>  top_non_smn_iri <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  top_non_smn_ontology <span class="op">=</span> <span class="cn">NA_character_</span>,</span>
+<span>  top_non_smn_match_type <span class="op">=</span> <span class="st">"label"</span>,</span>
+<span>  top_non_smn_score <span class="op">=</span> <span class="fl">0.9</span>,</span>
+<span>  candidate_count <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>  non_smn_sources <span class="op">=</span> <span class="st">"gbif, worms"</span>,</span>
+<span>  placement_recommendation <span class="op">=</span> <span class="st">"profile"</span>,</span>
+<span>  placement_confidence <span class="op">=</span> <span class="fl">0.82</span>,</span>
+<span>  placement_rationale <span class="op">=</span> <span class="st">"Contains internal identifier patterns."</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">render_ontology_term_request</span><span class="op">(</span></span>
+<span>  <span class="va">gap</span>,</span>
+<span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  profile_name <span class="op">=</span> <span class="st">"pacific-monitoring"</span></span>
+<span><span class="op">)</span></span>
+<span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

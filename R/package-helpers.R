@@ -511,7 +511,7 @@ infer_salmon_datapackage_artifacts <- function(
 #'   previously written by `metasalmon`.
 #' @param include_edh_xml Logical; when `TRUE`, writes an HNAP-aware EDH XML
 #'   metadata file to `metadata/metadata-edh-hnap.xml` using
-#'   `edh_build_iso19139_xml()`. The default is `FALSE`.
+#'   `edh_build_hnap_xml()`. The default is `FALSE`.
 #' @param ... Deprecated legacy EDH arguments accepted for backwards
 #'   compatibility: `edh_profile`, `EDH_Profile`, and `EDH_profile` all enable
 #'   EDH XML export and must be `"dfo_edh_hnap"` when supplied.
@@ -729,7 +729,7 @@ create_sdp <- function(
   if (isTRUE(include_edh_xml)) {
     edh_xml_path <- .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
 
-    edh_build_iso19139_xml(
+    edh_build_hnap_xml(
       artifacts$dataset_meta,
       output_path = edh_xml_path
     )

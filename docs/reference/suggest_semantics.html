@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -181,25 +181,24 @@ checking dictionary completeness.</p></div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># Create a starter dictionary</span></span></span>
-<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">my_data</span>, dataset_id <span class="op">=</span> <span class="st">"example"</span>, table_id <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Get semantic suggestions for measurement columns</span></span></span>
-<span class="r-in"><span><span class="va">dict_with_suggestions</span> <span class="op">&lt;-</span> <span class="fu">suggest_semantics</span><span class="op">(</span><span class="va">my_data</span>, <span class="va">dict</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># View the suggestions</span></span></span>
-<span class="r-in"><span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Filter suggestions for a specific column</span></span></span>
-<span class="r-in"><span><span class="va">spawner_suggestions</span> <span class="op">&lt;-</span> <span class="va">suggestions</span><span class="op">[</span><span class="va">suggestions</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span>, <span class="op">]</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Explicitly apply the top suggestion for one column without overwriting</span></span></span>
-<span class="r-in"><span><span class="co"># any existing IRIs in the dictionary</span></span></span>
-<span class="r-in"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, columns <span class="op">=</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
+<span><span class="co"># Create a starter dictionary</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">my_data</span>, dataset_id <span class="op">=</span> <span class="st">"example"</span>, table_id <span class="op">=</span> <span class="st">"main"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Get semantic suggestions for measurement columns</span></span>
+<span><span class="va">dict_with_suggestions</span> <span class="op">&lt;-</span> <span class="fu">suggest_semantics</span><span class="op">(</span><span class="va">my_data</span>, <span class="va">dict</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># View the suggestions</span></span>
+<span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">suggestions</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Filter suggestions for a specific column</span></span>
+<span><span class="va">spawner_suggestions</span> <span class="op">&lt;-</span> <span class="va">suggestions</span><span class="op">[</span><span class="va">suggestions</span><span class="op">$</span><span class="va">column_name</span> <span class="op">==</span> <span class="st">"SPAWNER_COUNT"</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="co"># Explicitly apply the top suggestion for one column without overwriting</span></span>
+<span><span class="co"># any existing IRIs in the dictionary</span></span>
+<span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu"><a href="apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span><span class="va">dict_with_suggestions</span>, columns <span class="op">=</span> <span class="st">"SPAWNER_COUNT"</span><span class="op">)</span></span>
+<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
