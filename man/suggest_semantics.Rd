@@ -64,7 +64,9 @@ target with an LLM after deterministic retrieval. Default is \code{FALSE}.}
 \code{"openrouter"}, or \code{"openai_compatible"}.}
 
 \item{llm_model}{Character model identifier. Required when
-\code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}.}
+\code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}. When
+\code{llm_provider = "openrouter"} and no model is supplied, the package
+defaults to \code{"openrouter/free"}.}
 
 \item{llm_api_key}{Optional API key override. If omitted, provider-specific
 environment variables are used (\code{OPENAI_API_KEY}, \code{OPENROUTER_API_KEY},

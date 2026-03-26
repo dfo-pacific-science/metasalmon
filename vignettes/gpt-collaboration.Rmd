@@ -265,7 +265,6 @@ suggested_llm <- suggest_semantics(
   dict = dict,
   llm_assess = TRUE,
   llm_provider = "openrouter",
-  llm_model = "openai/gpt-oss-20b:free",
   llm_context_files = context_files
 )
 
@@ -284,7 +283,8 @@ Provider notes:
 
 - `llm_provider = "openai"` uses the default OpenAI-compatible path and reads `OPENAI_API_KEY` unless you pass `llm_api_key`.
 - `llm_provider = "openrouter"` uses `https://openrouter.ai/api/v1` and reads `OPENROUTER_API_KEY` unless you pass `llm_api_key`.
-- OpenRouter free models work by passing the model id through unchanged (for example a model name ending in `:free`).
+- If you do not specify `llm_model` for OpenRouter, `metasalmon` defaults to `openrouter/free`.
+- OpenRouter free models also work by passing a specific model id through unchanged (for example a model name ending in `:free`).
 - PDF context files require the optional `pdftools` package.
 
 This keeps the safe default intact: `find_terms()` remains the candidate generator, and the LLM only judges the shortlist.

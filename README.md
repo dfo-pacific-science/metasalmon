@@ -86,7 +86,6 @@ suggested <- suggest_semantics(
   dict = infer_dictionary(fraser_coho, dataset_id = "fraser-coho-2023-2024", table_id = "escapement"),
   llm_assess = TRUE,
   llm_provider = "openrouter",
-  llm_model = "openai/gpt-oss-20b:free",
   llm_context_files = context_files
 )
 
@@ -101,7 +100,7 @@ reviewed <- apply_semantic_suggestions(
 )
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls.
+This keeps `find_terms()` as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
 ## Who Is This For?
 

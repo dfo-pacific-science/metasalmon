@@ -21,11 +21,15 @@
   if (is.na(model)) {
     model <- .ms_llm_non_empty_string(Sys.getenv("METASALMON_LLM_MODEL", unset = ""))
   }
+  if (is.na(model) && identical(provider, "openrouter")) {
+    model <- "openrouter/free"
+  }
   if (is.na(model)) {
     cli::cli_abort(
       c(
         "LLM assessment requires a model.",
-        "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}."
+        "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}.",
+        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}."
       )
     )
   }

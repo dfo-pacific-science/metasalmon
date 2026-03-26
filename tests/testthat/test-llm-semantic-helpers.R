@@ -1,4 +1,4 @@
-test_that("suggest_semantics can assess retrieved candidates with OpenRouter-style config and local context files", {
+test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free", {
   tmp <- withr::local_tempdir()
   context_path <- file.path(tmp, "README-context.md")
   writeLines(
@@ -45,7 +45,7 @@ test_that("suggest_semantics can assess retrieved candidates with OpenRouter-sty
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openrouter")
-    expect_equal(config$model, "openai/gpt-oss-20b:free")
+    expect_equal(config$model, "openrouter/free")
     expect_true(grepl("README-context.md", messages[[2]]$content, fixed = TRUE))
     expect_true(grepl("Spawner abundance counts were reviewed", messages[[2]]$content, fixed = TRUE))
 
@@ -66,7 +66,6 @@ test_that("suggest_semantics can assess retrieved candidates with OpenRouter-sty
     search_fn = fake_search,
     llm_assess = TRUE,
     llm_provider = "openrouter",
-    llm_model = "openai/gpt-oss-20b:free",
     llm_api_key = "dummy-key",
     llm_top_n = 2,
     llm_context_files = context_path,
@@ -80,7 +79,7 @@ test_that("suggest_semantics can assess retrieved candidates with OpenRouter-sty
   expect_true("llm_candidate_rank" %in% names(suggestions))
   expect_true(any(suggestions$llm_selected))
   expect_true(all(assessments$llm_provider == "openrouter"))
-  expect_true(all(assessments$llm_model == "openai/gpt-oss-20b:free"))
+  expect_true(all(assessments$llm_model == "openrouter/free"))
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 

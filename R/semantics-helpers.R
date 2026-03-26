@@ -37,7 +37,9 @@
 #' @param llm_provider LLM provider preset. One of `"openai"`,
 #'   `"openrouter"`, or `"openai_compatible"`.
 #' @param llm_model Character model identifier. Required when
-#'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`.
+#'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`. When
+#'   `llm_provider = "openrouter"` and no model is supplied, the package
+#'   defaults to `"openrouter/free"`.
 #' @param llm_api_key Optional API key override. If omitted, provider-specific
 #'   environment variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
 #'   or `METASALMON_LLM_API_KEY`).
