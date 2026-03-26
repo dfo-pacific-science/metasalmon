@@ -83,6 +83,61 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 
+test_that("openrouter free config gets a longer timeout and retries transient failures", {
+  attempts <- 0L
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    timeout_seconds = 30,
+    request_fn = function(messages, config) {
+      attempts <<- attempts + 1L
+      if (attempts == 1L) {
+        stop("Failed to perform HTTP request. Timeout was reached [openrouter.ai].")
+      }
+      list(
+        decision = "accept",
+        selected_candidate_index = 1,
+        confidence = 0.9,
+        rationale = "Recovered after retry.",
+        missing_context = ""
+      )
+    }
+  )
+
+  expect_equal(config$model, "openrouter/free")
+  expect_equal(config$timeout_seconds, 90)
+
+  result <- metasalmon:::.ms_llm_request_with_retries(
+    messages = list(list(role = "user", content = "test")),
+    config = config
+  )
+
+  expect_equal(attempts, 2L)
+  expect_equal(result$decision, "accept")
+})
+
+test_that("invalid candidate indexes degrade to review instead of erroring", {
+  candidates <- tibble::tibble(
+    iri = c("https://example.org/a", "https://example.org/b"),
+    label = c("A", "B")
+  )
+
+  result <- metasalmon:::.ms_validate_llm_assessment(
+    list(
+      decision = "accept",
+      selected_candidate_index = 99,
+      confidence = 0.7,
+      rationale = "Bad index from model.",
+      missing_context = ""
+    ),
+    candidates
+  )
+
+  expect_equal(result$decision, "review")
+  expect_true(is.na(result$selected_candidate_index))
+  expect_match(result$rationale, "out-of-range candidate index")
+})
+
 test_that("apply_semantic_suggestions can use llm strategy with a confidence threshold", {
   dict <- tibble::tibble(
     dataset_id = "d1",

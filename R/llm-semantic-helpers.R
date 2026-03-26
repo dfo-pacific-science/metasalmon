@@ -9,6 +9,70 @@
   x
 }
 
+.ms_llm_uses_openrouter_free <- function(provider, model) {
+  identical(provider, "openrouter") &&
+    !is.na(model) &&
+    (identical(model, "openrouter/free") || grepl(":free$", model))
+}
+
+.ms_llm_context_chunk_limit <- function(config) {
+  if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(2L)
+  }
+  4L
+}
+
+.ms_llm_retry_limit <- function(config) {
+  if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(2L)
+  }
+  1L
+}
+
+.ms_llm_is_retryable_error <- function(message) {
+  msg <- tolower(paste(message, collapse = " "))
+  patterns <- c(
+    "timeout was reached",
+    "timed out",
+    "http 408",
+    "http 429",
+    "http 500",
+    "http 502",
+    "http 503",
+    "http 504",
+    "temporarily unavailable",
+    "connection reset",
+    "empty reply",
+    "failed to perform http request"
+  )
+  any(vapply(patterns, function(pattern) grepl(pattern, msg, fixed = TRUE), logical(1)))
+}
+
+.ms_llm_request_with_retries <- function(messages, config) {
+  attempts <- .ms_llm_retry_limit(config)
+  last_error <- NULL
+
+  for (attempt in seq_len(attempts)) {
+    result <- tryCatch(
+      config$request_fn(messages = messages, config = config),
+      error = function(e) e
+    )
+
+    if (!inherits(result, "error")) {
+      return(result)
+    }
+
+    last_error <- result
+    if (attempt >= attempts || !.ms_llm_is_retryable_error(conditionMessage(result))) {
+      stop(result)
+    }
+
+    Sys.sleep(min(2, attempt * 0.5))
+  }
+
+  stop(last_error)
+}
+
 .ms_llm_resolve_config <- function(provider = c("openai", "openrouter", "openai_compatible"),
                                    model = NULL,
                                    api_key = NULL,
@@ -80,6 +144,9 @@
   timeout_seconds <- suppressWarnings(as.numeric(timeout_seconds[[1]] %||% 60))
   if (is.na(timeout_seconds) || timeout_seconds <= 0) {
     cli::cli_abort("{.arg llm_timeout_seconds} must be a positive number.")
+  }
+  if (.ms_llm_uses_openrouter_free(provider, model)) {
+    timeout_seconds <- max(timeout_seconds, 90)
   }
 
   list(
@@ -379,8 +446,17 @@
     cli::cli_abort("LLM assessment confidence must be numeric and between 0 and 1.")
   }
 
+  rationale <- .ms_llm_non_empty_string(result$rationale %||% NA_character_)
   if (!is.na(selected_index) && (selected_index < 1L || selected_index > nrow(candidate_rows))) {
-    cli::cli_abort("LLM assessment selected_candidate_index must refer to a provided candidate.")
+    decision <- "review"
+    selected_index <- NA_integer_
+    rationale <- paste(
+      c(
+        rationale,
+        "Model returned an out-of-range candidate index; downgraded to review."
+      )[nzchar(c(rationale, "Model returned an out-of-range candidate index; downgraded to review."))],
+      collapse = " "
+    )
   }
   if (identical(decision, "propose_new_term")) {
     selected_index <- NA_integer_
@@ -390,7 +466,7 @@
     decision = decision,
     selected_candidate_index = selected_index,
     confidence = confidence,
-    rationale = .ms_llm_non_empty_string(result$rationale %||% NA_character_),
+    rationale = rationale,
     missing_context = .ms_llm_non_empty_string(result$missing_context %||% NA_character_)
   )
 }
@@ -471,13 +547,16 @@
       context_text = context_text,
       target_row = group[1, , drop = FALSE],
       candidate_rows = candidate_rows,
-      max_chunks = 4L
+      max_chunks = .ms_llm_context_chunk_limit(config)
     )
     messages <- .ms_llm_messages_for_target(group[1, , drop = FALSE], candidate_rows, context_chunks)
 
     assessment <- tryCatch(
       {
-        validated <- .ms_validate_llm_assessment(config$request_fn(messages = messages, config = config), candidate_rows)
+        validated <- .ms_validate_llm_assessment(
+          .ms_llm_request_with_retries(messages = messages, config = config),
+          candidate_rows
+        )
         tibble::tibble(
           dataset_id = group$dataset_id[[1]] %||% NA_character_,
           table_id = group$table_id[[1]] %||% NA_character_,

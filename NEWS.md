@@ -1,3 +1,9 @@
+metasalmon 0.0.24
+----------------
+
+- Hardened package-native LLM review for flaky free-router behavior: OpenRouter free models now get a longer effective timeout, one automatic retry for transient HTTP/network failures, and fewer context chunks per request so prompts stay lighter.
+- Hardened invalid LLM candidate-index handling: out-of-range `selected_candidate_index` values no longer poison the whole target; they are downgraded to `review` with no auto-selection instead of surfacing as a hard LLM error.
+
 metasalmon 0.0.23
 ----------------
 
