@@ -129,7 +129,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="quick-example">Quick Example<a class="anchor" aria-label="anchor" href="#quick-example"></a>
 </h2>
-<p>Install, run one function, then review in Excel.</p>
+<p>Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then review in Excel.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub (recommended)</span></span>
 <span><span class="co"># install.packages("remotes")</span></span>
@@ -137,12 +137,12 @@ concept schemes) while preserving your original data structure.
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
 <span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -158,42 +158,11 @@ concept schemes) while preserving your original data structure.
 <p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code> to catch package/data/codes mismatches in one pass. In interactive use <code><a href="reference/create_sdp.html">create_sdp()</a></code> can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
-<h2 id="built-in-nuseds-examples">Built-in NuSEDS Examples<a class="anchor" aria-label="anchor" href="#built-in-nuseds-examples"></a>
+<h2 id="bundled-nuseds-example">Bundled NuSEDS Example<a class="anchor" aria-label="anchor" href="#bundled-nuseds-example"></a>
 </h2>
-<p><code>metasalmon</code> now ships two Fraser coho example tables so you can pick speed vs realism:</p>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="23%">
-<col width="30%">
-<col width="23%">
-<col width="23%">
-</colgroup>
-<thead><tr>
-<th>File</th>
-<th align="right">Rows</th>
-<th>Years</th>
-<th>Use it when</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><code>nuseds-fraser-coho-sample.csv</code></td>
-<td align="right">30</td>
-<td>1996-2024</td>
-<td>You want the smallest possible quickstart/demo dataset</td>
-</tr>
-<tr>
-<td><code>nuseds-fraser-coho-2023-2024.csv</code></td>
-<td align="right">173</td>
-<td>2023-2024</td>
-<td>You want a fuller official multi-year slice for more realistic workflows</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">tiny_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">fuller_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">provenance_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example-data-README.md"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></code></pre></div>
-<p>The fuller example is derived from the Open Government Canada NuSEDS record using the Fraser and BC Interior workbook, filtered to <code>SPECIES == "Coho"</code> and <code>ANALYSIS_YR %in% c(2023, 2024)</code>. It keeps a compact analysis-friendly subset of columns and uses <code>NATURAL_ADULT_SPAWNERS</code> because <code>NATURAL_SPAWNERS_TOTAL</code> is blank for this official two-year slice. See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces it.</p>
+<p>The default quickstart and get-started flow use <code>nuseds-fraser-coho-2023-2024.csv</code>, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.</p>
+<p>A smaller <code>nuseds-fraser-coho-sample.csv</code> file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.</p>
+<p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces the 2023-2024 example.</p>
 <p>To continue:</p>
 <ul>
 <li>
@@ -248,7 +217,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -380,7 +349,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -388,14 +357,14 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>

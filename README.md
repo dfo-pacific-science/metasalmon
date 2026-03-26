@@ -29,7 +29,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
-Install, run one function, then review in Excel.
+Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then review in Excel.
 
 ```r
 # Install from GitHub (recommended)
@@ -38,12 +38,12 @@ Install, run one function, then review in Excel.
 
 library(metasalmon)
 
-data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
+data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
 fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg_path <- create_sdp(
   fraser_coho,
-  dataset_id = "fraser-coho-2024",
+  dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
   overwrite = FALSE
 )
@@ -60,22 +60,13 @@ pkg_path <- create_sdp(
 
 `create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
-## Built-in NuSEDS Examples
+## Bundled NuSEDS Example
 
-`metasalmon` now ships two Fraser coho example tables so you can pick speed vs realism:
+The default quickstart and get-started flow use `nuseds-fraser-coho-2023-2024.csv`, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.
 
-| File | Rows | Years | Use it when |
-| --- | ---: | --- | --- |
-| `nuseds-fraser-coho-sample.csv` | 30 | 1996-2024 | You want the smallest possible quickstart/demo dataset |
-| `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023-2024 | You want a fuller official multi-year slice for more realistic workflows |
+A smaller `nuseds-fraser-coho-sample.csv` file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.
 
-```r
-tiny_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
-provenance_path <- system.file("extdata", "example-data-README.md", package = "metasalmon")
-```
-
-The fuller example is derived from the Open Government Canada NuSEDS record using the Fraser and BC Interior workbook, filtered to `SPECIES == "Coho"` and `ANALYSIS_YR %in% c(2023, 2024)`. It keeps a compact analysis-friendly subset of columns and uses `NATURAL_ADULT_SPAWNERS` because `NATURAL_SPAWNERS_TOTAL` is blank for this official two-year slice. See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` script that reproduces it.
+See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` script that reproduces the 2023-2024 example.
 
 To continue:
 

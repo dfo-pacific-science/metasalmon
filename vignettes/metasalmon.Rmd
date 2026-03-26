@@ -24,17 +24,17 @@ remotes::install_github("dfo-pacific-science/metasalmon")
 
 ## One-shot Workflow
 
-Load the built-in NuSEDS Fraser Coho sample and create a review-ready Salmon Data Package in one call.
+Load the built-in Fraser Coho 2023-2024 example (173 rows) and create a review-ready Salmon Data Package in one call.
 
 ```{r}
 library(metasalmon)
 
-sample_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-fraser_coho <- readr::read_csv(sample_path, show_col_types = FALSE)
+data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
+fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg_path <- create_sdp(
   fraser_coho,
-  dataset_id = "fraser-coho-2024",
+  dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
   overwrite = FALSE
 )
@@ -43,14 +43,16 @@ pkg_path
 list.files(pkg_path, recursive = TRUE)
 ```
 
-If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2024-sdp`. In interactive use it can also mention when a newer `metasalmon` release is available; set `check_updates = FALSE` to skip that check.
+If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2023-2024-sdp`. In interactive use it can also mention when a newer `metasalmon` release is available; set `check_updates = FALSE` to skip that check.
+
+This quickstart uses the bundled `nuseds-fraser-coho-2023-2024.csv` example, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook. See `example-data-README.md` in the bundled `extdata` folder for provenance and licensing.
 
 If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the one-shot path:
 
 ```{r}
 pkg_path <- create_sdp(
   fraser_coho,
-  dataset_id = "fraser-coho-2024",
+  dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
   include_edh_xml = TRUE,
   overwrite = FALSE
@@ -58,27 +60,6 @@ pkg_path <- create_sdp(
 ```
 
 That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`. If you are working from an existing `dataset.csv` row instead of a one-shot package build, call `edh_build_hnap_xml()` directly.
-
-## Pick The Right Bundled Example
-
-`metasalmon` ships two Fraser coho example tables:
-
-| File | Rows | Years | Best for |
-| --- | ---: | --- | --- |
-| `nuseds-fraser-coho-sample.csv` | 30 | 1996-2024 | Fastest walkthroughs and smallest demo payload |
-| `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023-2024 | More realistic package creation and testing |
-
-```{r}
-fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
-provenance_path <- system.file("extdata", "example-data-README.md", package = "metasalmon")
-```
-
-The fuller table is an official Open Government Canada NuSEDS slice from the
-Fraser and BC Interior workbook, filtered to `SPECIES == "Coho"` and
-`ANALYSIS_YR %in% c(2023, 2024)`. It keeps a compact column subset and uses
-`NATURAL_ADULT_SPAWNERS` because `NATURAL_SPAWNERS_TOTAL` is blank for this
-two-year official slice. See `example-data-README.md` for provenance, row
-counts, and the Open Government Licence - Canada note.
 
 ## Review In Excel
 

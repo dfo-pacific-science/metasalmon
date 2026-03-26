@@ -84,17 +84,17 @@
 <div class="section level2">
 <h2 id="one-shot-workflow">One-shot Workflow<a class="anchor" aria-label="anchor" href="#one-shot-workflow"></a>
 </h2>
-<p>Load the built-in NuSEDS Fraser Coho sample and create a review-ready
-Salmon Data Package in one call.</p>
+<p>Load the built-in Fraser Coho 2023-2024 example (173 rows) and create
+a review-ready Salmon Data Package in one call.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sample_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-sample.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">sample_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
+<span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span>
@@ -103,15 +103,20 @@ Salmon Data Package in one call.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">pkg_path</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>If <code>path</code> is omitted, <code><a href="../reference/create_sdp.html">create_sdp()</a></code> writes to
 your working directory using a default folder name like
-<code>fraser-coho-2024-sdp</code>. In interactive use it can also
+<code>fraser-coho-2023-2024-sdp</code>. In interactive use it can also
 mention when a newer <code>metasalmon</code> release is available; set
 <code>check_updates = FALSE</code> to skip that check.</p>
+<p>This quickstart uses the bundled
+<code>nuseds-fraser-coho-2023-2024.csv</code> example, a 173-row Fraser
+coho slice derived from the official Open Government Canada Fraser and
+BC Interior workbook. See <code>example-data-README.md</code> in the
+bundled <code>extdata</code> folder for provenance and licensing.</p>
 <p>If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use
 the one-shot path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2024"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
 <span>  include_edh_xml <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
@@ -120,50 +125,6 @@ the one-shot path:</p>
 <code>metadata/metadata-edh-hnap.xml</code>. If you are working from an
 existing <code>dataset.csv</code> row instead of a one-shot package
 build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
-</div>
-<div class="section level2">
-<h2 id="pick-the-right-bundled-example">Pick The Right Bundled Example<a class="anchor" aria-label="anchor" href="#pick-the-right-bundled-example"></a>
-</h2>
-<p><code>metasalmon</code> ships two Fraser coho example tables:</p>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="23%">
-<col width="30%">
-<col width="23%">
-<col width="23%">
-</colgroup>
-<thead><tr class="header">
-<th>File</th>
-<th align="right">Rows</th>
-<th>Years</th>
-<th>Best for</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td><code>nuseds-fraser-coho-sample.csv</code></td>
-<td align="right">30</td>
-<td>1996-2024</td>
-<td>Fastest walkthroughs and smallest demo payload</td>
-</tr>
-<tr class="even">
-<td><code>nuseds-fraser-coho-2023-2024.csv</code></td>
-<td align="right">173</td>
-<td>2023-2024</td>
-<td>More realistic package creation and testing</td>
-</tr>
-</tbody>
-</table>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fuller_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
-<span><span class="va">provenance_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example-data-README.md"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span></code></pre></div>
-<p>The fuller table is an official Open Government Canada NuSEDS slice
-from the Fraser and BC Interior workbook, filtered to
-<code>SPECIES == "Coho"</code> and
-<code>ANALYSIS_YR %in% c(2023, 2024)</code>. It keeps a compact column
-subset and uses <code>NATURAL_ADULT_SPAWNERS</code> because
-<code>NATURAL_SPAWNERS_TOTAL</code> is blank for this two-year official
-slice. See <code>example-data-README.md</code> for provenance, row
-counts, and the Open Government Licence - Canada note.</p>
 </div>
 <div class="section level2">
 <h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
@@ -227,7 +188,7 @@ copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
 <p>After Excel edits, save the metadata back to CSV, share the whole
 folder (or a zip of the whole folder) when you hand it to someone else,
 then run validation again before publishing:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span></code></pre></div>
