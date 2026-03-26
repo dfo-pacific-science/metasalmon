@@ -1,4 +1,4 @@
-test_that("edh_build_iso19139_xml keeps legacy ISO export available when requested", {
+test_that("edh_build_iso19139_xml writes the HNAP-aware EDH export", {
   dataset_meta <- tibble::tibble(
     dataset_id = "fraser-coho-2024",
     title = "Fraser River Coho Escapement Data",
@@ -23,8 +23,7 @@ test_that("edh_build_iso19139_xml keeps legacy ISO export available when request
   result <- edh_build_iso19139_xml(
     dataset_meta,
     output_path = out,
-    date_stamp = as.Date("2026-03-03"),
-    profile = "iso19139"
+    date_stamp = as.Date("2026-03-03")
   )
 
   expect_true(file.exists(out))
@@ -34,8 +33,12 @@ test_that("edh_build_iso19139_xml keeps legacy ISO export available when request
   xml <- xml2::read_xml(out)
   ns <- xml2::xml_ns(xml)
 
-  expect_equal(
+  expect_match(
     xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:fileIdentifier/gco:CharacterString", ns)),
+    "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:dataSetURI/gco:CharacterString", ns)),
     "fraser-coho-2024"
   )
   expect_equal(
@@ -48,10 +51,11 @@ test_that("edh_build_iso19139_xml keeps legacy ISO export available when request
   )
   expect_equal(
     xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:hierarchyLevel/*", ns)),
-    "dataset"
+    "nonGeographicDataset"
   )
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:topicCategory", ns)) == 2)
-  expect_true(length(xml2::xml_find_all(xml, ".//gmd:EX_GeographicDescription", ns)) == 1)
+  expect_true(length(xml2::xml_find_all(xml, ".//gmd:locale/gmd:PT_Locale", ns)) == 1)
+  expect_true(length(xml2::xml_find_all(xml, ".//gmd:EX_GeographicDescription", ns)) == 0)
   expect_true(length(xml2::xml_find_all(xml, ".//gml:TimePeriod", ns)) == 1)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:resourceMaintenance", ns)) == 1)
   expect_true(length(xml2::xml_find_all(xml, ".//gmd:classification", ns)) == 1)

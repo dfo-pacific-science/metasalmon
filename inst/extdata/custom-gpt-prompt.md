@@ -55,7 +55,7 @@ Dataset metadata:
   - What is the `license` string or URL?
   - Who is the `contact_name` and `contact_email`?
   - If EDH export is expected: what are `update_frequency`, `topic_categories`, and `security_classification`?
-- For XML delivery workflows, note that `edh_build_iso19139_xml()` now defaults to an HNAP-aware EDH export from `dataset.csv` metadata; use `profile = "iso19139"` only when you explicitly need the older compact fallback.
+- For XML delivery workflows, note that `edh_build_iso19139_xml()` creates the HNAP-aware EDH export from `dataset.csv` metadata.
 
 ## Output requirements
 

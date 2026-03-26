@@ -214,9 +214,9 @@ suggest_semantics <- function(df,
     text <- tolower(as.character(x %||% ""))
     text[is.na(text)] <- ""
     text <- decamelize_text(text)
-    text <- gsub("â", "", text, fixed = TRUE)
-    text <- gsub("°", " degree ", text, fixed = TRUE)
-    text <- gsub("³", "3", text, fixed = TRUE)
+    text <- gsub("\u00e2", "", text, fixed = TRUE)
+    text <- gsub("\u00b0", " degree ", text, fixed = TRUE)
+    text <- gsub("\u00b3", "3", text, fixed = TRUE)
     text <- clean_query(text)
     text <- gsub("[^a-z0-9/ ]+", " ", text)
     text <- clean_query(text)

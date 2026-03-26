@@ -1,12 +1,7 @@
-#' Build ISO 19139 or HNAP-aware metadata XML for DFO Enterprise Data Hub export
+#' Build HNAP-aware metadata XML for DFO Enterprise Data Hub export
 #'
-#' Generates metadata XML from `dataset_meta` for DFO Enterprise Data Hub /
-#' GeoNetwork workflows. The default `"dfo_edh_hnap"` profile now emits the
-#' more practical North American Profile / EDH-oriented structure with
-#' deterministic file identifiers, maintenance/status, legal constraints,
-#' optional distribution info, reference system support, bilingual locale
-#' scaffolding, and richer contact metadata when available. The legacy
-#' `"iso19139"` profile remains available as a compact fallback export.
+#' Generates HNAP-aware metadata XML from `dataset_meta` for DFO Enterprise Data
+#' Hub / GeoNetwork workflows.
 #'
 #' The produced XML should still be validated and enriched against your local EDH
 #' profile before production upload.
@@ -23,18 +18,14 @@
 #'   plus optional French-localized fields such as `title_fr` and
 #'   `description_fr`.
 #' @param output_path Optional file path to write XML.
-#' @param file_identifier Optional metadata file identifier.
-#'   For the default `profile = "dfo_edh_hnap"`, non-UUID identifiers are
-#'   converted to a deterministic UUID-like value and the original `dataset_id`
-#'   is preserved in `gmd:dataSetURI` / citation identifiers. For
-#'   `profile = "iso19139"`, this defaults to `dataset_id`.
+#' @param file_identifier Optional metadata file identifier. Non-UUID
+#'   identifiers are converted to a deterministic UUID-like value and the
+#'   original `dataset_id` is preserved in `gmd:dataSetURI` / citation
+#'   identifiers.
 #' @param language ISO 639-2/T language code for the primary metadata language
 #'   (default: `"eng"`).
 #' @param date_stamp Metadata date stamp (default: `Sys.Date()`). When
 #'   `dataset_meta$modified` is present, that value is preferred.
-#' @param profile Metadata export profile. `"dfo_edh_hnap"` (the default)
-#'   returns the richer HNAP/EDH-oriented structure; `"iso19139"` keeps the
-#'   original lightweight fallback export.
 #'
 #' @return Invisible list with elements `xml` (string) and `path`.
 #' @export
@@ -54,20 +45,11 @@
 #'
 #' out <- tempfile(fileext = ".xml")
 #' edh_build_iso19139_xml(dataset_meta, output_path = out)
-#'
-#' out_iso <- tempfile(fileext = ".xml")
-#' edh_build_iso19139_xml(
-#'   dataset_meta,
-#'   output_path = out_iso,
-#'   profile = "iso19139"
-#' )
 edh_build_iso19139_xml <- function(dataset_meta,
                                    output_path = NULL,
                                    file_identifier = NULL,
                                    language = "eng",
-                                   date_stamp = Sys.Date(),
-                                   profile = c("dfo_edh_hnap", "iso19139")) {
-  profile <- match.arg(profile)
+                                   date_stamp = Sys.Date()) {
 
   if (!inherits(dataset_meta, "data.frame") || nrow(dataset_meta) != 1) {
     cli::cli_abort("{.arg dataset_meta} must be a single-row data frame/tibble")
@@ -427,7 +409,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
     city <- meta(paste0(prefix, "_city"))
     admin <- meta(paste0(prefix, "_admin_area"), aliases = c(paste0(prefix, "_province"), paste0(prefix, "_administrative_area")))
     postal <- meta(paste0(prefix, "_postal_code"))
-    country <- meta(paste0(prefix, "_country"), default = if (profile == "dfo_edh_hnap") "Canada" else NA_character_)
+    country <- meta(paste0(prefix, "_country"), default = "Canada")
     url <- meta(paste0(prefix, "_url"), aliases = if (use_creator) c("creator_online_resource") else c("contact_online_resource"))
 
     if (looks_organizational(individual) && !non_empty(org)) {
@@ -604,26 +586,22 @@ edh_build_iso19139_xml <- function(dataset_meta,
     "underdevelopment" = "underDevelopment"
   )
 
-  include_locale <- identical(profile, "dfo_edh_hnap")
+  include_locale <- TRUE
   locale_id <- "fra"
-
-  iso_code_list <- function(code) {
-    paste0("http://www.isotc211.org/2005/resources/codeList.xml#", code)
-  }
 
   hnap_code_list <- function(code) {
     paste0("http://nap.geogratis.gc.ca/metadata/register/napMetadataRegister.xml#", code)
   }
 
-  code_list_role <- if (include_locale) hnap_code_list("CI_RoleCode") else iso_code_list("CI_RoleCode")
-  code_list_date_type <- if (include_locale) hnap_code_list("CI_DateTypeCode") else iso_code_list("CI_DateTypeCode")
-  code_list_charset <- if (include_locale) hnap_code_list("MD_CharacterSetCode") else iso_code_list("MD_CharacterSetCode")
-  code_list_scope <- if (include_locale) hnap_code_list("MD_ScopeCode") else iso_code_list("MD_ScopeCode")
-  code_list_maintenance <- if (include_locale) hnap_code_list("MD_MaintenanceFrequencyCode") else iso_code_list("MD_MaintenanceFrequencyCode")
-  code_list_status <- if (include_locale) hnap_code_list("MD_ProgressCode") else iso_code_list("MD_ProgressCode")
-  code_list_restriction <- if (include_locale) hnap_code_list("MD_RestrictionCode") else iso_code_list("MD_RestrictionCode")
-  code_list_classification <- if (include_locale) hnap_code_list("MD_ClassificationCode") else iso_code_list("MD_ClassificationCode")
-  code_list_online_function <- if (include_locale) hnap_code_list("CI_OnLineFunctionCode") else iso_code_list("CI_OnLineFunctionCode")
+  code_list_role <- hnap_code_list("CI_RoleCode")
+  code_list_date_type <- hnap_code_list("CI_DateTypeCode")
+  code_list_charset <- hnap_code_list("MD_CharacterSetCode")
+  code_list_scope <- hnap_code_list("MD_ScopeCode")
+  code_list_maintenance <- hnap_code_list("MD_MaintenanceFrequencyCode")
+  code_list_status <- hnap_code_list("MD_ProgressCode")
+  code_list_restriction <- hnap_code_list("MD_RestrictionCode")
+  code_list_classification <- hnap_code_list("MD_ClassificationCode")
+  code_list_online_function <- hnap_code_list("CI_OnLineFunctionCode")
 
   dataset_id <- meta("dataset_id")
   title <- meta("title")
@@ -634,7 +612,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
 
   fid <- file_identifier
   if (!non_empty(fid)) {
-    if (profile == "dfo_edh_hnap" && !looks_like_uuid(dataset_id)) {
+    if (!looks_like_uuid(dataset_id)) {
       fid <- deterministic_uuid(dataset_id)
     } else {
       fid <- dataset_id
@@ -643,65 +621,50 @@ edh_build_iso19139_xml <- function(dataset_meta,
 
   effective_date_stamp <- meta("modified", default = as.character(date_stamp))
   update_frequency <- normalize_codelist_value(
-    meta("update_frequency", default = if (profile == "dfo_edh_hnap") "unknown" else NA_character_),
+    meta("update_frequency", default = "unknown"),
     update_frequency_map,
     field = "update_frequency",
-    fallback = if (profile == "dfo_edh_hnap") "unknown" else NA_character_
+    fallback = "unknown"
   )
   security_classification <- normalize_codelist_value(
-    meta(
-      "security_classification",
-      default = if (profile == "dfo_edh_hnap") "unclassified" else NA_character_
-    ),
+    meta("security_classification", default = "unclassified"),
     classification_map,
     field = "security_classification",
-    fallback = if (profile == "dfo_edh_hnap") "unclassified" else NA_character_
+    fallback = "unclassified"
   )
   status_value <- normalize_codelist_value(
-    meta("status", default = if (profile == "dfo_edh_hnap") "completed" else NA_character_),
+    meta("status", default = "completed"),
     status_map,
     field = "status",
-    fallback = if (profile == "dfo_edh_hnap") "completed" else NA_character_
+    fallback = "completed"
   )
 
   root <- xml2::xml_new_root(
     "gmd:MD_Metadata",
     "xmlns:gmd" = "http://www.isotc211.org/2005/gmd",
     "xmlns:gco" = "http://www.isotc211.org/2005/gco",
-    "xmlns:gml" = if (include_locale) "http://www.opengis.net/gml/3.2" else "http://www.opengis.net/gml",
+    "xmlns:gml" = "http://www.opengis.net/gml/3.2",
     "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance"
   )
 
-  if (include_locale) {
-    xml2::xml_set_attr(
-      root,
-      "xsi:schemaLocation",
-      paste(
-        "http://www.isotc211.org/2005/gmd",
-        "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/gmd/gmd.xsd",
-        "http://www.isotc211.org/2005/srv",
-        "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/srv/srv.xsd",
-        "http://www.geconnections.org/nap/napMetadataTools/napXsd/napm",
-        "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/napm/napm.xsd"
-      )
+  xml2::xml_set_attr(
+    root,
+    "xsi:schemaLocation",
+    paste(
+      "http://www.isotc211.org/2005/gmd",
+      "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/gmd/gmd.xsd",
+      "http://www.isotc211.org/2005/srv",
+      "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/srv/srv.xsd",
+      "http://www.geconnections.org/nap/napMetadataTools/napXsd/napm",
+      "http://nap.geogratis.gc.ca/metadata/tools/schemas/metadata/can-cgsb-171.100-2009-a/napm/napm.xsd"
     )
-  }
+  )
 
   file_id <- xml2::xml_add_child(root, "gmd:fileIdentifier")
   xml2::xml_add_child(file_id, "gco:CharacterString", fid)
 
   language_node <- xml2::xml_add_child(root, "gmd:language")
-  if (include_locale) {
-    xml2::xml_add_child(language_node, "gco:CharacterString", paste0(language, "; CAN"))
-  } else {
-    xml2::xml_add_child(
-      language_node,
-      "gmd:LanguageCode",
-      language,
-      codeList = "http://www.loc.gov/standards/iso639-2/",
-      codeListValue = language
-    )
-  }
+  xml2::xml_add_child(language_node, "gco:CharacterString", paste0(language, "; CAN"))
 
   add_code(
     root,
@@ -709,14 +672,10 @@ edh_build_iso19139_xml <- function(dataset_meta,
     "gmd:MD_CharacterSetCode",
     value = "utf8",
     code_list = code_list_charset,
-    text = if (include_locale) "utf8; utf8" else "utf8"
+    text = "utf8; utf8"
   )
 
-  hierarchy_value <- if (profile == "dfo_edh_hnap") {
-    meta("hierarchy_level", default = "nonGeographicDataset")
-  } else {
-    meta("hierarchy_level", default = "dataset")
-  }
+  hierarchy_value <- meta("hierarchy_level", default = "nonGeographicDataset")
   add_code(
     root,
     "gmd:hierarchyLevel",
@@ -738,60 +697,55 @@ edh_build_iso19139_xml <- function(dataset_meta,
   date_node <- xml2::xml_add_child(root, "gmd:dateStamp")
   date_value_node(date_node, effective_date_stamp)
 
-  if (include_locale) {
-    add_localized_text(
-      root,
-      "gmd:metadataStandardName",
-      "North American Profile of ISO 19115:2003 - Geographic information - Metadata",
-      localized_value = "Profil nord-am\u00e9ricain de la norme ISO 19115:2003 - Information g\u00e9ographique - M\u00e9tadonn\u00e9es",
-      include_locale = TRUE
-    )
-    add_text(root, "gmd:metadataStandardVersion", "CAN/CGSB-171.100-2009")
+  add_localized_text(
+    root,
+    "gmd:metadataStandardName",
+    "North American Profile of ISO 19115:2003 - Geographic information - Metadata",
+    localized_value = "Profil nord-am\u00e9ricain de la norme ISO 19115:2003 - Information g\u00e9ographique - M\u00e9tadonn\u00e9es",
+    include_locale = TRUE
+  )
+  add_text(root, "gmd:metadataStandardVersion", "CAN/CGSB-171.100-2009")
 
-    data_set_uri <- meta(
-      "dataset_uri",
-      aliases = c("data_set_uri", "landing_page", "dataset_url"),
-      default = if (!identical(fid, original_identifier)) original_identifier else NA_character_
-    )
-    uri_node <- xml2::xml_add_child(root, "gmd:dataSetURI")
-    if (non_empty(data_set_uri)) {
-      xml2::xml_add_child(uri_node, "gco:CharacterString", data_set_uri)
-    } else {
-      xml2::xml_set_attr(uri_node, "gco:nilReason", "missing")
-      xml2::xml_add_child(uri_node, "gco:CharacterString", "")
-    }
-
-    locale_node <- xml2::xml_add_child(root, "gmd:locale")
-    pt_locale <- xml2::xml_add_child(locale_node, "gmd:PT_Locale")
-    xml2::xml_set_attr(pt_locale, "id", locale_id)
-    lang_code <- xml2::xml_add_child(pt_locale, "gmd:languageCode")
-    xml2::xml_add_child(
-      lang_code,
-      "gmd:LanguageCode",
-      "French; Fran\u00e7ais",
-      codeList = hnap_code_list("LanguageCode"),
-      codeListValue = locale_id
-    )
-    country_node <- xml2::xml_add_child(pt_locale, "gmd:country")
-    xml2::xml_add_child(
-      country_node,
-      "gmd:Country",
-      "Canada; Canada",
-      codeList = hnap_code_list("Country"),
-      codeListValue = "CAN"
-    )
-    add_code(
-      pt_locale,
-      "gmd:characterEncoding",
-      "gmd:MD_CharacterSetCode",
-      value = "utf8",
-      code_list = code_list_charset,
-      text = "utf8; utf8"
-    )
+  data_set_uri <- meta(
+    "dataset_uri",
+    aliases = c("data_set_uri", "landing_page", "dataset_url"),
+    default = if (!identical(fid, original_identifier)) original_identifier else NA_character_
+  )
+  uri_node <- xml2::xml_add_child(root, "gmd:dataSetURI")
+  if (non_empty(data_set_uri)) {
+    xml2::xml_add_child(uri_node, "gco:CharacterString", data_set_uri)
   } else {
-    add_text(root, "gmd:metadataStandardName", "ISO 19115:2003/19139")
-    add_text(root, "gmd:metadataStandardVersion", "ISO 19139")
+    xml2::xml_set_attr(uri_node, "gco:nilReason", "missing")
+    xml2::xml_add_child(uri_node, "gco:CharacterString", "")
   }
+
+  locale_node <- xml2::xml_add_child(root, "gmd:locale")
+  pt_locale <- xml2::xml_add_child(locale_node, "gmd:PT_Locale")
+  xml2::xml_set_attr(pt_locale, "id", locale_id)
+  lang_code <- xml2::xml_add_child(pt_locale, "gmd:languageCode")
+  xml2::xml_add_child(
+    lang_code,
+    "gmd:LanguageCode",
+    "French; Fran\u00e7ais",
+    codeList = hnap_code_list("LanguageCode"),
+    codeListValue = locale_id
+  )
+  country_node <- xml2::xml_add_child(pt_locale, "gmd:country")
+  xml2::xml_add_child(
+    country_node,
+    "gmd:Country",
+    "Canada; Canada",
+    codeList = hnap_code_list("Country"),
+    codeListValue = "CAN"
+  )
+  add_code(
+    pt_locale,
+    "gmd:characterEncoding",
+    "gmd:MD_CharacterSetCode",
+    value = "utf8",
+    code_list = code_list_charset,
+    text = "utf8; utf8"
+  )
 
   add_reference_system(
     root,
@@ -987,20 +941,11 @@ edh_build_iso19139_xml <- function(dataset_meta,
 
     add_bounding_box(ex_extent)
 
-    spatial_extent <- meta("spatial_extent")
-    if (non_empty(spatial_extent) && profile == "iso19139") {
-      geo_el <- xml2::xml_add_child(ex_extent, "gmd:geographicElement")
-      geo_desc <- xml2::xml_add_child(geo_el, "gmd:EX_GeographicDescription")
-      geo_id <- xml2::xml_add_child(geo_desc, "gmd:geographicIdentifier")
-      md_id <- xml2::xml_add_child(geo_id, "gmd:MD_Identifier")
-      add_text(md_id, "gmd:code", spatial_extent)
-    }
-
     add_temporal_extent(ex_extent, fid)
   }
 
   supplemental_parts <- c(
-    if (profile == "dfo_edh_hnap" && non_empty(meta("spatial_extent"))) {
+    if (non_empty(meta("spatial_extent"))) {
       sprintf("spatial_extent=%s", meta("spatial_extent"))
     } else {
       NULL

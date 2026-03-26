@@ -1,12 +1,7 @@
-# Build ISO 19139 or HNAP-aware metadata XML for DFO Enterprise Data Hub export
+# Build HNAP-aware metadata XML for DFO Enterprise Data Hub export
 
-Generates metadata XML from `dataset_meta` for DFO Enterprise Data Hub /
-GeoNetwork workflows. The default `"dfo_edh_hnap"` profile now emits the
-more practical North American Profile / EDH-oriented structure with
-deterministic file identifiers, maintenance/status, legal constraints,
-optional distribution info, reference system support, bilingual locale
-scaffolding, and richer contact metadata when available. The legacy
-`"iso19139"` profile remains available as a compact fallback export.
+Generates HNAP-aware metadata XML from `dataset_meta` for DFO Enterprise
+Data Hub / GeoNetwork workflows.
 
 ## Usage
 
@@ -16,8 +11,7 @@ edh_build_iso19139_xml(
   output_path = NULL,
   file_identifier = NULL,
   language = "eng",
-  date_stamp = Sys.Date(),
-  profile = c("dfo_edh_hnap", "iso19139")
+  date_stamp = Sys.Date()
 )
 ```
 
@@ -42,11 +36,9 @@ edh_build_iso19139_xml(
 
 - file_identifier:
 
-  Optional metadata file identifier. For the default
-  `profile = "dfo_edh_hnap"`, non-UUID identifiers are converted to a
-  deterministic UUID-like value and the original `dataset_id` is
-  preserved in `gmd:dataSetURI` / citation identifiers. For
-  `profile = "iso19139"`, this defaults to `dataset_id`.
+  Optional metadata file identifier. Non-UUID identifiers are converted
+  to a deterministic UUID-like value and the original `dataset_id` is
+  preserved in `gmd:dataSetURI` / citation identifiers.
 
 - language:
 
@@ -58,12 +50,6 @@ edh_build_iso19139_xml(
   Metadata date stamp (default:
   [`Sys.Date()`](https://rdrr.io/r/base/Sys.time.html)). When
   `dataset_meta$modified` is present, that value is preferred.
-
-- profile:
-
-  Metadata export profile. `"dfo_edh_hnap"` (the default) returns the
-  richer HNAP/EDH-oriented structure; `"iso19139"` keeps the original
-  lightweight fallback export.
 
 ## Value
 
@@ -91,12 +77,4 @@ dataset_meta <- tibble::tibble(
 
 out <- tempfile(fileext = ".xml")
 edh_build_iso19139_xml(dataset_meta, output_path = out)
-
-out_iso <- tempfile(fileext = ".xml")
-edh_build_iso19139_xml(
-  dataset_meta,
-  output_path = out_iso,
-  profile = "iso19139"
-)
-#> Error in edh_build_iso19139_xml(dataset_meta, output_path = out_iso, profile = "iso19139"): unused argument (profile = "iso19139")
 ```

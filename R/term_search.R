@@ -212,7 +212,7 @@ find_terms <- function(query,
   results <- purrr::map(queries, function(q) {
     run_source <- function(src) {
       start_time <- Sys.time()
-      tryCatch(
+      result <- tryCatch(
         {
           res <- if (src == "smn") {
             .search_smn(q, role)
@@ -235,16 +235,17 @@ find_terms <- function(query,
           } else {
             .empty_terms(role)
           }
-          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-          diagnostics[[length(diagnostics) + 1]] <<- list(
-            source = src,
-            query = q,
-            status = "success",
-            count = nrow(res),
-            elapsed_secs = round(elapsed, 2),
-            error = NA_character_
+          list(
+            result = res,
+            diagnostic = list(
+              source = src,
+              query = q,
+              status = "success",
+              count = nrow(res),
+              elapsed_secs = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 2),
+              error = NA_character_
+            )
           )
-          res
         },
         error = function(e) {
           err_msg <- conditionMessage(e)
@@ -254,38 +255,65 @@ find_terms <- function(query,
               "i" = "{.text {err_msg}}"
             ))
           }
-          elapsed <- as.numeric(difftime(Sys.time(), start_time, units = "secs"))
-          diagnostics[[length(diagnostics) + 1]] <<- list(
-            source = src,
-            query = q,
-            status = "error",
-            count = 0L,
-            elapsed_secs = round(elapsed, 2),
-            error = err_msg
+          list(
+            result = .empty_terms(role),
+            diagnostic = list(
+              source = src,
+              query = q,
+              status = "error",
+              count = 0L,
+              elapsed_secs = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 2),
+              error = err_msg
+            )
           )
-          .empty_terms(role)
         }
       )
+      result
     }
 
     query_results <- list()
+    query_diagnostics <- list()
+    append_query_output <- function(res) {
+      query_results[[length(query_results) + 1]] <<- res$result
+      query_diagnostics[[length(query_diagnostics) + 1]] <<- res$diagnostic
+    }
 
     local_pref_sources <- intersect(c("smn", "gcdfo"), sources)
     if (length(local_pref_sources) > 0) {
       for (local_src in local_pref_sources) {
         local_res <- run_source(local_src)
-        query_results[[length(query_results) + 1]] <- local_res
-        local_good_hit <- .local_short_circuit_hit(q, local_res)
+        append_query_output(local_res)
+        local_good_hit <- .local_short_circuit_hit(q, local_res$result)
         if (local_good_hit) {
+          diagnostics <<- c(diagnostics, query_diagnostics)
           return(query_results)
         }
       }
     }
 
-    for (src in setdiff(sources, c("smn", "gcdfo"))) {
-      query_results[[length(query_results) + 1]] <- run_source(src)
+    remaining_sources <- setdiff(sources, c("smn", "gcdfo"))
+    if (length(remaining_sources) > 0) {
+      if (
+        .metasalmon_term_search_parallel_enabled() &&
+          length(remaining_sources) > 1L &&
+          .Platform$OS.type != "windows"
+      ) {
+        worker_count <- .metasalmon_term_search_worker_count(length(remaining_sources))
+        if (worker_count > 1L) {
+          source_results <- parallel::mclapply(remaining_sources, run_source, mc.cores = worker_count)
+        } else {
+          source_results <- purrr::map(remaining_sources, run_source)
+        }
+      } else {
+        source_results <- purrr::map(remaining_sources, run_source)
+      }
+
+      for (res in source_results) {
+        append_query_output(res)
+      }
     }
 
+    diagnostics <<- c(diagnostics, query_diagnostics)
     query_results
   })
 
@@ -360,8 +388,85 @@ find_terms <- function(query,
   sprintf("metasalmon/%s", utils::packageVersion("metasalmon"))
 )
 
+.metasalmon_term_search_timeout <- function(source = NULL, default = 30) {
+  source_id <- if (is.null(source) || !nzchar(trimws(as.character(source)))) {
+    NA_character_
+  } else {
+    toupper(trimws(as.character(source)))
+  }
+
+  if (!is.na(source_id) && nzchar(source_id)) {
+    source_env <- Sys.getenv(paste0("METASALMON_TERM_SEARCH_TIMEOUT_", source_id), unset = "")
+    if (nzchar(trimws(source_env))) {
+      source_timeout <- suppressWarnings(as.numeric(trimws(source_env)))
+      if (!is.na(source_timeout) && is.finite(source_timeout) && source_timeout > 0) {
+        return(source_timeout)
+      }
+    }
+  }
+
+  global_env <- Sys.getenv("METASALMON_TERM_SEARCH_TIMEOUT", unset = "")
+  if (nzchar(trimws(global_env))) {
+    global_timeout <- suppressWarnings(as.numeric(trimws(global_env)))
+    if (!is.na(global_timeout) && is.finite(global_timeout) && global_timeout > 0) {
+      return(global_timeout)
+    }
+  }
+
+  option_timeout <- getOption("metasalmon.term_search_timeout")
+  if (is.numeric(option_timeout) && length(option_timeout) == 1L && !is.na(option_timeout) && is.finite(option_timeout) && option_timeout > 0) {
+    return(as.numeric(option_timeout))
+  }
+
+  return(as.numeric(default))
+}
+
 # Bindings for NSE columns used in dplyr pipelines
 alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NULL
+
+.metasalmon_term_search_parallel_enabled <- function() {
+  env <- tolower(trimws(Sys.getenv("METASALMON_TERM_SEARCH_PARALLEL", unset = "")))
+  if (env %in% c("1", "true", "yes", "on")) {
+    return(TRUE)
+  }
+  if (env %in% c("0", "false", "no", "off")) {
+    return(FALSE)
+  }
+
+  opt <- getOption("metasalmon.term_search_parallel")
+  if (is.logical(opt) && length(opt) == 1L && !is.na(opt)) {
+    return(isTRUE(opt))
+  }
+
+  return(TRUE)
+}
+
+.metasalmon_term_search_worker_count <- function(source_count, minimum = 2L) {
+  if (!is.numeric(source_count) || length(source_count) != 1L || is.na(source_count) || source_count < 1L) {
+    return(minimum)
+  }
+
+  source_count <- as.integer(source_count)
+  env_cores <- Sys.getenv("METASALMON_TERM_SEARCH_WORKERS", unset = "")
+  if (nzchar(trimws(env_cores))) {
+    env_val <- suppressWarnings(as.integer(trimws(env_cores)))
+    if (!is.na(env_val) && is.finite(env_val) && env_val > 0L) {
+      return(max(minimum, min(as.integer(env_val), source_count)))
+    }
+  }
+
+  detected <- suppressWarnings(as.integer(parallel::detectCores(logical = TRUE)))
+  if (is.na(detected) || detected < 1L) {
+    detected <- 1L
+  }
+  usable <- max(minimum - 1L, 0L)
+  available <- detected - usable
+  if (available < minimum) {
+    return(minimum)
+  }
+
+  max(1L, min(source_count, available))
+}
 
 .ms_is_timeout_error <- function(message) {
   if (is.null(message) || length(message) == 0) {
@@ -372,7 +477,12 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   grepl("timeout|timed out|operation timed out|timeout exceeded|timedout", msg)
 }
 
-.safe_json <- function(url, headers = NULL, timeout_secs = 30) {
+.safe_json <- function(url, headers = NULL, timeout_secs = NA_real_) {
+  timeout_secs <- if (is.null(timeout_secs) || length(timeout_secs) == 0 || is.na(timeout_secs)) {
+    .metasalmon_term_search_timeout(default = 30)
+  } else {
+    as.numeric(timeout_secs)
+  }
   tryCatch(
     {
       ua <- .metasalmon_user_agent
@@ -456,7 +566,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   )
 
   url <- paste0("https://vocab.nerc.ac.uk/sparql/?query=", utils::URLencode(sparql, reserved = TRUE))
-  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = 60)
+  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = .metasalmon_term_search_timeout(source = "nvs", default = 60))
   bindings <- data$results$bindings %||% NULL
   if (is.null(bindings) || !is.data.frame(bindings) || nrow(bindings) == 0) {
     return(.empty_terms(role))
@@ -496,7 +606,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 .search_zooma <- function(query, role) {
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0("https://www.ebi.ac.uk/spot/zooma/v2/api/services/annotate?propertyValue=", encoded)
-  data <- .safe_json(url, headers = c(Accept = "application/json"), timeout_secs = 60)
+  data <- .safe_json(url, headers = c(Accept = "application/json"), timeout_secs = .metasalmon_term_search_timeout(source = "zooma", default = 60))
 
   if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     return(.empty_terms(role))
@@ -645,7 +755,7 @@ pattern <- paste(tokens, collapse = ".*")
   )
 
   url <- paste0("https://www.qudt.org/fuseki/qudt/sparql?query=", utils::URLencode(sparql, reserved = TRUE))
-  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = 60)
+  data <- .safe_json(url, headers = c(Accept = "application/sparql-results+json"), timeout_secs = .metasalmon_term_search_timeout(source = "qudt", default = 60))
   bindings <- data$results$bindings %||% NULL
   if (is.null(bindings) || length(bindings) == 0) {
     return(.empty_terms(role))
@@ -700,12 +810,12 @@ pattern <- paste(tokens, collapse = ".*")
   encoded <- utils::URLencode(query, reserved = TRUE)
   # Use GBIF species match for exact-ish matches
   url <- paste0("https://api.gbif.org/v1/species/match?name=", encoded, "&verbose=true")
-  data <- .safe_json(url, timeout_secs = 30)
+  data <- .safe_json(url, timeout_secs = .metasalmon_term_search_timeout())
 
   if (is.null(data) || is.null(data$usageKey)) {
     # Fallback to species search for broader matches
     url <- paste0("https://api.gbif.org/v1/species/search?q=", encoded, "&limit=20")
-    data <- .safe_json(url, timeout_secs = 30)
+    data <- .safe_json(url, timeout_secs = .metasalmon_term_search_timeout())
     if (is.null(data) || is.null(data$results) || length(data$results) == 0) {
       return(.empty_terms(role))
     }
@@ -766,12 +876,12 @@ pattern <- paste(tokens, collapse = ".*")
     encoded,
     "?like=true&marine_only=false&offset=1"
   )
-  data <- .safe_json(url, timeout_secs = 30)
+  data <- .safe_json(url, timeout_secs = .metasalmon_term_search_timeout())
 
   if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) {
     # Try fuzzy match endpoint
     url <- paste0("https://www.marinespecies.org/rest/AphiaRecordsByMatchNames?scientificnames%5B%5D=", encoded)
-    data <- .safe_json(url, timeout_secs = 30)
+    data <- .safe_json(url, timeout_secs = .metasalmon_term_search_timeout())
     if (is.null(data) || length(data) == 0 || is.null(data[[1]])) {
       return(.empty_terms(role))
     }

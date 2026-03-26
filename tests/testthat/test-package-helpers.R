@@ -126,11 +126,84 @@ test_that("create_sdp creates valid package", {
     seed_semantics = FALSE,
     seed_dataset_meta = seed_dataset_meta,
     include_edh_xml = TRUE,
-    edh_profile = "dfo_edh_hnap",
     overwrite = TRUE
   )
 
   expect_true(file.exists(file.path(pkg_path_with_edh, "metadata", "metadata-edh-hnap.xml")))
+})
+
+test_that("create_sdp auto-enables EDH XML export when legacy edh_profile is supplied", {
+  temp_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "edh-auto",
+    title = "EDH Auto",
+    description = "EDH auto-enable test",
+    creator = "Test",
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = "MIT",
+    temporal_start = NA_character_,
+    temporal_end = NA_character_,
+    spatial_extent = NA_character_
+  )
+
+  expect_warning(
+    expect_message(
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(temp_dir, "package-auto-edh"),
+        dataset_id = "edh-auto",
+        seed_semantics = FALSE,
+        check_updates = FALSE,
+        seed_dataset_meta = seed_dataset_meta,
+        edh_profile = "dfo_edh_hnap",
+        overwrite = TRUE
+      ),
+      "include_edh_xml = TRUE",
+      fixed = TRUE
+    ),
+    "deprecated"
+  )
+
+  expect_true(file.exists(file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")))
+})
+
+test_that("create_sdp accepts deprecated EDH_Profile alias", {
+  temp_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "edh-alias",
+    title = "EDH Alias",
+    description = "EDH alias test",
+    creator = "Test",
+    contact_name = NA_character_,
+    contact_email = NA_character_,
+    license = "MIT",
+    temporal_start = NA_character_,
+    temporal_end = NA_character_,
+    spatial_extent = NA_character_
+  )
+
+  expect_warning(
+    expect_message(
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(temp_dir, "package-alias-edh"),
+        dataset_id = "edh-alias",
+        seed_semantics = FALSE,
+        check_updates = FALSE,
+        seed_dataset_meta = seed_dataset_meta,
+        EDH_Profile = "dfo_edh_hnap",
+        overwrite = TRUE
+      ),
+      "include_edh_xml = TRUE",
+      fixed = TRUE
+    ),
+    "deprecated"
+  )
+
+  expect_true(file.exists(file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")))
 })
 
 test_that("normalized dictionary column order is preserved when writing package", {
@@ -201,6 +274,7 @@ test_that("create_sdp requires overwrite=TRUE to write into an existing director
   withr::local_tempdir() -> tmp
   output_dir <- file.path(tmp, "existing-package")
   dir.create(output_dir)
+  # any existing file should still block and avoid running semantic inference
   readr::write_csv(tibble::tibble(a = 1), file.path(output_dir, "already.csv"))
 
   called <- 0L
@@ -226,6 +300,11 @@ test_that("create_sdp requires overwrite=TRUE to write into an existing director
   )
 
   expect_equal(called, 0L)
+})
+
+test_that("create_sdp exposes seed_table_meta default as TRUE", {
+  expect_true(identical(formals(create_sdp)$seed_table_meta, TRUE))
+  expect_true(identical(formals(infer_salmon_datapackage_artifacts)$seed_table_meta, TRUE))
 })
 
 test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {

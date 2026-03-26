@@ -1688,7 +1688,6 @@ test_that("validate_dictionary catches missing columns", {
   dict <- tibble::tibble(
     dataset_id = "test",
     column_name = "x"
-    # Missing required columns
   )
 
   expect_error(

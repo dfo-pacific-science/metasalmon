@@ -156,32 +156,27 @@ exporting a DwC-DP view.
 When your publication workflow includes DFO Enterprise Data Hub /
 GeoNetwork,
 [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
-now defaults to the richer HNAP-aware EDH export and still offers the
-older compact ISO 19139 path as an explicit fallback.
+writes the HNAP-aware EDH export.
 
 ``` r
 
 edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
 edh_build_iso19139_xml(dataset_meta, output_path = edh_hnap_xml)
 
-edh_iso_xml <- file.path(pkg_path, "metadata", "metadata-iso19139.xml")
-edh_build_iso19139_xml(
-  dataset_meta,
-  output_path = edh_iso_xml,
-  profile = "iso19139"
-)
-
 file.exists(edh_hnap_xml)
-file.exists(edh_iso_xml)
 ```
 
-The default HNAP-aware path recognizes extra optional columns when
-present, including `created`, `modified`, `status`, `distribution_url`,
+The HNAP-aware export recognizes extra optional columns when present,
+including `created`, `modified`, `status`, `distribution_url`,
 `reference_system`, `bbox_*`, and localized fields like `title_fr` /
 `description_fr`.
 
-Validate and enrich either XML output against your local EDH profile
-before production upload.
+If you are creating the package in one shot,
+`create_sdp(..., include_edh_xml = TRUE)` now writes the same XML
+automatically to `metadata/metadata-edh-hnap.xml`.
+
+Validate and enrich the XML output against your local EDH profile before
+production upload.
 
 #### Using suggest_dwc_mappings() directly
 

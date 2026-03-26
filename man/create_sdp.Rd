@@ -15,15 +15,14 @@ create_sdp(
   semantic_max_per_role = 1,
   seed_verbose = TRUE,
   seed_codes = NULL,
-  seed_table_meta = NULL,
+  seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
   semantic_code_scope = c("factor", "all", "none"),
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
   include_edh_xml = FALSE,
-  edh_profile = c("dfo_edh_hnap", "iso19139"),
-  edh_xml_path = NULL
+  ...
 )
 }
 \arguments{
@@ -76,17 +75,15 @@ releases only when one is available. Defaults to \code{interactive()}.}
 \code{TRUE}, replacement is only allowed for empty directories or directories
 previously written by \code{metasalmon}.}
 
-\item{include_edh_xml}{Logical; when \code{TRUE}, writes an EDH XML metadata file into
-\verb{metadata/} using \code{edh_build_iso19139_xml()}.}
+\item{include_edh_xml}{Logical; when \code{TRUE}, writes an HNAP-aware EDH XML
+metadata file to \code{metadata/metadata-edh-hnap.xml} using
+\code{edh_build_iso19139_xml()}. The default is \code{FALSE}.}
 
-\item{edh_profile}{One of "dfo_edh_hnap" (default) or "iso19139". Determines
-whether the richer HNAP-aware profile or compact fallback profile is written
-when \code{include_edh_xml = TRUE}.}
-
-\item{edh_xml_path}{Optional file path for the EDH output when
-\code{include_edh_xml = TRUE}. If \code{NULL}, defaults to \code{metadata/metadata-edh-hnap.xml}
-for \code{edh_profile = "dfo_edh_hnap"} and \code{metadata/metadata-iso19139.xml}
-for \code{edh_profile = "iso19139"}.}
+\item{...}{Deprecated legacy EDH arguments accepted for backwards
+compatibility: \code{edh_profile}, \code{EDH_Profile}, and \code{EDH_profile} all enable
+EDH XML export and must be \code{"dfo_edh_hnap"} when supplied.
+\code{edh_xml_path} is ignored with a warning because XML now always writes to
+the default metadata path. Any other extra arguments error.}
 }
 \value{
 Invisibly returns the package path.

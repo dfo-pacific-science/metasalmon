@@ -641,7 +641,7 @@ infer_value_type <- function(col) {
     name_lower
   )
   has_unit_hint <- grepl(
-    "\\([^)]*(%|‰|°c|deg\\s*c|cms|m3/s|mm|cm|\\bm\\b|kg|g|mg/l|ug/l)[^)]*\\)",
+    "\\([^)]*(%|\u2030|\u00b0c|deg\\s*c|cms|m3/s|mm|cm|\\bm\\b|kg|g|mg/l|ug/l)[^)]*\\)",
     name_lower,
     perl = TRUE
   )

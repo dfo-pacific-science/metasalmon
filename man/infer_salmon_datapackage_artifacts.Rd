@@ -14,7 +14,7 @@ infer_salmon_datapackage_artifacts(
   semantic_max_per_role = 1,
   seed_verbose = TRUE,
   seed_codes = NULL,
-  seed_table_meta = NULL,
+  seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
   semantic_code_scope = c("factor", "all", "none")
 )

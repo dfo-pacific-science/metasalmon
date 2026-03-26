@@ -372,7 +372,7 @@ infer_salmon_datapackage_artifacts <- function(
     semantic_max_per_role = 1,
     seed_verbose = TRUE,
     seed_codes = NULL,
-    seed_table_meta = NULL,
+    seed_table_meta = TRUE,
     seed_dataset_meta = NULL,
     semantic_code_scope = c("factor", "all", "none")
 ) {
@@ -410,7 +410,7 @@ infer_salmon_datapackage_artifacts <- function(
     seed_dataset_meta = NULL
   )
 
-  table_meta <- if (is.null(seed_table_meta)) {
+  table_meta <- if (is.null(seed_table_meta) || isTRUE(seed_table_meta)) {
     infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
   } else {
     .ms_normalize_table_meta(seed_table_meta)
@@ -509,15 +509,14 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
 #'   `TRUE`, replacement is only allowed for empty directories or directories
 #'   previously written by `metasalmon`.
-#' @param include_edh_xml Logical; when `TRUE`, writes an EDH XML metadata file into
-#'   `metadata/` using `edh_build_iso19139_xml()`.
-#' @param edh_profile One of "dfo_edh_hnap" (default) or "iso19139". Determines
-#'   whether the richer HNAP-aware profile or compact fallback profile is written
-#'   when `include_edh_xml = TRUE`.
-#' @param edh_xml_path Optional file path for the EDH output when
-#'   `include_edh_xml = TRUE`. If `NULL`, defaults to `metadata/metadata-edh-hnap.xml`
-#'   for `edh_profile = "dfo_edh_hnap"` and `metadata/metadata-iso19139.xml`
-#'   for `edh_profile = "iso19139"`.
+#' @param include_edh_xml Logical; when `TRUE`, writes an HNAP-aware EDH XML
+#'   metadata file to `metadata/metadata-edh-hnap.xml` using
+#'   `edh_build_iso19139_xml()`. The default is `FALSE`.
+#' @param ... Deprecated legacy EDH arguments accepted for backwards
+#'   compatibility: `edh_profile`, `EDH_Profile`, and `EDH_profile` all enable
+#'   EDH XML export and must be `"dfo_edh_hnap"` when supplied.
+#'   `edh_xml_path` is ignored with a warning because XML now always writes to
+#'   the default metadata path. Any other extra arguments error.
 #'
 #' @return Invisibly returns the package path.
 #'
@@ -573,16 +572,82 @@ create_sdp <- function(
     semantic_max_per_role = 1,
     seed_verbose = TRUE,
     seed_codes = NULL,
-    seed_table_meta = NULL,
+    seed_table_meta = TRUE,
     seed_dataset_meta = NULL,
     semantic_code_scope = c("factor", "all", "none"),
     check_updates = interactive(),
     format = "csv",
     overwrite = FALSE,
     include_edh_xml = FALSE,
-    edh_profile = c("dfo_edh_hnap", "iso19139"),
-    edh_xml_path = NULL
+    ...
 ) {
+  dots <- list(...)
+  dot_names <- names(dots)
+  if (is.null(dot_names)) {
+    dot_names <- rep("", length(dots))
+  }
+
+  legacy_profile_names <- intersect(c("edh_profile", "EDH_Profile", "EDH_profile"), dot_names)
+  legacy_path_names <- intersect("edh_xml_path", dot_names)
+  legacy_requested_xml <- FALSE
+
+  if (length(legacy_profile_names) > 1L) {
+    cli::cli_abort(
+      "Use only one legacy EDH profile argument; choose {.code edh_profile}, {.code EDH_Profile}, or {.code EDH_profile}."
+    )
+  }
+
+  if (length(legacy_profile_names) == 1L) {
+    legacy_name <- legacy_profile_names[[1]]
+    legacy_value <- dots[[legacy_name]]
+    legacy_value_chr <- trimws(as.character(legacy_value[[1]]))
+
+    if (length(legacy_value) != 1L || is.na(legacy_value_chr) || !nzchar(legacy_value_chr)) {
+      cli::cli_abort(
+        "Legacy argument {.code {legacy_name}} must be a single non-empty string."
+      )
+    }
+    if (!identical(legacy_value_chr, "dfo_edh_hnap")) {
+      cli::cli_abort(
+        "Only {.code \"dfo_edh_hnap\"} is supported for legacy argument {.code {legacy_name}}."
+      )
+    }
+
+    legacy_requested_xml <- TRUE
+    cli::cli_warn(c(
+      "Argument {.code {legacy_name}} is deprecated.",
+      "i" = "Use {.code include_edh_xml = TRUE}; the DFO EDH HNAP XML is now the only supported export."
+    ))
+  }
+
+  if (length(legacy_path_names) > 0L) {
+    legacy_requested_xml <- TRUE
+    cli::cli_warn(c(
+      "Argument {.code edh_xml_path} is deprecated and ignored.",
+      "i" = "EDH XML now always writes to {.file metadata/metadata-edh-hnap.xml}."
+    ))
+  }
+
+  unused_named <- setdiff(
+    dot_names[nzchar(dot_names)],
+    c("edh_profile", "EDH_Profile", "EDH_profile", "edh_xml_path")
+  )
+  unnamed_count <- sum(!nzchar(dot_names))
+  if (length(unused_named) > 0L || unnamed_count > 0L) {
+    pieces <- c(unused_named, rep("<unnamed>", unnamed_count))
+    cli::cli_abort(
+      "Unused argument{?s}: {.code {pieces}}"
+    )
+  }
+
+  if (!isTRUE(include_edh_xml) && legacy_requested_xml) {
+    include_edh_xml <- TRUE
+    cli::cli_inform(c(
+      "Assuming {.code include_edh_xml = TRUE} because a legacy EDH argument was supplied.",
+      "i" = "EDH XML now always writes {.file metadata/metadata-edh-hnap.xml} using the DFO EDH HNAP profile."
+    ))
+  }
+
   if (is.null(path) || !nzchar(trimws(path))) {
     path <- file.path(getwd(), paste0(.ms_safe_path_slug(dataset_id), "-sdp"))
   }
@@ -662,21 +727,11 @@ create_sdp <- function(
   }
 
   if (isTRUE(include_edh_xml)) {
-    edh_profile <- match.arg(edh_profile)
-    default_edh_path <- if (identical(edh_profile, "dfo_edh_hnap")) {
-      .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
-    } else {
-      .ms_metadata_path(pkg_path, "metadata-iso19139.xml")
-    }
-
-    if (is.null(edh_xml_path)) {
-      edh_xml_path <- default_edh_path
-    }
+    edh_xml_path <- .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
 
     edh_build_iso19139_xml(
       artifacts$dataset_meta,
-      output_path = edh_xml_path,
-      profile = edh_profile
+      output_path = edh_xml_path
     )
 
     cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
@@ -1745,9 +1800,9 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 .ms_normalize_measurement_unit_text <- function(x) {
   text <- tolower(.ms_scalar_text(x))
   text <- gsub("([a-z0-9])([A-Z])", "\\1 \\2", text, perl = TRUE)
-  text <- gsub("â", "", text, fixed = TRUE)
-  text <- gsub("°", " degree ", text, fixed = TRUE)
-  text <- gsub("³", "3", text, fixed = TRUE)
+  text <- gsub("\u00e2", "", text, fixed = TRUE)
+  text <- gsub("\u00b0", " degree ", text, fixed = TRUE)
+  text <- gsub("\u00b3", "3", text, fixed = TRUE)
   text <- gsub("[^a-z0-9/ ]+", " ", text)
   text <- trimws(gsub("\\s+", " ", text))
   if (!nzchar(text)) {

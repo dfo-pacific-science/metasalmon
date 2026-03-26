@@ -92,11 +92,10 @@ Darwin Core Data Package mapping and export helpers
 
 ## Enterprise Data Hub (EDH)
 
-HNAP-aware EDH XML export helper with legacy ISO 19139 fallback
+HNAP-aware EDH XML export helper for Enterprise Data Hub workflows
 
 - [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
-  : Build ISO 19139 or HNAP-aware metadata XML for DFO Enterprise Data
-  Hub export
+  : Build HNAP-aware metadata XML for DFO Enterprise Data Hub export
 
 ## GitHub Access
 

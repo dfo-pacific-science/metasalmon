@@ -11,7 +11,7 @@ Data Package."><meta property="og:image" content="https://dfo-pacific-science.gi
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -64,15 +64,14 @@ Data Package.</p>
 <span>  semantic_max_per_role <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  seed_table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed_table_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  semantic_code_scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"factor"</span>, <span class="st">"all"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
 <span>  check_updates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  format <span class="op">=</span> <span class="st">"csv"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  include_edh_xml <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  edh_profile <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dfo_edh_hnap"</span>, <span class="st">"iso19139"</span><span class="op">)</span>,</span>
-<span>  edh_xml_path <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -162,21 +161,17 @@ previously written by <code>metasalmon</code>.</p></dd>
 
 
 <dt id="arg-include-edh-xml">include_edh_xml<a class="anchor" aria-label="anchor" href="#arg-include-edh-xml"></a></dt>
-<dd><p>Logical; when <code>TRUE</code>, writes an EDH XML metadata file into
-<code>metadata/</code> using <code><a href="edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code>.</p></dd>
+<dd><p>Logical; when <code>TRUE</code>, writes an HNAP-aware EDH XML
+metadata file to <code>metadata/metadata-edh-hnap.xml</code> using
+<code><a href="edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code>. The default is <code>FALSE</code>.</p></dd>
 
 
-<dt id="arg-edh-profile">edh_profile<a class="anchor" aria-label="anchor" href="#arg-edh-profile"></a></dt>
-<dd><p>One of "dfo_edh_hnap" (default) or "iso19139". Determines
-whether the richer HNAP-aware profile or compact fallback profile is written
-when <code>include_edh_xml = TRUE</code>.</p></dd>
-
-
-<dt id="arg-edh-xml-path">edh_xml_path<a class="anchor" aria-label="anchor" href="#arg-edh-xml-path"></a></dt>
-<dd><p>Optional file path for the EDH output when
-<code>include_edh_xml = TRUE</code>. If <code>NULL</code>, defaults to <code>metadata/metadata-edh-hnap.xml</code>
-for <code>edh_profile = "dfo_edh_hnap"</code> and <code>metadata/metadata-iso19139.xml</code>
-for <code>edh_profile = "iso19139"</code>.</p></dd>
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Deprecated legacy EDH arguments accepted for backwards
+compatibility: <code>edh_profile</code>, <code>EDH_Profile</code>, and <code>EDH_profile</code> all enable
+EDH XML export and must be <code>"dfo_edh_hnap"</code> when supplied.
+<code>edh_xml_path</code> is ignored with a warning because XML now always writes to
+the default metadata path. Any other extra arguments error.</p></dd>
 
 </dl></div>
     <div class="section level2">

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,12 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.21" id="metasalmon-0021">metasalmon 0.0.21<a class="anchor" aria-label="anchor" href="#metasalmon-0021"></a></h2>
+<ul><li>Simplified EDH XML support down to the single DFO Enterprise Data Hub HNAP export we actually use: <code><a href="../reference/edh_build_iso19139_xml.html">edh_build_iso19139_xml()</a></code> now always writes the HNAP-aware structure and the older ISO 19139 fallback path has been removed.</li>
+<li>Simplified <code><a href="../reference/create_sdp.html">create_sdp()</a></code> EDH export behavior: <code>include_edh_xml = TRUE</code> now always writes <code>metadata/metadata-edh-hnap.xml</code>; legacy <code>edh_profile</code> / <code>EDH_Profile</code> / <code>EDH_profile</code> inputs are still accepted as deprecated compatibility shims, while <code>edh_xml_path</code> is deprecated and ignored.</li>
+<li>Rebuilt reference docs, tests, package artifacts, and pkgdown site for the 0.0.21 patch release.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.20" id="metasalmon-0020">metasalmon 0.0.20<a class="anchor" aria-label="anchor" href="#metasalmon-0020"></a></h2>
 <ul><li>Hardened GitHub helper security: GitHub readers now reject non-GitHub remote URLs and avoid attaching GitHub auth headers to non-GitHub hosts; improved public/private auth behavior and related tests.</li>

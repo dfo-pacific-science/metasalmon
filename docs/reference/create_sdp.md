@@ -18,15 +18,14 @@ create_sdp(
   semantic_max_per_role = 1,
   seed_verbose = TRUE,
   seed_codes = NULL,
-  seed_table_meta = NULL,
+  seed_table_meta = TRUE,
   seed_dataset_meta = NULL,
   semantic_code_scope = c("factor", "all", "none"),
   check_updates = interactive(),
   format = "csv",
   overwrite = FALSE,
   include_edh_xml = FALSE,
-  edh_profile = c("dfo_edh_hnap", "iso19139"),
-  edh_xml_path = NULL
+  ...
 )
 ```
 
@@ -116,22 +115,18 @@ create_sdp(
 
 - include_edh_xml:
 
-  Logical; when `TRUE`, writes an EDH XML metadata file into `metadata/`
-  using
+  Logical; when `TRUE`, writes an HNAP-aware EDH XML metadata file to
+  `metadata/metadata-edh-hnap.xml` using
   [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md).
+  The default is `FALSE`.
 
-- edh_profile:
+- ...:
 
-  One of "dfo_edh_hnap" (default) or "iso19139". Determines whether the
-  richer HNAP-aware profile or compact fallback profile is written when
-  `include_edh_xml = TRUE`.
-
-- edh_xml_path:
-
-  Optional file path for the EDH output when `include_edh_xml = TRUE`.
-  If `NULL`, defaults to `metadata/metadata-edh-hnap.xml` for
-  `edh_profile = "dfo_edh_hnap"` and `metadata/metadata-iso19139.xml`
-  for `edh_profile = "iso19139"`.
+  Deprecated legacy EDH arguments accepted for backwards compatibility:
+  `edh_profile`, `EDH_Profile`, and `EDH_profile` all enable EDH XML
+  export and must be `"dfo_edh_hnap"` when supplied. `edh_xml_path` is
+  ignored with a warning because XML now always writes to the default
+  metadata path. Any other extra arguments error.
 
 ## Value
 

@@ -141,7 +141,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Use AI assistance to help write descriptions
 - Suggest Darwin Core Data Package table/field mappings for biodiversity data
 - Opt in to DwC-DP export hints via `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon Data Package as the canonical deliverable.
-- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via `edh_build_iso19139_xml()` (with legacy ISO 19139 fallback still available).
+- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via `edh_build_iso19139_xml()` or `create_sdp(..., include_edh_xml = TRUE)`.
 - Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
   - Units: QUDT preferred, then NVS P06
   - Salmon-domain roles: shared SMN terms first, then GCDFO DFO-specific terms where needed

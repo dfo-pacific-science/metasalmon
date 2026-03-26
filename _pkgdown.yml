@@ -91,7 +91,7 @@ reference:
       - dwc_dp_build_descriptor
 
   - title: "Enterprise Data Hub (EDH)"
-    desc: "HNAP-aware EDH XML export helper with legacy ISO 19139 fallback"
+    desc: "HNAP-aware EDH XML export helper for Enterprise Data Hub workflows"
     contents:
       - edh_build_iso19139_xml
 
