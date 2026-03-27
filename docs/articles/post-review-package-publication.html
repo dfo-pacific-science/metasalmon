@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -265,12 +265,12 @@ generic than the real governance choice.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">request_plan</span> <span class="op">&lt;-</span> <span class="va">gaps</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
-<span>    request_scope <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
+<span>    request_scope <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
 <span>      <span class="va">placement_recommendation</span> <span class="op">==</span> <span class="st">"smn"</span> <span class="op">~</span> <span class="st">"smn"</span>,</span>
 <span>      <span class="va">placement_recommendation</span> <span class="op">==</span> <span class="st">"profile"</span> <span class="op">~</span> <span class="st">"profile"</span>,</span>
 <span>      <span class="cn">TRUE</span> <span class="op">~</span> <span class="st">"skip"</span></span>
 <span>    <span class="op">)</span>,</span>
-<span>    governance_bucket <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
+<span>    governance_bucket <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case_when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
 <span>      <span class="va">request_scope</span> <span class="op">==</span> <span class="st">"smn"</span> <span class="op">~</span> <span class="st">"shared salmon-domain ontology (SMN)"</span>,</span>
 <span>      <span class="va">request_scope</span> <span class="op">==</span> <span class="st">"profile"</span> <span class="op">~</span> <span class="st">"DFO/program-specific ontology bucket"</span>,</span>
 <span>      <span class="cn">TRUE</span> <span class="op">~</span> <span class="st">"needs manual routing decision"</span></span>

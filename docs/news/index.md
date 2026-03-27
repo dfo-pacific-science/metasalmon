@@ -1,7 +1,17 @@
 # Changelog
 
-## metasalmon 0.1.0
+## metasalmon 0.2.0
 
+- Added a first-class `chapi` LLM provider preset for DFO’s internal
+  Open WebUI endpoint. It defaults to `ollama2.mistral:7b`, uses
+  `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`, reads
+  provider-specific overrides from `CHAPI_API_KEY`, `CHAPI_MODEL`, and
+  `CHAPI_BASE_URL`, and now gives slower `gpt-oss` responses a longer
+  effective timeout plus one retry.
+- Updated the quickstart/home-page docs so internal DFO users can opt
+  into `chapi` directly from `create_sdp(..., llm_assess = TRUE)`, while
+  external users get parallel OpenRouter-free and OpenAI-credit setup
+  paths.
 - Promoted
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   and the Salmon Data Package workflow into a coherent release shape:

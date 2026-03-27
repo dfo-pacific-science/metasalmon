@@ -3,7 +3,6 @@
 ## Installation
 
 ``` r
-
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
 ```
@@ -14,7 +13,6 @@ Load the built-in Fraser Coho 2023-2024 example (173 rows) and create a
 review-ready Salmon Data Package in one call.
 
 ``` r
-
 library(metasalmon)
 
 data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
@@ -22,9 +20,11 @@ fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg_path <- create_sdp(
   fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
   dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
-  overwrite = FALSE
+  check_updates = FALSE,
+  overwrite = TRUE
 )
 
 pkg_path
@@ -55,13 +55,14 @@ If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the
 one-shot path:
 
 ``` r
-
 pkg_path <- create_sdp(
   fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
   dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
   include_edh_xml = TRUE,
-  overwrite = FALSE
+  check_updates = FALSE,
+  overwrite = TRUE
 )
 ```
 
@@ -70,6 +71,116 @@ If you are working from an existing `dataset.csv` row instead of a
 one-shot package build, call
 [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 directly.
+
+## Optional LLM Provider Setup
+
+The basic quickstart above does **not** require an API key. Only set up
+an LLM provider if you want `create_sdp(..., llm_assess = TRUE)` to
+review semantic shortlists automatically.
+
+### DFO internal: `chapi`
+
+If you are on the DFO internal network or VPN, open
+<https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/>, click the user
+icon in the bottom left, open **Settings**, click **Show** next to **API
+Keys**, and copy the key value.
+
+Then run:
+
+``` r
+file.edit("~/.Renviron")
+```
+
+Add:
+
+``` r
+CHAPI_API_KEY="paste key here"
+```
+
+Optional overrides if you want them:
+
+``` r
+CHAPI_MODEL="ollama2.mistral:7b"
+CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
+```
+
+Restart R (or run `readRenviron("~/.Renviron")` in a fresh session),
+then enable the LLM review pass:
+
+``` r
+pkg_path <- create_sdp(
+  fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
+  dataset_id = "fraser-coho-2023-2024",
+  table_id = "escapement",
+  llm_assess = TRUE,
+  llm_provider = "chapi",
+  check_updates = FALSE,
+  overwrite = TRUE
+)
+```
+
+That path now defaults to `ollama2.mistral:7b`, which is the recommended
+starting point for internal DFO users. Other currently working `chapi`
+model ids can be supplied through `llm_model` or `CHAPI_MODEL`;
+`gpt-oss:latest` is supported too, but it may need a longer warm-up and
+the package now gives it a longer effective timeout automatically.
+
+### External users: OpenRouter free
+
+If you are outside DFO and want a free option, create an OpenRouter API
+key and add it to `~/.Renviron`:
+
+``` r
+file.edit("~/.Renviron")
+OPENROUTER_API_KEY="paste key here"
+```
+
+Then run:
+
+``` r
+pkg_path <- create_sdp(
+  fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
+  dataset_id = "fraser-coho-2023-2024",
+  table_id = "escapement",
+  llm_assess = TRUE,
+  llm_provider = "openrouter",
+  check_updates = FALSE,
+  overwrite = TRUE
+)
+```
+
+`metasalmon` defaults OpenRouter to `openrouter/free`, so you do not
+need to set `llm_model` unless you want a different OpenRouter model.
+
+### External users: OpenAI API credits
+
+If you already have OpenAI API credits, add your key to `~/.Renviron`:
+
+``` r
+file.edit("~/.Renviron")
+OPENAI_API_KEY="paste key here"
+```
+
+Then choose an OpenAI chat model you have access to:
+
+``` r
+pkg_path <- create_sdp(
+  fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
+  dataset_id = "fraser-coho-2023-2024",
+  table_id = "escapement",
+  llm_assess = TRUE,
+  llm_provider = "openai",
+  llm_model = "gpt-4.1-mini",
+  check_updates = FALSE,
+  overwrite = TRUE
+)
+```
+
+If you do not want the LLM review pass yet, leave `llm_assess = FALSE`
+and continue with the base quickstart.
 
 ## Review In Excel
 
@@ -137,7 +248,6 @@ After Excel edits, save the metadata back to CSV and reload the package
 in R:
 
 ``` r
-
 pkg <- read_salmon_datapackage(pkg_path)
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```

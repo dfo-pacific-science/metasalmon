@@ -50,7 +50,6 @@ Install, run one function on the bundled Fraser Coho 2023-2024 example
 (173 rows), then review in Excel.
 
 ``` r
-
 # Install from GitHub (recommended)
 # install.packages("remotes")
 # remotes::install_github("dfo-pacific-science/metasalmon")
@@ -62,9 +61,11 @@ fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg_path <- create_sdp(
   fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
   dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
-  overwrite = FALSE
+  check_updates = FALSE,
+  overwrite = TRUE
 )
 
 # Open pkg_path and review:
@@ -139,7 +140,6 @@ from R, keep the deterministic search path and add an opt-in review
 pass:
 
 ``` r
-
 context_files <- c(
   file.path(pkg_path, "metadata", "column_dictionary.csv"),
   "README.md",
@@ -173,6 +173,45 @@ matches written into `metadata/tables.csv`. Validation should only pass
 after the REVIEW prefix is removed. When you use
 `llm_provider = "openrouter"` without specifying `llm_model`,
 `metasalmon` now defaults to `openrouter/free`.
+
+The quickstart path does not require an API key. Only set up one of
+these providers when you want `create_sdp(..., llm_assess = TRUE)` or
+`suggest_semantics(..., llm_assess = TRUE)`.
+
+For DFO internal users on the internal network or VPN, open
+<https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/>, click the user
+icon in the bottom left, open **Settings**, click **Show** next to **API
+Keys**, and copy the key value. Then run:
+
+``` r
+file.edit("~/.Renviron")
+CHAPI_API_KEY="paste key here"
+```
+
+`chapi` defaults to `ollama2.mistral:7b` and
+`https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`. Optional
+overrides are `CHAPI_MODEL` and `CHAPI_BASE_URL`. `gpt-oss:latest` is
+also supported, but it can be slower to warm up and now gets a longer
+automatic timeout.
+
+For external users, OpenRouter is the easiest free option:
+
+``` r
+file.edit("~/.Renviron")
+OPENROUTER_API_KEY="paste key here"
+```
+
+`llm_provider = "openrouter"` defaults to `openrouter/free`.
+
+If you already have OpenAI API credits, use:
+
+``` r
+file.edit("~/.Renviron")
+OPENAI_API_KEY="paste key here"
+```
+
+Then pass an OpenAI model explicitly, for example
+`llm_model = "gpt-4.1-mini"`.
 
 ## Recommended workflow
 
@@ -232,7 +271,6 @@ Package](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 ## Installation
 
 ``` r
-
 # Install from GitHub
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
@@ -382,7 +420,6 @@ Development setup and package structure
 ### Installation for Development
 
 ``` r
-
 install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
                    "tibble", "readr", "jsonlite", "cli", "rlang", "dplyr",
                    "tidyr", "purrr", "withr", "frictionless"))
@@ -391,7 +428,6 @@ install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
 ### Build and Check
 
 ``` r
-
 devtools::document()
 devtools::test()
 devtools::check()

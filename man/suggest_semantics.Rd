@@ -15,7 +15,7 @@ suggest_semantics(
   table_meta = NULL,
   dataset_meta = NULL,
   llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
   llm_model = NULL,
   llm_api_key = NULL,
   llm_base_url = NULL,
@@ -67,20 +67,24 @@ looks weak, the LLM may request at most one bounded alternate-query pass
 \code{FALSE}.}
 
 \item{llm_provider}{LLM provider preset. One of \code{"openai"},
-\code{"openrouter"}, or \code{"openai_compatible"}.}
+\code{"openrouter"}, \code{"openai_compatible"}, or \code{"chapi"}.}
 
 \item{llm_model}{Character model identifier. Required when
 \code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}. When
 \code{llm_provider = "openrouter"} and no model is supplied, the package
-defaults to \code{"openrouter/free"}.}
+defaults to \code{"openrouter/free"}. When \code{llm_provider = "chapi"} and no
+model is supplied, the package defaults to \code{"ollama2.mistral:7b"} and
+also checks \code{CHAPI_MODEL}.}
 
 \item{llm_api_key}{Optional API key override. If omitted, provider-specific
 environment variables are used (\code{OPENAI_API_KEY}, \code{OPENROUTER_API_KEY},
-or \code{METASALMON_LLM_API_KEY}).}
+\code{CHAPI_API_KEY}, or \code{METASALMON_LLM_API_KEY}).}
 
 \item{llm_base_url}{Optional base URL override for the OpenAI-compatible
 chat endpoint. Required for \code{llm_provider = "openai_compatible"} when not
-set via \code{METASALMON_LLM_BASE_URL}.}
+set via \code{METASALMON_LLM_BASE_URL}. For \code{llm_provider = "chapi"}, the
+package defaults to \verb{https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api}
+and also checks \code{CHAPI_BASE_URL}.}
 
 \item{llm_top_n}{Maximum number of retrieved candidates to send to the LLM
 per target for each assessment round. Default is \code{5}.}
@@ -92,7 +96,9 @@ extra domain context to the LLM.}
 \item{llm_context_text}{Optional character vector of extra inline context
 snippets passed alongside \code{llm_context_files}.}
 
-\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.}
+\item{llm_timeout_seconds}{Timeout for each LLM request in seconds.
+\code{chapi} models matching \code{gpt-oss} are automatically given at least 120
+seconds because the internal endpoint can be slow to warm up.}
 
 \item{llm_request_fn}{Advanced/test hook overriding the low-level
 OpenAI-compatible request function.}

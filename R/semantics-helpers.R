@@ -212,17 +212,21 @@
 #'   (1--2 plain-text search phrases) before a single reassessment. Default is
 #'   `FALSE`.
 #' @param llm_provider LLM provider preset. One of `"openai"`,
-#'   `"openrouter"`, or `"openai_compatible"`.
+#'   `"openrouter"`, `"openai_compatible"`, or `"chapi"`.
 #' @param llm_model Character model identifier. Required when
 #'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`. When
 #'   `llm_provider = "openrouter"` and no model is supplied, the package
-#'   defaults to `"openrouter/free"`.
+#'   defaults to `"openrouter/free"`. When `llm_provider = "chapi"` and no
+#'   model is supplied, the package defaults to `"ollama2.mistral:7b"` and
+#'   also checks `CHAPI_MODEL`.
 #' @param llm_api_key Optional API key override. If omitted, provider-specific
 #'   environment variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
-#'   or `METASALMON_LLM_API_KEY`).
+#'   `CHAPI_API_KEY`, or `METASALMON_LLM_API_KEY`).
 #' @param llm_base_url Optional base URL override for the OpenAI-compatible
 #'   chat endpoint. Required for `llm_provider = "openai_compatible"` when not
-#'   set via `METASALMON_LLM_BASE_URL`.
+#'   set via `METASALMON_LLM_BASE_URL`. For `llm_provider = "chapi"`, the
+#'   package defaults to `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`
+#'   and also checks `CHAPI_BASE_URL`.
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
 #'   per target for each assessment round. Default is `5`.
 #' @param llm_context_files Optional character vector of local context files
@@ -231,6 +235,8 @@
 #' @param llm_context_text Optional character vector of extra inline context
 #'   snippets passed alongside `llm_context_files`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.
+#'   `chapi` models matching `gpt-oss` are automatically given at least 120
+#'   seconds because the internal endpoint can be slow to warm up.
 #' @param llm_request_fn Advanced/test hook overriding the low-level
 #'   OpenAI-compatible request function.
 #'
@@ -328,7 +334,7 @@ suggest_semantics <- function(df,
                               table_meta = NULL,
                               dataset_meta = NULL,
                               llm_assess = FALSE,
-                              llm_provider = c("openai", "openrouter", "openai_compatible"),
+                              llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
                               llm_model = NULL,
                               llm_api_key = NULL,
                               llm_base_url = NULL,

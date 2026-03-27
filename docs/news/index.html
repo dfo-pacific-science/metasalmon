@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,8 +41,10 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="metasalmon-010">metasalmon 0.1.0<a class="anchor" aria-label="anchor" href="#metasalmon-010"></a></h2>
-<ul><li>Promoted <code><a href="../reference/create_sdp.html">create_sdp()</a></code> and the Salmon Data Package workflow into a coherent release shape: single-table and multi-table package creation, semantic review artifacts, and post-review EDH rebuild are now aligned and documented as the primary path.</li>
+<h2 class="pkg-version" data-toc-text="0.2.0" id="metasalmon-020">metasalmon 0.2.0<a class="anchor" aria-label="anchor" href="#metasalmon-020"></a></h2>
+<ul><li>Added a first-class <code>chapi</code> LLM provider preset for DFO’s internal Open WebUI endpoint. It defaults to <code>ollama2.mistral:7b</code>, uses <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>, reads provider-specific overrides from <code>CHAPI_API_KEY</code>, <code>CHAPI_MODEL</code>, and <code>CHAPI_BASE_URL</code>, and now gives slower <code>gpt-oss</code> responses a longer effective timeout plus one retry.</li>
+<li>Updated the quickstart/home-page docs so internal DFO users can opt into <code>chapi</code> directly from <code>create_sdp(..., llm_assess = TRUE)</code>, while external users get parallel OpenRouter-free and OpenAI-credit setup paths.</li>
+<li>Promoted <code><a href="../reference/create_sdp.html">create_sdp()</a></code> and the Salmon Data Package workflow into a coherent release shape: single-table and multi-table package creation, semantic review artifacts, and post-review EDH rebuild are now aligned and documented as the primary path.</li>
 <li>Hardened final-review behavior: <code>validate_salmon_datapackage(..., require_iris = TRUE)</code> now fails on unresolved metadata placeholders, blank table observation-unit IRIs, and lingering review sentinels so strict validation actually means review is finished.</li>
 <li>Hardened table-level semantic review writes and EDH rebuilds: LLM-selected table suggestions now write back into <code>metadata/tables.csv</code>, and <code><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code> now refuses to rebuild from obviously unreviewed packages.</li>
 <li>Improved package-native LLM review ergonomics: one-shot shortlist preservation now respects <code>llm_top_n</code>, shared <code>llm_context_files</code> are reused across targets, and non-interactive profile-scoped term requests now fail clearly instead of silently emitting junk defaults.</li>

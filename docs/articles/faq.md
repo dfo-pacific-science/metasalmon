@@ -117,7 +117,6 @@ Here are the most common errors and how to fix them:
 **Example fix**:
 
 ``` r
-
 # See what the error message says, then fix it:
 dict$value_type[dict$column_name == "PROBLEM_COLUMN"] <- "string"
 dict$column_role[dict$column_name == "ANOTHER_COLUMN"] <- "attribute"
@@ -144,7 +143,6 @@ metasalmon works with data frames in R. You can read data from any
 format into R first:
 
 ``` r
-
 # From Excel
 library(readxl)
 df <- read_excel("your-data.xlsx")
@@ -173,7 +171,6 @@ If you have a single table, use the same approach but with descriptive
 IDs:
 
 ``` r
-
 # Single table dataset
 dict <- infer_dictionary(df,
   dataset_id = "fraser-coho-2024",
@@ -184,7 +181,6 @@ dict <- infer_dictionary(df,
 If you have multiple related tables:
 
 ``` r
-
 # Multi-table dataset
 dict_esc <- infer_dictionary(df_escapement,
   dataset_id = "fraser-coho-2024",
@@ -210,7 +206,6 @@ you can add a code list:
   `semantic_code_scope = "all"`.
 
 ``` r
-
 codes <- tibble::tibble(
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
@@ -240,7 +235,6 @@ can take that same named list of data frames when you want table-aware
 semantic review across a multi-table package:
 
 ``` r
-
 resources <- list(
   escapement = df_escapement,
   age_composition = df_age,

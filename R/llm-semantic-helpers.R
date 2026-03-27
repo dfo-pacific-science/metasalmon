@@ -1,18 +1,51 @@
+.ms_llm_first_scalar <- function(x) {
+  if (is.null(x) || length(x) == 0) {
+    return(NULL)
+  }
+  if (is.list(x)) {
+    return(.ms_llm_first_scalar(x[[1]]))
+  }
+  x[[1]]
+}
+
 .ms_llm_non_empty_string <- function(x) {
+  x <- .ms_llm_first_scalar(x)
   if (is.null(x) || length(x) == 0) {
     return(NA_character_)
   }
-  x <- trimws(as.character(x[[1]]))
+  x <- trimws(as.character(x))
   if (!nzchar(x) || is.na(x)) {
     return(NA_character_)
   }
   x
 }
 
+.ms_llm_scalar_numeric <- function(x) {
+  x <- .ms_llm_first_scalar(x)
+  if (is.null(x) || length(x) == 0) {
+    return(NA_real_)
+  }
+  suppressWarnings(as.numeric(x))
+}
+
+.ms_chapi_default_model <- function() {
+  "ollama2.mistral:7b"
+}
+
+.ms_chapi_default_base_url <- function() {
+  "https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
+}
+
 .ms_llm_uses_openrouter_free <- function(provider, model) {
   identical(provider, "openrouter") &&
     !is.na(model) &&
     (identical(model, "openrouter/free") || grepl(":free$", model))
+}
+
+.ms_llm_uses_chapi_gpt_oss <- function(provider, model) {
+  identical(provider, "chapi") &&
+    !is.na(model) &&
+    grepl("^gpt-oss(?::|$)", model)
 }
 
 .ms_llm_context_chunk_limit <- function(config) {
@@ -58,6 +91,9 @@
 
 .ms_llm_retry_limit <- function(config) {
   if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(2L)
+  }
+  if (.ms_llm_uses_chapi_gpt_oss(config$provider, config$model)) {
     return(2L)
   }
   1L
@@ -107,7 +143,7 @@
   stop(last_error)
 }
 
-.ms_llm_resolve_config <- function(provider = c("openai", "openrouter", "openai_compatible"),
+.ms_llm_resolve_config <- function(provider = c("openai", "openrouter", "openai_compatible", "chapi"),
                                    model = NULL,
                                    api_key = NULL,
                                    base_url = NULL,
@@ -116,18 +152,25 @@
   provider <- match.arg(provider)
 
   model <- .ms_llm_non_empty_string(model)
+  if (is.na(model) && identical(provider, "chapi")) {
+    model <- .ms_llm_non_empty_string(Sys.getenv("CHAPI_MODEL", unset = ""))
+  }
   if (is.na(model)) {
     model <- .ms_llm_non_empty_string(Sys.getenv("METASALMON_LLM_MODEL", unset = ""))
   }
   if (is.na(model) && identical(provider, "openrouter")) {
     model <- "openrouter/free"
   }
+  if (is.na(model) && identical(provider, "chapi")) {
+    model <- .ms_chapi_default_model()
+  }
   if (is.na(model)) {
     cli::cli_abort(
       c(
         "LLM assessment requires a model.",
         "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}.",
-        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}."
+        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}.",
+        "i" = "For {.code llm_provider = 'chapi'}, the default is {.code 'ollama2.mistral:7b'}."
       )
     )
   }
@@ -138,7 +181,8 @@
       provider,
       openai = "OPENAI_API_KEY",
       openrouter = "OPENROUTER_API_KEY",
-      openai_compatible = "METASALMON_LLM_API_KEY"
+      openai_compatible = "METASALMON_LLM_API_KEY",
+      chapi = "CHAPI_API_KEY"
     )
     api_key <- .ms_llm_non_empty_string(Sys.getenv(env_name, unset = ""))
   }
@@ -155,6 +199,9 @@
   }
 
   base_url <- .ms_llm_non_empty_string(base_url)
+  if (is.na(base_url) && identical(provider, "chapi")) {
+    base_url <- .ms_llm_non_empty_string(Sys.getenv("CHAPI_BASE_URL", unset = ""))
+  }
   if (is.na(base_url)) {
     base_url <- .ms_llm_non_empty_string(Sys.getenv("METASALMON_LLM_BASE_URL", unset = ""))
   }
@@ -163,7 +210,8 @@
       provider,
       openai = "https://api.openai.com/v1",
       openrouter = "https://openrouter.ai/api/v1",
-      openai_compatible = NA_character_
+      openai_compatible = NA_character_,
+      chapi = .ms_chapi_default_base_url()
     )
   }
   if (provider == "openai_compatible" && is.na(base_url)) {
@@ -181,6 +229,9 @@
   }
   if (.ms_llm_uses_openrouter_free(provider, model)) {
     timeout_seconds <- max(timeout_seconds, 90)
+  }
+  if (.ms_llm_uses_chapi_gpt_oss(provider, model)) {
+    timeout_seconds <- max(timeout_seconds, 120)
   }
 
   list(
@@ -747,7 +798,56 @@
   text <- sub("^```json\\s*", "", text, perl = TRUE)
   text <- sub("^```\\s*", "", text, perl = TRUE)
   text <- sub("\\s*```$", "", text, perl = TRUE)
-  trimws(text)
+  text <- trimws(text)
+  if (!nzchar(text)) {
+    return(text)
+  }
+
+  chars <- strsplit(text, "", fixed = TRUE)[[1]]
+  start <- which(chars %in% c("{", "["))[1]
+  if (is.na(start)) {
+    return(text)
+  }
+
+  open <- chars[[start]]
+  close <- if (identical(open, "{")) "}" else "]"
+  depth <- 0L
+  in_string <- FALSE
+  escaping <- FALSE
+
+  for (i in seq.int(start, length(chars))) {
+    ch <- chars[[i]]
+
+    if (escaping) {
+      escaping <- FALSE
+      next
+    }
+
+    if (identical(ch, "\\") && in_string) {
+      escaping <- TRUE
+      next
+    }
+
+    if (identical(ch, "\"")) {
+      in_string <- !in_string
+      next
+    }
+
+    if (in_string) {
+      next
+    }
+
+    if (identical(ch, open)) {
+      depth <- depth + 1L
+    } else if (identical(ch, close)) {
+      depth <- depth - 1L
+      if (depth == 0L) {
+        return(trimws(substr(text, start, i)))
+      }
+    }
+  }
+
+  text
 }
 
 .ms_llm_chat_json_request <- function(messages, config) {
@@ -791,14 +891,14 @@
     cli::cli_abort("LLM assessment must return decision = accept, review, or propose_new_term.")
   }
 
-  selected_index <- result$selected_candidate_index %||% NULL
-  if (is.null(selected_index) || identical(selected_index, "") || isFALSE(length(selected_index) > 0)) {
+  selected_index <- .ms_llm_first_scalar(result$selected_candidate_index %||% NULL)
+  if (is.null(selected_index) || identical(as.character(selected_index), "") || isFALSE(length(selected_index) > 0)) {
     selected_index <- NA_integer_
   } else {
-    selected_index <- suppressWarnings(as.integer(selected_index[[1]]))
+    selected_index <- suppressWarnings(as.integer(selected_index))
   }
 
-  confidence <- suppressWarnings(as.numeric(result$confidence %||% NA_real_))
+  confidence <- .ms_llm_scalar_numeric(result$confidence %||% NA_real_)
   if (is.na(confidence) || confidence < 0 || confidence > 1) {
     cli::cli_abort("LLM assessment confidence must be numeric and between 0 and 1.")
   }
@@ -996,7 +1096,7 @@
 }
 
 .ms_assess_semantic_suggestions_llm <- function(suggestions,
-                                                provider = c("openai", "openrouter", "openai_compatible"),
+                                                provider = c("openai", "openrouter", "openai_compatible", "chapi"),
                                                 model = NULL,
                                                 api_key = NULL,
                                                 base_url = NULL,

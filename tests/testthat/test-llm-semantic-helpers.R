@@ -83,6 +83,93 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 
+test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    expect_equal(config$provider, "chapi")
+    expect_equal(config$model, "ollama2.mistral:7b")
+    expect_equal(config$base_url, "https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api")
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.92,
+      rationale = "The internal Mistral endpoint returned a clear best match.",
+      missing_context = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "chapi",
+    llm_api_key = "dummy-key",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  suggestions <- attr(res, "semantic_suggestions")
+  assessments <- attr(res, "semantic_llm_assessments")
+
+  expect_true("llm_selected" %in% names(suggestions))
+  expect_true(any(suggestions$llm_selected))
+  expect_true(all(assessments$llm_provider == "chapi"))
+  expect_true(all(assessments$llm_model == "ollama2.mistral:7b"))
+})
+
+test_that("chapi config reads provider-specific env vars before generic fallbacks", {
+  withr::local_envvar(c(
+    CHAPI_API_KEY = "env-chapi-key",
+    CHAPI_BASE_URL = "https://example.internal/api",
+    CHAPI_MODEL = "ollama2.llama3:8b",
+    METASALMON_LLM_API_KEY = "",
+    METASALMON_LLM_BASE_URL = "",
+    METASALMON_LLM_MODEL = ""
+  ))
+
+  config <- metasalmon:::.ms_llm_resolve_config(provider = "chapi")
+
+  expect_equal(config$api_key, "env-chapi-key")
+  expect_equal(config$base_url, "https://example.internal/api")
+  expect_equal(config$model, "ollama2.llama3:8b")
+})
+
 test_that("openrouter free config defaults to smaller batched live requests but not for custom hooks", {
   config_live <- metasalmon:::.ms_llm_resolve_config(
     provider = "openrouter",
@@ -134,6 +221,39 @@ test_that("openrouter free config gets a longer timeout and retries transient fa
   expect_equal(result$decision, "accept")
 })
 
+test_that("chapi gpt-oss config gets a longer timeout and retries transient failures", {
+  attempts <- 0L
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "chapi",
+    model = "gpt-oss:latest",
+    api_key = "dummy-key",
+    timeout_seconds = 45,
+    request_fn = function(messages, config) {
+      attempts <<- attempts + 1L
+      if (attempts == 1L) {
+        stop("Failed to perform HTTP request. Timeout was reached [chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca].")
+      }
+      list(
+        decision = "accept",
+        selected_candidate_index = 1,
+        confidence = 0.9,
+        rationale = "Recovered after retry.",
+        missing_context = ""
+      )
+    }
+  )
+
+  expect_equal(config$timeout_seconds, 120)
+
+  result <- metasalmon:::.ms_llm_request_with_retries(
+    messages = list(list(role = "user", content = "test")),
+    config = config
+  )
+
+  expect_equal(attempts, 2L)
+  expect_equal(result$decision, "accept")
+})
+
 test_that("invalid candidate indexes degrade to review instead of erroring", {
   candidates <- tibble::tibble(
     iri = c("https://example.org/a", "https://example.org/b"),
@@ -154,6 +274,67 @@ test_that("invalid candidate indexes degrade to review instead of erroring", {
   expect_equal(result$decision, "review")
   expect_true(is.na(result$selected_candidate_index))
   expect_match(result$rationale, "out-of-range candidate index")
+})
+
+test_that("vector-valued confidence uses the first element instead of erroring", {
+  candidates <- tibble::tibble(
+    iri = c("https://example.org/a", "https://example.org/b"),
+    label = c("A", "B")
+  )
+
+  result <- metasalmon:::.ms_validate_llm_assessment(
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = c(0.82, 0.31),
+      rationale = "Primary confidence is usable.",
+      missing_context = ""
+    ),
+    candidates
+  )
+
+  expect_equal(result$decision, "accept")
+  expect_equal(result$selected_candidate_index, 1L)
+  expect_equal(result$confidence, 0.82)
+})
+
+test_that("nested structured values are flattened to the first scalar", {
+  candidates <- tibble::tibble(
+    iri = c("https://example.org/a", "https://example.org/b"),
+    label = c("A", "B")
+  )
+
+  result <- metasalmon:::.ms_validate_llm_assessment(
+    list(
+      decision = list(c("accept", "review")),
+      selected_candidate_index = list(c(2L, 1L)),
+      confidence = list(c(0.74, 0.12)),
+      rationale = list(c("Use the first rationale.", "Ignore this one.")),
+      missing_context = list(c("", "extra"))
+    ),
+    candidates
+  )
+
+  expect_equal(result$decision, "accept")
+  expect_equal(result$selected_candidate_index, 2L)
+  expect_equal(result$confidence, 0.74)
+  expect_equal(result$rationale, "Use the first rationale.")
+})
+
+test_that("JSON cleaner extracts the first balanced object from wrapper text", {
+  text <- paste(
+    "Here is the result you requested:",
+    '{\"alternate_queries\":[\"fish abundance\",\"run timing\"],\"rationale\":\"better fit\"}',
+    "Use that JSON only.",
+    sep = " "
+  )
+
+  cleaned <- metasalmon:::.ms_llm_clean_json_text(text)
+
+  expect_equal(
+    cleaned,
+    "{\"alternate_queries\":[\"fish abundance\",\"run timing\"],\"rationale\":\"better fit\"}"
+  )
 })
 
 test_that("batched LLM responses are mapped back onto target records", {

@@ -74,7 +74,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             seed_table_meta = NULL,
                             seed_dataset_meta = NULL,
                             llm_assess = FALSE,
-                            llm_provider = c("openai", "openrouter", "openai_compatible"),
+                            llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
                             llm_model = NULL,
                             llm_api_key = NULL,
                             llm_base_url = NULL,

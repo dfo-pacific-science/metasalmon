@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,7 +73,7 @@ low-cardinality attributes.</p>
 <span>  table_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span>, <span class="st">"chapi"</span><span class="op">)</span>,</span>
 <span>  llm_model <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  llm_api_key <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  llm_base_url <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -150,26 +150,30 @@ looks weak, the LLM may request at most one bounded alternate-query pass
 
 <dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
 <dd><p>LLM provider preset. One of <code>"openai"</code>,
-<code>"openrouter"</code>, or <code>"openai_compatible"</code>.</p></dd>
+<code>"openrouter"</code>, <code>"openai_compatible"</code>, or <code>"chapi"</code>.</p></dd>
 
 
 <dt id="arg-llm-model">llm_model<a class="anchor" aria-label="anchor" href="#arg-llm-model"></a></dt>
 <dd><p>Character model identifier. Required when
 <code>llm_assess = TRUE</code> unless supplied via <code>METASALMON_LLM_MODEL</code>. When
 <code>llm_provider = "openrouter"</code> and no model is supplied, the package
-defaults to <code>"openrouter/free"</code>.</p></dd>
+defaults to <code>"openrouter/free"</code>. When <code>llm_provider = "chapi"</code> and no
+model is supplied, the package defaults to <code>"ollama2.mistral:7b"</code> and
+also checks <code>CHAPI_MODEL</code>.</p></dd>
 
 
 <dt id="arg-llm-api-key">llm_api_key<a class="anchor" aria-label="anchor" href="#arg-llm-api-key"></a></dt>
 <dd><p>Optional API key override. If omitted, provider-specific
 environment variables are used (<code>OPENAI_API_KEY</code>, <code>OPENROUTER_API_KEY</code>,
-or <code>METASALMON_LLM_API_KEY</code>).</p></dd>
+<code>CHAPI_API_KEY</code>, or <code>METASALMON_LLM_API_KEY</code>).</p></dd>
 
 
 <dt id="arg-llm-base-url">llm_base_url<a class="anchor" aria-label="anchor" href="#arg-llm-base-url"></a></dt>
 <dd><p>Optional base URL override for the OpenAI-compatible
 chat endpoint. Required for <code>llm_provider = "openai_compatible"</code> when not
-set via <code>METASALMON_LLM_BASE_URL</code>.</p></dd>
+set via <code>METASALMON_LLM_BASE_URL</code>. For <code>llm_provider = "chapi"</code>, the
+package defaults to <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>
+and also checks <code>CHAPI_BASE_URL</code>.</p></dd>
 
 
 <dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
@@ -189,7 +193,9 @@ snippets passed alongside <code>llm_context_files</code>.</p></dd>
 
 
 <dt id="arg-llm-timeout-seconds">llm_timeout_seconds<a class="anchor" aria-label="anchor" href="#arg-llm-timeout-seconds"></a></dt>
-<dd><p>Timeout for each LLM request in seconds.</p></dd>
+<dd><p>Timeout for each LLM request in seconds.
+<code>chapi</code> models matching <code>gpt-oss</code> are automatically given at least 120
+seconds because the internal endpoint can be slow to warm up.</p></dd>
 
 
 <dt id="arg-llm-request-fn">llm_request_fn<a class="anchor" aria-label="anchor" href="#arg-llm-request-fn"></a></dt>

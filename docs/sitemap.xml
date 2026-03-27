@@ -1,7 +1,5 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/404.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE-text.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/articles/faq.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html</loc></url>
@@ -12,6 +10,8 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/authors.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/index.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE-text.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/news/index.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/apply_salmon_dictionary.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.html</loc></url>
@@ -26,10 +26,10 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/fetch_salmon_ontology.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_code_types.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_codes.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_code_types.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_code_types.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_codes.html</loc></url>
+<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_code_types.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_vocab.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/index.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.html</loc></url>

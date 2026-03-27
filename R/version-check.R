@@ -36,7 +36,7 @@ check_for_updates <- function(
   repo <- ms_normalize_repo(repo)
   current_version <- ms_normalize_current_version(current)
   timeout <- ms_validate_update_timeout(timeout)
-  install_command <- sprintf("remotes::install_github(%s)", shQuote(repo))
+  install_command <- sprintf("remotes::install_github('%s')", repo)
 
   latest <- ms_fetch_latest_release(repo = repo, timeout = timeout)
   if (!isTRUE(latest$ok)) {

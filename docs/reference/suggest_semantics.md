@@ -21,7 +21,7 @@ suggest_semantics(
   table_meta = NULL,
   dataset_meta = NULL,
   llm_assess = FALSE,
-  llm_provider = c("openai", "openrouter", "openai_compatible"),
+  llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
   llm_model = NULL,
   llm_api_key = NULL,
   llm_base_url = NULL,
@@ -102,27 +102,31 @@ suggest_semantics(
 
 - llm_provider:
 
-  LLM provider preset. One of `"openai"`, `"openrouter"`, or
-  `"openai_compatible"`.
+  LLM provider preset. One of `"openai"`, `"openrouter"`,
+  `"openai_compatible"`, or `"chapi"`.
 
 - llm_model:
 
   Character model identifier. Required when `llm_assess = TRUE` unless
   supplied via `METASALMON_LLM_MODEL`. When
   `llm_provider = "openrouter"` and no model is supplied, the package
-  defaults to `"openrouter/free"`.
+  defaults to `"openrouter/free"`. When `llm_provider = "chapi"` and no
+  model is supplied, the package defaults to `"ollama2.mistral:7b"` and
+  also checks `CHAPI_MODEL`.
 
 - llm_api_key:
 
   Optional API key override. If omitted, provider-specific environment
-  variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or
-  `METASALMON_LLM_API_KEY`).
+  variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+  `CHAPI_API_KEY`, or `METASALMON_LLM_API_KEY`).
 
 - llm_base_url:
 
   Optional base URL override for the OpenAI-compatible chat endpoint.
   Required for `llm_provider = "openai_compatible"` when not set via
-  `METASALMON_LLM_BASE_URL`.
+  `METASALMON_LLM_BASE_URL`. For `llm_provider = "chapi"`, the package
+  defaults to `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`
+  and also checks `CHAPI_BASE_URL`.
 
 - llm_top_n:
 
@@ -142,7 +146,9 @@ suggest_semantics(
 
 - llm_timeout_seconds:
 
-  Timeout for each LLM request in seconds.
+  Timeout for each LLM request in seconds. `chapi` models matching
+  `gpt-oss` are automatically given at least 120 seconds because the
+  internal endpoint can be slow to warm up.
 
 - llm_request_fn:
 

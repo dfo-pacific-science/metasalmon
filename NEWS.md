@@ -1,6 +1,8 @@
-metasalmon 0.1.0
+metasalmon 0.2.0
 ----------------
 
+- Added a first-class `chapi` LLM provider preset for DFO's internal Open WebUI endpoint. It defaults to `ollama2.mistral:7b`, uses `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`, reads provider-specific overrides from `CHAPI_API_KEY`, `CHAPI_MODEL`, and `CHAPI_BASE_URL`, and now gives slower `gpt-oss` responses a longer effective timeout plus one retry.
+- Updated the quickstart/home-page docs so internal DFO users can opt into `chapi` directly from `create_sdp(..., llm_assess = TRUE)`, while external users get parallel OpenRouter-free and OpenAI-credit setup paths.
 - Promoted `create_sdp()` and the Salmon Data Package workflow into a coherent release shape: single-table and multi-table package creation, semantic review artifacts, and post-review EDH rebuild are now aligned and documented as the primary path.
 - Hardened final-review behavior: `validate_salmon_datapackage(..., require_iris = TRUE)` now fails on unresolved metadata placeholders, blank table observation-unit IRIs, and lingering review sentinels so strict validation actually means review is finished.
 - Hardened table-level semantic review writes and EDH rebuilds: LLM-selected table suggestions now write back into `metadata/tables.csv`, and `write_edh_xml_from_sdp()` now refuses to rebuild from obviously unreviewed packages.

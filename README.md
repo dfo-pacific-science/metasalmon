@@ -43,9 +43,11 @@ fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg_path <- create_sdp(
   fraser_coho,
+  path = "fraser-coho-2023-2024-sdp",
   dataset_id = "fraser-coho-2023-2024",
   table_id = "escapement",
-  overwrite = FALSE
+  check_updates = FALSE,
+  overwrite = TRUE
 )
 
 # Open pkg_path and review:
@@ -107,6 +109,35 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 ```
 
 This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+
+The quickstart path does not require an API key. Only set up one of these providers when you want `create_sdp(..., llm_assess = TRUE)` or `suggest_semantics(..., llm_assess = TRUE)`.
+
+For DFO internal users on the internal network or VPN, open <https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/>, click the user icon in the bottom left, open **Settings**, click **Show** next to **API Keys**, and copy the key value. Then run:
+
+```r
+file.edit("~/.Renviron")
+CHAPI_API_KEY="paste key here"
+```
+
+`chapi` defaults to `ollama2.mistral:7b` and `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`. Optional overrides are `CHAPI_MODEL` and `CHAPI_BASE_URL`. `gpt-oss:latest` is also supported, but it can be slower to warm up and now gets a longer automatic timeout.
+
+For external users, OpenRouter is the easiest free option:
+
+```r
+file.edit("~/.Renviron")
+OPENROUTER_API_KEY="paste key here"
+```
+
+`llm_provider = "openrouter"` defaults to `openrouter/free`.
+
+If you already have OpenAI API credits, use:
+
+```r
+file.edit("~/.Renviron")
+OPENAI_API_KEY="paste key here"
+```
+
+Then pass an OpenAI model explicitly, for example `llm_model = "gpt-4.1-mini"`.
 
 ## Recommended workflow
 

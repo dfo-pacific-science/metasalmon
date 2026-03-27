@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -142,9 +142,11 @@ concept schemes) while preserving your original data structure.
 <span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Open pkg_path and review:</span></span>
@@ -203,6 +205,22 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># into the package metadata as REVIEW-prefixed values for manual cleanup,</span></span>
 <span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
 <p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into <code>metadata/tables.csv</code>. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+<p>The quickstart path does not require an API key. Only set up one of these providers when you want <code>create_sdp(..., llm_assess = TRUE)</code> or <code>suggest_semantics(..., llm_assess = TRUE)</code>.</p>
+<p>For DFO internal users on the internal network or VPN, open <a href="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/" class="external-link uri">https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/</a>, click the user icon in the bottom left, open <strong>Settings</strong>, click <strong>Show</strong> next to <strong>API Keys</strong>, and copy the key value. Then run:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
+<span><span class="va">CHAPI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p><code>chapi</code> defaults to <code>ollama2.mistral:7b</code> and <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>. Optional overrides are <code>CHAPI_MODEL</code> and <code>CHAPI_BASE_URL</code>. <code>gpt-oss:latest</code> is also supported, but it can be slower to warm up and now gets a longer automatic timeout.</p>
+<p>For external users, OpenRouter is the easiest free option:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
+<span><span class="va">OPENROUTER_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p><code>llm_provider = "openrouter"</code> defaults to <code>openrouter/free</code>.</p>
+<p>If you already have OpenAI API credits, use:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
+<span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p>Then pass an OpenAI model explicitly, for example <code>llm_model = "gpt-4.1-mini"</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="recommended-workflow">Recommended workflow<a class="anchor" aria-label="anchor" href="#recommended-workflow"></a>
@@ -273,7 +291,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -408,7 +426,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -416,14 +434,14 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>

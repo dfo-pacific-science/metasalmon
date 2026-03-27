@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -94,9 +94,11 @@ a review-ready Salmon Data Package in one call.</p>
 <span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pkg_path</span></span>
@@ -122,15 +124,112 @@ the one-shot path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
 <span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
 <span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
 <span>  include_edh_xml <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>That writes the HNAP-aware EDH XML to
 <code>metadata/metadata-edh-hnap.xml</code>. If you are working from an
 existing <code>dataset.csv</code> row instead of a one-shot package
 build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
+</div>
+<div class="section level2">
+<h2 id="optional-llm-provider-setup">Optional LLM Provider Setup<a class="anchor" aria-label="anchor" href="#optional-llm-provider-setup"></a>
+</h2>
+<p>The basic quickstart above does <strong>not</strong> require an API
+key. Only set up an LLM provider if you want
+<code>create_sdp(..., llm_assess = TRUE)</code> to review semantic
+shortlists automatically.</p>
+<div class="section level3">
+<h3 id="dfo-internal-chapi">DFO internal: <code>chapi</code><a class="anchor" aria-label="anchor" href="#dfo-internal-chapi"></a>
+</h3>
+<p>If you are on the DFO internal network or VPN, open <a href="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/" class="external-link uri">https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/</a>,
+click the user icon in the bottom left, open <strong>Settings</strong>,
+click <strong>Show</strong> next to <strong>API Keys</strong>, and copy
+the key value.</p>
+<p>Then run:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span></code></pre></div>
+<p>Add:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">CHAPI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p>Optional overrides if you want them:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">CHAPI_MODEL</span><span class="op">=</span><span class="st">"ollama2.mistral:7b"</span></span>
+<span><span class="va">CHAPI_BASE_URL</span><span class="op">=</span><span class="st">"https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"</span></span></code></pre></div>
+<p>Restart R (or run <code>readRenviron("~/.Renviron")</code> in a fresh
+session), then enable the LLM review pass:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
+<span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"chapi"</span>,</span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>That path now defaults to <code>ollama2.mistral:7b</code>, which is
+the recommended starting point for internal DFO users. Other currently
+working <code>chapi</code> model ids can be supplied through
+<code>llm_model</code> or <code>CHAPI_MODEL</code>;
+<code>gpt-oss:latest</code> is supported too, but it may need a longer
+warm-up and the package now gives it a longer effective timeout
+automatically.</p>
+</div>
+<div class="section level3">
+<h3 id="external-users-openrouter-free">External users: OpenRouter free<a class="anchor" aria-label="anchor" href="#external-users-openrouter-free"></a>
+</h3>
+<p>If you are outside DFO and want a free option, create an OpenRouter
+API key and add it to <code>~/.Renviron</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
+<span><span class="va">OPENROUTER_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p>Then run:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
+<span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"openrouter"</span>,</span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code>metasalmon</code> defaults OpenRouter to
+<code>openrouter/free</code>, so you do not need to set
+<code>llm_model</code> unless you want a different OpenRouter model.</p>
+</div>
+<div class="section level3">
+<h3 id="external-users-openai-api-credits">External users: OpenAI API credits<a class="anchor" aria-label="anchor" href="#external-users-openai-api-credits"></a>
+</h3>
+<p>If you already have OpenAI API credits, add your key to
+<code>~/.Renviron</code>:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
+<span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
+<p>Then choose an OpenAI chat model you have access to:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
+<span>  <span class="va">fraser_coho</span>,</span>
+<span>  path <span class="op">=</span> <span class="st">"fraser-coho-2023-2024-sdp"</span>,</span>
+<span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
+<span>  table_id <span class="op">=</span> <span class="st">"escapement"</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"openai"</span>,</span>
+<span>  llm_model <span class="op">=</span> <span class="st">"gpt-4.1-mini"</span>,</span>
+<span>  check_updates <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>If you do not want the LLM review pass yet, leave
+<code>llm_assess = FALSE</code> and continue with the base
+quickstart.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
@@ -206,7 +305,7 @@ match:</p>
 </h2>
 <p>After Excel edits, save the metadata back to CSV and reload the
 package in R:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>That review-state validation is the first follow-up check. For the

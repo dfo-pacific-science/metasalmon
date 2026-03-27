@@ -24,3 +24,5 @@ inst/extdata/\.gitkeep$
 ^scripts(/|$)
 ^\.claude(/|$)
 ^CLAUDE\.md$
+^local-r-lib(/|$)
+^Untitled-1\.R$
