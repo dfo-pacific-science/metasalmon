@@ -806,7 +806,7 @@ suggest_semantics <- function(df,
     if (identical(search_role, "constraint")) {
       if (grepl("\\brun\\b", all_text, perl = TRUE) && grepl("\\btype\\b", all_text, perl = TRUE)) return("run context")
       if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bstage\\b", all_text, perl = TRUE)) return("spawner stage context")
-      if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bclassification\\b", all_text, perl = TRUE)) return("downgrade criteria")
+      if (grepl("\\bestimate\\b", all_text, perl = TRUE) && grepl("\\bclassification\\b", all_text, perl = TRUE)) return("abundance data type")
       if (grepl("\\borigin\\b", all_text, perl = TRUE)) return("origin")
       return(base_query)
     }

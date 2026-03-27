@@ -318,6 +318,48 @@ test_that("find_terms falls back to gcdfo when smn has no good hit", {
   expect_equal(res$label[[1]], "Stock")
 })
 
+test_that("search_smn indexes the shared root ontology for canonical population and origin terms", {
+  fixture <- withr::local_tempfile(fileext = ".rdf")
+  writeLines(c(
+    '<?xml version="1.0"?>',
+    '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"',
+    '         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"',
+    '         xmlns:owl="http://www.w3.org/2002/07/owl#"',
+    '         xmlns:skos="http://www.w3.org/2004/02/skos/core#"',
+    '         xmlns:obo="http://purl.obolibrary.org/obo/"',
+    '         xmlns:dcterms="http://purl.org/dc/terms/">',
+    '  <owl:Class rdf:about="https://w3id.org/smn/Population">',
+    '    <rdfs:label>Population</rdfs:label>',
+    '    <rdfs:comment>A population of salmon.</rdfs:comment>',
+    '  </owl:Class>',
+    '  <owl:NamedIndividual rdf:about="https://w3id.org/smn/NaturalOrigin">',
+    '    <rdfs:label>Natural-origin</rdfs:label>',
+    '    <rdfs:comment>Individuals born and reared in the wild.</rdfs:comment>',
+    '  </owl:NamedIndividual>',
+    '</rdf:RDF>'
+  ), fixture)
+
+  if (length(ls(envir = .smn_index_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .smn_index_cache, all.names = TRUE), envir = .smn_index_cache)
+  }
+
+  res <- with_mocked_bindings(
+    fetch_salmon_ontology = function(...) fixture,
+    find_terms("population", role = "entity", sources = c("smn"), expand_query = FALSE)
+  )
+  expect_equal(res$iri[[1]], "https://w3id.org/smn/Population")
+
+  if (length(ls(envir = .smn_index_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .smn_index_cache, all.names = TRUE), envir = .smn_index_cache)
+  }
+
+  res_constraint <- with_mocked_bindings(
+    fetch_salmon_ontology = function(...) fixture,
+    find_terms("natural origin", role = "constraint", sources = c("smn"), expand_query = FALSE)
+  )
+  expect_true("https://w3id.org/smn/NaturalOrigin" %in% res_constraint$iri)
+})
+
 test_that("find_terms does not short-circuit on lexical-poor local count hits", {
   smn_rows <- tibble::tibble(
     label = "Observed rate or abundance",

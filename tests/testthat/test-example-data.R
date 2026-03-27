@@ -70,3 +70,62 @@ test_that("create_sdp works with the fuller Fraser coho example", {
   expect_equal(as.character(dataset_written$temporal_start[[1]]), "2023-09-14")
   expect_equal(as.character(dataset_written$temporal_end[[1]]), "2024-12-11")
 })
+
+test_that("Fraser coho example uses improved deterministic semantic queries for known problem fields", {
+  dict_path <- example_extdata_path("nuseds-fraser-coho-2023-2024-column_dictionary.csv")
+  fuller_path <- example_extdata_path("nuseds-fraser-coho-2023-2024.csv")
+  dict <- dplyr::filter(
+    readr::read_csv(dict_path, show_col_types = FALSE),
+    .data$column_name %in% c("ESTIMATE_CLASSIFICATION", "NATURAL_ADULT_SPAWNERS")
+  )
+  fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)
+  codes <- dplyr::filter(
+    infer_codes_from_resources(list(escapement = fuller), dataset_id = "fraser-coho-2023-2024"),
+    .data$column_name == "ESTIMATE_CLASSIFICATION"
+  )
+
+  suggestions <- suggest_semantics(
+    NULL,
+    dict,
+    codes = codes,
+    sources = "ols",
+    max_per_role = 1,
+    search_fn = function(query, role, sources) {
+      tibble::tibble(
+        label = paste("candidate", role),
+        iri = paste0("https://example.org/", role),
+        source = "ols",
+        ontology = "demo",
+        role = role,
+        match_type = "label_partial",
+        definition = ""
+      )
+    }
+  )
+  semantic_suggestions <- attr(suggestions, "semantic_suggestions")
+
+  estimate <- dplyr::filter(
+    semantic_suggestions,
+    .data$column_name == "ESTIMATE_CLASSIFICATION",
+    .data$target_scope == "column",
+    .data$target_sdp_field == "term_iri"
+  )
+  expect_equal(unique(estimate$search_role), "constraint")
+  expect_equal(unique(estimate$search_query), "abundance data type")
+
+  natural_entity <- dplyr::filter(
+    semantic_suggestions,
+    .data$column_name == "NATURAL_ADULT_SPAWNERS",
+    .data$target_scope == "column",
+    .data$target_sdp_field == "entity_iri"
+  )
+  expect_equal(unique(natural_entity$search_query), "population")
+
+  natural_constraint <- dplyr::filter(
+    semantic_suggestions,
+    .data$column_name == "NATURAL_ADULT_SPAWNERS",
+    .data$target_scope == "column",
+    .data$target_sdp_field == "constraint_iri"
+  )
+  expect_equal(unique(natural_constraint$search_query), "natural origin")
+})
