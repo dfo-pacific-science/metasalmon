@@ -120,7 +120,7 @@ onto_path
 Create a prompt that asks GPT to:
 
 - Propose column descriptions
-- Suggest IRIs from the DFO Salmon Ontology (or appropriate vocabularies)
+- Suggest IRIs from the Salmon Domain Ontology first (or other appropriate vocabularies when needed)
 - Identify categorical fields that need code lists
 - Propose controlled vocabulary values
 - Return results in a strict, copy/pasteable CSV format matching the `metasalmon` schemas (see `column_dictionary.csv` and `codes.csv`)
@@ -143,12 +143,12 @@ Create a prompt that asks GPT to:
 
     Please help me enrich this dictionary by:
     1. Writing clear, biologist-friendly descriptions for each column
-    2. Suggesting IRIs from the DFO Salmon Ontology (or appropriate vocabularies) for:
+    2. Suggesting IRIs from the Salmon Domain Ontology first (or other appropriate vocabularies when needed) for:
        - term_iri: the IRI for this column (use a SKOS concept IRI for compound variables)
        - term_type: set to `skos_concept` or `owl_class` (leave NA if unknown)
        - unit_label / unit_iri: if applicable
        - For measurement columns, also provide `property_iri`, `entity_iri`, and optional `constraint_iri`
-       - If there is no reasonable match, tell me how to request a new term be added to the DFO salmon ontology
+       - If there is no reasonable match, tell me how to request a new term be added to the shared salmon-domain ontology first
     3. Identifying which columns should have code lists (categorical fields)
     4. Proposing code values and labels for categorical fields
 
@@ -420,7 +420,7 @@ This advanced/manual writer places the canonical metadata tables under `metadata
 
 ## Handling Ontology Gaps (Important)
 
-The DFO Salmon Ontology is still evolving, so it's normal that many terms you want will not exist yet.
+The shared salmon-domain ontology is still evolving, so it's normal that many terms you want will not exist yet.
 
 When a specific term isn't available:
 
@@ -430,8 +430,8 @@ When a specific term isn't available:
   - For SKOS concepts, use a broader concept (broader means "more general").
   - For OWL classes, use a superclass (superclass means "a more general type").
 - Include `definition_source_url` and `notes` when available.
-- Draft a GitHub issue for the ontology repository using the new-term template:  
-  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
+- Draft a GitHub issue for the ontology repository using the new-term template. Default to the shared salmon-domain ontology unless the term is clearly DFO policy/operations-specific:  
+  <https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md>
 - Periodically refresh the ontology file in your Custom GPT so suggestions are based on the latest terms.
 
 ## Tips for Effective GPT Collaboration
@@ -460,7 +460,7 @@ dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 ```
 
-This complements the GPT workflow by providing deterministic, reproducible suggestions that you can review and merge into your dictionary. See [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) for details on `find_terms()` and the I-ADOPT catalogue.
+This complements the package-native review workflow by providing deterministic, reproducible suggestions that you can review and merge into your dictionary. In the current preferred path, `create_sdp(..., llm_assess = TRUE)` writes the package, prefixes LLM-selected draft IRIs with `REVIEW:`, and sends you back to the package for manual cleanup in Excel. See [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) for details on `find_terms()` and the I-ADOPT catalogue.
 
 ### Advanced: Phase 4 matching quality features
 

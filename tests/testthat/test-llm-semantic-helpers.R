@@ -316,3 +316,96 @@ test_that("PDF context files either extract text or fail clearly when pdftools i
     )
   }
 })
+
+test_that("create_sdp auto-writes LLM-selected IRIs with REVIEW prefix", {
+  tmp <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(spawner_count = c(1L, 2L)))
+  fake_suggest <- function(df, dict, ...) {
+    suggestions <- tibble::tibble(
+      dataset_id = "demo",
+      table_id = "main",
+      column_name = "spawner_count",
+      code_value = NA_character_,
+      dictionary_role = "variable",
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = "term_iri",
+      search_query = "spawner abundance",
+      target_label = "Spawner count",
+      target_description = "Spawner abundance",
+      target_query_basis = "label",
+      target_query_context = "demo",
+      label = "Spawner abundance",
+      iri = "https://w3id.org/smn/SpawnerAbundance",
+      source = "smn",
+      ontology = "smn",
+      definition = "Spawner abundance term",
+      score = 0.95,
+      llm_provider = "openai",
+      llm_model = "gpt-4.1-mini",
+      llm_decision = "accept",
+      llm_confidence = 0.93,
+      llm_selected_candidate_index = 1L,
+      llm_selected_iri = "https://w3id.org/smn/SpawnerAbundance",
+      llm_selected_label = "Spawner abundance",
+      llm_rationale = "Best semantic fit.",
+      llm_missing_context = NA_character_,
+      llm_context_sources = NA_character_,
+      llm_error = NA_character_,
+      llm_candidate_rank = 1L,
+      llm_selected = TRUE
+    )
+    attr(dict, "semantic_suggestions") <- suggestions
+    attr(dict, "semantic_llm_assessments") <- tibble::tibble()
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(tmp, "pkg-llm-review"),
+        dataset_id = "demo",
+        table_id = "main",
+        seed_semantics = TRUE,
+        llm_assess = TRUE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+
+      dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+      review_txt <- paste(readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE), collapse = "\n")
+
+      expect_equal(dict_written$term_iri[[1]], "REVIEW: https://w3id.org/smn/SpawnerAbundance")
+      expect_match(review_txt, "REVIEW:", fixed = TRUE)
+      expect_match(review_txt, "salmon-domain ontology", fixed = TRUE)
+    },
+    .package = "metasalmon"
+  )
+})
+
+test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs remain", {
+  dict <- tibble::tibble(
+    dataset_id = "demo",
+    table_id = "main",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Spawner abundance",
+    column_role = "measurement",
+    value_type = "integer",
+    required = TRUE,
+    term_iri = "REVIEW: https://w3id.org/smn/SpawnerAbundance",
+    property_iri = "https://w3id.org/smn/SpawnerAbundance",
+    entity_iri = "https://w3id.org/smn/Spawner",
+    unit_iri = "https://qudt.org/vocab/unit/NUM",
+    unit_label = "count",
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  expect_error(
+    validate_dictionary(dict, require_iris = TRUE),
+    "REVIEW-prefixed IRI"
+  )
+})

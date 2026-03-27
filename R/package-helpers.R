@@ -785,17 +785,32 @@ create_sdp <- function(
   }
   if (!is.null(suggestions) && nrow(suggestions) > 0) {
     auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
+    apply_strategy <- if (isTRUE(llm_assess) && "llm_selected" %in% names(auto_apply_suggestions)) {
+      "llm"
+    } else {
+      "top"
+    }
+    dict_before_apply <- artifacts$dict
     artifacts$dict <- apply_semantic_suggestions(
       artifacts$dict,
       suggestions = auto_apply_suggestions,
-      strategy = "top",
+      strategy = apply_strategy,
       overwrite = FALSE,
       verbose = FALSE
     )
+    if (identical(apply_strategy, "llm")) {
+      artifacts$dict <- .ms_mark_reviewed_dictionary_iris(
+        artifacts$dict,
+        dict_before_apply,
+        auto_apply_suggestions
+      )
+    }
     artifacts$table_meta <- .ms_apply_table_semantic_suggestions(
       artifacts$table_meta,
       suggestions = suggestions,
-      overwrite = FALSE
+      strategy = apply_strategy,
+      overwrite = FALSE,
+      mark_review = identical(apply_strategy, "llm")
     )
   }
 
@@ -814,7 +829,25 @@ create_sdp <- function(
   .ms_write_sdp_review_readme(
     pkg_path = pkg_path,
     dataset_id = dataset_id,
-    has_suggestions = !is.null(review_suggestions) && nrow(review_suggestions) > 0
+    has_suggestions = !is.null(review_suggestions) && nrow(review_suggestions) > 0,
+    has_llm_review_prefill = any(vapply(
+      list(artifacts$dict, artifacts$table_meta),
+      function(x) {
+        if (!is.data.frame(x)) {
+          return(FALSE)
+        }
+        iri_cols <- grep("_iri$", names(x), value = TRUE)
+        if (length(iri_cols) == 0) {
+          return(FALSE)
+        }
+        any(vapply(
+          x[iri_cols],
+          function(col) any(grepl("^\\s*REVIEW\\s*:", as.character(col), ignore.case = TRUE), na.rm = TRUE),
+          logical(1)
+        ))
+      },
+      logical(1)
+    ))
   )
 
   if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
@@ -1014,6 +1047,36 @@ read_salmon_datapackage <- function(path) {
   result
 }
 
+.ms_collect_review_iri_issues <- function(df, source_name) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(tibble::tibble())
+  }
+
+  iri_cols <- grep("_iri$", names(df), value = TRUE)
+  if (length(iri_cols) == 0) {
+    return(tibble::tibble())
+  }
+
+  issues <- purrr::map_dfr(iri_cols, function(field) {
+    vals <- as.character(df[[field]])
+    rows <- which(!is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE))
+    if (length(rows) == 0) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      message = sprintf(
+        "%s row %s field %s still contains a REVIEW-prefixed IRI (%s). Remove the REVIEW prefix only after final manual validation.",
+        source_name,
+        rows,
+        field,
+        vals[rows]
+      )
+    )
+  })
+
+  issues
+}
+
 #' Validate a Salmon Data Package end to end
 #'
 #' Reads a package from disk, checks that metadata/data files stay aligned,
@@ -1059,6 +1122,10 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
   dict <- validate_dictionary(pkg$dictionary, require_iris = require_iris)
   semantic_validation <- validate_semantics(dict, require_iris = require_iris)
+  table_review_issues <- .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv")
+  if (nrow(table_review_issues) > 0) {
+    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
+  }
 
   if (nrow(semantic_validation$issues) > 0) {
     preview <- utils::head(unique(semantic_validation$issues$message), 3)
@@ -2170,7 +2237,84 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   file.path("data", basename(normalized))
 }
 
-.ms_write_sdp_review_readme <- function(pkg_path, dataset_id, has_suggestions = TRUE) {
+.ms_review_iri_prefix <- function() {
+  "REVIEW: "
+}
+
+.ms_is_review_iri <- function(x) {
+  text <- .ms_scalar_text(x)
+  nzchar(text) && grepl("^\\s*REVIEW\\s*:", text, ignore.case = TRUE)
+}
+
+.ms_strip_review_iri <- function(x) {
+  if (length(x) == 0) {
+    return(x)
+  }
+  out <- as.character(x)
+  out <- gsub("^\\s*REVIEW\\s*:\\s*", "", out, ignore.case = TRUE)
+  out
+}
+
+.ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions) {
+  dict <- tibble::as_tibble(dict)
+  original_dict <- tibble::as_tibble(original_dict)
+  suggestions <- tibble::as_tibble(suggestions)
+
+  if (nrow(dict) == 0 || nrow(suggestions) == 0 || !"llm_selected" %in% names(suggestions)) {
+    return(dict)
+  }
+
+  iri_fields <- intersect(
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    names(dict)
+  )
+  if (length(iri_fields) == 0) {
+    return(dict)
+  }
+
+  review_rows <- suggestions %>%
+    dplyr::filter(
+      .data$target_scope == "column",
+      .data$target_sdp_file == "column_dictionary.csv",
+      .data$target_sdp_field %in% iri_fields,
+      !is.na(.data$iri),
+      .data$iri != "",
+      !is.na(.data$llm_selected) & .data$llm_selected
+    )
+
+  if (nrow(review_rows) == 0) {
+    return(dict)
+  }
+
+  for (i in seq_len(nrow(review_rows))) {
+    field <- review_rows$target_sdp_field[[i]]
+    row_idx <- which(
+      as.character(dict$dataset_id) == as.character(review_rows$dataset_id[[i]]) &
+        as.character(dict$table_id) == as.character(review_rows$table_id[[i]]) &
+        as.character(dict$column_name) == as.character(review_rows$column_name[[i]])
+    )
+    if (length(row_idx) != 1L) {
+      next
+    }
+
+    old_value <- .ms_scalar_text(original_dict[[field]][row_idx])
+    new_value <- .ms_scalar_text(dict[[field]][row_idx])
+    expected <- .ms_scalar_text(review_rows$iri[[i]])
+
+    if (!nzchar(expected) || !identical(new_value, expected)) {
+      next
+    }
+    if (nzchar(old_value)) {
+      next
+    }
+
+    dict[[field]][row_idx] <- paste0(.ms_review_iri_prefix(), expected)
+  }
+
+  dict
+}
+
+.ms_write_sdp_review_readme <- function(pkg_path, dataset_id, has_suggestions = TRUE, has_llm_review_prefill = FALSE) {
   lines <- c(
     "Salmon Data Package Review Checklist",
     "",
@@ -2184,11 +2328,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "[ ] 2. In metadata/dataset.csv and metadata/tables.csv, confirm title, description, creator/contact, license, file_name paths, labels, observation units, and primary keys.",
     "[ ] 3. Open data/*.csv and confirm each exported table and column name matches metadata/column_dictionary.csv exactly.",
     "[ ] 4. If metadata/codes.csv exists, confirm each coded value used in data/*.csv is listed and described clearly.",
-    if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv, then finalize semantic IRIs in metadata/column_dictionary.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; manually review semantic IRIs in metadata/column_dictionary.csv.",
-    "[ ] 6. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). If you want the lower-level pieces too, run validate_dictionary(pkg$dictionary, require_iris = TRUE) and validate_semantics(pkg$dictionary, require_iris = TRUE).",
-    "[ ] 7. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
+    if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv first. Then finalize semantic IRIs in metadata/column_dictionary.csv and any observation-unit IRIs in metadata/tables.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; manually review semantic IRIs in metadata/column_dictionary.csv.",
+    if (isTRUE(has_llm_review_prefill)) "[ ] 6. Any IRI that begins with 'REVIEW:' was prefilled from the package-native LLM review. Keep it only if it looks right, then remove the REVIEW prefix. If it looks wrong, replace it or blank it out and leave notes in semantic_suggestions.csv for later ontology follow-up." else "[ ] 6. No LLM-prefilled REVIEW IRIs were written; use semantic_suggestions.csv as a shortlist and fill the final IRI values yourself.",
+    "[ ] 7. If no candidate term fits, treat the default request target as the shared salmon-domain ontology. Only route to DFO-specific ontology work when the term is clearly policy/operations specific.",
+    "[ ] 8. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW-prefixed IRI has been resolved.",
+    "[ ] 9. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
     "",
-    "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R."
+    "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R.",
+    "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize."
   )
   writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
 }
@@ -2274,9 +2421,10 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   length(intersect(context_tokens, label_tokens)) > 0
 }
 
-.ms_apply_table_semantic_suggestions <- function(table_meta, suggestions, overwrite = FALSE) {
+.ms_apply_table_semantic_suggestions <- function(table_meta, suggestions, strategy = c("top", "llm"), overwrite = FALSE, mark_review = FALSE) {
   table_meta <- .ms_normalize_table_meta(table_meta)
   suggestions <- tibble::as_tibble(suggestions)
+  strategy <- match.arg(strategy)
 
   if (nrow(table_meta) == 0 || nrow(suggestions) == 0) {
     return(table_meta)
@@ -2297,6 +2445,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .data$iri != ""
     ) %>%
     dplyr::arrange(.data$.row_id)
+
+  if (identical(strategy, "llm")) {
+    if (!"llm_selected" %in% names(table_suggestions)) {
+      return(table_meta)
+    }
+    table_suggestions <- dplyr::filter(table_suggestions, !is.na(.data$llm_selected) & .data$llm_selected)
+  }
 
   if (nrow(table_suggestions) == 0) {
     return(table_meta)
@@ -2338,7 +2493,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
 
     suggestion <- table_suggestions[candidate_rows[[1]], , drop = FALSE]
-    out$observation_unit_iri[row_id] <- suggestion$iri[[1]]
+    observation_unit_iri <- suggestion$iri[[1]]
+    if (isTRUE(mark_review)) {
+      observation_unit_iri <- paste0(.ms_review_iri_prefix(), observation_unit_iri)
+    }
+    out$observation_unit_iri[row_id] <- observation_unit_iri
     if ("observation_unit" %in% names(out) && "label" %in% names(suggestion)) {
       suggestion_label <- as.character(suggestion$label[[1]] %||% "")
       if (!is.na(suggestion_label) && nzchar(trimws(suggestion_label))) {

@@ -13,7 +13,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). For extra help, our custom [Salmon Data Standardizer GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer) can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package, and then send you back to the created package for manual cleanup in Excel.
 
 **Integration context:** See the Salmon Data Integration System overview page (https://br-johnson.github.io/salmon-data-integration-system/) and walkthrough video (https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH).
 
@@ -92,15 +92,11 @@ suggested <- suggest_semantics(
 suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
-# Explicit apply step; still opt-in
-reviewed <- apply_semantic_suggestions(
-  suggested,
-  strategy = "llm",
-  min_llm_confidence = 0.8
-)
+# In create_sdp(..., llm_assess = TRUE), LLM-selected IRIs are now written
+# into the package as REVIEW-prefixed draft values for manual cleanup.
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+This keeps `find_terms()` as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark draft IRIs directly in the created package as `REVIEW: <iri>` so you can confirm or replace them in Excel. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
 ## Who Is This For?
 
@@ -130,8 +126,8 @@ When you create a package, you get a folder containing:
 
 ```
 my-data-package/
-  +-- README-review.txt         # Step-by-step review checklist
-  +-- semantic_suggestions.csv  # Review-only semantic suggestions (when present)
+  +-- README-review.txt         # Step-by-step review checklist for manual Excel cleanup
+  +-- semantic_suggestions.csv  # Detailed semantic evidence + LLM review trail (when present)
   +-- datapackage.json          # Machine-readable export
   +-- metadata/
   |   +-- dataset.csv           # Dataset-level metadata (canonical)
@@ -183,7 +179,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 ## How It Fits Together
 
-`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.
+`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you to bounce back out to a separate ChatGPT export loop.
 
 The high-level flow is:
 
@@ -192,7 +188,7 @@ The high-level flow is:
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
-- **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.
+- **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus `README-review.txt` / `semantic_suggestions.csv`, not an external ChatGPT export.
 
 <script>
 // Prevent Mermaid from auto-rendering before we prepare the code blocks.

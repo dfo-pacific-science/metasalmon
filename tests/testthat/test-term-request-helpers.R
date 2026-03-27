@@ -62,6 +62,39 @@ test_that("detect_semantic_term_gaps can recommend shared placement", {
 })
 
 
+test_that("render_ontology_term_request defaults to salmon-domain ontology repo", {
+  gaps <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "run_id",
+    code_value = NA_character_,
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "term_iri",
+    target_row_key = "run_id",
+    dictionary_role = "variable",
+    search_query = "run id",
+    column_label = "Run ID",
+    column_description = "Dataset-specific run identifier",
+    top_non_smn_source = "gbif",
+    top_non_smn_label = "Run event id",
+    top_non_smn_iri = NA_character_,
+    top_non_smn_ontology = NA_character_,
+    top_non_smn_match_type = "label",
+    top_non_smn_score = 0.9,
+    candidate_count = 1L,
+    non_smn_sources = "gbif",
+    placement_recommendation = "smn",
+    placement_confidence = 0.82,
+    placement_rationale = "shared domain concept"
+  )
+
+  reqs <- render_ontology_term_request(gaps, ask = FALSE)
+
+  expect_equal(reqs$ontology_repo, "salmon-data-mobilization/salmon-domain-ontology")
+  expect_true(grepl("salmon-domain-ontology", reqs$request_body, fixed = TRUE))
+})
+
 test_that("render_ontology_term_request uses profile scope", {
   gaps <- tibble::tibble(
     dataset_id = "d1",
@@ -107,7 +140,7 @@ test_that("submit_term_request_issues dry run and mock post", {
     request_title = c("Request new shared SMN term: escape rate"),
     request_body = c("body"),
     request_scope = c("smn"),
-    ontology_repo = c("dfo-pacific-science/dfo-salmon-ontology"),
+    ontology_repo = c("salmon-data-mobilization/salmon-domain-ontology"),
     issue_labels = list(NULL)
   )
 
@@ -119,7 +152,7 @@ test_that("submit_term_request_issues dry run and mock post", {
   with_mocked_bindings(
     .metasalmon_post_issue = function(...) {
       called <<- called + 1L
-      list(number = 42L, html_url = "https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/42")
+      list(number = 42L, html_url = "https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/42")
     },
     {
       submitted <- submit_term_request_issues(reqs, dry_run = FALSE, confirm = FALSE, token = "test-token")
@@ -136,7 +169,7 @@ test_that("submit_term_request_issues posts each request to its row-level ontolo
     request_body = c("body a", "body b"),
     request_scope = c("smn", "profile"),
     ontology_repo = c(
-      "dfo-pacific-science/dfo-salmon-ontology",
+      "salmon-data-mobilization/salmon-domain-ontology",
       "dfo-pacific-science/salmon-profile-ontology"
     ),
     issue_labels = list(NULL, NULL)

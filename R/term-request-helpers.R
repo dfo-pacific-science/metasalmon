@@ -1,4 +1,4 @@
- .term_request_default_template <- "https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md"
+ .term_request_default_template <- "https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/main/.github/ISSUE_TEMPLATE/new-term-request.md"
 
 #' Detect missing semantic terms that are not covered by SMN
 #'
@@ -216,7 +216,8 @@ detect_semantic_term_gaps <- function(
 #' Render GitHub-ready ontology term request payloads
 #'
 #' Convert gap candidates into request payload rows (title/body) suitable for
-#' creating GitHub issues against the DFO Salmon Ontology repository.
+#' creating GitHub issues against the Salmon Domain Ontology repository by
+#' default.
 #'
 #' For interactive workflows this function can prompt users row-by-row for whether a
 #' gap should be requested as a shared SMN term, a profile-specific term, or skipped.
@@ -286,7 +287,7 @@ render_ontology_term_request <- function(
     scope_overrides = NULL,
     issue_labels = NULL,
     term_request_template = .term_request_default_template,
-    ontology_repo = "dfo-pacific-science/dfo-salmon-ontology"
+    ontology_repo = "salmon-data-mobilization/salmon-domain-ontology"
 ) {
   scope <- match.arg(scope)
   gaps <- as.data.frame(gaps, stringsAsFactors = FALSE)
@@ -441,8 +442,8 @@ render_ontology_term_request <- function(
       "{scope_block}\n",
       "\n## Helpful links\n",
       "- New term template: {term_request_template}\n",
-      "- Ontology repo: https://github.com/dfo-pacific-science/dfo-salmon-ontology\n",
-      "- Shared domain conventions: https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/README.md\n"
+      "- Ontology repo: https://github.com/salmon-data-mobilization/salmon-domain-ontology\n",
+      "- Shared domain conventions: https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/main/README.md\n"
     )
   }, character(1), USE.NAMES = FALSE)
 
@@ -533,7 +534,7 @@ render_ontology_term_request <- function(
 #'
 submit_term_request_issues <- function(
     requests,
-    repo = "dfo-pacific-science/dfo-salmon-ontology",
+    repo = "salmon-data-mobilization/salmon-domain-ontology",
     token = NULL,
     dry_run = TRUE,
     confirm = interactive()

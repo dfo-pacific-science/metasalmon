@@ -897,6 +897,47 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   # mode; still surface a high-signal warning because missing fields reduce package quality.
   measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
   semantic_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
+  iri_fields <- intersect(
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    names(dict)
+  )
+
+  review_marker_rows <- lapply(iri_fields, function(field) {
+    vals <- dict[[field]]
+    !is.na(vals) & grepl("^\\s*REVIEW\\s*:", as.character(vals), ignore.case = TRUE)
+  })
+  names(review_marker_rows) <- iri_fields
+
+  has_review_markers <- length(review_marker_rows) > 0 && any(unlist(review_marker_rows), na.rm = TRUE)
+  if (has_review_markers) {
+    review_summary <- character(0)
+    for (field in names(review_marker_rows)) {
+      rows <- which(review_marker_rows[[field]])
+      if (length(rows) == 0) {
+        next
+      }
+      fields <- dict$column_name[rows]
+      review_summary <- c(
+        review_summary,
+        sprintf("%s: %s", field, paste0(sprintf("%s (rows %s)", fields, rows), collapse = ", "))
+      )
+    }
+
+    if (isTRUE(require_iris)) {
+      cli::cli_abort(c(
+        "Validation cannot pass while REVIEW-prefixed IRI values remain.",
+        "x" = "Resolve these fields before final validation:",
+        " " = paste("  ", review_summary, collapse = "\n")
+      ))
+    } else {
+      cli::cli_warn(c(
+        "REVIEW-prefixed IRI values were found.",
+        "i" = "These are draft semantic assignments written for human review.",
+        "x" = paste("  ", review_summary, collapse = "\n"),
+        "i" = "Before final validation or publication, replace or confirm the IRI and remove the REVIEW prefix."
+      ))
+    }
+  }
 
   if (!require_iris) {
     missing_fields <- lapply(semantic_fields, function(field) {
