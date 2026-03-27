@@ -611,14 +611,17 @@ infer_salmon_datapackage_artifacts <- function(
 #' `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
 #' The package root contains `README-review.txt`,
 #' `semantic_suggestions.csv` (when available), `datapackage.json`,
-#' `metadata/`, and `data/`. To keep review files usable,
+#' `metadata/`, and `data/`. Review the prefilled values already written into
+#' `metadata/tables.csv` and `metadata/column_dictionary.csv` first; use
+#' `semantic_suggestions.csv` as a fallback shortlist when you want more
+#' context or a better match. To keep that review file usable,
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
 #' enough human-readable context to review safely. When `llm_assess = TRUE`,
 #' the same review file also carries `llm_*` columns so the shortlisted LLM
 #' judgment stays explicit and reviewable, and any selected column/table IRI
-#' draft that gets auto-applied is written back into the package as a
-#' `REVIEW:`-prefixed value for manual confirmation. Required-field review
-#' placeholders are also inserted into the inferred metadata files. In
+#' draft that gets auto-applied is written back into the metadata CSVs as a
+#' `REVIEW:`-prefixed value for manual confirmation there. Required-field
+#' review placeholders are also inserted into the inferred metadata files. In
 #' interactive use, `create_sdp()` can also mention an available package update;
 #' set `check_updates = FALSE` to skip that network check. The package bundles
 #' two Fraser coho examples: `nuseds-fraser-coho-sample.csv` (30 rows across
@@ -837,6 +840,7 @@ create_sdp <- function(
     pkg_path = pkg_path,
     dataset_id = dataset_id,
     has_suggestions = !is.null(review_suggestions) && nrow(review_suggestions) > 0,
+    has_codes = is.data.frame(artifacts$codes) && nrow(artifacts$codes) > 0,
     has_llm_review_prefill = any(vapply(
       list(artifacts$dict, artifacts$table_meta),
       function(x) {
@@ -873,16 +877,17 @@ create_sdp <- function(
   }
 
   review_targets <- if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
-    "Review and finalize in Excel: {.file README-review.txt} and {.file semantic_suggestions.csv}."
+    "Open {.file README-review.txt}, then review {.file metadata/column_dictionary.csv} and {.file metadata/tables.csv} in Excel first. Use {.file semantic_suggestions.csv} only if you want more context or a better match."
   } else {
-    "Review and finalize in Excel: {.file README-review.txt}."
+    "Open {.file README-review.txt}, then review {.file metadata/column_dictionary.csv} and {.file metadata/tables.csv} in Excel."
   }
   update_note <- .ms_create_sdp_update_note(check_updates = check_updates)
 
   info_lines <- c(
     "Created review-ready one-shot package with {.fn create_sdp}.",
-    "i" = "Top column-level semantic suggestions were auto-applied only where target fields were blank; table observation-unit suggestions were auto-applied only when non-placeholder table metadata and lexical compatibility made the match look plausible.",
-    "i" = review_targets
+    "i" = "Prefilled semantic values were written directly into the metadata CSVs only where target fields were blank. Any {.val REVIEW:} entries already live there and must be confirmed or edited there.",
+    "i" = review_targets,
+    "i" = "Next: replace placeholders, remove any {.val REVIEW:} markers once final, rebuild EDH XML if needed, then run {.code validate_salmon_datapackage(pkg_path, require_iris = TRUE)}."
   )
   if (!is.null(update_note)) {
     info_lines <- c(info_lines, "i" = update_note)
@@ -2440,30 +2445,69 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   dict
 }
 
-.ms_write_sdp_review_readme <- function(pkg_path, dataset_id, has_suggestions = TRUE, has_llm_review_prefill = FALSE) {
+.ms_write_sdp_review_readme <- function(
+  pkg_path,
+  dataset_id,
+  has_suggestions = TRUE,
+  has_codes = FALSE,
+  has_llm_review_prefill = FALSE
+) {
+  review_issue_urls <- c(
+    "- Shared cross-organization/domain term request (salmon-domain): https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose",
+    "- DFO-specific policy/operations term request (gcdfo / DFO salmon ontology): https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose"
+  )
+
+  checklist <- c(
+    "Start in metadata/*.csv and replace every value that begins with 'MISSING DESCRIPTION:' or 'MISSING METADATA:'.",
+    paste(
+      "Review metadata/column_dictionary.csv and metadata/tables.csv first.",
+      "Those files already contain the prefilled labels and IRIs you are actually finalizing.",
+      if (isTRUE(has_llm_review_prefill)) {
+        "Any IRI that begins with 'REVIEW:' already lives there; keep/edit it there and remove the REVIEW prefix only when final."
+      } else {
+        "Confirm or edit the prefilled IRIs there before touching anything else."
+      }
+    ),
+    if (isTRUE(has_codes)) {
+      "If metadata/codes.csv exists, confirm the coded values and descriptions there before publish."
+    },
+    if (isTRUE(has_suggestions)) {
+      paste(
+        "Use semantic_suggestions.csv only as a fallback shortlist if you are unsure or want a better match.",
+        "Click through and read the term definitions before changing an IRI.",
+        "If no candidate fits, request a new term instead of forcing a bad match."
+      )
+    } else {
+      paste(
+        "No semantic_suggestions.csv was written for this package.",
+        "If you still need a missing term, request a new one instead of forcing a bad match."
+      )
+    },
+    "If you need EDH XML after review, rebuild it from the finalized package with write_edh_xml_from_sdp(pkg_path).",
+    "Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW marker is gone.",
+    "Share the whole package folder (or a zip of the whole folder) so the metadata and data stay together."
+  )
+  checklist <- checklist[nzchar(trimws(checklist))]
+
+  checklist_lines <- paste0("[ ] ", seq_along(checklist), ". ", checklist)
+
   lines <- c(
     "Salmon Data Package Review Checklist",
     "",
     sprintf("Dataset ID: %s", dataset_id),
     "",
-    "Congratulations! You made a Salmon Data Package.",
-    "Before sharing your data, work through this short checklist so the package is complete, understandable, and ready for others to reuse.",
+    "Review the package in Excel, but treat metadata/column_dictionary.csv and metadata/tables.csv as the files you finalize.",
+    "semantic_suggestions.csv is backup context, not the main place to do the review.",
     "",
     "Checklist:",
-    "[ ] 1. Start in metadata/*.csv and replace every value that begins with 'MISSING DESCRIPTION:' or 'MISSING METADATA:'.",
-    "[ ] 2. In metadata/dataset.csv and metadata/tables.csv, confirm title, description, creator/contact, license, file_name paths, labels, observation units, and primary keys.",
-    "[ ] 3. Open data/*.csv and confirm each exported table and column name matches metadata/column_dictionary.csv exactly.",
-    "[ ] 4. If metadata/codes.csv exists, confirm each coded value used in data/*.csv is listed and described clearly.",
-    if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv first. Then finalize semantic IRIs in metadata/column_dictionary.csv and any observation-unit IRIs in metadata/tables.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; manually review semantic IRIs in metadata/column_dictionary.csv.",
-    if (isTRUE(has_llm_review_prefill)) "[ ] 6. Any IRI that begins with 'REVIEW:' was prefilled from the package-native LLM review. Keep it only if it looks right, then remove the REVIEW prefix. If it looks wrong, replace it or blank it out and leave notes in semantic_suggestions.csv for later ontology follow-up." else "[ ] 6. No LLM-prefilled REVIEW IRIs were written; use semantic_suggestions.csv as a shortlist and fill the final IRI values yourself.",
-    "[ ] 7. If no candidate term fits, treat the default request target as the shared salmon-domain ontology. Only route to DFO-specific ontology work when the term is clearly policy/operations specific.",
-    "[ ] 8. If you need EDH XML after manual review, regenerate it from the finalized package with write_edh_xml_from_sdp(pkg_path) (the reviewed-package wrapper around edh_build_hnap_xml()).",
-    "[ ] 9. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW-prefixed IRI has been resolved.",
-    "[ ] 10. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
+    checklist_lines,
+    "",
+    "If you need a new ontology term, route it here:",
+    review_issue_urls,
     "",
     "Recommended path: create package -> review/edit in Excel -> remove REVIEW markers -> rebuild EDH XML if needed -> validate -> publish.",
     "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R.",
-    "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize."
+    "Tip: semantic_suggestions.csv is the evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize."
   )
   writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
 }

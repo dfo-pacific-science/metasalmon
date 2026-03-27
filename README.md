@@ -13,7 +13,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package, and then send you back to the created package for manual cleanup in Excel.
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then send you back to the created package so you can confirm or edit those values directly in Excel.
 
 **Integration context:** See the Salmon Data Integration System overview page (https://br-johnson.github.io/salmon-data-integration-system/) and walkthrough video (https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH).
 
@@ -58,7 +58,7 @@ pkg_path <- create_sdp(
 # - README-review.txt
 ```
 
-`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
+`create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a short review checklist, writes prefilled semantic drafts directly into `metadata/column_dictionary.csv` and `metadata/tables.csv` only where target fields were blank, and keeps `semantic_suggestions.csv` as a fallback shortlist when you want more context or a better match. Code-level semantic seeding stays conservative by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
 ## Bundled NuSEDS Example
 
@@ -101,8 +101,9 @@ suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
 # In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written
-# back into the package as REVIEW-prefixed draft values for manual cleanup,
-# including table-level observation-unit selections in metadata/tables.csv.
+# back into the package metadata as REVIEW-prefixed draft values that you
+# confirm or edit directly in metadata/*.csv, including table-level
+# observation-unit selections in metadata/tables.csv.
 ```
 
 This keeps `find_terms()` as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark selected draft IRIs directly in the created package as `REVIEW: <iri>` so you can confirm or replace them in Excel. That includes selected table-level observation-unit matches written into `metadata/tables.csv`. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
@@ -113,14 +114,15 @@ For the current package-native review path, use this order:
 
 1. Run `create_sdp(...)` to create the Salmon Data Package.
 2. If you want semantic review, set `llm_assess = TRUE`.
-3. Open the created package folder and review:
-   - `metadata/*.csv`
-   - `semantic_suggestions.csv`
-   - `README-review.txt`
-4. In Excel (or another spreadsheet editor), resolve every `REVIEW:`-prefixed IRI in the metadata files.
-5. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder). It now refuses to rebuild while `REVIEW:` markers or unresolved dataset/table placeholder text remain.
-6. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
-7. Publish/share only after the `REVIEW:` markers are gone and validation passes.
+3. Open `README-review.txt`, then review `metadata/column_dictionary.csv` and `metadata/tables.csv` first. Those files already contain the prefilled semantic values you are actually finalizing.
+4. For any prefilled or `REVIEW:`-prefixed IRI, click through and read the term definition before keeping it.
+5. Use `semantic_suggestions.csv` only as a fallback shortlist if you are unsure or want a better match.
+6. If no candidate fits, request a new term instead of forcing a bad match:
+   - shared cross-organization/domain terms -> <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
+   - DFO-specific policy/operations terms -> <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
+7. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)`.
+8. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
+9. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder (or a zip of it), not individual files.
 
 In other words: **create -> review in Excel -> remove `REVIEW:` markers -> rebuild EDH XML if needed -> validate -> publish**.
 

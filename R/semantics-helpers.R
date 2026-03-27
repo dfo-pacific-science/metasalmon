@@ -1233,7 +1233,7 @@ suggest_semantics <- function(df,
   }
 
   if (nrow(suggestions) > 0) {
-    cli::cli_inform("Semantic suggestions added (attr 'semantic_suggestions'); no fields were auto-filled.")
+    cli::cli_inform("Semantic suggestions stored in attr('semantic_suggestions') for downstream review.")
   } else {
     cli::cli_inform("No semantic suggestions found for missing semantic metadata.")
   }

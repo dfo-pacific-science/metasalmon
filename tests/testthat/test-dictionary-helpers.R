@@ -338,6 +338,42 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   expect_true(is.data.frame(dwc_map))
 })
 
+test_that("suggest_semantics reports that suggestions are stored for review", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "value",
+    column_label = "Spawner abundance",
+    column_description = "Spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "number",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = "Spawner abundance",
+      iri = "https://example.org/spawner-abundance",
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label_exact",
+      definition = "Spawner abundance"
+    )
+  }
+
+  expect_message(
+    suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search),
+    regexp = "Semantic suggestions stored in attr\\('semantic_suggestions'\\) for downstream review."
+  )
+})
+
 test_that("suggest_semantics strips review placeholders and applies role-aware column queries", {
   dict <- tibble::tibble(
     dataset_id = c("d1", "d1"),

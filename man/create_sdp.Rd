@@ -145,14 +145,17 @@ low-cardinality character source columns only; set
 \code{semantic_code_scope = "all"} to broaden that or \code{"none"} to disable it.
 The package root contains \code{README-review.txt},
 \code{semantic_suggestions.csv} (when available), \code{datapackage.json},
-\verb{metadata/}, and \verb{data/}. To keep review files usable,
+\verb{metadata/}, and \verb{data/}. Review the prefilled values already written into
+\code{metadata/tables.csv} and \code{metadata/column_dictionary.csv} first; use
+\code{semantic_suggestions.csv} as a fallback shortlist when you want more
+context or a better match. To keep that review file usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
 enough human-readable context to review safely. When \code{llm_assess = TRUE},
 the same review file also carries \verb{llm_*} columns so the shortlisted LLM
 judgment stays explicit and reviewable, and any selected column/table IRI
-draft that gets auto-applied is written back into the package as a
-\verb{REVIEW:}-prefixed value for manual confirmation. Required-field review
-placeholders are also inserted into the inferred metadata files. In
+draft that gets auto-applied is written back into the metadata CSVs as a
+\verb{REVIEW:}-prefixed value for manual confirmation there. Required-field
+review placeholders are also inserted into the inferred metadata files. In
 interactive use, \code{create_sdp()} can also mention an available package update;
 set \code{check_updates = FALSE} to skip that network check. The package bundles
 two Fraser coho examples: \code{nuseds-fraser-coho-sample.csv} (30 rows across

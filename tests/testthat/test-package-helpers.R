@@ -377,18 +377,21 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
   }
 
   pkg_path <- NULL
-  with_mocked_bindings(
-    suggest_semantics = fake_suggest,
-    {
-      pkg_path <- create_sdp(
-        resources,
-        path = file.path(withr::local_tempdir(), "review-package"),
-        dataset_id = "review-demo",
-        seed_semantics = TRUE,
-        seed_table_meta = seed_table_meta,
-        overwrite = TRUE
-      )
-    }
+  expect_message(
+    with_mocked_bindings(
+      suggest_semantics = fake_suggest,
+      {
+        pkg_path <- create_sdp(
+          resources,
+          path = file.path(withr::local_tempdir(), "review-package"),
+          dataset_id = "review-demo",
+          seed_semantics = TRUE,
+          seed_table_meta = seed_table_meta,
+          overwrite = TRUE
+        )
+      }
+    ),
+    regexp = "Prefilled semantic values were written directly into the metadata CSVs"
   )
 
   expect_true(file.exists(file.path(pkg_path, "README-review.txt")))
@@ -396,10 +399,17 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
 
   review_lines <- readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE)
   expect_true(any(grepl("Salmon Data Package Review Checklist", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("Congratulations! You made a Salmon Data Package", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("Review the package in Excel", review_lines, fixed = TRUE)))
   expect_true(any(grepl("[ ] 1. Start in metadata/*.csv", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("metadata/column_dictionary.csv and metadata/tables.csv first", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("Use semantic_suggestions.csv only as a fallback shortlist", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("salmon-domain-ontology/issues/new/choose", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("dfo-salmon-ontology/issues/new/choose", review_lines, fixed = TRUE)))
   expect_true(any(grepl("Share the whole package folder", review_lines, fixed = TRUE)))
   expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
+  if (file.exists(file.path(pkg_path, "metadata", "codes.csv"))) {
+    expect_true(any(grepl("If metadata/codes.csv exists", review_lines, fixed = TRUE)))
+  }
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
   expect_setequal(unique(suggestions_written$target_scope), c("column", "table"))
