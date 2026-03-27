@@ -19,7 +19,7 @@ create_sdp(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = TRUE,
-  seed_dataset_meta = NULL,
+  seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
   llm_assess = FALSE,
   llm_provider = c("openai", "openrouter", "openai_compatible"),
@@ -195,10 +195,11 @@ Invisibly returns the package path.
 This one-shot helper creates a review-ready package by default: semantic
 suggestions are seeded and the top-ranked column-level suggestions are
 auto-applied only into missing dictionary IRI fields. Table-level
-observation-unit suggestions stay enabled, but `create_sdp()` only
-auto-applies them into missing `tables.csv$observation_unit_iri` values
-when they are backed by non-placeholder table metadata and still look
-lexically compatible with that context; compatible suggestions can also
+observation-unit suggestions stay enabled, and `create_sdp()` can
+auto-apply them into missing `tables.csv$observation_unit_iri` values
+when the suggestion still looks lexically compatible with the available
+table context (prefer `observation_unit`/`description`, otherwise fall
+back to `table_label`/`table_id`); compatible suggestions can also
 backfill `tables.csv$observation_unit` labels when missing. To reduce
 review noise conservatively, code-level suggestions default to factor
 and low-cardinality character source columns only; set
@@ -209,9 +210,9 @@ The package root contains `README-review.txt`,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
 enough human-readable context to review safely. When
 `llm_assess = TRUE`, the same review file also carries `llm_*` columns
-so the shortlisted LLM judgment stays explicit and reviewable, and any
-selected column/table IRI draft that gets auto-applied is written back
-into the package as a `REVIEW:`-prefixed value for manual confirmation.
+so the shortlisted LLM judgment stays explicit and reviewable. Any
+auto-applied column/table IRI draft is written back into the package as
+a `REVIEW:`-prefixed value for manual confirmation.
 Required-field review placeholders are also inserted into the inferred
 metadata files. In interactive use, `create_sdp()` can also mention an
 available package update; set `check_updates = FALSE` to skip that

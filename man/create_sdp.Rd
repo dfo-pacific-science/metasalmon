@@ -16,7 +16,7 @@ create_sdp(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = TRUE,
-  seed_dataset_meta = NULL,
+  seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
   llm_assess = FALSE,
   llm_provider = c("openai", "openrouter", "openai_compatible"),
@@ -64,9 +64,11 @@ semantic suggestions.}
 
 \item{seed_codes}{Optional \code{codes.csv}-style seed metadata.}
 
-\item{seed_table_meta}{Optional \code{tables.csv}-style seed metadata.}
+\item{seed_table_meta}{Optional \code{tables.csv}-style seed metadata. Use
+\code{TRUE} (default) to infer starter table metadata from \code{resources}.}
 
-\item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata.}
+\item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata. Use
+\code{TRUE} (default) to infer starter dataset metadata from \code{resources}.}
 
 \item{semantic_code_scope}{Character string controlling which \code{codes.csv}
 rows are sent through \code{suggest_semantics()} during one-shot seeding.
@@ -135,11 +137,12 @@ Data Package.
 This one-shot helper creates a review-ready package by default:
 semantic suggestions are seeded and the top-ranked column-level suggestions
 are auto-applied only into missing dictionary IRI fields. Table-level
-observation-unit suggestions stay enabled, but \code{create_sdp()} only
-auto-applies them into missing \code{tables.csv$observation_unit_iri} values
-when they are backed by non-placeholder table metadata and still look
-lexically compatible with that context; compatible suggestions can also
-backfill \code{tables.csv$observation_unit} labels when missing. To reduce review
+observation-unit suggestions stay enabled, and \code{create_sdp()} can
+auto-apply them into missing \code{tables.csv$observation_unit_iri} values when
+the suggestion still looks lexically compatible with the available table
+context (prefer \code{observation_unit}/\code{description}, otherwise fall back to
+\code{table_label}/\code{table_id}); compatible suggestions can also backfill
+\code{tables.csv$observation_unit} labels when missing. To reduce review
 noise conservatively, code-level suggestions default to factor and
 low-cardinality character source columns only; set
 \code{semantic_code_scope = "all"} to broaden that or \code{"none"} to disable it.
@@ -152,10 +155,10 @@ context or a better match. To keep that review file usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
 enough human-readable context to review safely. When \code{llm_assess = TRUE},
 the same review file also carries \verb{llm_*} columns so the shortlisted LLM
-judgment stays explicit and reviewable, and any selected column/table IRI
-draft that gets auto-applied is written back into the metadata CSVs as a
-\verb{REVIEW:}-prefixed value for manual confirmation there. Required-field
-review placeholders are also inserted into the inferred metadata files. In
+judgment stays explicit and reviewable. Any auto-applied column/table IRI
+draft is written back into the metadata CSVs as a \verb{REVIEW:}-prefixed value
+for manual confirmation there. Required-field review placeholders are also
+inserted into the inferred metadata files. In
 interactive use, \code{create_sdp()} can also mention an available package update;
 set \code{check_updates = FALSE} to skip that network check. The package bundles
 two Fraser coho examples: \code{nuseds-fraser-coho-sample.csv} (30 rows across

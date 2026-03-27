@@ -18,7 +18,7 @@ infer_salmon_datapackage_artifacts(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = TRUE,
-  seed_dataset_meta = NULL,
+  seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
   llm_assess = FALSE,
   llm_provider = c("openai", "openrouter", "openai_compatible"),

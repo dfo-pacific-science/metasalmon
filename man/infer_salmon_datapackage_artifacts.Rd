@@ -15,7 +15,7 @@ infer_salmon_datapackage_artifacts(
   seed_verbose = TRUE,
   seed_codes = NULL,
   seed_table_meta = TRUE,
-  seed_dataset_meta = NULL,
+  seed_dataset_meta = TRUE,
   semantic_code_scope = c("factor", "all", "none"),
   llm_assess = FALSE,
   llm_provider = c("openai", "openrouter", "openai_compatible"),
@@ -55,9 +55,11 @@ semantic suggestions.}
 
 \item{seed_codes}{Optional \code{codes.csv}-style seed metadata.}
 
-\item{seed_table_meta}{Optional \code{tables.csv}-style seed metadata.}
+\item{seed_table_meta}{Optional \code{tables.csv}-style seed metadata. Use
+\code{TRUE} (default) to infer starter table metadata from \code{resources}.}
 
-\item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata.}
+\item{seed_dataset_meta}{Optional \code{dataset.csv}-style seed metadata. Use
+\code{TRUE} (default) to infer starter dataset metadata from \code{resources}.}
 
 \item{semantic_code_scope}{Character string controlling which \code{codes.csv}
 rows are sent through \code{suggest_semantics()} during one-shot seeding.

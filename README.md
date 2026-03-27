@@ -100,13 +100,12 @@ suggested <- suggest_semantics(
 suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
-# In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written
-# back into the package metadata as REVIEW-prefixed draft values that you
-# confirm or edit directly in metadata/*.csv, including table-level
-# observation-unit selections in metadata/tables.csv.
+# In create_sdp(...), any auto-applied semantic IRI drafts are written back
+# into the package metadata as REVIEW-prefixed values for manual cleanup,
+# including table-level observation-unit selections in metadata/tables.csv.
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark selected draft IRIs directly in the created package as `REVIEW: <iri>` so you can confirm or replace them in Excel. That includes selected table-level observation-unit matches written into `metadata/tables.csv`. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
 ## Recommended workflow
 

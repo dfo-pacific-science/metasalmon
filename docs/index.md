@@ -148,9 +148,9 @@ suggested <- suggest_semantics(
 suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
-# In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written
-# back into the package as REVIEW-prefixed draft values for manual cleanup,
-# including table-level observation-unit selections in metadata/tables.csv.
+# In create_sdp(...), any auto-applied semantic IRI drafts are written back
+# into the package as REVIEW-prefixed values for manual cleanup, including
+# table-level observation-unit selections in metadata/tables.csv.
 ```
 
 This keeps

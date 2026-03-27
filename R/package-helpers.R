@@ -316,8 +316,10 @@ write_salmon_datapackage <- function(
 #' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
 #'   semantic suggestions.
 #' @param seed_codes Optional `codes.csv`-style seed metadata.
-#' @param seed_table_meta Optional `tables.csv`-style seed metadata.
-#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
+#' @param seed_table_meta Optional `tables.csv`-style seed metadata. Use
+#'   `TRUE` (default) to infer starter table metadata from `resources`.
+#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata. Use
+#'   `TRUE` (default) to infer starter dataset metadata from `resources`.
 #' @param semantic_code_scope Character string controlling which `codes.csv`
 #'   rows are sent through `suggest_semantics()` during one-shot seeding.
 #'   `"factor"` (default) analyzes codes sourced from factor columns and
@@ -392,7 +394,7 @@ infer_salmon_datapackage_artifacts <- function(
     seed_verbose = TRUE,
     seed_codes = NULL,
     seed_table_meta = TRUE,
-    seed_dataset_meta = NULL,
+    seed_dataset_meta = TRUE,
     semantic_code_scope = c("factor", "all", "none"),
     llm_assess = FALSE,
     llm_provider = c("openai", "openrouter", "openai_compatible"),
@@ -464,7 +466,7 @@ infer_salmon_datapackage_artifacts <- function(
     .ms_normalize_codes(seed_codes)
   }
 
-  dataset_meta <- if (is.null(seed_dataset_meta)) {
+  dataset_meta <- if (is.null(seed_dataset_meta) || isTRUE(seed_dataset_meta)) {
     infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
   } else {
     .ms_normalize_dataset_meta(seed_dataset_meta)
@@ -554,8 +556,10 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
 #'   semantic suggestions.
 #' @param seed_codes Optional `codes.csv`-style seed metadata.
-#' @param seed_table_meta Optional `tables.csv`-style seed metadata.
-#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata.
+#' @param seed_table_meta Optional `tables.csv`-style seed metadata. Use
+#'   `TRUE` (default) to infer starter table metadata from `resources`.
+#' @param seed_dataset_meta Optional `dataset.csv`-style seed metadata. Use
+#'   `TRUE` (default) to infer starter dataset metadata from `resources`.
 #' @param semantic_code_scope Character string controlling which `codes.csv`
 #'   rows are sent through `suggest_semantics()` during one-shot seeding.
 #'   `"factor"` (default) analyzes codes sourced from factor columns and
@@ -601,11 +605,12 @@ infer_salmon_datapackage_artifacts <- function(
 #' @details This one-shot helper creates a review-ready package by default:
 #' semantic suggestions are seeded and the top-ranked column-level suggestions
 #' are auto-applied only into missing dictionary IRI fields. Table-level
-#' observation-unit suggestions stay enabled, but `create_sdp()` only
-#' auto-applies them into missing `tables.csv$observation_unit_iri` values
-#' when they are backed by non-placeholder table metadata and still look
-#' lexically compatible with that context; compatible suggestions can also
-#' backfill `tables.csv$observation_unit` labels when missing. To reduce review
+#' observation-unit suggestions stay enabled, and `create_sdp()` can
+#' auto-apply them into missing `tables.csv$observation_unit_iri` values when
+#' the suggestion still looks lexically compatible with the available table
+#' context (prefer `observation_unit`/`description`, otherwise fall back to
+#' `table_label`/`table_id`); compatible suggestions can also backfill
+#' `tables.csv$observation_unit` labels when missing. To reduce review
 #' noise conservatively, code-level suggestions default to factor and
 #' low-cardinality character source columns only; set
 #' `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
@@ -618,10 +623,10 @@ infer_salmon_datapackage_artifacts <- function(
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
 #' enough human-readable context to review safely. When `llm_assess = TRUE`,
 #' the same review file also carries `llm_*` columns so the shortlisted LLM
-#' judgment stays explicit and reviewable, and any selected column/table IRI
-#' draft that gets auto-applied is written back into the metadata CSVs as a
-#' `REVIEW:`-prefixed value for manual confirmation there. Required-field
-#' review placeholders are also inserted into the inferred metadata files. In
+#' judgment stays explicit and reviewable. Any auto-applied column/table IRI
+#' draft is written back into the metadata CSVs as a `REVIEW:`-prefixed value
+#' for manual confirmation there. Required-field review placeholders are also
+#' inserted into the inferred metadata files. In
 #' interactive use, `create_sdp()` can also mention an available package update;
 #' set `check_updates = FALSE` to skip that network check. The package bundles
 #' two Fraser coho examples: `nuseds-fraser-coho-sample.csv` (30 rows across
@@ -658,7 +663,7 @@ create_sdp <- function(
     seed_verbose = TRUE,
     seed_codes = NULL,
     seed_table_meta = TRUE,
-    seed_dataset_meta = NULL,
+    seed_dataset_meta = TRUE,
     semantic_code_scope = c("factor", "all", "none"),
     llm_assess = FALSE,
     llm_provider = c("openai", "openrouter", "openai_compatible"),
@@ -808,19 +813,18 @@ create_sdp <- function(
       overwrite = FALSE,
       verbose = FALSE
     )
-    if (identical(apply_strategy, "llm")) {
-      artifacts$dict <- .ms_mark_reviewed_dictionary_iris(
-        artifacts$dict,
-        dict_before_apply,
-        auto_apply_suggestions
-      )
-    }
+    artifacts$dict <- .ms_mark_reviewed_dictionary_iris(
+      artifacts$dict,
+      dict_before_apply,
+      auto_apply_suggestions,
+      strategy = apply_strategy
+    )
     artifacts$table_meta <- .ms_apply_table_semantic_suggestions(
       artifacts$table_meta,
       suggestions = suggestions,
       strategy = apply_strategy,
       overwrite = FALSE,
-      mark_review = identical(apply_strategy, "llm")
+      mark_review = TRUE
     )
   }
 
@@ -841,7 +845,7 @@ create_sdp <- function(
     dataset_id = dataset_id,
     has_suggestions = !is.null(review_suggestions) && nrow(review_suggestions) > 0,
     has_codes = is.data.frame(artifacts$codes) && nrow(artifacts$codes) > 0,
-    has_llm_review_prefill = any(vapply(
+    has_review_prefill = any(vapply(
       list(artifacts$dict, artifacts$table_meta),
       function(x) {
         if (!is.data.frame(x)) {
@@ -885,7 +889,7 @@ create_sdp <- function(
 
   info_lines <- c(
     "Created review-ready one-shot package with {.fn create_sdp}.",
-    "i" = "Prefilled semantic values were written directly into the metadata CSVs only where target fields were blank. Any {.val REVIEW:} entries already live there and must be confirmed or edited there.",
+    "i" = "Prefilled semantic values were written directly into the metadata CSVs only where target fields were blank. Compatible table observation-unit drafts can be auto-applied using observation-unit/description first and otherwise table label/id fallback. Any {.val REVIEW:} entries already live in the metadata CSVs and must be confirmed or edited there.",
     "i" = review_targets,
     "i" = "Next: replace placeholders, remove any {.val REVIEW:} markers once final, rebuild EDH XML if needed, then run {.code validate_salmon_datapackage(pkg_path, require_iris = TRUE)}."
   )
@@ -2386,12 +2390,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   out
 }
 
-.ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions) {
+.ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions, strategy = c("top", "llm")) {
   dict <- tibble::as_tibble(dict)
   original_dict <- tibble::as_tibble(original_dict)
   suggestions <- tibble::as_tibble(suggestions)
+  strategy <- match.arg(strategy)
 
-  if (nrow(dict) == 0 || nrow(suggestions) == 0 || !"llm_selected" %in% names(suggestions)) {
+  if (nrow(dict) == 0 || nrow(suggestions) == 0) {
     return(dict)
   }
 
@@ -2409,9 +2414,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .data$target_sdp_file == "column_dictionary.csv",
       .data$target_sdp_field %in% iri_fields,
       !is.na(.data$iri),
-      .data$iri != "",
-      !is.na(.data$llm_selected) & .data$llm_selected
+      .data$iri != ""
     )
+
+  if (identical(strategy, "llm")) {
+    if (!"llm_selected" %in% names(review_rows)) {
+      return(dict)
+    }
+    review_rows <- dplyr::filter(review_rows, !is.na(.data$llm_selected) & .data$llm_selected)
+  }
 
   if (nrow(review_rows) == 0) {
     return(dict)
@@ -2450,7 +2461,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   dataset_id,
   has_suggestions = TRUE,
   has_codes = FALSE,
-  has_llm_review_prefill = FALSE
+  has_review_prefill = FALSE
 ) {
   review_issue_urls <- c(
     "- Shared cross-organization/domain term request (salmon-domain): https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose",
@@ -2462,7 +2473,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     paste(
       "Review metadata/column_dictionary.csv and metadata/tables.csv first.",
       "Those files already contain the prefilled labels and IRIs you are actually finalizing.",
-      if (isTRUE(has_llm_review_prefill)) {
+      if (isTRUE(has_review_prefill)) {
         "Any IRI that begins with 'REVIEW:' already lives there; keep/edit it there and remove the REVIEW prefix only when final."
       } else {
         "Confirm or edit the prefilled IRIs there before touching anything else."
@@ -2488,7 +2499,6 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "Share the whole package folder (or a zip of the whole folder) so the metadata and data stay together."
   )
   checklist <- checklist[nzchar(trimws(checklist))]
-
   checklist_lines <- paste0("[ ] ", seq_along(checklist), ". ", checklist)
 
   lines <- c(
@@ -2564,10 +2574,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
   }
 
-  allowed_bases <- c("observation_unit", "description")
-  if (identical(strategy, "llm")) {
-    allowed_bases <- c(allowed_bases, "table_label", "table_id")
-  }
+  allowed_bases <- c("observation_unit", "description", "table_label", "table_id")
   if (!query_basis %in% allowed_bases) {
     return(FALSE)
   }

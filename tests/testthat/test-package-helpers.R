@@ -302,9 +302,11 @@ test_that("create_sdp requires overwrite=TRUE to write into an existing director
   expect_equal(called, 0L)
 })
 
-test_that("create_sdp exposes seed_table_meta default as TRUE", {
+test_that("create_sdp exposes seed_table_meta and seed_dataset_meta defaults as TRUE", {
   expect_true(identical(formals(create_sdp)$seed_table_meta, TRUE))
   expect_true(identical(formals(infer_salmon_datapackage_artifacts)$seed_table_meta, TRUE))
+  expect_true(identical(formals(create_sdp)$seed_dataset_meta, TRUE))
+  expect_true(identical(formals(infer_salmon_datapackage_artifacts)$seed_dataset_meta, TRUE))
 })
 
 test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {
@@ -410,20 +412,21 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
   if (file.exists(file.path(pkg_path, "metadata", "codes.csv"))) {
     expect_true(any(grepl("If metadata/codes.csv exists", review_lines, fixed = TRUE)))
   }
+  expect_true(any(grepl("already lives there", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
   expect_setequal(unique(suggestions_written$target_scope), c("column", "table"))
 
   dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
   count_row <- dict_written[dict_written$column_name == "count", , drop = FALSE]
-  expect_equal(count_row$term_iri[[1]], "https://example.org/term-top")
+  expect_equal(count_row$term_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/term-top"))
   expect_equal(count_row$property_iri[[1]], "https://example.org/property-existing")
   expect_true(startsWith(count_row$column_description[[1]], "MISSING DESCRIPTION:"))
 
   tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
   expect_true(all(startsWith(tables_written$file_name, "data/")))
   expect_equal(tables_written$description[[1]], "Catch records for survey events.")
-  expect_equal(tables_written$observation_unit_iri[[1]], "https://example.org/table-unit")
+  expect_equal(tables_written$observation_unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/table-unit"))
   expect_equal(tables_written$observation_unit[[1]], "Catch record")
 
   dataset_written <- readr::read_csv(file.path(pkg_path, "metadata", "dataset.csv"), show_col_types = FALSE)
@@ -431,6 +434,66 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
   expect_true(startsWith(dataset_written$contact_name[[1]], "MISSING METADATA:"))
   expect_true(startsWith(dataset_written$contact_email[[1]], "MISSING METADATA:"))
   expect_true(startsWith(dataset_written$license[[1]], "MISSING METADATA:"))
+})
+
+test_that("create_sdp auto-applies strong table-label observation-unit suggestions by default", {
+  resources <- list(
+    escapement = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L)
+    )
+  )
+
+  fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"),
+                           include_dwc = FALSE, max_per_role = 3,
+                           search_fn = find_terms, codes = NULL,
+                           table_meta = NULL, dataset_meta = NULL) {
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = NA_character_,
+      dictionary_role = "entity",
+      table_id = "escapement",
+      dataset_id = "review-demo",
+      target_scope = "table",
+      target_sdp_file = "tables.csv",
+      target_sdp_field = "observation_unit_iri",
+      target_row_key = "review-demo/escapement",
+      target_query_basis = "table_label",
+      target_query_context = "Escapement escapement",
+      code_value = NA_character_,
+      code_label = NA_character_,
+      code_description = NA_character_,
+      iri = "https://example.org/observation-unit",
+      label = "Escapement observation",
+      source = "smn",
+      ontology = "demo",
+      role = "entity",
+      match_type = "label_exact",
+      definition = NA_character_,
+      score = 2
+    )
+    dict
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "review-package-top-table-unit"),
+        dataset_id = "review-demo",
+        seed_semantics = TRUE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
+  expect_equal(
+    tables_written$observation_unit_iri[[1]],
+    paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/observation-unit")
+  )
+  expect_equal(tables_written$observation_unit[[1]], "Escapement observation")
 })
 
 test_that("create_sdp leaves weak or bogus table observation-unit suggestions as review only", {
@@ -660,7 +723,7 @@ test_that("create_sdp filters bad non-measurement term IRIs before auto-apply", 
   expect_true(is.na(dict_written$term_iri[dict_written$column_name == "AREA"]) || dict_written$term_iri[dict_written$column_name == "AREA"] == "")
   expect_true(is.na(dict_written$term_iri[dict_written$column_name == "SPECIES"]) || dict_written$term_iri[dict_written$column_name == "SPECIES"] == "")
   expect_true(is.na(dict_written$term_iri[dict_written$column_name == "RUN_TYPE"]) || dict_written$term_iri[dict_written$column_name == "RUN_TYPE"] == "")
-  expect_equal(dict_written$term_iri[dict_written$column_name == "WATERBODY"], "https://example.org/waterbody")
+  expect_equal(dict_written$term_iri[dict_written$column_name == "WATERBODY"], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/waterbody"))
 })
 
 test_that("create_sdp keeps broad physical measurement matches review-only but still applies unit hits", {
@@ -728,10 +791,10 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
   expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
   expect_true(is.na(water_row$entity_iri[[1]]) || water_row$entity_iri[[1]] == "")
   expect_true(is.na(water_row$method_iri[[1]]) || water_row$method_iri[[1]] == "")
-  expect_equal(water_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+  expect_equal(water_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M"))
 
-  expect_equal(count_row$term_iri[[1]], "https://w3id.org/gcdfo/salmon#SpawnerAbundance")
-  expect_equal(count_row$property_iri[[1]], "http://purl.obolibrary.org/obo/STATO_0000047")
+  expect_equal(count_row$term_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://w3id.org/gcdfo/salmon#SpawnerAbundance"))
+  expect_equal(count_row$property_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://purl.obolibrary.org/obo/STATO_0000047"))
 })
 
 test_that("create_sdp keeps camelCase physical DwC property suggestions review-only but still applies unit hits", {
@@ -835,7 +898,7 @@ test_that("create_sdp keeps camelCase physical DwC property suggestions review-o
   expect_true(is.na(depth_row$property_iri[[1]]) || depth_row$property_iri[[1]] == "")
   expect_true(is.na(depth_row$entity_iri[[1]]) || depth_row$entity_iri[[1]] == "")
   expect_true(is.na(depth_row$method_iri[[1]]) || depth_row$method_iri[[1]] == "")
-  expect_equal(depth_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+  expect_equal(depth_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M"))
 })
 
 test_that("create_sdp paired value/unit measurements auto-apply only the unit hit", {
@@ -914,7 +977,7 @@ test_that("create_sdp paired value/unit measurements auto-apply only the unit hi
   expect_true(is.na(sample_row$term_iri[[1]]) || sample_row$term_iri[[1]] == "")
   expect_true(is.na(sample_row$property_iri[[1]]) || sample_row$property_iri[[1]] == "")
   expect_true(is.na(sample_row$entity_iri[[1]]) || sample_row$entity_iri[[1]] == "")
-  expect_equal(sample_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M2")
+  expect_equal(sample_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M2"))
 })
 
 test_that("create_sdp uses the matching table context when semantic seeding multi-table resources", {
@@ -997,7 +1060,7 @@ test_that("create_sdp uses the matching table context when semantic seeding mult
   expect_true(is.na(sample_row$term_iri[[1]]) || sample_row$term_iri[[1]] == "")
   expect_true(is.na(sample_row$property_iri[[1]]) || sample_row$property_iri[[1]] == "")
   expect_true(is.na(sample_row$entity_iri[[1]]) || sample_row$entity_iri[[1]] == "")
-  expect_equal(sample_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M2")
+  expect_equal(sample_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M2"))
 })
 
 test_that("create_sdp unit seeding can use role-augmented unit sources", {
@@ -1085,10 +1148,10 @@ test_that("create_sdp unit seeding can use role-augmented unit sources", {
   water_row <- dict_written[dict_written$column_name == "Water Level / Niveau d'eau (m)", , drop = FALSE]
   temp_row <- dict_written[dict_written$column_name == "temperature_degree_c", , drop = FALSE]
 
-  expect_equal(water_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M")
+  expect_equal(water_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M"))
   expect_true(is.na(water_row$term_iri[[1]]) || water_row$term_iri[[1]] == "")
   expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
-  expect_equal(temp_row$unit_iri[[1]], "http://qudt.org/vocab/unit/DEG_C")
+  expect_equal(temp_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/DEG_C"))
   expect_true(is.na(temp_row$term_iri[[1]]) || temp_row$term_iri[[1]] == "")
   expect_true(is.na(temp_row$property_iri[[1]]) || temp_row$property_iri[[1]] == "")
 
