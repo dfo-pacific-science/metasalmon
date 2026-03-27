@@ -136,7 +136,6 @@ articles:
     navbar: ~
     desc: "Advanced features for power users"
     contents:
-      - gpt-collaboration
 
   - title: "Reference"
     navbar: ~

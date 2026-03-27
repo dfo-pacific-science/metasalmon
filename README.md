@@ -122,7 +122,6 @@ In other words: **create -> review in Excel -> remove `REVIEW:` markers -> rebui
 | A biologist who wants to share data     | [5-Minute Quickstart](articles/metasalmon.html)                            |
 | Curious how it works                    | [How It Fits Together](#how-it-fits-together)                              |
 | A data steward standardizing datasets   | [Data Dictionary & Publication](articles/data-dictionary-publication.html) |
-| Interested in AI-assisted documentation | [AI Assistance (Advanced)](articles/gpt-collaboration.html)                |
 | Reading CSVs from private GitHub repos  | [GitHub CSV Access](articles/github-csv-access.html)                       |
 
 ## Video Walkthrough

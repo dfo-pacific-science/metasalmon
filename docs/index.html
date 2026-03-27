@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -51,7 +51,6 @@ concept schemes) while preserving your original data structure.
 <li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
-    <li><a class="dropdown-item" href="articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
     <li><a class="dropdown-item" href="articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
@@ -89,7 +88,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
-<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. For extra help, our custom <a href="https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer" class="external-link">Salmon Data Standardizer GPT</a> can generate metadata drafts, salmon data packages, and guide your data dictionary creation in coordination with this R package.</p>
+<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. The preferred review workflow now happens <strong>inside the R package</strong>: <code>metasalmon</code> can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package, and then send you back to the created package for manual cleanup in Excel.</p>
 <p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
@@ -185,20 +184,36 @@ concept schemes) while preserving your original data structure.
 <span>  dict <span class="op">=</span> <span class="fu"><a href="reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span><span class="va">fraser_coho</span>, dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>, table_id <span class="op">=</span> <span class="st">"escapement"</span><span class="op">)</span>,</span>
 <span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  llm_provider <span class="op">=</span> <span class="st">"openrouter"</span>,</span>
-<span>  llm_model <span class="op">=</span> <span class="st">"openai/gpt-oss-20b:free"</span>,</span>
 <span>  llm_context_files <span class="op">=</span> <span class="va">context_files</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Explicit apply step; still opt-in</span></span>
-<span><span class="va">reviewed</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/apply_semantic_suggestions.html">apply_semantic_suggestions</a></span><span class="op">(</span></span>
-<span>  <span class="va">suggested</span>,</span>
-<span>  strategy <span class="op">=</span> <span class="st">"llm"</span>,</span>
-<span>  min_llm_confidence <span class="op">=</span> <span class="fl">0.8</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM only judges the retrieved shortlist, never invents raw IRIs, and can use local README/markdown/PDF context to make better calls.</p>
+<span><span class="co"># In create_sdp(..., llm_assess = TRUE), LLM-selected IRIs are now written</span></span>
+<span><span class="co"># into the package as REVIEW-prefixed draft values for manual cleanup.</span></span></code></pre></div>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark draft IRIs directly in the created package as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="recommended-workflow">Recommended workflow<a class="anchor" aria-label="anchor" href="#recommended-workflow"></a>
+</h2>
+<p>For the current package-native review path, use this order:</p>
+<ol style="list-style-type: decimal">
+<li>Run <code>create_sdp(...)</code> to create the Salmon Data Package.</li>
+<li>If you want semantic review, set <code>llm_assess = TRUE</code>.</li>
+<li>Open the created package folder and review:
+<ul>
+<li><code>metadata/*.csv</code></li>
+<li><code>semantic_suggestions.csv</code></li>
+<li><code>README-review.txt</code></li>
+</ul>
+</li>
+<li>In Excel (or another spreadsheet editor), resolve every <code>REVIEW:</code>-prefixed IRI in the metadata files.</li>
+<li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code>.</li>
+<li>Re-run validation with <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code>.</li>
+<li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes.</li>
+</ol>
+<p>In other words: <strong>create -&gt; review in Excel -&gt; remove <code>REVIEW:</code> markers -&gt; rebuild EDH XML if needed -&gt; validate -&gt; publish</strong>.</p>
 </div>
 <div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
@@ -226,10 +241,6 @@ concept schemes) while preserving your original data structure.
 <td><a href="articles/data-dictionary-publication.html">Data Dictionary &amp; Publication</a></td>
 </tr>
 <tr>
-<td>Interested in AI-assisted documentation</td>
-<td><a href="articles/gpt-collaboration.html">AI Assistance (Advanced)</a></td>
-</tr>
-<tr>
 <td>Reading CSVs from private GitHub repos</td>
 <td><a href="articles/github-csv-access.html">GitHub CSV Access</a></td>
 </tr>
@@ -254,8 +265,8 @@ concept schemes) while preserving your original data structure.
 </h2>
 <p>When you create a package, you get a folder containing:</p>
 <pre><code>my-data-package/
-  +-- README-review.txt         # Step-by-step review checklist
-  +-- semantic_suggestions.csv  # Review-only semantic suggestions (when present)
+  +-- README-review.txt         # Step-by-step review checklist for manual Excel cleanup
+  +-- semantic_suggestions.csv  # Detailed semantic evidence + LLM review trail (when present)
   +-- datapackage.json          # Machine-readable export
   +-- metadata/
   |   +-- dataset.csv           # Dataset-level metadata (canonical)
@@ -314,7 +325,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="how-it-fits-together">How It Fits Together<a class="anchor" aria-label="anchor" href="#how-it-fits-together"></a>
 </h2>
-<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), and the Salmon Data Standardizer GPT. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the GPT assistant helps draft descriptions and term choices so you can close the loop without juggling multiple tools.</p>
+<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you to bounce back out to a separate ChatGPT export loop.</p>
 <p>The high-level flow is:</p>
 <ul>
 <li>
@@ -328,7 +339,7 @@ concept schemes) while preserving your original data structure.
 <li>
 <strong>The Salmon Domain Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
 <li>
-<strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format, while the GPT assistant helps polish the metadata and suggests vocabulary links.</li>
+<strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus <code>README-review.txt</code> / <code>semantic_suggestions.csv</code>, not an external ChatGPT export.</li>
 </ul>
 <script>
 // Prevent Mermaid from auto-rendering before we prepare the code blocks.
