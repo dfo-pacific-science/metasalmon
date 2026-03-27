@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -22,7 +22,6 @@
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul></li>
@@ -40,6 +39,26 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.27" id="metasalmon-0027">metasalmon 0.0.27<a class="anchor" aria-label="anchor" href="#metasalmon-0027"></a></h2>
+<ul><li>Fixed a deterministic semantic-query bug for spawner-style measurement columns: the property-slot query no longer hard-codes <code>count</code> for columns like <code>natural_adult_spawners</code>, and now prefers <code>spawner abundance</code> so the shortlist is more semantically sensible before LLM review.</li>
+<li>Added one bounded LLM exploration round for weak semantic shortlists: when the first LLM pass comes back as review/propose-new-term or low-confidence, <code>suggest_semantics(..., llm_assess = TRUE)</code> may request 1–2 alternate plain-text search queries, rerun deterministic retrieval, merge/de-dupe candidates, and reassess once without letting the model mint raw IRIs.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.26" id="metasalmon-0026">metasalmon 0.0.26<a class="anchor" aria-label="anchor" href="#metasalmon-0026"></a></h2>
+<ul><li>Further tuned the OpenRouter free path for practicality: <code>openrouter/free</code> now uses smaller pair-sized batches and a smaller effective candidate shortlist per target so free-router prompts stay lighter on larger quickstart-style runs.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.25" id="metasalmon-0025">metasalmon 0.0.25<a class="anchor" aria-label="anchor" href="#metasalmon-0025"></a></h2>
+<ul><li>Made the OpenRouter free path more practical for full semantic review runs: live <code>openrouter/free</code> requests are now serially batched in pairs and use a smaller effective shortlist per target when using the built-in HTTP client, which trims request overhead without adding flaky parallel fan-out.</li>
+<li>Added batch fallback safety: if a batched OpenRouter response is malformed or incomplete, <code>metasalmon</code> now falls back to per-target assessment instead of poisoning the whole run.</li>
+<li>Retained the 0.0.24 hardening: longer effective timeout, one retry for transient failures, lighter context payloads, and downgrade-to-review handling for out-of-range candidate indexes.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.0.24" id="metasalmon-0024">metasalmon 0.0.24<a class="anchor" aria-label="anchor" href="#metasalmon-0024"></a></h2>
+<ul><li>Hardened package-native LLM review for flaky free-router behavior: OpenRouter free models now get a longer effective timeout, one automatic retry for transient HTTP/network failures, and fewer context chunks per request so prompts stay lighter.</li>
+<li>Hardened invalid LLM candidate-index handling: out-of-range <code>selected_candidate_index</code> values no longer poison the whole target; they are downgraded to <code>review</code> with no auto-selection instead of surfacing as a hard LLM error.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.23" id="metasalmon-0023">metasalmon 0.0.23<a class="anchor" aria-label="anchor" href="#metasalmon-0023"></a></h2>
 <ul><li>Added package-native LLM semantic review on top of deterministic retrieval: <code>suggest_semantics(..., llm_assess = TRUE)</code> can now assess shortlisted candidates with OpenAI-compatible providers, attach <code>llm_*</code> review columns to <code>semantic_suggestions</code>, and expose target-level results via <code>attr(dict, "semantic_llm_assessments")</code>.</li>

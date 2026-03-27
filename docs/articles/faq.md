@@ -234,7 +234,10 @@ pkg_path <- write_salmon_datapackage(
 
 ### Can I include multiple tables in one package?
 
-Yes! Just include multiple data frames in the `resources` list:
+Yes! Just include multiple data frames in the `resources` list.
+[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+can take that same named list of data frames when you want table-aware
+semantic review across a multi-table package:
 
 ``` r
 

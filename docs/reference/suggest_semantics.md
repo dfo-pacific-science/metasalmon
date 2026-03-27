@@ -37,7 +37,11 @@ suggest_semantics(
 
 - df:
 
-  A data frame or tibble containing the data being documented.
+  A data frame or tibble containing the data being documented, or a
+  named list of data frames for multi-table workflows. When a named list
+  is supplied, `suggest_semantics()` matches each dictionary row to the
+  correct table via `dict$table_id` and uses that table's data as
+  context.
 
 - dict:
 
@@ -91,7 +95,10 @@ suggest_semantics(
 - llm_assess:
 
   Logical; if `TRUE`, assess the top semantic candidates per target with
-  an LLM after deterministic retrieval. Default is `FALSE`.
+  an LLM after deterministic retrieval. When the first shortlist looks
+  weak, the LLM may request at most one bounded alternate-query pass
+  (1–2 plain-text search phrases) before a single reassessment. Default
+  is `FALSE`.
 
 - llm_provider:
 
@@ -101,7 +108,9 @@ suggest_semantics(
 - llm_model:
 
   Character model identifier. Required when `llm_assess = TRUE` unless
-  supplied via `METASALMON_LLM_MODEL`.
+  supplied via `METASALMON_LLM_MODEL`. When
+  `llm_provider = "openrouter"` and no model is supplied, the package
+  defaults to `"openrouter/free"`.
 
 - llm_api_key:
 
@@ -117,8 +126,8 @@ suggest_semantics(
 
 - llm_top_n:
 
-  Maximum number of retrieved candidates to send to the LLM per target.
-  Default is `5`.
+  Maximum number of retrieved candidates to send to the LLM per target
+  for each assessment round. Default is `5`.
 
 - llm_context_files:
 
@@ -151,14 +160,15 @@ candidate match. It also includes `target_scope`, `target_sdp_file`, and
 suggestion would land in the Salmon Data Package. Additional columns
 include `search_query`, `target_query_basis`, `target_query_context`,
 `column_label`, `column_description`, `label`, `iri`, `source`,
-`ontology`, and `definition`. If the underlying search results include a
-`score` column, it is preserved for downstream filtering. For non-column
-targets, the tibble also includes explicit destination context
-(`target_row_key`, `target_label`, `target_description`, `code_value`,
-`code_label`, `code_description`) so table-, dataset-, and code-level
-rows are inspectable without extra joins. When `llm_assess = TRUE`, the
-suggestions also include `llm_*` review columns such as `llm_decision`,
-`llm_confidence`, `llm_selected`, and `llm_candidate_rank`, and the
+`ontology`, `definition`, `retrieval_query`, and `retrieval_pass`. If
+the underlying search results include a `score` column, it is preserved
+for downstream filtering. For non-column targets, the tibble also
+includes explicit destination context (`target_row_key`, `target_label`,
+`target_description`, `code_value`, `code_label`, `code_description`) so
+table-, dataset-, and code-level rows are inspectable without extra
+joins. When `llm_assess = TRUE`, the suggestions also include `llm_*`
+review columns such as `llm_decision`, `llm_confidence`, `llm_selected`,
+`llm_candidate_rank`, and bounded exploration metadata, and the
 dictionary gains a parallel `semantic_llm_assessments` attribute with
 one row per assessed target.
 
@@ -180,10 +190,14 @@ additional target rows are generated for `codes.csv`, `tables.csv`, and
 review placeholders such as `MISSING METADATA:` and fall back to real
 table metadata context instead.
 
-When `llm_assess = TRUE`, the LLM only judges the retrieved shortlist;
-it does not mint new IRIs. Local context files are read on disk,
-chunked, and lexically trimmed down before prompt assembly so large
-README/report files do not get dumped wholesale into the model call.
+When `llm_assess = TRUE`, the LLM only judges deterministically
+retrieved candidates; it does not mint new IRIs. If the first shortlist
+looks weak, the model may suggest at most one bounded alternate-query
+round (1–2 plain-text queries), the package reruns deterministic
+retrieval, de-dupes the merged shortlist, and reassesses once. Local
+context files are read on disk, chunked, and lexically trimmed down
+before prompt assembly so large README/report files do not get dumped
+wholesale into the model call.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a

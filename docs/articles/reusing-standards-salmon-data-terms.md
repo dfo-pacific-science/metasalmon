@@ -226,7 +226,8 @@ tweak anything that misses your domain nuance.
 - Follow the [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
   guide when you finalize your metadata before publishing.
-- Try the [Using AI to Document Your
-  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)
-  workflow to draft column descriptions or propose new terms when the
-  catalog does not yet cover your concept.
+- For AI-assisted drafting and package-native review, see the [optional
+  LLM semantic review
+  workflow](https://dfo-pacific-science.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
+  on the package home page when you want help reviewing shortlisted
+  terms.

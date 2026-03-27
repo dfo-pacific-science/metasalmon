@@ -216,4 +216,4 @@ Terms from Wikidata are flagged with `alignment_only = TRUE` and ranked lower.
 
 - See the "How It Fits Together" section in the README for a visual map of how the components interact.
 - Read the [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) guide when you want to align your dictionary with published vocabularies.
-- Try the [Using AI to Document Your Data](gpt-collaboration.html) workflow for drafting descriptions and ontology-aligned metadata quickly.
+- For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page.

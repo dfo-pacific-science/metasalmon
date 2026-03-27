@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,6 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul></li>
@@ -90,7 +89,10 @@ low-cardinality attributes.</p>
 
 
 <dl><dt id="arg-df">df<a class="anchor" aria-label="anchor" href="#arg-df"></a></dt>
-<dd><p>A data frame or tibble containing the data being documented.</p></dd>
+<dd><p>A data frame or tibble containing the data being documented, or a
+named list of data frames for multi-table workflows. When a named list is
+supplied, <code>suggest_semantics()</code> matches each dictionary row to the correct
+table via <code>dict$table_id</code> and uses that table's data as context.</p></dd>
 
 
 <dt id="arg-dict">dict<a class="anchor" aria-label="anchor" href="#arg-dict"></a></dt>
@@ -139,7 +141,10 @@ semantic keywords (IRIs intended for keyword curation).</p></dd>
 
 <dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, assess the top semantic candidates per
-target with an LLM after deterministic retrieval. Default is <code>FALSE</code>.</p></dd>
+target with an LLM after deterministic retrieval. When the first shortlist
+looks weak, the LLM may request at most one bounded alternate-query pass
+(1–2 plain-text search phrases) before a single reassessment. Default is
+<code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
@@ -149,7 +154,9 @@ target with an LLM after deterministic retrieval. Default is <code>FALSE</code>.
 
 <dt id="arg-llm-model">llm_model<a class="anchor" aria-label="anchor" href="#arg-llm-model"></a></dt>
 <dd><p>Character model identifier. Required when
-<code>llm_assess = TRUE</code> unless supplied via <code>METASALMON_LLM_MODEL</code>.</p></dd>
+<code>llm_assess = TRUE</code> unless supplied via <code>METASALMON_LLM_MODEL</code>. When
+<code>llm_provider = "openrouter"</code> and no model is supplied, the package
+defaults to <code>"openrouter/free"</code>.</p></dd>
 
 
 <dt id="arg-llm-api-key">llm_api_key<a class="anchor" aria-label="anchor" href="#arg-llm-api-key"></a></dt>
@@ -166,7 +173,7 @@ set via <code>METASALMON_LLM_BASE_URL</code>.</p></dd>
 
 <dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
 <dd><p>Maximum number of retrieved candidates to send to the LLM
-per target. Default is <code>5</code>.</p></dd>
+per target for each assessment round. Default is <code>5</code>.</p></dd>
 
 
 <dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>
@@ -200,16 +207,18 @@ It also includes <code>target_scope</code>, <code>target_sdp_file</code>, and
 would land in the Salmon Data Package. Additional columns include
 <code>search_query</code>, <code>target_query_basis</code>, <code>target_query_context</code>,
 <code>column_label</code>, <code>column_description</code>, <code>label</code>, <code>iri</code>,
-<code>source</code>, <code>ontology</code>, and <code>definition</code>. If the underlying search results
-include a <code>score</code> column, it is preserved for downstream filtering.
+<code>source</code>, <code>ontology</code>, <code>definition</code>, <code>retrieval_query</code>, and
+<code>retrieval_pass</code>. If the underlying search results include a <code>score</code>
+column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
 context (<code>target_row_key</code>, <code>target_label</code>, <code>target_description</code>,
 <code>code_value</code>, <code>code_label</code>, <code>code_description</code>) so table-, dataset-, and
 code-level rows are inspectable without extra joins. When
 <code>llm_assess = TRUE</code>, the suggestions also include <code>llm_*</code> review columns
-such as <code>llm_decision</code>, <code>llm_confidence</code>, <code>llm_selected</code>, and
-<code>llm_candidate_rank</code>, and the dictionary gains a parallel
-<code>semantic_llm_assessments</code> attribute with one row per assessed target.</p>
+such as <code>llm_decision</code>, <code>llm_confidence</code>, <code>llm_selected</code>,
+<code>llm_candidate_rank</code>, and bounded exploration metadata, and the
+dictionary gains a parallel <code>semantic_llm_assessments</code> attribute with one
+row per assessed target.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -225,10 +234,13 @@ Identifier and temporal columns are skipped by default. When <code>codes</code>,
 generated for <code>codes.csv</code>, <code>tables.csv</code>, and <code>dataset.csv</code> respectively.
 Table-level observation-unit queries ignore review placeholders such as
 <code>MISSING METADATA:</code> and fall back to real table metadata context instead.</p>
-<p>When <code>llm_assess = TRUE</code>, the LLM only judges the retrieved shortlist; it
-does not mint new IRIs. Local context files are read on disk, chunked, and
-lexically trimmed down before prompt assembly so large README/report files do
-not get dumped wholesale into the model call.</p>
+<p>When <code>llm_assess = TRUE</code>, the LLM only judges deterministically retrieved
+candidates; it does not mint new IRIs. If the first shortlist looks weak,
+the model may suggest at most one bounded alternate-query round (1–2
+plain-text queries), the package reruns deterministic retrieval, de-dupes
+the merged shortlist, and reassesses once. Local context files are read on
+disk, chunked, and lexically trimmed down before prompt assembly so large
+README/report files do not get dumped wholesale into the model call.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

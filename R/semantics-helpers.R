@@ -182,7 +182,10 @@
 #' returns suggestions as an attribute on the dictionary tibble. This allows
 #' you to review candidates before accepting them into your dictionary.
 #'
-#' @param df A data frame or tibble containing the data being documented.
+#' @param df A data frame or tibble containing the data being documented, or a
+#'   named list of data frames for multi-table workflows. When a named list is
+#'   supplied, `suggest_semantics()` matches each dictionary row to the correct
+#'   table via `dict$table_id` and uses that table's data as context.
 #' @param dict A dictionary tibble created by `infer_dictionary()` (may have
 #'   incomplete semantic fields).
 #' @param sources Character vector of vocabulary sources to search. Options are

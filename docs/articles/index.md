@@ -16,13 +16,6 @@ Step-by-step guides for common workflows
 - [Reading CSVs from Private GitHub
   Repositories](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md):
 
-### Advanced
-
-Advanced features for power users
-
-- [Using AI to Document Your
-  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md):
-
 ### Reference
 
 Glossary definitions and frequently asked questions

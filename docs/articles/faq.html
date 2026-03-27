@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,6 @@
 <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
@@ -301,8 +300,8 @@ format into R first:</p>
 <span></span>
 <span><span class="co"># From a database</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dbi.r-dbi.org" class="external-link">DBI</a></span><span class="op">)</span></span>
-<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu">dbConnect</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">dbReadTable</span><span class="op">(</span><span class="va">con</span>, <span class="st">"your_table"</span><span class="op">)</span></span>
+<span><span class="va">con</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbConnect.html" class="external-link">dbConnect</a></span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dbi.r-dbi.org/reference/dbReadTable.html" class="external-link">dbReadTable</a></span><span class="op">(</span><span class="va">con</span>, <span class="st">"your_table"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># From Parquet</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/apache/arrow/" class="external-link">arrow</a></span><span class="op">)</span></span>
@@ -399,7 +398,9 @@ low-cardinality character source columns.</li>
 <h3 id="can-i-include-multiple-tables-in-one-package">Can I include multiple tables in one package?<a class="anchor" aria-label="anchor" href="#can-i-include-multiple-tables-in-one-package"></a>
 </h3>
 <p>Yes! Just include multiple data frames in the <code>resources</code>
-list:</p>
+list. <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> can take that same named list of
+data frames when you want table-aware semantic review across a
+multi-table package:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">resources</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  escapement <span class="op">=</span> <span class="va">df_escapement</span>,</span>

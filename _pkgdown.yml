@@ -91,10 +91,11 @@ reference:
       - dwc_dp_build_descriptor
 
   - title: "Enterprise Data Hub (EDH)"
-    desc: "HNAP-aware EDH XML export helper for Enterprise Data Hub workflows"
+    desc: "HNAP-aware EDH XML export helpers for Enterprise Data Hub workflows"
     contents:
       - edh_build_hnap_xml
       - edh_build_iso19139_xml
+      - write_edh_xml_from_sdp
 
   - title: "GitHub Access"
     desc: "Authenticate once and read CSVs from private GitHub repositories"
@@ -131,11 +132,6 @@ articles:
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
       - github-csv-access
-
-  - title: "Advanced"
-    navbar: ~
-    desc: "Advanced features for power users"
-    contents:
 
   - title: "Reference"
     navbar: ~

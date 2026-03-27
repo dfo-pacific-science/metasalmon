@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,6 @@
 <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
-    <li><a class="dropdown-item" href="../articles/gpt-collaboration.html">Using AI to Document Your Data</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
     <li><a class="dropdown-item" href="../articles/faq.html">Frequently Asked Questions</a></li>
   </ul>
@@ -230,6 +229,14 @@ like <code>title_fr</code> / <code>description_fr</code>.</p>
 <p>If you are creating the package in one shot,
 <code>create_sdp(..., include_edh_xml = TRUE)</code> now writes the same
 XML automatically to <code>metadata/metadata-edh-hnap.xml</code>.</p>
+<p>After manual review/editing of <code>metadata/dataset.csv</code>,
+regenerate the XML from the finalized package with the post-review
+helper that wraps the canonical <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code>
+builder:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<p>That post-review rebuild is the preferred path when the first-pass
+package gets edited in Excel before EDH submission.</p>
 <p>Validate and enrich the XML output against your local EDH profile
 before production upload.</p>
 <div class="section level4">
@@ -237,7 +244,7 @@ before production upload.</p>
 </h4>
 <p>For more control over DwC-DP mapping suggestions, use
 <code><a href="../reference/suggest_dwc_mappings.html">suggest_dwc_mappings()</a></code>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dict</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
 <span> column_name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"event_date"</span>, <span class="st">"decimal_latitude"</span>, <span class="st">"scientific_name"</span><span class="op">)</span>,</span>
 <span> column_label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Event Date"</span>, <span class="st">"Decimal Latitude"</span>, <span class="st">"Scientific Name"</span><span class="op">)</span>,</span>
@@ -253,7 +260,7 @@ before production upload.</p>
 </h3>
 <p>When using <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, the function
 automatically queries role-appropriate sources:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Default: ontology suggestions only (DwC mappings OFF)</span></span>
 <span><span class="va">sem</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span>
 <span></span>
@@ -294,9 +301,8 @@ map of how the components interact.</li>
 <li>Read the <a href="reusing-standards-salmon-data-terms.html">Linking
 to Standard Vocabularies</a> guide when you want to align your
 dictionary with published vocabularies.</li>
-<li>Try the <a href="gpt-collaboration.html">Using AI to Document Your
-Data</a> workflow for drafting descriptions and ontology-aligned
-metadata quickly.</li>
+<li>For AI-assisted drafting and package-native review, see the <a href="../index.html#package-native-llm-semantic-review-optional">optional
+LLM semantic review workflow</a> on the package home page.</li>
 </ul>
 </div>
 </div>

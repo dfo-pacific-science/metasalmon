@@ -165,4 +165,4 @@ Treat the suggestions as a starting point, not gospel. The helper above is just 
 
 - See the "How It Fits Together" section in the README for context on how the dictionary, ontology, and GPT assistant team up.
 - Follow the [Publishing Data Packages](data-dictionary-publication.html) guide when you finalize your metadata before publishing.
-- Try the [Using AI to Document Your Data](gpt-collaboration.html) workflow to draft column descriptions or propose new terms when the catalog does not yet cover your concept.
+- For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page when you want help reviewing shortlisted terms.

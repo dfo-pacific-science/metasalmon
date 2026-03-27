@@ -175,6 +175,20 @@ If you are creating the package in one shot,
 `create_sdp(..., include_edh_xml = TRUE)` now writes the same XML
 automatically to `metadata/metadata-edh-hnap.xml`.
 
+After manual review/editing of `metadata/dataset.csv`, regenerate the
+XML from the finalized package with the post-review helper that wraps
+the canonical
+[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+builder:
+
+``` r
+
+write_edh_xml_from_sdp(pkg_path)
+```
+
+That post-review rebuild is the preferred path when the first-pass
+package gets edited in Excel before EDH submission.
+
 Validate and enrich the XML output against your local EDH profile before
 production upload.
 
@@ -240,7 +254,7 @@ lower.
   Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
   guide when you want to align your dictionary with published
   vocabularies.
-- Try the [Using AI to Document Your
-  Data](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md)
-  workflow for drafting descriptions and ontology-aligned metadata
-  quickly.
+- For AI-assisted drafting and package-native review, see the [optional
+  LLM semantic review
+  workflow](https://dfo-pacific-science.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
+  on the package home page.

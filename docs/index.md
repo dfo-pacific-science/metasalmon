@@ -22,10 +22,10 @@ Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer),
 alongside other published controlled vocabularies, and the data is
 packaged according to the [Salmon Data Package
 Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md).
-For extra help, our custom [Salmon Data Standardizer
-GPT](https://chatgpt.com/g/g-69375eab4f608191863e8c23313a6f9f-salmon-data-standardizer)
-can generate metadata drafts, salmon data packages, and guide your data
-dictionary creation in coordination with this R package.
+The preferred review workflow now happens **inside the R package**:
+`metasalmon` can retrieve candidate terms, optionally ask an LLM to
+review them, write draft REVIEW-prefixed IRIs into the package, and then
+send you back to the created package for manual cleanup in Excel.
 
 **Integration context:** See the Salmon Data Integration System overview
 page (<https://br-johnson.github.io/salmon-data-integration-system/>)
@@ -129,26 +129,50 @@ suggested <- suggest_semantics(
   dict = infer_dictionary(fraser_coho, dataset_id = "fraser-coho-2023-2024", table_id = "escapement"),
   llm_assess = TRUE,
   llm_provider = "openrouter",
-  llm_model = "openai/gpt-oss-20b:free",
   llm_context_files = context_files
 )
 
 suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
-# Explicit apply step; still opt-in
-reviewed <- apply_semantic_suggestions(
-  suggested,
-  strategy = "llm",
-  min_llm_confidence = 0.8
-)
+# In create_sdp(..., llm_assess = TRUE), LLM-selected IRIs are now written
+# into the package as REVIEW-prefixed draft values for manual cleanup.
 ```
 
 This keeps
 [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
-as the canonical candidate generator. The LLM only judges the retrieved
-shortlist, never invents raw IRIs, and can use local README/markdown/PDF
-context to make better calls.
+as the canonical candidate generator. The LLM judges the retrieved
+shortlist, can use local README/markdown/PDF context to make better
+calls, and can mark draft IRIs directly in the created package as
+`REVIEW: <iri>` so you can confirm or replace them in Excel. Validation
+should only pass after the REVIEW prefix is removed. When you use
+`llm_provider = "openrouter"` without specifying `llm_model`,
+`metasalmon` now defaults to `openrouter/free`.
+
+## Recommended workflow
+
+For the current package-native review path, use this order:
+
+1.  Run `create_sdp(...)` to create the Salmon Data Package.
+2.  If you want semantic review, set `llm_assess = TRUE`.
+3.  Open the created package folder and review:
+    - `metadata/*.csv`
+    - `semantic_suggestions.csv`
+    - `README-review.txt`
+4.  In Excel (or another spreadsheet editor), resolve every
+    `REVIEW:`-prefixed IRI in the metadata files.
+5.  If you are preparing EDH metadata, regenerate the XML from the
+    reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the
+    reviewed-package wrapper around the canonical
+    [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+    builder).
+6.  Re-run validation with
+    `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
+7.  Publish/share only after the `REVIEW:` markers are gone and
+    validation passes.
+
+In other words: **create -\> review in Excel -\> remove `REVIEW:`
+markers -\> rebuild EDH XML if needed -\> validate -\> publish**.
 
 ## Who Is This For?
 
@@ -157,7 +181,6 @@ context to make better calls.
 | A biologist who wants to share data | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md) |
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
 | A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) |
-| Interested in AI-assisted documentation | [AI Assistance (Advanced)](https://dfo-pacific-science.github.io/metasalmon/articles/gpt-collaboration.md) |
 | Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md) |
 
 ## Video Walkthrough
@@ -179,8 +202,8 @@ remotes::install_github("dfo-pacific-science/metasalmon")
 When you create a package, you get a folder containing:
 
     my-data-package/
-      +-- README-review.txt         # Step-by-step review checklist
-      +-- semantic_suggestions.csv  # Review-only semantic suggestions (when present)
+      +-- README-review.txt         # Step-by-step review checklist for manual Excel cleanup
+      +-- semantic_suggestions.csv  # Detailed semantic evidence + LLM review trail (when present)
       +-- datapackage.json          # Machine-readable export
       +-- metadata/
       |   +-- dataset.csv           # Dataset-level metadata (canonical)
@@ -217,8 +240,10 @@ whole folder (or a zip of the whole folder), not just
   `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon
   Data Package as the canonical deliverable.
 - Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub
-  upload workflows via
+  upload workflows via the canonical
   [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+  builder, the reviewed-package helper
+  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md),
   or `create_sdp(..., include_edh_xml = TRUE)`.
 - Role-aware vocabulary search with
   [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
@@ -271,12 +296,14 @@ whole folder (or a zip of the whole folder), not just
 
 `metasalmon` brings together four pieces: your raw data, the Salmon Data
 Package specification, the Salmon Domain Ontology (and other
-vocabularies), and the Salmon Data Standardizer GPT. When you finish the
-workflow, the dictionary, dataset/table metadata, and optional code
-lists are already aligned with the specification, which makes the
-package ready to publish. The ontology keeps the column meanings
-consistent, and the GPT assistant helps draft descriptions and term
-choices so you can close the loop without juggling multiple tools.
+vocabularies), optional in-package LLM review, and the review files
+written into the package itself. When you finish the workflow, the
+dictionary, dataset/table metadata, and optional code lists are already
+aligned with the specification, which makes the package ready to
+publish. The ontology keeps the column meanings consistent, and the
+package-native review workflow helps draft descriptions and term choices
+without forcing you to bounce back out to a separate ChatGPT export
+loop.
 
 The high-level flow is:
 
@@ -301,8 +328,9 @@ The high-level flow is:
   represents.
 - **[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
   consumes the metadata, dictionary, codes, and data to write the files
-  in the Salmon Data Package format, while the GPT assistant helps
-  polish the metadata and suggests vocabulary links.
+  in the Salmon Data Package format; the preferred review loop is now
+  the package itself plus `README-review.txt` /
+  `semantic_suggestions.csv`, not an external ChatGPT export.
 
 ## For Developers
 

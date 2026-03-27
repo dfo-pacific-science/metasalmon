@@ -9,7 +9,7 @@ to the ontology repository.
 ``` r
 submit_term_request_issues(
   requests,
-  repo = "dfo-pacific-science/dfo-salmon-ontology",
+  repo = "salmon-data-mobilization/salmon-domain-ontology",
   token = NULL,
   dry_run = TRUE,
   confirm = interactive()

@@ -27,7 +27,10 @@ suggest_semantics(
 )
 }
 \arguments{
-\item{df}{A data frame or tibble containing the data being documented.}
+\item{df}{A data frame or tibble containing the data being documented, or a
+named list of data frames for multi-table workflows. When a named list is
+supplied, \code{suggest_semantics()} matches each dictionary row to the correct
+table via \code{dict$table_id} and uses that table's data as context.}
 
 \item{dict}{A dictionary tibble created by \code{infer_dictionary()} (may have
 incomplete semantic fields).}

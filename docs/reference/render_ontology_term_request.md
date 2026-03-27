@@ -1,7 +1,8 @@
 # Render GitHub-ready ontology term request payloads
 
 Convert gap candidates into request payload rows (title/body) suitable
-for creating GitHub issues against the DFO Salmon Ontology repository.
+for creating GitHub issues against the Salmon Domain Ontology repository
+by default.
 
 ## Usage
 
@@ -14,7 +15,7 @@ render_ontology_term_request(
   scope_overrides = NULL,
   issue_labels = NULL,
   term_request_template = .term_request_default_template,
-  ontology_repo = "dfo-pacific-science/dfo-salmon-ontology"
+  ontology_repo = "salmon-data-mobilization/salmon-domain-ontology"
 )
 ```
 
