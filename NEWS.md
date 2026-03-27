@@ -1,3 +1,15 @@
+metasalmon 0.0.26
+----------------
+
+- Further tuned the OpenRouter free path for practicality: `openrouter/free` now uses smaller pair-sized batches and a smaller effective candidate shortlist per target so free-router prompts stay lighter on larger quickstart-style runs.
+
+metasalmon 0.0.25
+----------------
+
+- Made the OpenRouter free path more practical for full semantic review runs: live `openrouter/free` requests are now serially batched in pairs and use a smaller effective shortlist per target when using the built-in HTTP client, which trims request overhead without adding flaky parallel fan-out.
+- Added batch fallback safety: if a batched OpenRouter response is malformed or incomplete, `metasalmon` now falls back to per-target assessment instead of poisoning the whole run.
+- Retained the 0.0.24 hardening: longer effective timeout, one retry for transient failures, lighter context payloads, and downgrade-to-review handling for out-of-range candidate indexes.
+
 metasalmon 0.0.24
 ----------------
 

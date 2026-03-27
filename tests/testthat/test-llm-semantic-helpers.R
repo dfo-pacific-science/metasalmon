@@ -83,6 +83,24 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 
+test_that("openrouter free config defaults to smaller batched live requests but not for custom hooks", {
+  config_live <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key"
+  )
+  config_custom <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = function(messages, config) list()
+  )
+
+  expect_equal(config_live$model, "openrouter/free")
+  expect_equal(metasalmon:::.ms_llm_batch_size(config_live), 2L)
+  expect_equal(metasalmon:::.ms_llm_batch_size(config_custom), 1L)
+  expect_equal(metasalmon:::.ms_llm_effective_top_n(config_live, 5L), 3L)
+  expect_equal(metasalmon:::.ms_llm_effective_top_n(config_custom, 5L), 3L)
+})
+
 test_that("openrouter free config gets a longer timeout and retries transient failures", {
   attempts <- 0L
   config <- metasalmon:::.ms_llm_resolve_config(
@@ -136,6 +154,55 @@ test_that("invalid candidate indexes degrade to review instead of erroring", {
   expect_equal(result$decision, "review")
   expect_true(is.na(result$selected_candidate_index))
   expect_match(result$rationale, "out-of-range candidate index")
+})
+
+test_that("batched LLM responses are mapped back onto target records", {
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("a", "a", "b", "b"),
+    code_value = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    dictionary_role = c("variable", "variable", "variable", "variable"),
+    target_scope = c("column", "column", "column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("term_iri", "term_iri", "term_iri", "term_iri"),
+    search_query = c("alpha", "alpha", "beta", "beta"),
+    target_label = c("Alpha", "Alpha", "Beta", "Beta"),
+    target_description = c("Alpha target", "Alpha target", "Beta target", "Beta target"),
+    target_query_basis = c("label", "label", "label", "label"),
+    target_query_context = c("ctx", "ctx", "ctx", "ctx"),
+    label = c("Alpha best", "Alpha alt", "Beta best", "Beta alt"),
+    iri = c("https://example.org/a1", "https://example.org/a2", "https://example.org/b1", "https://example.org/b2"),
+    source = c("smn", "smn", "smn", "smn"),
+    ontology = c("demo", "demo", "demo", "demo"),
+    definition = c("A1", "A2", "B1", "B2"),
+    score = c(0.9, 0.5, 0.8, 0.4),
+    .ms_group_key = c("g1", "g1", "g2", "g2"),
+    .ms_row_order = 1:4
+  )
+
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = function(messages, config) list()
+  )
+  records <- list(
+    metasalmon:::.ms_llm_prepare_record("g1", suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE], config, 2L, NULL, NULL),
+    metasalmon:::.ms_llm_prepare_record("g2", suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE], config, 2L, NULL, NULL)
+  )
+
+  fake_batch_result <- list(
+    assessments = list(
+      list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
+      list(target_key = "g2", decision = "review", selected_candidate_index = NULL, confidence = 0.4, rationale = "Need more context", missing_context = "run timing")
+    )
+  )
+
+  out <- metasalmon:::.ms_llm_validate_batch_assessments(fake_batch_result, records, config)
+  expect_equal(nrow(out), 2L)
+  expect_equal(sort(out$column_name), c("a", "b"))
+  expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
+  expect_true(is.na(out$llm_selected_iri[out$column_name == "b"]))
 })
 
 test_that("apply_semantic_suggestions can use llm strategy with a confidence threshold", {

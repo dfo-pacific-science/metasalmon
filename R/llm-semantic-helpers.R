@@ -22,6 +22,24 @@
   4L
 }
 
+.ms_llm_effective_top_n <- function(config, top_n) {
+  top_n <- max(1L, as.integer(top_n[[1]] %||% 5L))
+  if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(min(top_n, 3L))
+  }
+  top_n
+}
+
+.ms_llm_batch_size <- function(config) {
+  if (!identical(config$request_fn, .ms_llm_chat_json_request)) {
+    return(1L)
+  }
+  if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(2L)
+  }
+  1L
+}
+
 .ms_llm_retry_limit <- function(config) {
   if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
     return(2L)
@@ -296,7 +314,7 @@
   .ms_score_context_chunks(chunks, target_row = target_row, candidate_rows = candidate_rows, max_chunks = max_chunks)
 }
 
-.ms_llm_messages_for_target <- function(target_row, candidate_rows, context_chunks) {
+.ms_llm_target_payload <- function(target_row, candidate_rows, context_chunks, target_key = NULL) {
   candidate_payload <- purrr::map(seq_len(nrow(candidate_rows)), function(i) {
     list(
       candidate_index = i,
@@ -317,19 +335,33 @@
     )
   })
 
-  target_payload <- list(
-    dataset_id = target_row$dataset_id[[1]] %||% NA_character_,
-    table_id = target_row$table_id[[1]] %||% NA_character_,
-    column_name = target_row$column_name[[1]] %||% NA_character_,
-    dictionary_role = target_row$dictionary_role[[1]] %||% NA_character_,
-    target_scope = target_row$target_scope[[1]] %||% NA_character_,
-    target_sdp_field = target_row$target_sdp_field[[1]] %||% NA_character_,
-    target_label = target_row$target_label[[1]] %||% NA_character_,
-    target_description = target_row$target_description[[1]] %||% NA_character_,
-    search_query = target_row$search_query[[1]] %||% NA_character_,
-    target_query_basis = target_row$target_query_basis[[1]] %||% NA_character_,
-    target_query_context = target_row$target_query_context[[1]] %||% NA_character_
+  payload <- list(
+    target = list(
+      dataset_id = target_row$dataset_id[[1]] %||% NA_character_,
+      table_id = target_row$table_id[[1]] %||% NA_character_,
+      column_name = target_row$column_name[[1]] %||% NA_character_,
+      dictionary_role = target_row$dictionary_role[[1]] %||% NA_character_,
+      target_scope = target_row$target_scope[[1]] %||% NA_character_,
+      target_sdp_field = target_row$target_sdp_field[[1]] %||% NA_character_,
+      target_label = target_row$target_label[[1]] %||% NA_character_,
+      target_description = target_row$target_description[[1]] %||% NA_character_,
+      search_query = target_row$search_query[[1]] %||% NA_character_,
+      target_query_basis = target_row$target_query_basis[[1]] %||% NA_character_,
+      target_query_context = target_row$target_query_context[[1]] %||% NA_character_
+    ),
+    candidates = candidate_payload,
+    context_excerpts = context_payload
   )
+
+  if (!is.null(target_key) && !is.na(target_key) && nzchar(target_key)) {
+    payload$target_key <- target_key
+  }
+
+  payload
+}
+
+.ms_llm_messages_for_target <- function(target_row, candidate_rows, context_chunks) {
+  payload <- .ms_llm_target_payload(target_row, candidate_rows, context_chunks)
 
   system_prompt <- paste(
     "You are assessing ontology candidate matches for the metasalmon R package.",
@@ -341,14 +373,40 @@
   )
 
   user_prompt <- paste(
-    "Target:",
-    jsonlite::toJSON(target_payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
-    "\n\nCandidates:",
-    jsonlite::toJSON(candidate_payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
-    if (length(context_payload) > 0) paste(
-      "\n\nContext excerpts:",
-      jsonlite::toJSON(context_payload, auto_unbox = TRUE, pretty = TRUE, null = "null")
-    ) else "\n\nContext excerpts: []",
+    "Assessment payload:",
+    jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    "\n\nReturn JSON only."
+  )
+
+  list(
+    list(role = "system", content = system_prompt),
+    list(role = "user", content = user_prompt)
+  )
+}
+
+.ms_llm_messages_for_batch <- function(records) {
+  payload <- purrr::map(records, function(record) {
+    .ms_llm_target_payload(
+      record$group[1, , drop = FALSE],
+      record$candidate_rows,
+      record$context_chunks,
+      target_key = record$group_name
+    )
+  })
+
+  system_prompt <- paste(
+    "You are assessing ontology candidate matches for the metasalmon R package.",
+    "Choose only from the provided candidates for each target; never invent an IRI.",
+    "Return JSON only with a single top-level key named assessments.",
+    "assessments must be an array of objects with keys target_key, decision, selected_candidate_index, confidence, rationale, missing_context.",
+    "decision must be one of accept, review, propose_new_term.",
+    "selected_candidate_index must be null when no candidate should be selected.",
+    "confidence must be a number between 0 and 1."
+  )
+
+  user_prompt <- paste(
+    "Assessment batch:",
+    jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
     "\n\nReturn JSON only."
   )
 
@@ -497,6 +555,139 @@
   )
 }
 
+.ms_llm_success_assessment <- function(record, config, validated) {
+  group <- record$group
+  candidate_rows <- record$candidate_rows
+  context_chunks <- record$context_chunks
+
+  tibble::tibble(
+    dataset_id = group$dataset_id[[1]] %||% NA_character_,
+    table_id = group$table_id[[1]] %||% NA_character_,
+    column_name = group$column_name[[1]] %||% NA_character_,
+    code_value = group$code_value[[1]] %||% NA_character_,
+    dictionary_role = group$dictionary_role[[1]] %||% NA_character_,
+    target_scope = group$target_scope[[1]] %||% NA_character_,
+    target_sdp_file = group$target_sdp_file[[1]] %||% NA_character_,
+    target_sdp_field = group$target_sdp_field[[1]] %||% NA_character_,
+    search_query = group$search_query[[1]] %||% NA_character_,
+    llm_provider = config$provider,
+    llm_model = config$model,
+    llm_decision = validated$decision,
+    llm_confidence = validated$confidence,
+    llm_selected_candidate_index = validated$selected_candidate_index,
+    llm_selected_iri = if (!is.na(validated$selected_candidate_index)) candidate_rows$iri[[validated$selected_candidate_index]] else NA_character_,
+    llm_selected_label = if (!is.na(validated$selected_candidate_index)) candidate_rows$label[[validated$selected_candidate_index]] else NA_character_,
+    llm_rationale = validated$rationale,
+    llm_missing_context = validated$missing_context,
+    llm_context_sources = if (nrow(context_chunks) > 0) paste(unique(context_chunks$source), collapse = "; ") else NA_character_,
+    llm_error = NA_character_
+  )
+}
+
+.ms_llm_prepare_record <- function(group_name,
+                                   group,
+                                   config,
+                                   top_n,
+                                   context_files,
+                                   context_text) {
+  group <- group[order(group$.ms_row_order), , drop = FALSE]
+  candidate_rows <- utils::head(group, top_n)
+  context_chunks <- .ms_prepare_context_chunks(
+    context_files = context_files,
+    context_text = context_text,
+    target_row = group[1, , drop = FALSE],
+    candidate_rows = candidate_rows,
+    max_chunks = .ms_llm_context_chunk_limit(config)
+  )
+
+  list(
+    group_name = group_name,
+    group = group,
+    candidate_rows = candidate_rows,
+    context_chunks = context_chunks
+  )
+}
+
+.ms_llm_assess_one_record <- function(record, config) {
+  messages <- .ms_llm_messages_for_target(record$group[1, , drop = FALSE], record$candidate_rows, record$context_chunks)
+
+  tryCatch(
+    {
+      validated <- .ms_validate_llm_assessment(
+        .ms_llm_request_with_retries(messages = messages, config = config),
+        record$candidate_rows
+      )
+      .ms_llm_success_assessment(record, config, validated)
+    },
+    error = function(e) {
+      cli::cli_warn("LLM assessment failed for {.field {record$group$column_name[[1]] %||% record$group$target_sdp_field[[1]]}}: {conditionMessage(e)}")
+      .ms_empty_llm_assessment(record$group, config, error = conditionMessage(e))
+    }
+  )
+}
+
+.ms_llm_validate_batch_assessments <- function(result, records, config) {
+  assessments <- result$assessments %||% NULL
+  if (is.null(assessments) || !is.list(assessments) || length(assessments) == 0) {
+    cli::cli_abort("LLM batch assessment must return a non-empty assessments array.")
+  }
+
+  records_by_key <- stats::setNames(records, vapply(records, `[[`, character(1), "group_name"))
+  rows <- vector("list", length(records_by_key))
+  names(rows) <- names(records_by_key)
+
+  for (item in assessments) {
+    key <- .ms_llm_non_empty_string(item$target_key %||% NA_character_)
+    if (is.na(key) || !key %in% names(records_by_key)) {
+      next
+    }
+    validated <- .ms_validate_llm_assessment(item, records_by_key[[key]]$candidate_rows)
+    rows[[key]] <- .ms_llm_success_assessment(records_by_key[[key]], config, validated)
+  }
+
+  missing_keys <- names(rows)[vapply(rows, is.null, logical(1))]
+  if (length(missing_keys) > 0) {
+    cli::cli_abort(
+      "LLM batch response did not include usable assessments for target keys: {.val {missing_keys}}"
+    )
+  }
+
+  dplyr::bind_rows(rows)
+}
+
+.ms_llm_assess_record_batch <- function(records, config) {
+  if (length(records) <= 1L) {
+    return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
+  }
+
+  messages <- .ms_llm_messages_for_batch(records)
+  batch_result <- tryCatch(
+    .ms_llm_request_with_retries(messages = messages, config = config),
+    error = function(e) e
+  )
+
+  if (inherits(batch_result, "error")) {
+    cli::cli_warn(
+      "LLM batch assessment failed for {length(records)} targets; falling back to per-target review: {conditionMessage(batch_result)}"
+    )
+    return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
+  }
+
+  validated <- tryCatch(
+    .ms_llm_validate_batch_assessments(batch_result, records = records, config = config),
+    error = function(e) e
+  )
+
+  if (inherits(validated, "error")) {
+    cli::cli_warn(
+      "LLM batch response was unusable for {length(records)} targets; falling back to per-target review: {conditionMessage(validated)}"
+    )
+    return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
+  }
+
+  validated
+}
+
 .ms_assess_semantic_suggestions_llm <- function(suggestions,
                                                 provider = c("openai", "openrouter", "openai_compatible"),
                                                 model = NULL,
@@ -523,7 +714,7 @@
     timeout_seconds = timeout_seconds,
     request_fn = request_fn
   )
-  top_n <- max(1L, as.integer(top_n[[1]] %||% 5L))
+  top_n <- .ms_llm_effective_top_n(config, top_n)
 
   suggestions$.ms_group_key <- do.call(
     paste,
@@ -536,58 +727,22 @@
   )
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
 
-  assessment_rows <- list()
   suggestion_groups <- split(suggestions, suggestions$.ms_group_key)
-  for (group_name in names(suggestion_groups)) {
-    group <- suggestion_groups[[group_name]]
-    group <- group[order(group$.ms_row_order), , drop = FALSE]
-    candidate_rows <- utils::head(group, top_n)
-    context_chunks <- .ms_prepare_context_chunks(
+  records <- purrr::map(
+    names(suggestion_groups),
+    ~ .ms_llm_prepare_record(
+      group_name = .x,
+      group = suggestion_groups[[.x]],
+      config = config,
+      top_n = top_n,
       context_files = context_files,
-      context_text = context_text,
-      target_row = group[1, , drop = FALSE],
-      candidate_rows = candidate_rows,
-      max_chunks = .ms_llm_context_chunk_limit(config)
+      context_text = context_text
     )
-    messages <- .ms_llm_messages_for_target(group[1, , drop = FALSE], candidate_rows, context_chunks)
+  )
 
-    assessment <- tryCatch(
-      {
-        validated <- .ms_validate_llm_assessment(
-          .ms_llm_request_with_retries(messages = messages, config = config),
-          candidate_rows
-        )
-        tibble::tibble(
-          dataset_id = group$dataset_id[[1]] %||% NA_character_,
-          table_id = group$table_id[[1]] %||% NA_character_,
-          column_name = group$column_name[[1]] %||% NA_character_,
-          code_value = group$code_value[[1]] %||% NA_character_,
-          dictionary_role = group$dictionary_role[[1]] %||% NA_character_,
-          target_scope = group$target_scope[[1]] %||% NA_character_,
-          target_sdp_file = group$target_sdp_file[[1]] %||% NA_character_,
-          target_sdp_field = group$target_sdp_field[[1]] %||% NA_character_,
-          search_query = group$search_query[[1]] %||% NA_character_,
-          llm_provider = config$provider,
-          llm_model = config$model,
-          llm_decision = validated$decision,
-          llm_confidence = validated$confidence,
-          llm_selected_candidate_index = validated$selected_candidate_index,
-          llm_selected_iri = if (!is.na(validated$selected_candidate_index)) candidate_rows$iri[[validated$selected_candidate_index]] else NA_character_,
-          llm_selected_label = if (!is.na(validated$selected_candidate_index)) candidate_rows$label[[validated$selected_candidate_index]] else NA_character_,
-          llm_rationale = validated$rationale,
-          llm_missing_context = validated$missing_context,
-          llm_context_sources = if (nrow(context_chunks) > 0) paste(unique(context_chunks$source), collapse = "; ") else NA_character_,
-          llm_error = NA_character_
-        )
-      },
-      error = function(e) {
-        cli::cli_warn("LLM assessment failed for {.field {group$column_name[[1]] %||% group$target_sdp_field[[1]]}}: {conditionMessage(e)}")
-        .ms_empty_llm_assessment(group, config, error = conditionMessage(e))
-      }
-    )
-
-    assessment_rows[[group_name]] <- assessment
-  }
+  batch_size <- .ms_llm_batch_size(config)
+  batch_ids <- ceiling(seq_along(records) / batch_size)
+  assessment_rows <- lapply(split(records, batch_ids), .ms_llm_assess_record_batch, config = config)
 
   assessments <- dplyr::bind_rows(assessment_rows)
   suggestions <- suggestions |>
