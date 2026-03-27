@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Utilities for Salmon Data Packages
-Version: 0.2.0
+Version: 0.1.1
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
 Description: Tools to scaffold, standardize, validate, transform, and package

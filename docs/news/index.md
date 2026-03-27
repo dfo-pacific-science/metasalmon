@@ -1,6 +1,6 @@
 # Changelog
 
-## metasalmon 0.2.0
+## metasalmon 0.1.1
 
 - Added a first-class `chapi` LLM provider preset for DFO’s internal
   Open WebUI endpoint. It defaults to `ollama2.mistral:7b`, uses

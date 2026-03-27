@@ -50,6 +50,7 @@ Install, run one function on the bundled Fraser Coho 2023-2024 example
 (173 rows), then review in Excel.
 
 ``` r
+
 # Install from GitHub (recommended)
 # install.packages("remotes")
 # remotes::install_github("dfo-pacific-science/metasalmon")
@@ -140,6 +141,7 @@ from R, keep the deterministic search path and add an opt-in review
 pass:
 
 ``` r
+
 context_files <- c(
   file.path(pkg_path, "metadata", "column_dictionary.csv"),
   "README.md",
@@ -184,6 +186,7 @@ icon in the bottom left, open **Settings**, click **Show** next to **API
 Keys**, and copy the key value. Then run:
 
 ``` r
+
 file.edit("~/.Renviron")
 CHAPI_API_KEY="paste key here"
 ```
@@ -197,6 +200,7 @@ automatic timeout.
 For external users, OpenRouter is the easiest free option:
 
 ``` r
+
 file.edit("~/.Renviron")
 OPENROUTER_API_KEY="paste key here"
 ```
@@ -206,6 +210,7 @@ OPENROUTER_API_KEY="paste key here"
 If you already have OpenAI API credits, use:
 
 ``` r
+
 file.edit("~/.Renviron")
 OPENAI_API_KEY="paste key here"
 ```
@@ -271,6 +276,7 @@ Package](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 ## Installation
 
 ``` r
+
 # Install from GitHub
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
@@ -420,6 +426,7 @@ Development setup and package structure
 ### Installation for Development
 
 ``` r
+
 install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
                    "tibble", "readr", "jsonlite", "cli", "rlang", "dplyr",
                    "tidyr", "purrr", "withr", "frictionless"))
@@ -428,6 +435,7 @@ install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
 ### Build and Check
 
 ``` r
+
 devtools::document()
 devtools::test()
 devtools::check()
