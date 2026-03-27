@@ -27,7 +27,8 @@ Common optional columns include: \code{creator}, \code{contact_name}, \code{cont
 French-localized fields such as \code{title_fr}, \code{description_fr}, and
 \code{keyword_thesaurus_title_fr}.}
 
-\item{output_path}{Optional file path to write XML.}
+\item{output_path}{Optional file path to write XML. Parent directories are
+created automatically when needed.}
 
 \item{file_identifier}{Optional metadata file identifier. Non-UUID
 identifiers are converted to a deterministic UUID-like value and the

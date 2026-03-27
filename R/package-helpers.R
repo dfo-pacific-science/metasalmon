@@ -615,8 +615,10 @@ infer_salmon_datapackage_artifacts <- function(
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
 #' enough human-readable context to review safely. When `llm_assess = TRUE`,
 #' the same review file also carries `llm_*` columns so the shortlisted LLM
-#' judgment stays explicit and reviewable. Required-field review placeholders
-#' are also inserted into the inferred metadata files. In
+#' judgment stays explicit and reviewable, and any selected column/table IRI
+#' draft that gets auto-applied is written back into the package as a
+#' `REVIEW:`-prefixed value for manual confirmation. Required-field review
+#' placeholders are also inserted into the inferred metadata files. In
 #' interactive use, `create_sdp()` can also mention an available package update;
 #' set `check_updates = FALSE` to skip that network check. The package bundles
 #' two Fraser coho examples: `nuseds-fraser-coho-sample.csv` (30 rows across
@@ -2503,7 +2505,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   tokens[!(tokens %in% stop_words) & (nchar(tokens) >= 3 | tokens %in% c("cu", "id"))]
 }
 
-.ms_table_suggestion_is_compatible <- function(suggestion, table_row) {
+.ms_table_suggestion_is_compatible <- function(suggestion, table_row, strategy = c("top", "llm")) {
+  strategy <- match.arg(strategy)
   query_basis <- if ("target_query_basis" %in% names(suggestion)) .ms_scalar_text(suggestion$target_query_basis) else ""
   query_context <- if ("target_query_context" %in% names(suggestion)) .ms_scalar_text(suggestion$target_query_context) else ""
 
@@ -2517,7 +2520,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
   }
 
-  if (!query_basis %in% c("observation_unit", "description")) {
+  allowed_bases <- c("observation_unit", "description")
+  if (identical(strategy, "llm")) {
+    allowed_bases <- c(allowed_bases, "table_label", "table_id")
+  }
+  if (!query_basis %in% allowed_bases) {
     return(FALSE)
   }
 
@@ -2611,7 +2618,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     candidate_rows <- candidate_rows[vapply(candidate_rows, function(i) {
       .ms_table_suggestion_is_compatible(
         table_suggestions[i, , drop = FALSE],
-        out[row_id, , drop = FALSE]
+        out[row_id, , drop = FALSE],
+        strategy = strategy
       )
     }, logical(1))]
     if (length(candidate_rows) == 0) {

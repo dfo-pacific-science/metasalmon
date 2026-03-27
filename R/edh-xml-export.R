@@ -19,7 +19,8 @@
 #'   `bbox_west`, `bbox_east`, `bbox_south`, `bbox_north`, plus optional
 #'   French-localized fields such as `title_fr`, `description_fr`, and
 #'   `keyword_thesaurus_title_fr`.
-#' @param output_path Optional file path to write XML.
+#' @param output_path Optional file path to write XML. Parent directories are
+#'   created automatically when needed.
 #' @param file_identifier Optional metadata file identifier. Non-UUID
 #'   identifiers are converted to a deterministic UUID-like value and the
 #'   original `dataset_id` is preserved in `gmd:dataSetURI` / citation
@@ -1097,6 +1098,7 @@ edh_build_hnap_xml <- function(dataset_meta,
   xml_text <- as.character(root)
 
   if (!is.null(output_path)) {
+    dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
     xml2::write_xml(root, output_path, options = "format")
   }
 
@@ -1127,17 +1129,91 @@ edh_build_iso19139_xml <- function(dataset_meta,
   )
 }
 
+.ms_collect_review_placeholder_issues <- function(df, source_name, fields = names(df)) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(tibble::tibble())
+  }
+
+  fields <- intersect(fields, names(df))
+  if (length(fields) == 0) {
+    return(tibble::tibble())
+  }
+
+  issues <- purrr::map_dfr(fields, function(field) {
+    vals <- df[[field]]
+    if (!is.character(vals)) {
+      vals <- as.character(vals)
+    }
+    rows <- which(!is.na(vals) & vapply(vals, .ms_is_review_placeholder, logical(1)))
+    if (length(rows) == 0) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      message = sprintf(
+        "%s row %s field %s still contains review placeholder text (%s). Replace it before rebuilding EDH XML.",
+        source_name,
+        rows,
+        field,
+        vals[rows]
+      )
+    )
+  })
+
+  issues
+}
+
+.ms_collect_edh_review_state_issues <- function(pkg) {
+  purrr::list_rbind(list(
+    .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv"),
+    .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", fields = c("description", "observation_unit", "table_label")),
+    .ms_collect_review_iri_issues(pkg$dataset, source_name = "metadata/dataset.csv"),
+    .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv"),
+    .ms_collect_review_iri_issues(pkg$dictionary, source_name = "metadata/column_dictionary.csv"),
+    .ms_collect_review_iri_issues(pkg$codes, source_name = "metadata/codes.csv")
+  ))
+}
+
+.ms_abort_unreviewed_edh_rebuild <- function(pkg) {
+  issues <- .ms_collect_edh_review_state_issues(pkg)
+  if (nrow(issues) == 0) {
+    return(invisible(NULL))
+  }
+
+  preview <- utils::head(unique(issues$message), 10)
+  abort_lines <- c(
+    "Can't rebuild EDH XML from a package that still contains review-state markers.",
+    "i" = "Resolve placeholder dataset/table metadata and remove REVIEW-prefixed IRIs before rebuilding.",
+    stats::setNames(preview, rep("x", length(preview)))
+  )
+  if (nrow(issues) > length(preview)) {
+    abort_lines <- c(
+      abort_lines,
+      "i" = sprintf(
+        "%d more review-state issue%s not shown.",
+        nrow(issues) - length(preview),
+        ifelse(nrow(issues) - length(preview) == 1, "", "s")
+      )
+    )
+  }
+
+  cli::cli_abort(abort_lines)
+}
+
 #' Rebuild HNAP-aware EDH XML from a reviewed Salmon Data Package
 #'
 #' Reads `metadata/dataset.csv` from an existing Salmon Data Package and writes a
 #' fresh `metadata-edh-hnap.xml` file using the canonical
 #' [edh_build_hnap_xml()] builder. This is the preferred post-review rebuild
 #' path after metadata has been edited manually in Excel or another spreadsheet
-#' tool.
+#' tool. The helper refuses to rebuild when obvious review-state markers remain,
+#' such as `REVIEW:`-prefixed IRIs anywhere in the package metadata or
+#' unresolved `MISSING METADATA:` / `MISSING DESCRIPTION:` placeholders in
+#' `metadata/dataset.csv` or `metadata/tables.csv`.
 #'
 #' @param path Character path to the Salmon Data Package directory.
 #' @param output_path Optional path for the regenerated XML. Defaults to
-#'   `metadata/metadata-edh-hnap.xml` inside `path`.
+#'   `metadata/metadata-edh-hnap.xml` inside `path`. Parent directories are
+#'   created automatically when needed.
 #' @param overwrite Logical; if `FALSE`, error when `output_path` already
 #'   exists. Default is `TRUE`.
 #' @param language ISO 639-2/T language code for the primary metadata language
@@ -1183,12 +1259,15 @@ write_edh_xml_from_sdp <- function(path,
     )
   }
 
-  dataset_meta <- readr::read_csv(dataset_path, show_col_types = FALSE, progress = FALSE)
+  pkg <- read_salmon_datapackage(path)
+  dataset_meta <- pkg$dataset
   if (nrow(dataset_meta) != 1L) {
     cli::cli_abort(
       "Expected {.file metadata/dataset.csv} to contain exactly one row, found {.val {nrow(dataset_meta)}}."
     )
   }
+
+  .ms_abort_unreviewed_edh_rebuild(pkg)
 
   if (is.null(output_path)) {
     output_path <- file.path(path, "metadata", "metadata-edh-hnap.xml")

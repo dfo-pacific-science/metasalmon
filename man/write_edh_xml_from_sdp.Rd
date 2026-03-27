@@ -17,7 +17,8 @@ write_edh_xml_from_sdp(
 \item{path}{Character path to the Salmon Data Package directory.}
 
 \item{output_path}{Optional path for the regenerated XML. Defaults to
-\code{metadata/metadata-edh-hnap.xml} inside \code{path}.}
+\code{metadata/metadata-edh-hnap.xml} inside \code{path}. Parent directories are
+created automatically when needed.}
 
 \item{overwrite}{Logical; if \code{FALSE}, error when \code{output_path} already
 exists. Default is \code{TRUE}.}
@@ -39,7 +40,10 @@ Reads \code{metadata/dataset.csv} from an existing Salmon Data Package and write
 fresh \code{metadata-edh-hnap.xml} file using the canonical
 \code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}} builder. This is the preferred post-review rebuild
 path after metadata has been edited manually in Excel or another spreadsheet
-tool.
+tool. The helper refuses to rebuild when obvious review-state markers remain,
+such as \verb{REVIEW:}-prefixed IRIs anywhere in the package metadata or
+unresolved \verb{MISSING METADATA:} / \verb{MISSING DESCRIPTION:} placeholders in
+\code{metadata/dataset.csv} or \code{metadata/tables.csv}.
 }
 \examples{
 \dontrun{

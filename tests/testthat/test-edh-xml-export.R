@@ -229,6 +229,28 @@ test_that("edh_build_iso19139_xml remains a deprecated compatibility alias", {
   expect_true(file.exists(out))
 })
 
+.ms_mark_edh_package_reviewed_for_test <- function(pkg_path,
+                                              title = "Reviewed Fraser Coho Metadata",
+                                              description = "Reviewed description from Excel workflow") {
+  dataset_path <- file.path(pkg_path, "metadata", "dataset.csv")
+  dataset_meta <- readr::read_csv(dataset_path, show_col_types = FALSE)
+  dataset_meta$title <- title
+  dataset_meta$description <- description
+  dataset_meta$creator <- "DFO Pacific Science"
+  dataset_meta$contact_name <- "Metadata Reviewer"
+  dataset_meta$contact_email <- "reviewer@example.org"
+  dataset_meta$license <- "Open Government Licence - Canada"
+  readr::write_csv(dataset_meta, dataset_path, na = "")
+
+  tables_path <- file.path(pkg_path, "metadata", "tables.csv")
+  table_meta <- readr::read_csv(tables_path, show_col_types = FALSE)
+  table_meta$description <- "Reviewed table description"
+  table_meta$observation_unit <- "Escapement observation"
+  readr::write_csv(table_meta, tables_path, na = "")
+
+  invisible(pkg_path)
+}
+
 test_that("write_edh_xml_from_sdp rebuilds XML from edited dataset metadata", {
   pkg_dir <- withr::local_tempdir()
   resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L, 2L)))
@@ -242,16 +264,12 @@ test_that("write_edh_xml_from_sdp rebuilds XML from edited dataset metadata", {
     overwrite = TRUE
   )
 
-  dataset_path <- file.path(pkg_path, "metadata", "dataset.csv")
-  dataset_meta <- readr::read_csv(dataset_path, show_col_types = FALSE)
-  dataset_meta$title <- "Reviewed Fraser Coho Metadata"
-  dataset_meta$description <- "Reviewed description from Excel workflow"
-  readr::write_csv(dataset_meta, dataset_path, na = "")
+  .ms_mark_edh_package_reviewed_for_test(pkg_path)
 
-  xml_path <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
+  xml_path <- file.path(pkg_path, "exports", "edh", "metadata-edh-hnap.xml")
   expect_false(file.exists(xml_path))
 
-  result <- expect_no_warning(write_edh_xml_from_sdp(pkg_path))
+  result <- expect_no_warning(write_edh_xml_from_sdp(pkg_path, output_path = xml_path))
 
   expect_true(file.exists(xml_path))
   expect_true(is.list(result))
@@ -267,6 +285,36 @@ test_that("write_edh_xml_from_sdp rebuilds XML from edited dataset metadata", {
   )
 })
 
+test_that("write_edh_xml_from_sdp refuses rebuild while review markers remain", {
+  pkg_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
+  pkg_path <- create_sdp(
+    resources,
+    path = file.path(pkg_dir, "pkg-review-guard"),
+    dataset_id = "edh-review-guard",
+    table_id = "main",
+    seed_semantics = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  )
+
+  expect_error(
+    write_edh_xml_from_sdp(pkg_path),
+    "review-state markers"
+  )
+
+  .ms_mark_edh_package_reviewed_for_test(pkg_path)
+  dict_path <- file.path(pkg_path, "metadata", "column_dictionary.csv")
+  dict <- readr::read_csv(dict_path, show_col_types = FALSE)
+  dict$term_iri[dict$column_name == "count"] <- "REVIEW: https://example.org/count"
+  readr::write_csv(dict, dict_path, na = "")
+
+  expect_error(
+    write_edh_xml_from_sdp(pkg_path),
+    "review-state markers"
+  )
+})
+
 test_that("write_edh_xml_from_sdp respects overwrite flag", {
   pkg_dir <- withr::local_tempdir()
   resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
@@ -279,6 +327,8 @@ test_that("write_edh_xml_from_sdp respects overwrite flag", {
     check_updates = FALSE,
     overwrite = TRUE
   )
+
+  .ms_mark_edh_package_reviewed_for_test(pkg_path)
 
   xml_path <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
   write_edh_xml_from_sdp(pkg_path)

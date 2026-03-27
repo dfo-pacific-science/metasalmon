@@ -480,6 +480,74 @@ test_that("create_sdp leaves weak or bogus table observation-unit suggestions as
   expect_true(startsWith(tables_written$observation_unit[[1]], "MISSING METADATA:"))
 })
 
+test_that("create_sdp writes selected LLM table suggestions back to tables.csv as review drafts", {
+  resources <- list(
+    escapement = tibble::tibble(species = c("Coho", "Chinook"), count = c(10L, 20L)),
+    age_composition = tibble::tibble(age = c("2", "3"), proportion = c(0.4, 0.6))
+  )
+
+  fake_suggest <- function(df, dict, ..., codes = NULL, table_meta = NULL, dataset_meta = NULL) {
+    attr(dict, "semantic_suggestions") <- tibble::tibble(
+      column_name = NA_character_,
+      dictionary_role = "entity",
+      table_id = "escapement",
+      dataset_id = "review-demo",
+      target_scope = "table",
+      target_sdp_file = "tables.csv",
+      target_sdp_field = "observation_unit_iri",
+      target_row_key = "review-demo/escapement",
+      target_query_basis = "table_label",
+      target_query_context = "Escapement escapement",
+      code_value = NA_character_,
+      code_label = NA_character_,
+      code_description = NA_character_,
+      iri = "https://example.org/observation-unit",
+      label = "Escapement observation",
+      source = "smn",
+      ontology = "demo",
+      role = "entity",
+      match_type = "label_exact",
+      definition = NA_character_,
+      llm_decision = "select",
+      llm_confidence = 0.91,
+      llm_selected = TRUE,
+      llm_candidate_rank = 1L
+    )
+    dict
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "review-package-llm-table-unit"),
+        dataset_id = "review-demo",
+        seed_semantics = TRUE,
+        llm_assess = TRUE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
+  expect_equal(suggestions_written$target_query_basis[[1]], "table_label")
+  expect_true(isTRUE(suggestions_written$llm_selected[[1]]))
+
+  tables_written <- readr::read_csv(file.path(pkg_path, "metadata", "tables.csv"), show_col_types = FALSE)
+  escapement_row <- tables_written[tables_written$table_id == "escapement", , drop = FALSE]
+  age_row <- tables_written[tables_written$table_id == "age_composition", , drop = FALSE]
+
+  expect_equal(
+    escapement_row$observation_unit_iri[[1]],
+    paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/observation-unit")
+  )
+  expect_equal(escapement_row$observation_unit[[1]], "Escapement observation")
+  expect_true(is.na(age_row$observation_unit_iri[[1]]) || age_row$observation_unit_iri[[1]] == "")
+})
+
 test_that("create_sdp seed note explains slower semantic lookup", {
   note <- metasalmon:::.ms_create_sdp_seed_note(
     seed_semantics = TRUE,
