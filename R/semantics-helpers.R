@@ -1,3 +1,174 @@
+.ms_semantic_split_role_hints <- function(x) {
+  if (is.null(x) || length(x) == 0) {
+    return(character())
+  }
+  hints <- trimws(unlist(strsplit(as.character(x), "\\|", fixed = FALSE)))
+  hints[nzchar(hints)]
+}
+
+.ms_semantic_role_hint_status <- function(role, role_hints) {
+  hints <- .ms_semantic_split_role_hints(role_hints)
+  if (length(hints) == 0) {
+    return("unknown")
+  }
+  if (role %in% hints) {
+    return("match")
+  }
+  if (identical(role, "variable") && "property" %in% hints) {
+    return("mismatch_property")
+  }
+  if (identical(role, "property") && "variable" %in% hints) {
+    return("mismatch_variable")
+  }
+  "unknown"
+}
+
+.ms_semantic_role_hint_bonus <- function(status) {
+  switch(status,
+    match = 0.35,
+    mismatch_property = -0.35,
+    mismatch_variable = -0.35,
+    0
+  )
+}
+
+.ms_semantic_role_hint_explanation <- function(status, role) {
+  switch(status,
+    match = paste0("Candidate carries a ", role, " role hint."),
+    mismatch_property = "Candidate carries a property hint; kept lower for variable destination.",
+    mismatch_variable = "Candidate carries a variable hint; kept lower for property destination.",
+    NA_character_
+  )
+}
+
+.ms_sources_for_target_role <- function(base_sources, search_role) {
+  if (length(base_sources) == 0) {
+    return(base_sources)
+  }
+  if (!identical(search_role, "unit")) {
+    return(base_sources)
+  }
+
+  unique(c(base_sources, sources_for_role("unit")))
+}
+
+.ms_retrieve_semantic_target_candidates <- function(target,
+                                                    sources,
+                                                    max_per_role,
+                                                    search_fn,
+                                                    query = NULL,
+                                                    retrieval_pass = 1L) {
+  target <- tibble::as_tibble(target)
+  if (nrow(target) == 0) {
+    return(tibble::tibble())
+  }
+
+  search_role <- as.character((target$search_role[[1]] %||% target$dictionary_role[[1]]) %||% "")
+  if (!nzchar(search_role)) {
+    return(tibble::tibble())
+  }
+
+  query <- trimws(as.character(query[[1]] %||% target$search_query[[1]] %||% ""))
+  if (!nzchar(query)) {
+    return(tibble::tibble())
+  }
+
+  target_sources <- .ms_sources_for_target_role(sources, search_role)
+  res <- search_fn(query, role = search_role, sources = target_sources)
+  if (!inherits(res, "data.frame") || nrow(res) == 0) {
+    return(tibble::tibble())
+  }
+
+  res <- tibble::as_tibble(res)
+  res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
+  if (!"role_hints" %in% names(res)) {
+    res$role_hints <- NA_character_
+  }
+  res$role_hint_status <- vapply(
+    res$role_hints,
+    function(h) .ms_semantic_role_hint_status(search_role, h),
+    character(1)
+  )
+  res$role_hint_bonus <- vapply(res$role_hint_status, .ms_semantic_role_hint_bonus, numeric(1))
+  res$role_hint_explanation <- vapply(
+    res$role_hint_status,
+    function(s) .ms_semantic_role_hint_explanation(s, search_role),
+    character(1)
+  )
+  if ("score" %in% names(res)) {
+    res$score <- res$score + res$role_hint_bonus
+    res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+  } else {
+    res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+  }
+  res <- utils::head(res, max(1L, as.integer(max_per_role[[1]] %||% 3L)))
+
+  target_cols <- intersect(
+    c(
+      "dataset_id",
+      "table_id",
+      "column_name",
+      "code_value",
+      "dictionary_role",
+      "search_role",
+      "target_scope",
+      "target_sdp_file",
+      "target_sdp_field",
+      "target_row_key",
+      "target_label",
+      "target_description",
+      "search_query",
+      "target_query_basis",
+      "target_query_context",
+      "column_label",
+      "column_description",
+      "code_label",
+      "code_description"
+    ),
+    names(target)
+  )
+  for (nm in target_cols) {
+    res[[nm]] <- target[[nm]][[1]]
+  }
+  res$retrieval_query <- query
+  res$retrieval_pass <- as.integer(retrieval_pass[[1]] %||% 1L)
+  res
+}
+
+.ms_merge_semantic_target_candidates <- function(existing_rows, extra_rows, max_per_role) {
+  existing_rows <- tibble::as_tibble(existing_rows)
+  extra_rows <- tibble::as_tibble(extra_rows)
+  combined <- dplyr::bind_rows(existing_rows, extra_rows)
+  if (nrow(combined) == 0) {
+    return(combined)
+  }
+
+  if ("score" %in% names(combined)) {
+    combined <- combined[order(
+      -combined$score,
+      combined$source,
+      combined$ontology,
+      combined$label,
+      combined$iri,
+      combined$retrieval_pass,
+      combined$retrieval_query
+    ), , drop = FALSE]
+  } else {
+    combined <- combined[order(
+      -combined$role_hint_bonus,
+      combined$source,
+      combined$ontology,
+      combined$label,
+      combined$iri,
+      combined$retrieval_pass,
+      combined$retrieval_query
+    ), , drop = FALSE]
+  }
+
+  combined <- combined[!duplicated(paste(combined$source, combined$iri, sep = "::")), , drop = FALSE]
+  utils::head(combined, max(1L, as.integer(max_per_role[[1]] %||% 3L)))
+}
+
 #' Suggest semantic annotations for a dictionary
 #'
 #' Searches external vocabularies to suggest IRIs for semantic gaps in the
@@ -33,7 +204,10 @@
 #'   suggestions are generated for missing `dataset.csv$keywords` as candidate
 #'   semantic keywords (IRIs intended for keyword curation).
 #' @param llm_assess Logical; if `TRUE`, assess the top semantic candidates per
-#'   target with an LLM after deterministic retrieval. Default is `FALSE`.
+#'   target with an LLM after deterministic retrieval. When the first shortlist
+#'   looks weak, the LLM may request at most one bounded alternate-query pass
+#'   (1--2 plain-text search phrases) before a single reassessment. Default is
+#'   `FALSE`.
 #' @param llm_provider LLM provider preset. One of `"openai"`,
 #'   `"openrouter"`, or `"openai_compatible"`.
 #' @param llm_model Character model identifier. Required when
@@ -47,7 +221,7 @@
 #'   chat endpoint. Required for `llm_provider = "openai_compatible"` when not
 #'   set via `METASALMON_LLM_BASE_URL`.
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
-#'   per target. Default is `5`.
+#'   per target for each assessment round. Default is `5`.
 #' @param llm_context_files Optional character vector of local context files
 #'   (for example README files, markdown notes, or PDF reports) used to provide
 #'   extra domain context to the LLM.
@@ -66,16 +240,18 @@
 #'   would land in the Salmon Data Package. Additional columns include
 #'   `search_query`, `target_query_basis`, `target_query_context`,
 #'   `column_label`, `column_description`, `label`, `iri`,
-#'   `source`, `ontology`, and `definition`. If the underlying search results
-#'   include a `score` column, it is preserved for downstream filtering.
+#'   `source`, `ontology`, `definition`, `retrieval_query`, and
+#'   `retrieval_pass`. If the underlying search results include a `score`
+#'   column, it is preserved for downstream filtering.
 #'   For non-column targets, the tibble also includes explicit destination
 #'   context (`target_row_key`, `target_label`, `target_description`,
 #'   `code_value`, `code_label`, `code_description`) so table-, dataset-, and
 #'   code-level rows are inspectable without extra joins. When
 #'   `llm_assess = TRUE`, the suggestions also include `llm_*` review columns
-#'   such as `llm_decision`, `llm_confidence`, `llm_selected`, and
-#'   `llm_candidate_rank`, and the dictionary gains a parallel
-#'   `semantic_llm_assessments` attribute with one row per assessed target.
+#'   such as `llm_decision`, `llm_confidence`, `llm_selected`,
+#'   `llm_candidate_rank`, and bounded exploration metadata, and the
+#'   dictionary gains a parallel `semantic_llm_assessments` attribute with one
+#'   row per assessed target.
 #'
 #' @details
 #' Column targets keep full I-ADOPT behavior for
@@ -88,10 +264,13 @@
 #' Table-level observation-unit queries ignore review placeholders such as
 #' `MISSING METADATA:` and fall back to real table metadata context instead.
 #'
-#' When `llm_assess = TRUE`, the LLM only judges the retrieved shortlist; it
-#' does not mint new IRIs. Local context files are read on disk, chunked, and
-#' lexically trimmed down before prompt assembly so large README/report files do
-#' not get dumped wholesale into the model call.
+#' When `llm_assess = TRUE`, the LLM only judges deterministically retrieved
+#' candidates; it does not mint new IRIs. If the first shortlist looks weak,
+#' the model may suggest at most one bounded alternate-query round (1--2
+#' plain-text queries), the package reruns deterministic retrieval, de-dupes
+#' the merged shortlist, and reassesses once. Local context files are read on
+#' disk, chunked, and lexically trimmed down before prompt assembly so large
+#' README/report files do not get dumped wholesale into the model call.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -735,41 +914,6 @@ suggest_semantics <- function(df,
     }
     character()
   }
-  split_role_hints <- function(x) {
-    if (is_missing(x)) return(character())
-    hints <- trimws(unlist(strsplit(as.character(x), "\\|", fixed = FALSE)))
-    hints[nzchar(hints)]
-  }
-  role_hint_status <- function(role, role_hints) {
-    hints <- split_role_hints(role_hints)
-    if (length(hints) == 0) return("unknown")
-    if (role %in% hints) return("match")
-    if (identical(role, "variable") && "property" %in% hints) return("mismatch_property")
-    if (identical(role, "property") && "variable" %in% hints) return("mismatch_variable")
-    "unknown"
-  }
-  role_hint_bonus <- function(status) {
-    switch(status,
-      match = 0.35,
-      mismatch_property = -0.35,
-      mismatch_variable = -0.35,
-      0
-    )
-  }
-  role_hint_explanation <- function(status, role) {
-    switch(status,
-      match = paste0("Candidate carries a ", role, " role hint."),
-      mismatch_property = "Candidate carries a property hint; kept lower for variable destination.",
-      mismatch_variable = "Candidate carries a variable hint; kept lower for property destination.",
-      NA_character_
-    )
-  }
-  sources_for_target_role <- function(base_sources, search_role) {
-    if (length(base_sources) == 0) return(base_sources)
-    if (!identical(search_role, "unit")) return(base_sources)
-
-    unique(c(base_sources, sources_for_role("unit")))
-  }
   targets <- tibble::tibble()
 
   if (nrow(dict) > 0) {
@@ -945,36 +1089,14 @@ suggest_semantics <- function(df,
 
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
     target <- targets[i, , drop = FALSE]
-    search_role <- if ("search_role" %in% names(target)) target$search_role[[1]] else target$dictionary_role[[1]]
-    target_sources <- sources_for_target_role(sources, search_role)
-    res <- search_fn(target$search_query[[1]], role = search_role, sources = target_sources)
+    res <- .ms_retrieve_semantic_target_candidates(
+      target = target,
+      sources = sources,
+      max_per_role = max_per_role,
+      search_fn = search_fn,
+      retrieval_pass = 1L
+    )
     if (nrow(res) == 0) return(tibble::tibble())
-    res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
-    if (!"role_hints" %in% names(res)) {
-      res$role_hints <- NA_character_
-    }
-    res$role_hint_status <- vapply(
-      res$role_hints,
-      function(h) role_hint_status(search_role, h),
-      character(1)
-    )
-    res$role_hint_bonus <- vapply(res$role_hint_status, role_hint_bonus, numeric(1))
-    res$role_hint_explanation <- vapply(
-      res$role_hint_status,
-      function(s) role_hint_explanation(s, search_role),
-      character(1)
-    )
-    if ("score" %in% names(res)) {
-      res$score <- res$score + res$role_hint_bonus
-      res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
-    } else {
-      res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
-    }
-    res <- utils::head(res, max_per_role)
-
-    for (nm in names(target)) {
-      res[[nm]] <- target[[nm]][[1]]
-    }
 
     optional_cols <- intersect(
       c("score", "alignment_only", "agreement_sources", "zooma_confidence", "zooma_annotator", "role_hints", "role_hint_status", "role_hint_bonus", "role_hint_explanation"),
@@ -1047,7 +1169,10 @@ suggest_semantics <- function(df,
       context_files = llm_context_files,
       context_text = llm_context_text,
       timeout_seconds = llm_timeout_seconds,
-      request_fn = llm_request_fn
+      request_fn = llm_request_fn,
+      search_fn = search_fn,
+      sources = sources,
+      max_per_role = max_per_role
     )
     suggestions <- llm_results$suggestions
     attr(dict, "semantic_llm_assessments") <- llm_results$assessments

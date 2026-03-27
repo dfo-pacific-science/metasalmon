@@ -2,6 +2,7 @@ metasalmon 0.0.27
 ----------------
 
 - Fixed a deterministic semantic-query bug for spawner-style measurement columns: the property-slot query no longer hard-codes `count` for columns like `natural_adult_spawners`, and now prefers `spawner abundance` so the shortlist is more semantically sensible before LLM review.
+- Added one bounded LLM exploration round for weak semantic shortlists: when the first LLM pass comes back as review/propose-new-term or low-confidence, `suggest_semantics(..., llm_assess = TRUE)` may request 1--2 alternate plain-text search queries, rerun deterministic retrieval, merge/de-dupe candidates, and reassess once without letting the model mint raw IRIs.
 
 metasalmon 0.0.26
 ----------------

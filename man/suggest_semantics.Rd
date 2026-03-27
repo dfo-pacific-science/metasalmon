@@ -58,7 +58,10 @@ suggestions are generated for missing \code{dataset.csv$keywords} as candidate
 semantic keywords (IRIs intended for keyword curation).}
 
 \item{llm_assess}{Logical; if \code{TRUE}, assess the top semantic candidates per
-target with an LLM after deterministic retrieval. Default is \code{FALSE}.}
+target with an LLM after deterministic retrieval. When the first shortlist
+looks weak, the LLM may request at most one bounded alternate-query pass
+(1--2 plain-text search phrases) before a single reassessment. Default is
+\code{FALSE}.}
 
 \item{llm_provider}{LLM provider preset. One of \code{"openai"},
 \code{"openrouter"}, or \code{"openai_compatible"}.}
@@ -77,7 +80,7 @@ chat endpoint. Required for \code{llm_provider = "openai_compatible"} when not
 set via \code{METASALMON_LLM_BASE_URL}.}
 
 \item{llm_top_n}{Maximum number of retrieved candidates to send to the LLM
-per target. Default is \code{5}.}
+per target for each assessment round. Default is \code{5}.}
 
 \item{llm_context_files}{Optional character vector of local context files
 (for example README files, markdown notes, or PDF reports) used to provide
@@ -101,16 +104,18 @@ It also includes \code{target_scope}, \code{target_sdp_file}, and
 would land in the Salmon Data Package. Additional columns include
 \code{search_query}, \code{target_query_basis}, \code{target_query_context},
 \code{column_label}, \code{column_description}, \code{label}, \code{iri},
-\code{source}, \code{ontology}, and \code{definition}. If the underlying search results
-include a \code{score} column, it is preserved for downstream filtering.
+\code{source}, \code{ontology}, \code{definition}, \code{retrieval_query}, and
+\code{retrieval_pass}. If the underlying search results include a \code{score}
+column, it is preserved for downstream filtering.
 For non-column targets, the tibble also includes explicit destination
 context (\code{target_row_key}, \code{target_label}, \code{target_description},
 \code{code_value}, \code{code_label}, \code{code_description}) so table-, dataset-, and
 code-level rows are inspectable without extra joins. When
 \code{llm_assess = TRUE}, the suggestions also include \verb{llm_*} review columns
-such as \code{llm_decision}, \code{llm_confidence}, \code{llm_selected}, and
-\code{llm_candidate_rank}, and the dictionary gains a parallel
-\code{semantic_llm_assessments} attribute with one row per assessed target.
+such as \code{llm_decision}, \code{llm_confidence}, \code{llm_selected},
+\code{llm_candidate_rank}, and bounded exploration metadata, and the
+dictionary gains a parallel \code{semantic_llm_assessments} attribute with one
+row per assessed target.
 }
 \description{
 Searches external vocabularies to suggest IRIs for semantic gaps in the
@@ -135,10 +140,13 @@ generated for \code{codes.csv}, \code{tables.csv}, and \code{dataset.csv} respec
 Table-level observation-unit queries ignore review placeholders such as
 \verb{MISSING METADATA:} and fall back to real table metadata context instead.
 
-When \code{llm_assess = TRUE}, the LLM only judges the retrieved shortlist; it
-does not mint new IRIs. Local context files are read on disk, chunked, and
-lexically trimmed down before prompt assembly so large README/report files do
-not get dumped wholesale into the model call.
+When \code{llm_assess = TRUE}, the LLM only judges deterministically retrieved
+candidates; it does not mint new IRIs. If the first shortlist looks weak,
+the model may suggest at most one bounded alternate-query round (1--2
+plain-text queries), the package reruns deterministic retrieval, de-dupes
+the merged shortlist, and reassesses once. Local context files are read on
+disk, chunked, and lexically trimmed down before prompt assembly so large
+README/report files do not get dumped wholesale into the model call.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

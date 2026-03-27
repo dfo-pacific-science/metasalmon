@@ -409,3 +409,184 @@ test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs 
     "REVIEW-prefixed IRI"
   )
 })
+
+test_that("weak LLM shortlist review triggers one bounded alternate-query pass", {
+  search_calls <- character()
+  request_calls <- 0L
+
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "fish_total",
+    column_label = "Fish total",
+    column_description = "Total fish observed",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = "count",
+    unit_iri = "https://qudt.org/vocab/unit/NUM",
+    term_iri = NA_character_,
+    property_iri = "https://example.org/property/count",
+    entity_iri = "https://example.org/entity/fish",
+    constraint_iri = "https://example.org/constraint/all",
+    method_iri = "https://example.org/method/visual"
+  )
+
+  fake_search <- function(query, role, sources) {
+    search_calls <<- c(search_calls, paste(role, query, sep = "::"))
+
+    if (identical(query, "count")) {
+      return(tibble::tibble(
+        label = c("Count", "Observation count"),
+        iri = c("https://example.org/count", "https://example.org/observation-count"),
+        source = c("smn", "smn"),
+        ontology = c("demo", "demo"),
+        role = c(role, role),
+        match_type = c("label_partial", "label_partial"),
+        definition = c("Generic count concept", "Count of observations"),
+        score = c(0.55, 0.5)
+      ))
+    }
+
+    if (identical(query, "fish abundance")) {
+      return(tibble::tibble(
+        label = c("Fish abundance", "Fish total count"),
+        iri = c("https://example.org/fish-abundance", "https://example.org/fish-total-count"),
+        source = c("smn", "smn"),
+        ontology = c("demo", "demo"),
+        role = c(role, role),
+        match_type = c("label_exact", "label_partial"),
+        definition = c("Abundance of fish", "Total fish count"),
+        score = c(0.98, 0.72)
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    prompt <- messages[[2]]$content
+
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("fish abundance", "https://w3id.org/smn/InventedIri"),
+        rationale = "The initial query is too generic."
+      ))
+    }
+
+    if (request_calls == 1L) {
+      return(list(
+        decision = "review",
+        selected_candidate_index = NULL,
+        confidence = 0.31,
+        rationale = "The shortlist is too generic.",
+        missing_context = "A species-specific abundance phrase would help."
+      ))
+    }
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.93,
+      rationale = "Fish abundance is the best retrieved match.",
+      missing_context = ""
+    )
+  }
+
+  out <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "openrouter",
+    llm_api_key = "dummy-key",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  assessments <- attr(out, "semantic_llm_assessments")
+
+  expect_equal(search_calls, c("variable::count", "variable::fish abundance"))
+  expect_equal(request_calls, 3L)
+  expect_true(any(suggestions$retrieval_pass == 2L))
+  expect_true(any(suggestions$llm_selected))
+  expect_equal(
+    suggestions$iri[suggestions$llm_selected][[1]],
+    "https://example.org/fish-abundance"
+  )
+  expect_true(isTRUE(assessments$llm_exploration_used[[1]]))
+  expect_equal(assessments$llm_exploration_queries[[1]], "fish abundance")
+  expect_equal(assessments$llm_selected_iri[[1]], "https://example.org/fish-abundance")
+})
+
+test_that("strong LLM shortlist acceptance skips bounded exploration", {
+  search_calls <- character()
+  request_calls <- 0L
+
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "fish_total",
+    column_label = "Fish total",
+    column_description = "Total fish observed",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = "count",
+    unit_iri = "https://qudt.org/vocab/unit/NUM",
+    term_iri = NA_character_,
+    property_iri = "https://example.org/property/count",
+    entity_iri = "https://example.org/entity/fish",
+    constraint_iri = "https://example.org/constraint/all",
+    method_iri = "https://example.org/method/visual"
+  )
+
+  fake_search <- function(query, role, sources) {
+    search_calls <<- c(search_calls, paste(role, query, sep = "::"))
+    tibble::tibble(
+      label = c("Count", "Fish count"),
+      iri = c("https://example.org/count", "https://example.org/fish-count"),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_exact", "label_partial"),
+      definition = c("Count concept", "Fish count concept"),
+      score = c(0.96, 0.88)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.91,
+      rationale = "The first shortlist is already good enough.",
+      missing_context = ""
+    )
+  }
+
+  out <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "openrouter",
+    llm_api_key = "dummy-key",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  assessments <- attr(out, "semantic_llm_assessments")
+
+  expect_equal(search_calls, c("variable::count"))
+  expect_equal(request_calls, 1L)
+  expect_true(all(suggestions$retrieval_pass == 1L))
+  expect_false(isTRUE(assessments$llm_exploration_used[[1]]))
+  expect_true(is.na(assessments$llm_exploration_queries[[1]]))
+})

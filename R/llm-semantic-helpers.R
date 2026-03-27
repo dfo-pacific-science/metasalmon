@@ -323,7 +323,9 @@
       source = candidate_rows$source[[i]] %||% "",
       ontology = candidate_rows$ontology[[i]] %||% "",
       definition = candidate_rows$definition[[i]] %||% "",
-      lexical_score = if ("score" %in% names(candidate_rows)) candidate_rows$score[[i]] else NA_real_
+      lexical_score = if ("score" %in% names(candidate_rows)) candidate_rows$score[[i]] else NA_real_,
+      retrieval_query = if ("retrieval_query" %in% names(candidate_rows)) candidate_rows$retrieval_query[[i]] else target_row$search_query[[1]] %||% "",
+      retrieval_pass = if ("retrieval_pass" %in% names(candidate_rows)) candidate_rows$retrieval_pass[[i]] else 1L
     )
   })
 
@@ -414,6 +416,269 @@
     list(role = "system", content = system_prompt),
     list(role = "user", content = user_prompt)
   )
+}
+
+.ms_llm_target_group_cols <- function() {
+  c("dataset_id", "table_id", "column_name", "code_value", "dictionary_role", "target_scope", "target_sdp_file", "target_sdp_field")
+}
+
+.ms_llm_group_key_df <- function(df) {
+  df <- tibble::as_tibble(df)
+  group_cols <- .ms_llm_target_group_cols()
+  missing_cols <- setdiff(group_cols, names(df))
+  for (nm in missing_cols) {
+    df[[nm]] <- NA_character_
+  }
+
+  do.call(
+    paste,
+    c(
+      lapply(df[group_cols], function(x) ifelse(is.na(x), "<NA>", as.character(x))),
+      sep = "\r"
+    )
+  )
+}
+
+.ms_llm_exploration_confidence_threshold <- function(config) {
+  if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
+    return(0.6)
+  }
+  0.55
+}
+
+.ms_llm_should_explore <- function(assessment_row, config) {
+  assessment_row <- tibble::as_tibble(assessment_row)
+  if (nrow(assessment_row) == 0) {
+    return(FALSE)
+  }
+
+  if (!is.na(assessment_row$llm_error[[1]]) && nzchar(assessment_row$llm_error[[1]])) {
+    return(FALSE)
+  }
+
+  decision <- .ms_llm_non_empty_string(assessment_row$llm_decision[[1]] %||% NA_character_)
+  confidence <- suppressWarnings(as.numeric(assessment_row$llm_confidence[[1]] %||% NA_real_))
+  if (is.na(decision)) {
+    return(FALSE)
+  }
+
+  decision %in% c("review", "propose_new_term") ||
+    is.na(confidence) || confidence < .ms_llm_exploration_confidence_threshold(config)
+}
+
+.ms_llm_normalize_query_text <- function(x) {
+  text <- .ms_llm_non_empty_string(x)
+  if (is.na(text)) {
+    return(NA_character_)
+  }
+  trimws(gsub("\\s+", " ", text))
+}
+
+.ms_llm_query_looks_like_identifier <- function(x) {
+  text <- .ms_llm_normalize_query_text(x)
+  if (is.na(text)) {
+    return(FALSE)
+  }
+
+  grepl("^(https?://|urn:|doi:)", text, ignore.case = TRUE) ||
+    grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^\\s]+$", text)
+}
+
+.ms_llm_messages_for_query_exploration <- function(record, assessment_row) {
+  payload <- .ms_llm_target_payload(
+    record$group[1, , drop = FALSE],
+    record$candidate_rows,
+    record$context_chunks,
+    target_key = record$group_name
+  )
+  payload$previous_assessment <- list(
+    decision = assessment_row$llm_decision[[1]] %||% NA_character_,
+    confidence = assessment_row$llm_confidence[[1]] %||% NA_real_,
+    rationale = assessment_row$llm_rationale[[1]] %||% NA_character_,
+    missing_context = assessment_row$llm_missing_context[[1]] %||% NA_character_
+  )
+
+  system_prompt <- paste(
+    "You are improving deterministic ontology candidate retrieval for the metasalmon R package.",
+    "Do not propose IRIs, CURIEs, ontology identifiers, or candidate indexes.",
+    "When the current shortlist looks weak, suggest at most 2 short alternate lexical search queries that may retrieve better candidates.",
+    "Use plain text noun phrases only, grounded in the target description and supplied context.",
+    "Return JSON only with keys alternate_queries and rationale.",
+    "alternate_queries must be an array with 0 to 2 plain-text search strings."
+  )
+
+  user_prompt <- paste(
+    "Exploration payload:",
+    jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    "\n\nReturn JSON only."
+  )
+
+  list(
+    list(role = "system", content = system_prompt),
+    list(role = "user", content = user_prompt)
+  )
+}
+
+.ms_llm_validate_exploration_queries <- function(result, original_query, max_queries = 2L) {
+  raw_queries <- result$alternate_queries %||% result$queries %||% result$suggested_queries %||% NULL
+  if (is.null(raw_queries)) {
+    return(character())
+  }
+  if (is.character(raw_queries)) {
+    raw_queries <- as.list(raw_queries)
+  }
+  if (!is.list(raw_queries) || length(raw_queries) == 0) {
+    return(character())
+  }
+
+  queries <- vapply(raw_queries, .ms_llm_normalize_query_text, character(1))
+  queries <- queries[!is.na(queries) & nzchar(queries)]
+  if (length(queries) == 0) {
+    return(character())
+  }
+
+  original_norm <- .ms_llm_normalize_query_text(original_query)
+  keep <- !vapply(queries, .ms_llm_query_looks_like_identifier, logical(1))
+  if (!is.na(original_norm) && nzchar(original_norm)) {
+    keep <- keep & tolower(queries) != tolower(original_norm)
+  }
+  queries <- queries[keep]
+  if (length(queries) == 0) {
+    return(character())
+  }
+
+  queries <- queries[!duplicated(tolower(queries))]
+  utils::head(queries, max(0L, as.integer(max_queries[[1]] %||% 2L)))
+}
+
+.ms_llm_add_exploration_metadata <- function(assessment_row,
+                                             used = FALSE,
+                                             queries = character(),
+                                             candidate_gain = 0L) {
+  assessment_row <- tibble::as_tibble(assessment_row)
+  if (nrow(assessment_row) == 0) {
+    return(assessment_row)
+  }
+
+  assessment_row$llm_exploration_used <- isTRUE(used)
+  assessment_row$llm_exploration_queries <- if (length(queries) > 0) paste(queries, collapse = " | ") else NA_character_
+  assessment_row$llm_exploration_candidate_gain <- as.integer(candidate_gain[[1]] %||% 0L)
+  assessment_row
+}
+
+.ms_llm_prompt_candidate_keys <- function(record) {
+  if (is.null(record$candidate_rows) || nrow(record$candidate_rows) == 0) {
+    return(character())
+  }
+  paste(record$candidate_rows$source, record$candidate_rows$iri, sep = "::")
+}
+
+.ms_llm_explore_record <- function(record,
+                                   assessment_row,
+                                   config,
+                                   search_fn,
+                                   sources,
+                                   max_per_role,
+                                   top_n,
+                                   context_files,
+                                   context_text) {
+  assessment_row <- .ms_llm_add_exploration_metadata(assessment_row)
+  if (!.ms_llm_should_explore(assessment_row, config)) {
+    return(list(record = record, assessment = assessment_row))
+  }
+
+  target <- record$group[1, , drop = FALSE]
+  exploration_result <- tryCatch(
+    .ms_llm_request_with_retries(
+      messages = .ms_llm_messages_for_query_exploration(record, assessment_row),
+      config = config
+    ),
+    error = function(e) e
+  )
+  if (inherits(exploration_result, "error")) {
+    cli::cli_warn(
+      "LLM exploration query suggestion failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(exploration_result)}"
+    )
+    return(list(record = record, assessment = assessment_row))
+  }
+
+  queries <- tryCatch(
+    .ms_llm_validate_exploration_queries(exploration_result, original_query = target$search_query[[1]]),
+    error = function(e) {
+      cli::cli_warn(
+        "LLM exploration query validation failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(e)}"
+      )
+      character()
+    }
+  )
+  if (length(queries) == 0) {
+    return(list(record = record, assessment = assessment_row))
+  }
+
+  extra_rows <- purrr::map_dfr(seq_along(queries), function(i) {
+    .ms_retrieve_semantic_target_candidates(
+      target = target,
+      sources = sources,
+      max_per_role = max_per_role,
+      search_fn = search_fn,
+      query = queries[[i]],
+      retrieval_pass = 2L
+    )
+  })
+
+  updated_record <- record
+  updated_assessment <- .ms_llm_add_exploration_metadata(
+    assessment_row,
+    used = TRUE,
+    queries = queries,
+    candidate_gain = 0L
+  )
+  if (nrow(extra_rows) == 0) {
+    return(list(record = updated_record, assessment = updated_assessment))
+  }
+
+  merged_group <- .ms_merge_semantic_target_candidates(
+    existing_rows = record$group,
+    extra_rows = extra_rows,
+    max_per_role = max_per_role
+  )
+  existing_keys <- unique(paste(record$group$source, record$group$iri, sep = "::"))
+  merged_keys <- unique(paste(merged_group$source, merged_group$iri, sep = "::"))
+  candidate_gain <- sum(!merged_keys %in% existing_keys)
+  updated_assessment <- .ms_llm_add_exploration_metadata(
+    updated_assessment,
+    used = TRUE,
+    queries = queries,
+    candidate_gain = candidate_gain
+  )
+
+  merged_group$.ms_row_order <- seq_len(nrow(merged_group))
+  updated_record <- .ms_llm_prepare_record(
+    group_name = record$group_name,
+    group = merged_group,
+    config = config,
+    top_n = top_n,
+    context_files = context_files,
+    context_text = context_text
+  )
+
+  if (candidate_gain <= 0 || identical(.ms_llm_prompt_candidate_keys(updated_record), .ms_llm_prompt_candidate_keys(record))) {
+    return(list(record = updated_record, assessment = updated_assessment))
+  }
+
+  reassessed <- .ms_llm_assess_one_record(updated_record, config)
+  if (is.na(reassessed$llm_decision[[1]])) {
+    return(list(record = updated_record, assessment = updated_assessment))
+  }
+
+  reassessed <- .ms_llm_add_exploration_metadata(
+    reassessed,
+    used = TRUE,
+    queries = queries,
+    candidate_gain = candidate_gain
+  )
+
+  list(record = updated_record, assessment = reassessed)
 }
 
 .ms_llm_extract_message_content <- function(body) {
@@ -551,6 +816,9 @@
     llm_rationale = NA_character_,
     llm_missing_context = NA_character_,
     llm_context_sources = NA_character_,
+    llm_exploration_used = FALSE,
+    llm_exploration_queries = NA_character_,
+    llm_exploration_candidate_gain = 0L,
     llm_error = .ms_llm_non_empty_string(error)
   )
 }
@@ -580,6 +848,9 @@
     llm_rationale = validated$rationale,
     llm_missing_context = validated$missing_context,
     llm_context_sources = if (nrow(context_chunks) > 0) paste(unique(context_chunks$source), collapse = "; ") else NA_character_,
+    llm_exploration_used = FALSE,
+    llm_exploration_queries = NA_character_,
+    llm_exploration_candidate_gain = 0L,
     llm_error = NA_character_
   )
 }
@@ -697,7 +968,10 @@
                                                 context_files = NULL,
                                                 context_text = NULL,
                                                 timeout_seconds = 60,
-                                                request_fn = NULL) {
+                                                request_fn = NULL,
+                                                search_fn,
+                                                sources,
+                                                max_per_role) {
   suggestions <- tibble::as_tibble(suggestions)
   if (nrow(suggestions) == 0) {
     return(list(
@@ -716,15 +990,7 @@
   )
   top_n <- .ms_llm_effective_top_n(config, top_n)
 
-  suggestions$.ms_group_key <- do.call(
-    paste,
-    c(
-      lapply(suggestions[c("dataset_id", "table_id", "column_name", "code_value", "dictionary_role", "target_scope", "target_sdp_file", "target_sdp_field")], function(x) {
-        ifelse(is.na(x), "<NA>", as.character(x))
-      }),
-      sep = "\r"
-    )
-  )
+  suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
 
   suggestion_groups <- split(suggestions, suggestions$.ms_group_key)
@@ -743,8 +1009,33 @@
   batch_size <- .ms_llm_batch_size(config)
   batch_ids <- ceiling(seq_along(records) / batch_size)
   assessment_rows <- lapply(split(records, batch_ids), .ms_llm_assess_record_batch, config = config)
+  initial_assessments <- dplyr::bind_rows(assessment_rows)
 
-  assessments <- dplyr::bind_rows(assessment_rows)
+  assessments_by_key <- split(initial_assessments, .ms_llm_group_key_df(initial_assessments))
+  explored <- purrr::map(records, function(record) {
+    assessment_row <- assessments_by_key[[record$group_name]]
+    if (is.null(assessment_row)) {
+      assessment_row <- .ms_empty_llm_assessment(record$group, config, error = "Initial LLM assessment was missing for this target.")
+    }
+    .ms_llm_explore_record(
+      record = record,
+      assessment_row = assessment_row,
+      config = config,
+      search_fn = search_fn,
+      sources = sources,
+      max_per_role = max_per_role,
+      top_n = top_n,
+      context_files = context_files,
+      context_text = context_text
+    )
+  })
+
+  final_records <- purrr::map(explored, "record")
+  assessments <- dplyr::bind_rows(purrr::map(explored, "assessment"))
+  suggestions <- dplyr::bind_rows(purrr::map(final_records, "group"))
+  suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
+  suggestions$.ms_row_order <- seq_len(nrow(suggestions))
+
   suggestions <- suggestions |>
     dplyr::group_by(.data$.ms_group_key) |>
     dplyr::mutate(llm_candidate_rank = dplyr::if_else(dplyr::row_number() <= top_n, dplyr::row_number(), NA_integer_)) |>
