@@ -90,11 +90,13 @@ create_sdp(
 
 - seed_table_meta:
 
-  Optional `tables.csv`-style seed metadata.
+  Optional `tables.csv`-style seed metadata. Use `TRUE` (default) to
+  infer starter table metadata from `resources`.
 
 - seed_dataset_meta:
 
-  Optional `dataset.csv`-style seed metadata.
+  Optional `dataset.csv`-style seed metadata. Use `TRUE` (default) to
+  infer starter dataset metadata from `resources`.
 
 - semantic_code_scope:
 
@@ -206,13 +208,16 @@ and low-cardinality character source columns only; set
 `semantic_code_scope = "all"` to broaden that or `"none"` to disable it.
 The package root contains `README-review.txt`,
 `semantic_suggestions.csv` (when available), `datapackage.json`,
-`metadata/`, and `data/`. To keep review files usable,
+`metadata/`, and `data/`. Review the prefilled values already written
+into `metadata/tables.csv` and `metadata/column_dictionary.csv` first;
+use `semantic_suggestions.csv` as a fallback shortlist when you want
+more context or a better match. To keep that review file usable,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
 enough human-readable context to review safely. When
 `llm_assess = TRUE`, the same review file also carries `llm_*` columns
 so the shortlisted LLM judgment stays explicit and reviewable. Any
-auto-applied column/table IRI draft is written back into the package as
-a `REVIEW:`-prefixed value for manual confirmation.
+auto-applied column/table IRI draft is written back into the metadata
+CSVs as a `REVIEW:`-prefixed value for manual confirmation there.
 Required-field review placeholders are also inserted into the inferred
 metadata files. In interactive use, `create_sdp()` can also mention an
 available package update; set `check_updates = FALSE` to skip that

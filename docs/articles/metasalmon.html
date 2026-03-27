@@ -135,35 +135,36 @@ build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_
 <div class="section level2">
 <h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
 </h2>
-<p>Open the output folder and review these files:</p>
-<ul>
-<li><code>README-review.txt</code></li>
-<li>
-<code>semantic_suggestions.csv</code> (when suggestions were
-found)</li>
-<li><code>metadata/dataset.csv</code></li>
-<li><code>metadata/tables.csv</code></li>
+<p>Open <code>README-review.txt</code>, then review these files in this
+order:</p>
+<ol style="list-style-type: decimal">
 <li><code>metadata/column_dictionary.csv</code></li>
+<li><code>metadata/tables.csv</code></li>
+<li><code>metadata/dataset.csv</code></li>
 <li>
 <code>metadata/codes.csv</code> (when present)</li>
 <li>
-<code>data/*.csv</code> resource files</li>
-</ul>
+<code>semantic_suggestions.csv</code> (only if you want more context
+or a better match)</li>
+</ol>
 <p>That <code>metadata/column_dictionary.csv</code> file is also a
 perfectly reasonable <code>llm_context_files</code> input when you want
 the LLM review step to reason from the package itself instead of a
 separate methods note.</p>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
-auto-fills the top-ranked <strong>column-level</strong> suggestions into
-missing dictionary fields (<code>term_iri</code>,
-<code>property_iri</code>, <code>entity_iri</code>,
-<code>unit_iri</code>, etc.). It also auto-fills top table-level
-observation-unit suggestions into missing
-<code>tables.csv$observation_unit_iri</code> values (and labels when
-blank). It does not overwrite existing non-empty semantic values.
-Code-level suggestions default to factor and low-cardinality character
-source columns; use <code>semantic_code_scope = "all"</code> if you want
-broader code-level seeding.</p>
+auto-fills top-ranked compatible drafts directly into blank semantic
+fields in the metadata CSVs. That includes column-level IRIs in
+<code>metadata/column_dictionary.csv</code> and strong table-level
+observation-unit drafts in <code>metadata/tables.csv</code>, using
+<code>observation_unit</code>/<code>description</code> when available
+and otherwise falling back to
+<code>table_label</code>/<code>table_id</code>. Any auto-applied
+semantic IRI draft is written back as <code>REVIEW: &lt;iri&gt;</code>
+so you still confirm it manually. It does not overwrite existing
+non-empty semantic values. Code-level suggestions default to factor and
+low-cardinality character source columns; use
+<code>semantic_code_scope = "all"</code> if you want broader code-level
+seeding.</p>
 <p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
 <code>MISSING METADATA:</code> placeholders for required fields so the
 package is immediately reviewable in Excel. Replace those placeholders
@@ -191,6 +192,14 @@ population-level)?</li>
 <p>When the top auto-applied suggestion is wrong, use
 <code>semantic_suggestions.csv</code> to pick a better alternative and
 copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
+<p>If no candidate fits, request a new term instead of forcing a bad
+match:</p>
+<ul>
+<li>shared cross-organization/domain terms -&gt; <a href="https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose" class="external-link uri">https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose</a>
+</li>
+<li>DFO-specific policy/operations terms -&gt; <a href="https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose" class="external-link uri">https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose</a>
+</li>
+</ul>
 </div>
 <div class="section level2">
 <h2 id="finalize">Finalize<a class="anchor" aria-label="anchor" href="#finalize"></a>

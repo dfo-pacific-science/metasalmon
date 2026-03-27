@@ -65,7 +65,7 @@ Data Package.</p>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed_table_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  semantic_code_scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"factor"</span>, <span class="st">"all"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
 <span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
@@ -138,11 +138,13 @@ semantic suggestions.</p></dd>
 
 
 <dt id="arg-seed-table-meta">seed_table_meta<a class="anchor" aria-label="anchor" href="#arg-seed-table-meta"></a></dt>
-<dd><p>Optional <code>tables.csv</code>-style seed metadata.</p></dd>
+<dd><p>Optional <code>tables.csv</code>-style seed metadata. Use
+<code>TRUE</code> (default) to infer starter table metadata from <code>resources</code>.</p></dd>
 
 
 <dt id="arg-seed-dataset-meta">seed_dataset_meta<a class="anchor" aria-label="anchor" href="#arg-seed-dataset-meta"></a></dt>
-<dd><p>Optional <code>dataset.csv</code>-style seed metadata.</p></dd>
+<dd><p>Optional <code>dataset.csv</code>-style seed metadata. Use
+<code>TRUE</code> (default) to infer starter dataset metadata from <code>resources</code>.</p></dd>
 
 
 <dt id="arg-semantic-code-scope">semantic_code_scope<a class="anchor" aria-label="anchor" href="#arg-semantic-code-scope"></a></dt>
@@ -241,24 +243,28 @@ the default metadata path. Any other extra arguments error.</p></dd>
     <p>This one-shot helper creates a review-ready package by default:
 semantic suggestions are seeded and the top-ranked column-level suggestions
 are auto-applied only into missing dictionary IRI fields. Table-level
-observation-unit suggestions stay enabled, but <code>create_sdp()</code> only
-auto-applies them into missing <code>tables.csv$observation_unit_iri</code> values
-when they are backed by non-placeholder table metadata and still look
-lexically compatible with that context; compatible suggestions can also
-backfill <code>tables.csv$observation_unit</code> labels when missing. To reduce review
+observation-unit suggestions stay enabled, and <code>create_sdp()</code> can
+auto-apply them into missing <code>tables.csv$observation_unit_iri</code> values when
+the suggestion still looks lexically compatible with the available table
+context (prefer <code>observation_unit</code>/<code>description</code>, otherwise fall back to
+<code>table_label</code>/<code>table_id</code>); compatible suggestions can also backfill
+<code>tables.csv$observation_unit</code> labels when missing. To reduce review
 noise conservatively, code-level suggestions default to factor and
 low-cardinality character source columns only; set
 <code>semantic_code_scope = "all"</code> to broaden that or <code>"none"</code> to disable it.
 The package root contains <code>README-review.txt</code>,
 <code>semantic_suggestions.csv</code> (when available), <code>datapackage.json</code>,
-<code>metadata/</code>, and <code>data/</code>. To keep review files usable,
+<code>metadata/</code>, and <code>data/</code>. Review the prefilled values already written into
+<code>metadata/tables.csv</code> and <code>metadata/column_dictionary.csv</code> first; use
+<code>semantic_suggestions.csv</code> as a fallback shortlist when you want more
+context or a better match. To keep that review file usable,
 <code>semantic_suggestions.csv</code> trims code-level suggestions that do not have
 enough human-readable context to review safely. When <code>llm_assess = TRUE</code>,
 the same review file also carries <code>llm_*</code> columns so the shortlisted LLM
-judgment stays explicit and reviewable, and any selected column/table IRI
-draft that gets auto-applied is written back into the package as a
-<code>REVIEW:</code>-prefixed value for manual confirmation. Required-field review
-placeholders are also inserted into the inferred metadata files. In
+judgment stays explicit and reviewable. Any auto-applied column/table IRI
+draft is written back into the metadata CSVs as a <code>REVIEW:</code>-prefixed value
+for manual confirmation there. Required-field review placeholders are also
+inserted into the inferred metadata files. In
 interactive use, <code>create_sdp()</code> can also mention an available package update;
 set <code>check_updates = FALSE</code> to skip that network check. The package bundles
 two Fraser coho examples: <code>nuseds-fraser-coho-sample.csv</code> (30 rows across

@@ -73,30 +73,31 @@ directly.
 
 ## Review In Excel
 
-Open the output folder and review these files:
+Open `README-review.txt`, then review these files in this order:
 
-- `README-review.txt`
-- `semantic_suggestions.csv` (when suggestions were found)
-- `metadata/dataset.csv`
-- `metadata/tables.csv`
-- `metadata/column_dictionary.csv`
-- `metadata/codes.csv` (when present)
-- `data/*.csv` resource files
+1.  `metadata/column_dictionary.csv`
+2.  `metadata/tables.csv`
+3.  `metadata/dataset.csv`
+4.  `metadata/codes.csv` (when present)
+5.  `semantic_suggestions.csv` (only if you want more context or a
+    better match)
 
 That `metadata/column_dictionary.csv` file is also a perfectly
 reasonable `llm_context_files` input when you want the LLM review step
 to reason from the package itself instead of a separate methods note.
 
 [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-seeds semantic suggestions by default and auto-fills the top-ranked
-**column-level** suggestions into missing dictionary fields (`term_iri`,
-`property_iri`, `entity_iri`, `unit_iri`, etc.). It also auto-fills top
-table-level observation-unit suggestions into missing
-`tables.csv$observation_unit_iri` values (and labels when blank). It
-does not overwrite existing non-empty semantic values. Code-level
-suggestions default to factor and low-cardinality character source
-columns; use `semantic_code_scope = "all"` if you want broader
-code-level seeding.
+seeds semantic suggestions by default and auto-fills top-ranked
+compatible drafts directly into blank semantic fields in the metadata
+CSVs. That includes column-level IRIs in
+`metadata/column_dictionary.csv` and strong table-level observation-unit
+drafts in `metadata/tables.csv`, using `observation_unit`/`description`
+when available and otherwise falling back to `table_label`/`table_id`.
+Any auto-applied semantic IRI draft is written back as `REVIEW: <iri>`
+so you still confirm it manually. It does not overwrite existing
+non-empty semantic values. Code-level suggestions default to factor and
+low-cardinality character source columns; use
+`semantic_code_scope = "all"` if you want broader code-level seeding.
 
 The inferred metadata includes `MISSING DESCRIPTION:` and
 `MISSING METADATA:` placeholders for required fields so the package is
@@ -122,6 +123,13 @@ Remove it (leave blank) when no candidate is reliable yet.
 When the top auto-applied suggestion is wrong, use
 `semantic_suggestions.csv` to pick a better alternative and copy that
 IRI into `metadata/column_dictionary.csv`.
+
+If no candidate fits, request a new term instead of forcing a bad match:
+
+- shared cross-organization/domain terms -\>
+  <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
+- DFO-specific policy/operations terms -\>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
 
 ## Finalize
 

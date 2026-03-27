@@ -61,7 +61,7 @@ dataset-level metadata in a single step from one or more raw data tables.</p>
 <span>  seed_verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed_codes <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed_table_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed_dataset_meta <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  semantic_code_scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"factor"</span>, <span class="st">"all"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
 <span>  llm_assess <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  llm_provider <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"openai"</span>, <span class="st">"openrouter"</span>, <span class="st">"openai_compatible"</span><span class="op">)</span>,</span>
@@ -124,11 +124,13 @@ semantic suggestions.</p></dd>
 
 
 <dt id="arg-seed-table-meta">seed_table_meta<a class="anchor" aria-label="anchor" href="#arg-seed-table-meta"></a></dt>
-<dd><p>Optional <code>tables.csv</code>-style seed metadata.</p></dd>
+<dd><p>Optional <code>tables.csv</code>-style seed metadata. Use
+<code>TRUE</code> (default) to infer starter table metadata from <code>resources</code>.</p></dd>
 
 
 <dt id="arg-seed-dataset-meta">seed_dataset_meta<a class="anchor" aria-label="anchor" href="#arg-seed-dataset-meta"></a></dt>
-<dd><p>Optional <code>dataset.csv</code>-style seed metadata.</p></dd>
+<dd><p>Optional <code>dataset.csv</code>-style seed metadata. Use
+<code>TRUE</code> (default) to infer starter dataset metadata from <code>resources</code>.</p></dd>
 
 
 <dt id="arg-semantic-code-scope">semantic_code_scope<a class="anchor" aria-label="anchor" href="#arg-semantic-code-scope"></a></dt>

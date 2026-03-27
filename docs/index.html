@@ -89,7 +89,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="the-solution">The Solution<a class="anchor" aria-label="anchor" href="#the-solution"></a>
 </h2>
-<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. The preferred review workflow now happens <strong>inside the R package</strong>: <code>metasalmon</code> can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package, and then send you back to the created package for manual cleanup in Excel.</p>
+<p><code>metasalmon</code> wraps your salmon data with a <strong>data dictionary</strong> that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> (shared layer) and the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the <a href="https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md" class="external-link">Salmon Data Package Specification</a>. The preferred review workflow now happens <strong>inside the R package</strong>: <code>metasalmon</code> can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then send you back to the created package so you can confirm or edit those values directly in Excel.</p>
 <p><strong>Integration context:</strong> See the Salmon Data Integration System overview page (<a href="https://br-johnson.github.io/salmon-data-integration-system/" class="external-link uri">https://br-johnson.github.io/salmon-data-integration-system/</a>) and walkthrough video (<a href="https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH" class="external-link uri">https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH</a>).</p>
 <p><strong>Think of it like adding a detailed legend to your spreadsheet that never gets lost.</strong></p>
 </div>
@@ -155,7 +155,7 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># - data/*.csv</span></span>
 <span><span class="co"># - semantic_suggestions.csv (if present)</span></span>
 <span><span class="co"># - README-review.txt</span></span></code></pre></div>
-<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a review checklist, auto-applies top column-level and table observation-unit suggestions into blank fields, and seeds code-level semantic suggestions conservatively by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code> to catch package/data/codes mismatches in one pass. In interactive use <code><a href="reference/create_sdp.html">create_sdp()</a></code> can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
+<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a short review checklist, writes prefilled semantic drafts directly into <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> only where target fields were blank, and keeps <code>semantic_suggestions.csv</code> as a fallback shortlist when you want more context or a better match. Code-level semantic seeding stays conservative by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code> to catch package/data/codes mismatches in one pass. In interactive use <code><a href="reference/create_sdp.html">create_sdp()</a></code> can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
 <h2 id="bundled-nuseds-example">Bundled NuSEDS Example<a class="anchor" aria-label="anchor" href="#bundled-nuseds-example"></a>
@@ -199,10 +199,10 @@ concept schemes) while preserving your original data structure.
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written</span></span>
-<span><span class="co"># back into the package as REVIEW-prefixed draft values for manual cleanup,</span></span>
+<span><span class="co"># In create_sdp(...), any auto-applied semantic IRI drafts are written back</span></span>
+<span><span class="co"># into the package metadata as REVIEW-prefixed values for manual cleanup,</span></span>
 <span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark selected draft IRIs directly in the created package as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel. That includes selected table-level observation-unit matches written into <code>metadata/tables.csv</code>. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into <code>metadata/tables.csv</code>. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="recommended-workflow">Recommended workflow<a class="anchor" aria-label="anchor" href="#recommended-workflow"></a>
@@ -211,20 +211,23 @@ concept schemes) while preserving your original data structure.
 <ol style="list-style-type: decimal">
 <li>Run <code>create_sdp(...)</code> to create the Salmon Data Package.</li>
 <li>If you want semantic review, set <code>llm_assess = TRUE</code>.</li>
-<li>Open the created package folder and review:
+<li>Open <code>README-review.txt</code>, then review <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> first. Those files already contain the prefilled semantic values you are actually finalizing.</li>
+<li>For any prefilled or <code>REVIEW:</code>-prefixed IRI, click through and read the term definition before keeping it.</li>
+<li>Use <code>semantic_suggestions.csv</code> only as a fallback shortlist if you are unsure or want a better match.</li>
+<li>If no candidate fits, request a new term instead of forcing a bad match:
 <ul>
-<li><code>metadata/*.csv</code></li>
-<li><code>semantic_suggestions.csv</code></li>
-<li><code>README-review.txt</code></li>
+<li>shared cross-organization/domain terms -&gt; <a href="https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose" class="external-link uri">https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose</a>
+</li>
+<li>DFO-specific policy/operations terms -&gt; <a href="https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose" class="external-link uri">https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose</a>
+</li>
 </ul>
 </li>
-<li>In Excel (or another spreadsheet editor), resolve every <code>REVIEW:</code>-prefixed IRI in the metadata files.</li>
-<li>Follow the <a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a> guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term request list.</li>
+<li>Follow the <a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a> guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.</li>
 <li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code> (the reviewed-package wrapper around the canonical <code><a href="reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder). It now refuses to rebuild while <code>REVIEW:</code> markers or unresolved dataset/table placeholder text remain.</li>
 <li>Re-run validation with <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code>.</li>
-<li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes.</li>
+<li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes; send the whole package folder (or a zip of it), not individual files.</li>
 </ol>
-<p>In other words: <strong>create -&gt; review in Excel -&gt; remove <code>REVIEW:</code> markers -&gt; rebuild EDH XML if needed -&gt; validate -&gt; publish</strong>.</p>
+<p>In other words: <strong>create -&gt; review in Excel -&gt; reload/check gaps -&gt; remove <code>REVIEW:</code> markers -&gt; rebuild EDH XML if needed -&gt; validate -&gt; publish</strong>.</p>
 </div>
 <div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>

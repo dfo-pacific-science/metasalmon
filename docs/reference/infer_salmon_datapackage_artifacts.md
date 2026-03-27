@@ -79,11 +79,13 @@ infer_salmon_datapackage_artifacts(
 
 - seed_table_meta:
 
-  Optional `tables.csv`-style seed metadata.
+  Optional `tables.csv`-style seed metadata. Use `TRUE` (default) to
+  infer starter table metadata from `resources`.
 
 - seed_dataset_meta:
 
-  Optional `dataset.csv`-style seed metadata.
+  Optional `dataset.csv`-style seed metadata. Use `TRUE` (default) to
+  infer starter dataset metadata from `resources`.
 
 - semantic_code_scope:
 
