@@ -1,3 +1,14 @@
+metasalmon 0.1.0
+----------------
+
+- Promoted `create_sdp()` and the Salmon Data Package workflow into a coherent release shape: single-table and multi-table package creation, semantic review artifacts, and post-review EDH rebuild are now aligned and documented as the primary path.
+- Hardened final-review behavior: `validate_salmon_datapackage(..., require_iris = TRUE)` now fails on unresolved metadata placeholders, blank table observation-unit IRIs, and lingering review sentinels so strict validation actually means review is finished.
+- Hardened table-level semantic review writes and EDH rebuilds: LLM-selected table suggestions now write back into `metadata/tables.csv`, and `write_edh_xml_from_sdp()` now refuses to rebuild from obviously unreviewed packages.
+- Improved package-native LLM review ergonomics: one-shot shortlist preservation now respects `llm_top_n`, shared `llm_context_files` are reused across targets, and non-interactive profile-scoped term requests now fail clearly instead of silently emitting junk defaults.
+- Fixed multi-table semantic seeding so later tables use their own context instead of borrowing semantic context from table 1.
+- Cleaned the release docs surface: refreshed the package description, fixed broken source-view links and vignette anchors, removed stale GPT-era remnants and orphaned assets, hid leaked internal helper pages from the public site, and rebuilt pkgdown from the integrated source.
+- Bundled a matching Fraser Coho 2023--2024 starter dictionary plus provenance link so the installed package has a realistic context-file demo for the package-native LLM workflow.
+
 metasalmon 0.0.27
 ----------------
 

@@ -209,7 +209,9 @@ The package root contains `README-review.txt`,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
 enough human-readable context to review safely. When
 `llm_assess = TRUE`, the same review file also carries `llm_*` columns
-so the shortlisted LLM judgment stays explicit and reviewable.
+so the shortlisted LLM judgment stays explicit and reviewable, and any
+selected column/table IRI draft that gets auto-applied is written back
+into the package as a `REVIEW:`-prefixed value for manual confirmation.
 Required-field review placeholders are also inserted into the inferred
 metadata files. In interactive use, `create_sdp()` can also mention an
 available package update; set `check_updates = FALSE` to skip that

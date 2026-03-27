@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,6 +39,16 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0" id="metasalmon-010">metasalmon 0.1.0<a class="anchor" aria-label="anchor" href="#metasalmon-010"></a></h2>
+<ul><li>Promoted <code><a href="../reference/create_sdp.html">create_sdp()</a></code> and the Salmon Data Package workflow into a coherent release shape: single-table and multi-table package creation, semantic review artifacts, and post-review EDH rebuild are now aligned and documented as the primary path.</li>
+<li>Hardened final-review behavior: <code>validate_salmon_datapackage(..., require_iris = TRUE)</code> now fails on unresolved metadata placeholders, blank table observation-unit IRIs, and lingering review sentinels so strict validation actually means review is finished.</li>
+<li>Hardened table-level semantic review writes and EDH rebuilds: LLM-selected table suggestions now write back into <code>metadata/tables.csv</code>, and <code><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code> now refuses to rebuild from obviously unreviewed packages.</li>
+<li>Improved package-native LLM review ergonomics: one-shot shortlist preservation now respects <code>llm_top_n</code>, shared <code>llm_context_files</code> are reused across targets, and non-interactive profile-scoped term requests now fail clearly instead of silently emitting junk defaults.</li>
+<li>Fixed multi-table semantic seeding so later tables use their own context instead of borrowing semantic context from table 1.</li>
+<li>Cleaned the release docs surface: refreshed the package description, fixed broken source-view links and vignette anchors, removed stale GPT-era remnants and orphaned assets, hid leaked internal helper pages from the public site, and rebuilt pkgdown from the integrated source.</li>
+<li>Bundled a matching Fraser Coho 2023–2024 starter dictionary plus provenance link so the installed package has a realistic context-file demo for the package-native LLM workflow.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.27" id="metasalmon-0027">metasalmon 0.0.27<a class="anchor" aria-label="anchor" href="#metasalmon-0027"></a></h2>
 <ul><li>Fixed a deterministic semantic-query bug for spawner-style measurement columns: the property-slot query no longer hard-codes <code>count</code> for columns like <code>natural_adult_spawners</code>, and now prefers <code>spawner abundance</code> so the shortlist is more semantically sensible before LLM review.</li>

@@ -34,7 +34,8 @@ edh_build_iso19139_xml(
 
 - output_path:
 
-  Optional file path to write XML.
+  Optional file path to write XML. Parent directories are created
+  automatically when needed.
 
 - file_identifier:
 

@@ -23,8 +23,10 @@ Character vector of recommended sources
 
 ``` r
 sources_for_role("unit")
+#> [1] "qudt" "nvs"  "ols" 
 # Returns: c("qudt", "nvs", "ols")
 
 sources_for_role("entity")
+#> [1] "smn"       "gcdfo"     "gbif"      "worms"     "bioportal" "ols"      
 # Returns: c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols")
 ```

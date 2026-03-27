@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -196,9 +196,10 @@ concept schemes) while preserving your original data structure.
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">suggested</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># In create_sdp(..., llm_assess = TRUE), LLM-selected IRIs are now written</span></span>
-<span><span class="co"># into the package as REVIEW-prefixed draft values for manual cleanup.</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark draft IRIs directly in the created package as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+<span><span class="co"># In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written</span></span>
+<span><span class="co"># back into the package as REVIEW-prefixed draft values for manual cleanup,</span></span>
+<span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark selected draft IRIs directly in the created package as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel. That includes selected table-level observation-unit matches written into <code>metadata/tables.csv</code>. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="recommended-workflow">Recommended workflow<a class="anchor" aria-label="anchor" href="#recommended-workflow"></a>
@@ -215,7 +216,7 @@ concept schemes) while preserving your original data structure.
 </ul>
 </li>
 <li>In Excel (or another spreadsheet editor), resolve every <code>REVIEW:</code>-prefixed IRI in the metadata files.</li>
-<li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code> (the reviewed-package wrapper around the canonical <code><a href="reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder).</li>
+<li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code> (the reviewed-package wrapper around the canonical <code><a href="reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder). It now refuses to rebuild while <code>REVIEW:</code> markers or unresolved dataset/table placeholder text remain.</li>
 <li>Re-run validation with <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code>.</li>
 <li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes.</li>
 </ol>

@@ -15,7 +15,7 @@ read_github_csv()."><meta property="og:image" content="https://dfo-pacific-scien
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,14 +95,18 @@ will be extracted from the URL).</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># Build a raw URL for a file on main branch</span></span>
-<span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pin to a specific release tag for reproducibility</span></span>
-<span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, ref <span class="op">=</span> <span class="st">"v1.2.0"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pin to a specific commit SHA</span></span>
-<span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, ref <span class="op">=</span> <span class="st">"abc1234def"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Build a raw URL for a file on main branch</span></span></span>
+<span class="r-in"><span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "https://raw.githubusercontent.com/myorg/myrepo/main/data/observations.csv"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pin to a specific release tag for reproducibility</span></span></span>
+<span class="r-in"><span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, ref <span class="op">=</span> <span class="st">"v1.2.0"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "https://raw.githubusercontent.com/myorg/myrepo/v1.2.0/data/observations.csv"</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pin to a specific commit SHA</span></span></span>
+<span class="r-in"><span><span class="fu">github_raw_url</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, ref <span class="op">=</span> <span class="st">"abc1234def"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "https://raw.githubusercontent.com/myorg/myrepo/abc1234def/data/observations.csv"</span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -13,7 +13,7 @@ the URL."><meta property="og:image" content="https://dfo-pacific-science.github.
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -110,39 +110,40 @@ a branch name like <code>"main"</code>, since branch contents can change over ti
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="co"># First, set up authentication (run once)</span></span>
-<span><span class="fu"><a href="ms_setup_github.html">ms_setup_github</a></span><span class="op">(</span>repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Read a CSV from the main branch</span></span>
-<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pin to a release tag for reproducibility</span></span>
-<span><span class="va">data_v1</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span>
-<span>  <span class="st">"data/observations.csv"</span>,</span>
-<span>  ref <span class="op">=</span> <span class="st">"v1.0.0"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pin to a specific commit</span></span>
-<span><span class="va">data_exact</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span>
-<span>  <span class="st">"data/observations.csv"</span>,</span>
-<span>  ref <span class="op">=</span> <span class="st">"a1b2c3d"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Pass arguments to read_csv</span></span>
-<span><span class="va">data_typed</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span>
-<span>  <span class="st">"data/observations.csv"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span>,</span>
-<span>  col_types <span class="op">=</span> <span class="st">"ccin"</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Read from a full GitHub URL</span></span>
-<span><span class="va">data_url</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span>
-<span>  <span class="st">"https://github.com/myorg/myrepo/blob/main/data/observations.csv"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># First, set up authentication (run once)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="ms_setup_github.html">ms_setup_github</a></span><span class="op">(</span>repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Read a CSV from the main branch</span></span></span>
+<span class="r-in"><span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span><span class="st">"data/observations.csv"</span>, repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pin to a release tag for reproducibility</span></span></span>
+<span class="r-in"><span><span class="va">data_v1</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"data/observations.csv"</span>,</span></span>
+<span class="r-in"><span>  ref <span class="op">=</span> <span class="st">"v1.0.0"</span>,</span></span>
+<span class="r-in"><span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pin to a specific commit</span></span></span>
+<span class="r-in"><span><span class="va">data_exact</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"data/observations.csv"</span>,</span></span>
+<span class="r-in"><span>  ref <span class="op">=</span> <span class="st">"a1b2c3d"</span>,</span></span>
+<span class="r-in"><span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Pass arguments to read_csv</span></span></span>
+<span class="r-in"><span><span class="va">data_typed</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"data/observations.csv"</span>,</span></span>
+<span class="r-in"><span>  repo <span class="op">=</span> <span class="st">"myorg/myrepo"</span>,</span></span>
+<span class="r-in"><span>  col_types <span class="op">=</span> <span class="st">"ccin"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Read from a full GitHub URL</span></span></span>
+<span class="r-in"><span><span class="va">data_url</span> <span class="op">&lt;-</span> <span class="fu">read_github_csv</span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"https://github.com/myorg/myrepo/blob/main/data/observations.csv"</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

@@ -4,7 +4,11 @@ Reads `metadata/dataset.csv` from an existing Salmon Data Package and
 writes a fresh `metadata-edh-hnap.xml` file using the canonical
 [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 builder. This is the preferred post-review rebuild path after metadata
-has been edited manually in Excel or another spreadsheet tool.
+has been edited manually in Excel or another spreadsheet tool. The
+helper refuses to rebuild when obvious review-state markers remain, such
+as `REVIEW:`-prefixed IRIs anywhere in the package metadata or
+unresolved `MISSING METADATA:` / `MISSING DESCRIPTION:` placeholders in
+`metadata/dataset.csv` or `metadata/tables.csv`.
 
 ## Usage
 
@@ -28,7 +32,8 @@ write_edh_xml_from_sdp(
 - output_path:
 
   Optional path for the regenerated XML. Defaults to
-  `metadata/metadata-edh-hnap.xml` inside `path`.
+  `metadata/metadata-edh-hnap.xml` inside `path`. Parent directories are
+  created automatically when needed.
 
 - overwrite:
 

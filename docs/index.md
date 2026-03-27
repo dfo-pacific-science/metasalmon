@@ -148,19 +148,21 @@ suggested <- suggest_semantics(
 suggestions <- attr(suggested, "semantic_suggestions")
 assessments <- attr(suggested, "semantic_llm_assessments")
 
-# In create_sdp(..., llm_assess = TRUE), LLM-selected IRIs are now written
-# into the package as REVIEW-prefixed draft values for manual cleanup.
+# In create_sdp(..., llm_assess = TRUE), selected LLM-reviewed IRIs are written
+# back into the package as REVIEW-prefixed draft values for manual cleanup,
+# including table-level observation-unit selections in metadata/tables.csv.
 ```
 
 This keeps
 [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
 as the canonical candidate generator. The LLM judges the retrieved
 shortlist, can use local README/markdown/PDF context to make better
-calls, and can mark draft IRIs directly in the created package as
-`REVIEW: <iri>` so you can confirm or replace them in Excel. Validation
-should only pass after the REVIEW prefix is removed. When you use
-`llm_provider = "openrouter"` without specifying `llm_model`,
-`metasalmon` now defaults to `openrouter/free`.
+calls, and can mark selected draft IRIs directly in the created package
+as `REVIEW: <iri>` so you can confirm or replace them in Excel. That
+includes selected table-level observation-unit matches written into
+`metadata/tables.csv`. Validation should only pass after the REVIEW
+prefix is removed. When you use `llm_provider = "openrouter"` without
+specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
 ## Recommended workflow
 
@@ -178,7 +180,8 @@ For the current package-native review path, use this order:
     reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the
     reviewed-package wrapper around the canonical
     [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
-    builder).
+    builder). It now refuses to rebuild while `REVIEW:` markers or
+    unresolved dataset/table placeholder text remain.
 6.  Re-run validation with
     `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
 7.  Publish/share only after the `REVIEW:` markers are gone and

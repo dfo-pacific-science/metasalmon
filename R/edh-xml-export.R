@@ -1129,7 +1129,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
   )
 }
 
-.ms_collect_review_placeholder_issues <- function(df, source_name, fields = names(df)) {
+.ms_collect_edh_placeholder_issues <- function(df, source_name, fields = names(df)) {
   if (!is.data.frame(df) || nrow(df) == 0) {
     return(tibble::tibble())
   }
@@ -1164,8 +1164,8 @@ edh_build_iso19139_xml <- function(dataset_meta,
 
 .ms_collect_edh_review_state_issues <- function(pkg) {
   purrr::list_rbind(list(
-    .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv"),
-    .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", fields = c("description", "observation_unit", "table_label")),
+    .ms_collect_edh_placeholder_issues(pkg$dataset, "metadata/dataset.csv"),
+    .ms_collect_edh_placeholder_issues(pkg$tables, "metadata/tables.csv", fields = c("description", "observation_unit", "table_label")),
     .ms_collect_review_iri_issues(pkg$dataset, source_name = "metadata/dataset.csv"),
     .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv"),
     .ms_collect_review_iri_issues(pkg$dictionary, source_name = "metadata/column_dictionary.csv"),

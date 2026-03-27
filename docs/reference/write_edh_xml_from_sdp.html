@@ -3,11 +3,17 @@
 fresh metadata-edh-hnap.xml file using the canonical
 edh_build_hnap_xml() builder. This is the preferred post-review rebuild
 path after metadata has been edited manually in Excel or another spreadsheet
-tool."><meta property="og:description" content="Reads metadata/dataset.csv from an existing Salmon Data Package and writes a
+tool. The helper refuses to rebuild when obvious review-state markers remain,
+such as REVIEW:-prefixed IRIs anywhere in the package metadata or
+unresolved MISSING METADATA: / MISSING DESCRIPTION: placeholders in
+metadata/dataset.csv or metadata/tables.csv."><meta property="og:description" content="Reads metadata/dataset.csv from an existing Salmon Data Package and writes a
 fresh metadata-edh-hnap.xml file using the canonical
 edh_build_hnap_xml() builder. This is the preferred post-review rebuild
 path after metadata has been edited manually in Excel or another spreadsheet
-tool."><meta property="og:image" content="https://dfo-pacific-science.github.io/metasalmon/logo.png"></head><body>
+tool. The helper refuses to rebuild when obvious review-state markers remain,
+such as REVIEW:-prefixed IRIs anywhere in the package metadata or
+unresolved MISSING METADATA: / MISSING DESCRIPTION: placeholders in
+metadata/dataset.csv or metadata/tables.csv."><meta property="og:image" content="https://dfo-pacific-science.github.io/metasalmon/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -15,7 +21,7 @@ tool."><meta property="og:image" content="https://dfo-pacific-science.github.io/
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +59,10 @@ tool."><meta property="og:image" content="https://dfo-pacific-science.github.io/
 fresh <code>metadata-edh-hnap.xml</code> file using the canonical
 <code><a href="edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder. This is the preferred post-review rebuild
 path after metadata has been edited manually in Excel or another spreadsheet
-tool.</p>
+tool. The helper refuses to rebuild when obvious review-state markers remain,
+such as <code>REVIEW:</code>-prefixed IRIs anywhere in the package metadata or
+unresolved <code>MISSING METADATA:</code> / <code>MISSING DESCRIPTION:</code> placeholders in
+<code>metadata/dataset.csv</code> or <code>metadata/tables.csv</code>.</p>
     </div>
 
     <div class="section level2">
@@ -78,7 +87,8 @@ tool.</p>
 
 <dt id="arg-output-path">output_path<a class="anchor" aria-label="anchor" href="#arg-output-path"></a></dt>
 <dd><p>Optional path for the regenerated XML. Defaults to
-<code>metadata/metadata-edh-hnap.xml</code> inside <code>path</code>.</p></dd>
+<code>metadata/metadata-edh-hnap.xml</code> inside <code>path</code>. Parent directories are
+created automatically when needed.</p></dd>
 
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
@@ -108,17 +118,18 @@ elements <code>xml</code> and <code>path</code>.</p>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span>
-<span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_sdp.html">create_sdp</a></span><span class="op">(</span></span>
-<span>  <span class="va">mtcars</span>,</span>
-<span>  dataset_id <span class="op">=</span> <span class="st">"demo-1"</span>,</span>
-<span>  table_id <span class="op">=</span> <span class="st">"counts"</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># ...edit metadata/dataset.csv in Excel...</span></span>
-<span><span class="fu">write_edh_xml_from_sdp</span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
-<span><span class="op">}</span> <span class="co"># }</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_sdp.html">create_sdp</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">mtcars</span>,</span></span>
+<span class="r-in"><span>  dataset_id <span class="op">=</span> <span class="st">"demo-1"</span>,</span></span>
+<span class="r-in"><span>  table_id <span class="op">=</span> <span class="st">"counts"</span>,</span></span>
+<span class="r-in"><span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># ...edit metadata/dataset.csv in Excel...</span></span></span>
+<span class="r-in"><span><span class="fu">write_edh_xml_from_sdp</span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
