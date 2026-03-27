@@ -376,7 +376,7 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
   call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
   expect_true(any(call_df$role == "unit" & call_df$query == "count"))
   expect_true(any(call_df$role == "variable" & call_df$query == "spawner abundance"))
-  expect_true(any(call_df$role == "property" & call_df$query == "count"))
+  expect_true(any(call_df$role == "property" & call_df$query == "spawner abundance"))
   expect_true(any(call_df$role == "constraint" & call_df$query == "natural origin"))
   expect_true(any(call_df$role == "entity" & call_df$query == "population"))
 })
@@ -417,8 +417,9 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
 
   call_df <- tibble::as_tibble(purrr::map_dfr(calls, tibble::as_tibble))
   expect_true(any(call_df$role == "variable" & call_df$query == "adult spawner count"))
-  expect_true(any(call_df$role == "property" & call_df$query == "count"))
+  expect_true(any(call_df$role == "property" & call_df$query == "spawner abundance"))
   expect_true(any(call_df$role == "variable" & call_df$query == "count"))
+  expect_true(any(call_df$role == "property" & call_df$query == "count"))
   expect_true(any(call_df$role == "unit" & call_df$query == "count"))
 })
 

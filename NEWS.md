@@ -1,3 +1,8 @@
+metasalmon 0.0.27
+----------------
+
+- Fixed a deterministic semantic-query bug for spawner-style measurement columns: the property-slot query no longer hard-codes `count` for columns like `natural_adult_spawners`, and now prefers `spawner abundance` so the shortlist is more semantically sensible before LLM review.
+
 metasalmon 0.0.26
 ----------------
 

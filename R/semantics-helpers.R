@@ -457,7 +457,7 @@ suggest_semantics <- function(df,
             if (grepl("adult", base_lower)) return("adult spawner count")
             return("spawner abundance")
           }
-          return("count")
+          return("spawner abundance")
         }
 
         if (grepl("\\babundance\\b", base_lower)) {
