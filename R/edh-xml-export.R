@@ -1126,3 +1126,89 @@ edh_build_iso19139_xml <- function(dataset_meta,
     date_stamp = date_stamp
   )
 }
+
+#' Rebuild HNAP-aware EDH XML from a reviewed Salmon Data Package
+#'
+#' Reads `metadata/dataset.csv` from an existing Salmon Data Package and writes a
+#' fresh `metadata-edh-hnap.xml` file using [edh_build_iso19139_xml()]. This is
+#' intended for the post-review step after metadata has been edited manually in
+#' Excel or another spreadsheet tool.
+#'
+#' @param path Character path to the Salmon Data Package directory.
+#' @param output_path Optional path for the regenerated XML. Defaults to
+#'   `metadata/metadata-edh-hnap.xml` inside `path`.
+#' @param overwrite Logical; if `FALSE`, error when `output_path` already
+#'   exists. Default is `TRUE`.
+#' @param language ISO 639-2/T language code for the primary metadata language
+#'   (default: `"eng"`).
+#' @param file_identifier Optional metadata file identifier forwarded to
+#'   [edh_build_iso19139_xml()].
+#' @param date_stamp Metadata date stamp forwarded to
+#'   [edh_build_iso19139_xml()].
+#'
+#' @return Invisibly returns the same list as [edh_build_iso19139_xml()], with
+#'   elements `xml` and `path`.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' pkg_path <- create_sdp(
+#'   mtcars,
+#'   dataset_id = "demo-1",
+#'   table_id = "counts",
+#'   overwrite = TRUE
+#' )
+#'
+#' # ...edit metadata/dataset.csv in Excel...
+#' write_edh_xml_from_sdp(pkg_path)
+#' }
+write_edh_xml_from_sdp <- function(path,
+                                   output_path = NULL,
+                                   overwrite = TRUE,
+                                   language = "eng",
+                                   file_identifier = NULL,
+                                   date_stamp = Sys.Date()) {
+  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  if (!dir.exists(path)) {
+    cli::cli_abort("Salmon Data Package directory does not exist: {.path {path}}")
+  }
+
+  dataset_path <- file.path(path, "metadata", "dataset.csv")
+  if (!file.exists(dataset_path)) {
+    cli::cli_abort(
+      c(
+        "Can't rebuild EDH XML because {.file metadata/dataset.csv} is missing.",
+        "i" = "Expected file: {.path {dataset_path}}"
+      )
+    )
+  }
+
+  dataset_meta <- readr::read_csv(dataset_path, show_col_types = FALSE, progress = FALSE)
+  if (nrow(dataset_meta) != 1L) {
+    cli::cli_abort(
+      "Expected {.file metadata/dataset.csv} to contain exactly one row, found {.val {nrow(dataset_meta)}}."
+    )
+  }
+
+  if (is.null(output_path)) {
+    output_path <- file.path(path, "metadata", "metadata-edh-hnap.xml")
+  }
+  output_path <- normalizePath(output_path, winslash = "/", mustWork = FALSE)
+
+  if (file.exists(output_path) && !isTRUE(overwrite)) {
+    cli::cli_abort(
+      "EDH XML already exists at {.path {output_path}}. Set {.code overwrite = TRUE} to replace it."
+    )
+  }
+
+  result <- edh_build_iso19139_xml(
+    dataset_meta = dataset_meta,
+    output_path = output_path,
+    file_identifier = file_identifier,
+    language = language,
+    date_stamp = date_stamp
+  )
+
+  cli::cli_alert_success("Rebuilt EDH metadata XML at {.path {output_path}}")
+  invisible(result)
+}

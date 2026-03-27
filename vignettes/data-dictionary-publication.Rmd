@@ -151,6 +151,16 @@ including `created`, `modified`, `status`, `distribution_url`,
 If you are creating the package in one shot, `create_sdp(..., include_edh_xml = TRUE)`
 now writes the same XML automatically to `metadata/metadata-edh-hnap.xml`.
 
+After manual review/editing of `metadata/dataset.csv`, regenerate the XML from
+the finalized package with:
+
+```{r eval=FALSE}
+write_edh_xml_from_sdp(pkg_path)
+```
+
+That post-review rebuild is the preferred path when the first-pass package gets
+edited in Excel before EDH submission.
+
 Validate and enrich the XML output against your local EDH profile before
 production upload.
 

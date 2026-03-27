@@ -228,3 +228,64 @@ test_that("edh_build_iso19139_xml remains a deprecated compatibility alias", {
   )
   expect_true(file.exists(out))
 })
+
+test_that("write_edh_xml_from_sdp rebuilds XML from edited dataset metadata", {
+  pkg_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L, 2L)))
+  pkg_path <- create_sdp(
+    resources,
+    path = file.path(pkg_dir, "pkg"),
+    dataset_id = "edh-rebuild-demo",
+    table_id = "main",
+    seed_semantics = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  )
+
+  dataset_path <- file.path(pkg_path, "metadata", "dataset.csv")
+  dataset_meta <- readr::read_csv(dataset_path, show_col_types = FALSE)
+  dataset_meta$title <- "Reviewed Fraser Coho Metadata"
+  dataset_meta$description <- "Reviewed description from Excel workflow"
+  readr::write_csv(dataset_meta, dataset_path, na = "")
+
+  xml_path <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
+  expect_false(file.exists(xml_path))
+
+  result <- write_edh_xml_from_sdp(pkg_path)
+
+  expect_true(file.exists(xml_path))
+  expect_true(is.list(result))
+  xml <- xml2::read_xml(xml_path)
+  ns <- xml2::xml_ns(xml)
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:CI_Citation/gmd:title/gco:CharacterString", ns)),
+    "Reviewed Fraser Coho Metadata"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(xml, ".//gmd:abstract/gco:CharacterString", ns)),
+    "Reviewed description from Excel workflow"
+  )
+})
+
+test_that("write_edh_xml_from_sdp respects overwrite flag", {
+  pkg_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))
+  pkg_path <- create_sdp(
+    resources,
+    path = file.path(pkg_dir, "pkg-overwrite"),
+    dataset_id = "edh-rebuild-overwrite",
+    table_id = "main",
+    seed_semantics = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  )
+
+  xml_path <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
+  write_edh_xml_from_sdp(pkg_path)
+  expect_true(file.exists(xml_path))
+
+  expect_error(
+    write_edh_xml_from_sdp(pkg_path, overwrite = FALSE),
+    "overwrite = TRUE"
+  )
+})
