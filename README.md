@@ -64,7 +64,11 @@ pkg_path <- create_sdp(
 
 The default quickstart and get-started flow use `nuseds-fraser-coho-2023-2024.csv`, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.
 
+Open Government Canada record: <https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6>
+
 A smaller `nuseds-fraser-coho-sample.csv` file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.
+
+The package also now ships a matching starter dictionary for the fuller example (`system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")`), which is useful when you want a ready-made context file for the package-native LLM review path.
 
 See `example-data-README.md` for the record/resource URLs, row counts, licensing note, and the `data-raw/` script that reproduces the 2023-2024 example.
 
@@ -79,7 +83,11 @@ To continue:
 If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:
 
 ```r
-context_files <- c("README.md", "methods-report.pdf")
+context_files <- c(
+  file.path(pkg_path, "metadata", "column_dictionary.csv"),
+  "README.md",
+  "methods-report.pdf"
+)
 
 suggested <- suggest_semantics(
   df = fraser_coho,

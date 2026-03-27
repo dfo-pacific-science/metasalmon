@@ -160,7 +160,9 @@ concept schemes) while preserving your original data structure.
 <h2 id="bundled-nuseds-example">Bundled NuSEDS Example<a class="anchor" aria-label="anchor" href="#bundled-nuseds-example"></a>
 </h2>
 <p>The default quickstart and get-started flow use <code>nuseds-fraser-coho-2023-2024.csv</code>, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.</p>
+<p>Open Government Canada record: <a href="https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6" class="external-link uri">https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6</a></p>
 <p>A smaller <code>nuseds-fraser-coho-sample.csv</code> file is still bundled for tiny smoke tests, but it is no longer the default walkthrough dataset.</p>
+<p>The package also now ships a matching starter dictionary for the fuller example (<code>system.file("extdata", "nuseds-fraser-coho-2023-2024-column_dictionary.csv", package = "metasalmon")</code>), which is useful when you want a ready-made context file for the package-native LLM review path.</p>
 <p>See <code>example-data-README.md</code> for the record/resource URLs, row counts, licensing note, and the <code>data-raw/</code> script that reproduces the 2023-2024 example.</p>
 <p>To continue:</p>
 <ul>
@@ -177,7 +179,11 @@ concept schemes) while preserving your original data structure.
 </h2>
 <p>If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"README.md"</span>, <span class="st">"methods-report.pdf"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"column_dictionary.csv"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"README.md"</span>,</span>
+<span>  <span class="st">"methods-report.pdf"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
 <span>  df <span class="op">=</span> <span class="va">fraser_coho</span>,</span>

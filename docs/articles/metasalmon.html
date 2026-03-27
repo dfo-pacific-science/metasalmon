@@ -108,8 +108,14 @@ mention when a newer <code>metasalmon</code> release is available; set
 <p>This quickstart uses the bundled
 <code>nuseds-fraser-coho-2023-2024.csv</code> example, a 173-row Fraser
 coho slice derived from the official Open Government Canada Fraser and
-BC Interior workbook. See <code>example-data-README.md</code> in the
-bundled <code>extdata</code> folder for provenance and licensing.</p>
+BC Interior workbook.</p>
+<p>Open Government Canada record: <a href="https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6" class="external-link uri">https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6</a></p>
+<p>See <code>example-data-README.md</code> in the bundled
+<code>extdata</code> folder for provenance and licensing. The package
+also ships a matching starter dictionary at
+<code>nuseds-fraser-coho-2023-2024-column_dictionary.csv</code> if you
+want a ready-made context file for the package-native LLM review
+path.</p>
 <p>If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use
 the one-shot path:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -142,6 +148,10 @@ found)</li>
 <li>
 <code>data/*.csv</code> resource files</li>
 </ul>
+<p>That <code>metadata/column_dictionary.csv</code> file is also a
+perfectly reasonable <code>llm_context_files</code> input when you want
+the LLM review step to reason from the package itself instead of a
+separate methods note.</p>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
 auto-fills the top-ranked <strong>column-level</strong> suggestions into
 missing dictionary fields (<code>term_iri</code>,

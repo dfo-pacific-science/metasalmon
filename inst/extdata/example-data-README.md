@@ -46,3 +46,7 @@ fastest built-in demo. Its bundled example metadata continues to live in:
 Use the tiny sample when you want the quickest end-to-end walkthrough. Use the
 173-row official slice when you want something closer to real Fraser coho data
 without shipping the full NuSEDS workbook.
+
+The fuller example also ships with a matching starter dictionary,
+`nuseds-fraser-coho-2023-2024-column_dictionary.csv`, so you can use it
+directly as an LLM context file or as a seed for manual review.

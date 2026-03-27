@@ -45,7 +45,11 @@ list.files(pkg_path, recursive = TRUE)
 
 If `path` is omitted, `create_sdp()` writes to your working directory using a default folder name like `fraser-coho-2023-2024-sdp`. In interactive use it can also mention when a newer `metasalmon` release is available; set `check_updates = FALSE` to skip that check.
 
-This quickstart uses the bundled `nuseds-fraser-coho-2023-2024.csv` example, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook. See `example-data-README.md` in the bundled `extdata` folder for provenance and licensing.
+This quickstart uses the bundled `nuseds-fraser-coho-2023-2024.csv` example, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.
+
+Open Government Canada record: <https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6>
+
+See `example-data-README.md` in the bundled `extdata` folder for provenance and licensing. The package also ships a matching starter dictionary at `nuseds-fraser-coho-2023-2024-column_dictionary.csv` if you want a ready-made context file for the package-native LLM review path.
 
 If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the one-shot path:
 
@@ -72,6 +76,8 @@ Open the output folder and review these files:
 - `metadata/column_dictionary.csv`
 - `metadata/codes.csv` (when present)
 - `data/*.csv` resource files
+
+That `metadata/column_dictionary.csv` file is also a perfectly reasonable `llm_context_files` input when you want the LLM review step to reason from the package itself instead of a separate methods note.
 
 `create_sdp()` seeds semantic suggestions by default and auto-fills the top-ranked **column-level** suggestions into missing dictionary fields (`term_iri`, `property_iri`, `entity_iri`, `unit_iri`, etc.). It also auto-fills top table-level observation-unit suggestions into missing `tables.csv$observation_unit_iri` values (and labels when blank). It does not overwrite existing non-empty semantic values. Code-level suggestions default to factor and low-cardinality character source columns; use `semantic_code_scope = "all"` if you want broader code-level seeding.
 

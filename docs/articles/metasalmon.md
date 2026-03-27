@@ -40,9 +40,16 @@ to skip that check.
 
 This quickstart uses the bundled `nuseds-fraser-coho-2023-2024.csv`
 example, a 173-row Fraser coho slice derived from the official Open
-Government Canada Fraser and BC Interior workbook. See
-`example-data-README.md` in the bundled `extdata` folder for provenance
-and licensing.
+Government Canada Fraser and BC Interior workbook.
+
+Open Government Canada record:
+<https://open.canada.ca/data/en/dataset/c48669a3-045b-400d-b730-48aafe8c5ee6>
+
+See `example-data-README.md` in the bundled `extdata` folder for
+provenance and licensing. The package also ships a matching starter
+dictionary at `nuseds-fraser-coho-2023-2024-column_dictionary.csv` if
+you want a ready-made context file for the package-native LLM review
+path.
 
 If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the
 one-shot path:
@@ -75,6 +82,10 @@ Open the output folder and review these files:
 - `metadata/column_dictionary.csv`
 - `metadata/codes.csv` (when present)
 - `data/*.csv` resource files
+
+That `metadata/column_dictionary.csv` file is also a perfectly
+reasonable `llm_context_files` input when you want the LLM review step
+to reason from the package itself instead of a separate methods note.
 
 [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
 seeds semantic suggestions by default and auto-fills the top-ranked

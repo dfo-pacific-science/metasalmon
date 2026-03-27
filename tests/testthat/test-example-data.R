@@ -10,19 +10,23 @@ example_extdata_path <- function(name) {
 test_that("bundled Fraser coho examples are available and sized as documented", {
   tiny_path <- example_extdata_path("nuseds-fraser-coho-sample.csv")
   fuller_path <- example_extdata_path("nuseds-fraser-coho-2023-2024.csv")
+  fuller_dict_path <- example_extdata_path("nuseds-fraser-coho-2023-2024-column_dictionary.csv")
   provenance_path <- example_extdata_path("example-data-README.md")
 
   expect_true(file.exists(tiny_path))
   expect_true(file.exists(fuller_path))
+  expect_true(file.exists(fuller_dict_path))
   expect_true(file.exists(provenance_path))
 
   tiny <- readr::read_csv(tiny_path, show_col_types = FALSE)
   fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)
+  fuller_dict <- readr::read_csv(fuller_dict_path, show_col_types = FALSE)
 
   expect_equal(nrow(tiny), 30)
   expect_equal(nrow(fuller), 173)
   expect_equal(range(fuller$ANALYSIS_YR, na.rm = TRUE), c(2023, 2024))
   expect_true("NATURAL_ADULT_SPAWNERS" %in% names(fuller))
+  expect_setequal(fuller_dict$column_name, names(fuller))
 })
 
 test_that("infer_dictionary treats key fuller Fraser coho fields as measurement/temporal", {
