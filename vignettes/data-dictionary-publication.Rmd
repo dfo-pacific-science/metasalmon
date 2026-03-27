@@ -17,15 +17,19 @@ knitr::opts_chunk$set(
 
 # Overview
 
-This guide follows the 5-Minute Quickstart and focuses on the **publishing hardening** steps.
+This guide follows the 5-Minute Quickstart and focuses on the **manual package assembly** path.
 If you have not yet generated a starter dictionary yet, start with the
 [5-Minute Quickstart](metasalmon.html) first.
+
+If you already created a package with `create_sdp()`, reviewed it in Excel, and
+now need the follow-on publication workflow, use
+[After Excel Review: Finalize and Publish Your Package](post-review-package-publication.html).
 
 When all of the pieces are ready, `metasalmon` writes files matching the
 Salmon Data Package specification so you can upload or hand the folder to
 someone else with confidence. `create_sdp()` is the main one-shot path; this
-article covers the more explicit, manual workflow where you assemble the
-metadata tables yourself and then call `write_salmon_datapackage()`.
+article covers the more explicit workflow where you assemble the metadata
+tables yourself and then call `write_salmon_datapackage()`.
 
 ## 1) Start with your data
 
@@ -215,5 +219,6 @@ Terms from Wikidata are flagged with `alignment_only = TRUE` and ranked lower.
 ## Next steps
 
 - See the "How It Fits Together" section in the README for a visual map of how the components interact.
+- If you are continuing from a reviewed `create_sdp()` package, follow [After Excel Review: Finalize and Publish Your Package](post-review-package-publication.html).
 - Read the [Linking to Standard Vocabularies](reusing-standards-salmon-data-terms.html) guide when you want to align your dictionary with published vocabularies.
 - For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page.

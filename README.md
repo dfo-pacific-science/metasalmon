@@ -75,7 +75,8 @@ See `example-data-README.md` for the record/resource URLs, row counts, licensing
 To continue:
 
 - [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) — create the full package with metadata and export it.
-- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — end-to-end publication checklist.
+- [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) — reload the reviewed package, detect unresolved ontology gaps, route shared vs DFO-specific requests, and finish publication.
+- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — manual package assembly path when you are not continuing from `create_sdp()`.
 - [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
 ## Package-native LLM semantic review (optional)
@@ -119,20 +120,22 @@ For the current package-native review path, use this order:
 6. If no candidate fits, request a new term instead of forcing a bad match:
    - shared cross-organization/domain terms -> <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
    - DFO-specific policy/operations terms -> <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
-7. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)`.
-8. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
-9. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder (or a zip of it), not individual files.
+7. Follow the [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.
+8. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder). It now refuses to rebuild while `REVIEW:` markers or unresolved dataset/table placeholder text remain.
+9. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
+10. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder (or a zip of it), not individual files.
 
-In other words: **create -> review in Excel -> remove `REVIEW:` markers -> rebuild EDH XML if needed -> validate -> publish**.
+In other words: **create -> review in Excel -> reload/check gaps -> remove `REVIEW:` markers -> rebuild EDH XML if needed -> validate -> publish**.
 
 ## Who Is This For?
 
 | If you are...                           | Start here                                                                                                                |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| A biologist who wants to share data     | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)                         |
-| Curious how it works                    | [How It Fits Together](#how-it-fits-together)                                                                             |
+| A biologist who wants to share data     | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)                            |
+| Finished Excel review and need to publish | [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)      |
+| Curious how it works                    | [How It Fits Together](#how-it-fits-together)                                                                                |
 | A data steward standardizing datasets   | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
-| Reading CSVs from private GitHub repos  | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html)                    |
+| Reading CSVs from private GitHub repos  | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html)                       |
 
 ## Video Walkthrough
 
@@ -214,6 +217,7 @@ The high-level flow is:
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
+- **Post-review publication helpers** let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and separate shared SMN requests from DFO/program-specific follow-up.
 - **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus `README-review.txt` / `semantic_suggestions.csv`, not an external prompt-export workflow.
 
 <script>

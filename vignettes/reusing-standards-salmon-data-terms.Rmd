@@ -139,6 +139,7 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
   - `detect_semantic_term_gaps()` identifies candidates where SMN is missing but fallback sources found useful matches.
   - `render_ontology_term_request()` lets you choose shared SMN vs profile-specific requests and generate ready-to-post issue text.
   - `submit_term_request_issues()` creates GitHub issues (dry-run first) against the ontology request template.
+  - The dedicated [After Excel Review](post-review-package-publication.html) guide shows how to use those helpers on a reviewed package and translate the generic `profile` bucket into the practical DFO-specific routing decision.
 
 ## Building vocabulary-aware code lists
 
@@ -164,5 +165,6 @@ Treat the suggestions as a starting point, not gospel. The helper above is just 
 ## Next steps
 
 - See the "How It Fits Together" section in the README for context on how the dictionary, ontology, and package-native review workflow fit together.
-- Follow the [Publishing Data Packages](data-dictionary-publication.html) guide when you finalize your metadata before publishing.
+- Follow [After Excel Review: Finalize and Publish Your Package](post-review-package-publication.html) when you are continuing from a reviewed package and need the concrete post-review publication path.
+- Follow the [Publishing Data Packages](data-dictionary-publication.html) guide when you are assembling metadata tables manually before publishing.
 - For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page when you want help reviewing shortlisted terms.

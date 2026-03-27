@@ -130,6 +130,7 @@ articles:
     navbar: ~
     desc: "Step-by-step guides for common workflows"
     contents:
+      - post-review-package-publication
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
       - github-csv-access

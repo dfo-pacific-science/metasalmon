@@ -125,19 +125,28 @@ IRI into `metadata/column_dictionary.csv`.
 
 ## Finalize
 
-After Excel edits, save the metadata back to CSV, share the whole folder
-(or a zip of the whole folder) when you hand it to someone else, then
-run validation again before publishing:
+After Excel edits, save the metadata back to CSV and reload the package
+in R:
 
 ``` r
 
 pkg <- read_salmon_datapackage(pkg_path)
-validate_dictionary(pkg$dictionary)
-validate_semantics(pkg$dictionary)
+validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```
 
-For a staged, fully explicit workflow (manual artifact inference and
-controlled semantic merges), see the publication guide:
+That review-state validation is the first follow-up check. For the full
+post-review workflow — reloading the package, detecting unresolved
+semantic gaps, deciding shared salmon-domain vs DFO-specific routing,
+drafting term requests, rebuilding EDH XML if needed, and only then
+running strict final validation — continue with:
+
+- [After Excel Review: Finalize and Publish Your
+  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+
+For a staged, fully explicit workflow where you assemble metadata tables
+manually instead of continuing from a reviewed
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+package, use:
 
 - [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)

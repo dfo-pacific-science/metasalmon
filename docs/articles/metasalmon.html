@@ -39,7 +39,8 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
+<li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
+    <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
@@ -194,15 +195,23 @@ copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
 <div class="section level2">
 <h2 id="finalize">Finalize<a class="anchor" aria-label="anchor" href="#finalize"></a>
 </h2>
-<p>After Excel edits, save the metadata back to CSV, share the whole
-folder (or a zip of the whole folder) when you hand it to someone else,
-then run validation again before publishing:</p>
+<p>After Excel edits, save the metadata back to CSV and reload the
+package in R:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span>
-<span><span class="fu"><a href="../reference/validate_semantics.html">validate_semantics</a></span><span class="op">(</span><span class="va">pkg</span><span class="op">$</span><span class="va">dictionary</span><span class="op">)</span></span></code></pre></div>
-<p>For a staged, fully explicit workflow (manual artifact inference and
-controlled semantic merges), see the publication guide:</p>
+<span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+<p>That review-state validation is the first follow-up check. For the
+full post-review workflow — reloading the package, detecting unresolved
+semantic gaps, deciding shared salmon-domain vs DFO-specific routing,
+drafting term requests, rebuilding EDH XML if needed, and only then
+running strict final validation — continue with:</p>
+<ul>
+<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After
+Excel Review: Finalize and Publish Your Package</a></li>
+</ul>
+<p>For a staged, fully explicit workflow where you assemble metadata
+tables manually instead of continuing from a reviewed
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> package, use:</p>
 <ul>
 <li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing
 Data Packages</a></li>

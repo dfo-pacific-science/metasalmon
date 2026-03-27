@@ -9,6 +9,8 @@
 
 Step-by-step guides for common workflows
 
+- [After Excel Review: Finalize and Publish Your
+  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md):
 - [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md):
 - [Linking to Standard

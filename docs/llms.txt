@@ -116,9 +116,14 @@ To continue:
 - [5-Minute
   Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
   — create the full package with metadata and export it.
+- [After Excel
+  Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+  — reload the reviewed package, detect unresolved ontology gaps, route
+  shared vs DFO-specific requests, and finish publication.
 - [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
-  — end-to-end publication checklist.
+  — manual package assembly path when you are not continuing from
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md).
 - [Linking to Standard
   Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
   — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
@@ -176,15 +181,19 @@ For the current package-native review path, use this order:
     - `README-review.txt`
 4.  In Excel (or another spreadsheet editor), resolve every
     `REVIEW:`-prefixed IRI in the metadata files.
-5.  If you are preparing EDH metadata, regenerate the XML from the
+5.  Follow the [After Excel
+    Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+    guide to reload the package, detect unresolved semantic gaps, and
+    produce a concrete shared-vs-DFO term request list.
+6.  If you are preparing EDH metadata, regenerate the XML from the
     reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the
     reviewed-package wrapper around the canonical
     [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
     builder). It now refuses to rebuild while `REVIEW:` markers or
     unresolved dataset/table placeholder text remain.
-6.  Re-run validation with
+7.  Re-run validation with
     `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
-7.  Publish/share only after the `REVIEW:` markers are gone and
+8.  Publish/share only after the `REVIEW:` markers are gone and
     validation passes.
 
 In other words: **create -\> review in Excel -\> remove `REVIEW:`
@@ -195,6 +204,7 @@ markers -\> rebuild EDH XML if needed -\> validate -\> publish**.
 | If you are… | Start here |
 |----|----|
 | A biologist who wants to share data | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) |
+| Finished Excel review and need to publish | [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) |
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
 | A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
 | Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html) |
@@ -341,6 +351,9 @@ The high-level flow is:
 - **The Salmon Domain Ontology and published vocabularies** supply
   `term_iri`/`entity_iri` links that describe what each column and row
   represents.
+- **Post-review publication helpers** let you reopen the package, re-run
+  semantic checks, detect unresolved ontology gaps, and separate shared
+  SMN requests from DFO/program-specific follow-up.
 - **[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
   consumes the metadata, dictionary, codes, and data to write the files
   in the Salmon Data Package format; the preferred review loop is now
@@ -554,6 +567,8 @@ Version and update helpers
 
 Step-by-step guides for common workflows
 
+- [After Excel Review: Finalize and Publish Your
+  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md):
 - [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md):
 - [Linking to Standard

@@ -48,7 +48,8 @@ concept schemes) while preserving your original data structure.
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
+<li><a class="dropdown-item" href="articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
+    <li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
     <li><a class="dropdown-item" href="articles/glossary.html">Glossary of Terms</a></li>
@@ -169,7 +170,9 @@ concept schemes) while preserving your original data structure.
 <li>
 <a href="https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a> — create the full package with metadata and export it.</li>
 <li>
-<a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing Data Packages</a> — end-to-end publication checklist.</li>
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a> — reload the reviewed package, detect unresolved ontology gaps, route shared vs DFO-specific requests, and finish publication.</li>
+<li>
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing Data Packages</a> — manual package assembly path when you are not continuing from <code><a href="reference/create_sdp.html">create_sdp()</a></code>.</li>
 <li>
 <a href="https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
 </ul>
@@ -216,6 +219,7 @@ concept schemes) while preserving your original data structure.
 </ul>
 </li>
 <li>In Excel (or another spreadsheet editor), resolve every <code>REVIEW:</code>-prefixed IRI in the metadata files.</li>
+<li>Follow the <a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a> guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term request list.</li>
 <li>If you are preparing EDH metadata, regenerate the XML from the reviewed package with <code>write_edh_xml_from_sdp(pkg_path)</code> (the reviewed-package wrapper around the canonical <code><a href="reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> builder). It now refuses to rebuild while <code>REVIEW:</code> markers or unresolved dataset/table placeholder text remain.</li>
 <li>Re-run validation with <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code>.</li>
 <li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes.</li>
@@ -238,6 +242,10 @@ concept schemes) while preserving your original data structure.
 <tr>
 <td>A biologist who wants to share data</td>
 <td><a href="https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a></td>
+</tr>
+<tr>
+<td>Finished Excel review and need to publish</td>
+<td><a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After Excel Review</a></td>
 </tr>
 <tr>
 <td>Curious how it works</td>
@@ -345,6 +353,8 @@ concept schemes) while preserving your original data structure.
 <strong>Dataset/table metadata</strong> fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.</li>
 <li>
 <strong>The Salmon Domain Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
+<li>
+<strong>Post-review publication helpers</strong> let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and separate shared SMN requests from DFO/program-specific follow-up.</li>
 <li>
 <strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus <code>README-review.txt</code> / <code>semantic_suggestions.csv</code>, not an external prompt-export workflow.</li>
 </ul>

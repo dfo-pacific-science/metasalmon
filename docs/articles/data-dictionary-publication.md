@@ -2,17 +2,23 @@
 
 ## Overview
 
-This guide follows the 5-Minute Quickstart and focuses on the
-**publishing hardening** steps. If you have not yet generated a starter
+This guide follows the 5-Minute Quickstart and focuses on the **manual
+package assembly** path. If you have not yet generated a starter
 dictionary yet, start with the [5-Minute
 Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
 first.
+
+If you already created a package with
+[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
+reviewed it in Excel, and now need the follow-on publication workflow,
+use [After Excel Review: Finalize and Publish Your
+Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md).
 
 When all of the pieces are ready, `metasalmon` writes files matching the
 Salmon Data Package specification so you can upload or hand the folder
 to someone else with confidence.
 [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
-is the main one-shot path; this article covers the more explicit, manual
+is the main one-shot path; this article covers the more explicit
 workflow where you assemble the metadata tables yourself and then call
 [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md).
 
@@ -250,6 +256,10 @@ lower.
 
 - See the “How It Fits Together” section in the README for a visual map
   of how the components interact.
+- If you are continuing from a reviewed
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  package, follow [After Excel Review: Finalize and Publish Your
+  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md).
 - Read the [Linking to Standard
   Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
   guide when you want to align your dictionary with published

@@ -1,0 +1,315 @@
+---
+title: "After Excel Review: Finalize and Publish Your Package"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{After Excel Review: Finalize and Publish Your Package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+# Overview
+
+This guide starts **after** you already ran `create_sdp()`, opened the package in
+Excel (or another spreadsheet editor), and saved your reviewed metadata back to
+CSV.
+
+If you have not created the package yet, start with the
+[5-Minute Quickstart](metasalmon.html).
+
+If you want to assemble `dataset.csv`, `tables.csv`, and
+`column_dictionary.csv` manually instead of continuing from a reviewed package,
+use [Publishing Data Packages](data-dictionary-publication.html).
+
+This is the post-review path:
+
+1. reload the reviewed package from disk;
+2. validate the reviewed metadata and data structure;
+3. re-run semantic suggestions only for fields that are still unresolved;
+4. detect likely ontology gaps;
+5. decide whether each missing term belongs in the shared salmon-domain
+   ontology or the DFO-specific bucket;
+6. produce a concrete list of term requests to file;
+7. rebuild EDH XML if needed; and
+8. run strict final validation before publishing.
+
+## 1) Reload the reviewed package
+
+```{r}
+library(metasalmon)
+
+pkg_path <- "fraser-coho-2023-2024-sdp"
+pkg <- read_salmon_datapackage(pkg_path)
+
+names(pkg$resources)
+pkg$tables
+```
+
+`read_salmon_datapackage()` reloads the package from the canonical
+`metadata/*.csv` files, so you are checking the same metadata you just reviewed
+in Excel.
+
+## 2) Run a review-state validation pass
+
+Start with the package-level validator in **non-strict** mode:
+
+```{r}
+review_check <- validate_salmon_datapackage(pkg_path, require_iris = FALSE)
+```
+
+This catches package/data mismatches now, before you worry about final ontology
+coverage.
+
+If you also want the semantic details separated out, inspect the reloaded
+package directly:
+
+```{r}
+review_semantics <- validate_semantics(pkg$dictionary, require_iris = FALSE)
+
+review_semantics$issues
+review_semantics$missing_terms
+```
+
+Use this pass to answer two questions:
+
+- **Did the Excel edits break the package structure?**
+- **Which measurement rows still lack a final semantic term?**
+
+Do **not** switch to `require_iris = TRUE` yet unless you believe the package is
+fully finalized. Strict validation is the last gate, not the first one.
+
+## 3) Re-run semantic suggestions for only the unresolved pieces
+
+The package-root `semantic_suggestions.csv` file is the original evidence trail
+from `create_sdp()`. After review, it is usually more useful to re-run
+`suggest_semantics()` against the **current** package state so you only inspect
+what is still unresolved.
+
+```{r}
+reviewed_dict <- suggest_semantics(
+  df = pkg$resources,
+  dict = pkg$dictionary,
+  codes = pkg$codes,
+  table_meta = pkg$tables,
+  dataset_meta = pkg$dataset
+)
+
+remaining_suggestions <- attr(reviewed_dict, "semantic_suggestions")
+
+remaining_suggestions |>
+  dplyr::select(
+    target_scope,
+    target_row_key,
+    target_sdp_field,
+    dictionary_role,
+    search_query,
+    label,
+    source,
+    score
+  )
+```
+
+That usually produces a much shorter shortlist than the original package export,
+because rows you already resolved in Excel are no longer the target.
+
+## 4) Detect likely ontology gaps
+
+Now detect the places where `metasalmon` still cannot find a shared SMN match,
+but did find useful fallback candidates elsewhere:
+
+```{r}
+gaps <- detect_semantic_term_gaps(reviewed_dict)
+
+gaps |>
+  dplyr::select(
+    target_scope,
+    target_row_key,
+    target_sdp_field,
+    dictionary_role,
+    search_query,
+    top_non_smn_label,
+    top_non_smn_source,
+    placement_recommendation,
+    placement_confidence
+  )
+```
+
+This is the key post-review gap table:
+
+- rows here are still unresolved;
+- `top_non_smn_*` columns show the best non-SMN evidence the package found;
+- `placement_recommendation` gives a first-pass routing guess.
+
+If you only want a narrower slice, filter by role or scope:
+
+```{r}
+gaps |>
+  dplyr::filter(dictionary_role %in% c("variable", "property", "entity"))
+```
+
+## 5) Decide shared salmon-domain vs DFO-specific routing
+
+Use this plain-English rule:
+
+- **Shared salmon-domain ontology (`smn`)**: use this when the term describes a
+  reusable salmon science concept that another program, region, or organization
+  could reasonably use too.
+- **DFO-specific term**: use this when the concept is clearly tied to DFO policy,
+  operations, internal workflow, local identifiers, program-specific statuses,
+  or other context that is not broadly reusable outside that setting.
+
+A good default test is:
+
+- if the term would still make sense in a non-DFO salmon dataset, lean **SMN**;
+- if the term only makes sense because of a DFO or local program process, lean
+  **DFO-specific**.
+
+### How that maps to the current helper outputs
+
+`detect_semantic_term_gaps()` and `render_ontology_term_request()` currently use
+these buckets:
+
+- `placement_recommendation == "smn"` → likely shared salmon-domain request
+- `placement_recommendation == "profile"` → likely **not** shared; in practical
+  DFO use, treat this as the DFO/program-specific bucket
+- `placement_recommendation == "uncertain"` → make a human decision before
+  drafting requests
+
+> **Current limitation:** the non-shared bucket is still named `profile` in the
+> helper API. That is the right bucket for DFO/program-specific requests in this
+> workflow, but the name is more generic than the real governance choice.
+
+## 6) Produce a concrete term-request list
+
+First build a simple routing table you can save with the package:
+
+```{r}
+request_plan <- gaps |>
+  dplyr::mutate(
+    request_scope = dplyr::case_when(
+      placement_recommendation == "smn" ~ "smn",
+      placement_recommendation == "profile" ~ "profile",
+      TRUE ~ "skip"
+    ),
+    governance_bucket = dplyr::case_when(
+      request_scope == "smn" ~ "shared salmon-domain ontology (SMN)",
+      request_scope == "profile" ~ "DFO/program-specific ontology bucket",
+      TRUE ~ "needs manual routing decision"
+    )
+  ) |>
+  dplyr::select(
+    dataset_id,
+    table_id,
+    target_scope,
+    target_row_key,
+    target_sdp_field,
+    dictionary_role,
+    search_query,
+    top_non_smn_label,
+    top_non_smn_source,
+    placement_recommendation,
+    placement_confidence,
+    governance_bucket,
+    request_scope
+  )
+
+request_plan
+readr::write_csv(request_plan, file.path(pkg_path, "term-request-plan.csv"))
+```
+
+That gives you a concrete list of:
+
+- which package row still needs help;
+- what the best fallback term looked like;
+- where the request should probably go.
+
+Next, render draft request text from that plan:
+
+```{r}
+requests <- render_ontology_term_request(
+  gaps,
+  scope = "auto",
+  ask = FALSE,
+  profile_name = "dfo-salmon",
+  scope_overrides = request_plan$request_scope
+)
+
+requests |>
+  dplyr::select(request_scope, request_title, target_row_key, search_query)
+```
+
+### Preview shared-term issue drafts
+
+For shared salmon-domain requests, the package already has a dry-run GitHub path:
+
+```{r}
+smn_preview <- requests |>
+  dplyr::filter(request_scope == "smn") |>
+  submit_term_request_issues(dry_run = TRUE)
+
+smn_preview
+```
+
+That preview is usually enough to review the issue titles/bodies before posting.
+
+### What to do with DFO-specific rows
+
+Rows with `request_scope == "profile"` are the DFO/program-specific cases in this
+workflow. Keep them in `term-request-plan.csv` and file them through the right
+DFO governance process after human review.
+
+At the moment, `submit_term_request_issues()` is best treated as the built-in
+path for **shared SMN** requests, not as a one-click publisher for DFO-specific
+rows.
+
+## 7) Finalize metadata and rebuild EDH XML if needed
+
+Once the metadata is final and every surviving IRI is deliberate, regenerate EDH
+XML if your publication path needs it:
+
+```{r}
+write_edh_xml_from_sdp(pkg_path)
+```
+
+This is the reviewed-package wrapper around `edh_build_hnap_xml()`. It refuses
+to rebuild while obvious review-state markers still exist, including:
+
+- `REVIEW:`-prefixed IRIs;
+- unresolved `MISSING DESCRIPTION:` / `MISSING METADATA:` placeholders; and
+- blank final `observation_unit_iri` values in `metadata/tables.csv`.
+
+## 8) Run strict final validation
+
+When the package is genuinely ready, switch to strict validation:
+
+```{r}
+validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+```
+
+This should pass only when the package is actually publication-ready.
+
+If strict validation still fails because a measurement term genuinely needs a
+new shared or DFO-specific ontology term, that is not a bug in the workflow —
+it means the package is **not finalized yet**. Keep the term-request plan with
+the package, resolve the ontology decision, then run strict validation again.
+
+## 9) Publish or share the finished package
+
+Once strict validation passes:
+
+- share the **whole package folder** (or a zip of it), not just
+  `datapackage.json`;
+- keep `metadata/*.csv` with the data files; and
+- keep `term-request-plan.csv` only as working governance support, not as part
+  of the canonical final package unless you want that audit trail to travel with
+  it.
+
+In short: **reload -> validate -> detect gaps -> route requests -> rebuild EDH
+if needed -> strict validate -> publish**.

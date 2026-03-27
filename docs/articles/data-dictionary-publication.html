@@ -39,7 +39,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
+<li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
+    <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
     <li><a class="dropdown-item" href="../articles/github-csv-access.html">Reading CSVs from Private GitHub Repositories</a></li>
     <li><a class="dropdown-item" href="../articles/glossary.html">Glossary of Terms</a></li>
@@ -77,15 +78,18 @@
 <h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
 </h2>
 <p>This guide follows the 5-Minute Quickstart and focuses on the
-<strong>publishing hardening</strong> steps. If you have not yet
+<strong>manual package assembly</strong> path. If you have not yet
 generated a starter dictionary yet, start with the <a href="metasalmon.html">5-Minute Quickstart</a> first.</p>
+<p>If you already created a package with <code><a href="../reference/create_sdp.html">create_sdp()</a></code>,
+reviewed it in Excel, and now need the follow-on publication workflow,
+use <a href="post-review-package-publication.html">After Excel Review:
+Finalize and Publish Your Package</a>.</p>
 <p>When all of the pieces are ready, <code>metasalmon</code> writes
 files matching the Salmon Data Package specification so you can upload
 or hand the folder to someone else with confidence.
 <code><a href="../reference/create_sdp.html">create_sdp()</a></code> is the main one-shot path; this article covers
-the more explicit, manual workflow where you assemble the metadata
-tables yourself and then call
-<code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code>.</p>
+the more explicit workflow where you assemble the metadata tables
+yourself and then call <code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code>.</p>
 <div class="section level3">
 <h3 id="start-with-your-data">1) Start with your data<a class="anchor" aria-label="anchor" href="#start-with-your-data"></a>
 </h3>
@@ -298,6 +302,9 @@ dictionary, and data align.</li>
 <ul>
 <li>See the “How It Fits Together” section in the README for a visual
 map of how the components interact.</li>
+<li>If you are continuing from a reviewed <code><a href="../reference/create_sdp.html">create_sdp()</a></code>
+package, follow <a href="post-review-package-publication.html">After
+Excel Review: Finalize and Publish Your Package</a>.</li>
 <li>Read the <a href="reusing-standards-salmon-data-terms.html">Linking
 to Standard Vocabularies</a> guide when you want to align your
 dictionary with published vocabularies.</li>

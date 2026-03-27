@@ -188,6 +188,11 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
   - [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
     creates GitHub issues (dry-run first) against the ontology request
     template.
+  - The dedicated [After Excel
+    Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md)
+    guide shows how to use those helpers on a reviewed package and
+    translate the generic `profile` bucket into the practical
+    DFO-specific routing decision.
 
 ### Building vocabulary-aware code lists
 
@@ -224,9 +229,14 @@ tweak anything that misses your domain nuance.
 - See the “How It Fits Together” section in the README for context on
   how the dictionary, ontology, and package-native review workflow fit
   together.
+- Follow [After Excel Review: Finalize and Publish Your
+  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md)
+  when you are continuing from a reviewed package and need the concrete
+  post-review publication path.
 - Follow the [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
-  guide when you finalize your metadata before publishing.
+  guide when you are assembling metadata tables manually before
+  publishing.
 - For AI-assisted drafting and package-native review, see the [optional
   LLM semantic review
   workflow](https://dfo-pacific-science.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
