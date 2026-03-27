@@ -26,20 +26,20 @@ exists. Default is \code{TRUE}.}
 (default: \code{"eng"}).}
 
 \item{file_identifier}{Optional metadata file identifier forwarded to
-\code{\link[=edh_build_iso19139_xml]{edh_build_iso19139_xml()}}.}
+\code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}}.}
 
-\item{date_stamp}{Metadata date stamp forwarded to
-\code{\link[=edh_build_iso19139_xml]{edh_build_iso19139_xml()}}.}
+\item{date_stamp}{Metadata date stamp forwarded to \code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}}.}
 }
 \value{
-Invisibly returns the same list as \code{\link[=edh_build_iso19139_xml]{edh_build_iso19139_xml()}}, with
+Invisibly returns the same list as \code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}}, with
 elements \code{xml} and \code{path}.
 }
 \description{
 Reads \code{metadata/dataset.csv} from an existing Salmon Data Package and writes a
-fresh \code{metadata-edh-hnap.xml} file using \code{\link[=edh_build_iso19139_xml]{edh_build_iso19139_xml()}}. This is
-intended for the post-review step after metadata has been edited manually in
-Excel or another spreadsheet tool.
+fresh \code{metadata-edh-hnap.xml} file using the canonical
+\code{\link[=edh_build_hnap_xml]{edh_build_hnap_xml()}} builder. This is the preferred post-review rebuild
+path after metadata has been edited manually in Excel or another spreadsheet
+tool.
 }
 \examples{
 \dontrun{

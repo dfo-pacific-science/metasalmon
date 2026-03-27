@@ -251,7 +251,7 @@ test_that("write_edh_xml_from_sdp rebuilds XML from edited dataset metadata", {
   xml_path <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
   expect_false(file.exists(xml_path))
 
-  result <- write_edh_xml_from_sdp(pkg_path)
+  result <- expect_no_warning(write_edh_xml_from_sdp(pkg_path))
 
   expect_true(file.exists(xml_path))
   expect_true(is.list(result))

@@ -109,7 +109,7 @@ For the current package-native review path, use this order:
    - `semantic_suggestions.csv`
    - `README-review.txt`
 4. In Excel (or another spreadsheet editor), resolve every `REVIEW:`-prefixed IRI in the metadata files.
-5. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)`.
+5. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder).
 6. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
 7. Publish/share only after the `REVIEW:` markers are gone and validation passes.
 
@@ -172,7 +172,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Use AI assistance to help write descriptions
 - Suggest Darwin Core Data Package table/field mappings for biodiversity data
 - Opt in to DwC-DP export hints via `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon Data Package as the canonical deliverable.
-- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via `edh_build_hnap_xml()` or `create_sdp(..., include_edh_xml = TRUE)`.
+- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via the canonical `edh_build_hnap_xml()` builder, the reviewed-package helper `write_edh_xml_from_sdp()`, or `create_sdp(..., include_edh_xml = TRUE)`.
 - Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
   - Units: QUDT preferred, then NVS P06
   - Salmon-domain roles: shared SMN terms first, then GCDFO DFO-specific terms where needed

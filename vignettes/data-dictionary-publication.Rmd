@@ -152,7 +152,8 @@ If you are creating the package in one shot, `create_sdp(..., include_edh_xml = 
 now writes the same XML automatically to `metadata/metadata-edh-hnap.xml`.
 
 After manual review/editing of `metadata/dataset.csv`, regenerate the XML from
-the finalized package with:
+the finalized package with the post-review helper that wraps the canonical
+`edh_build_hnap_xml()` builder:
 
 ```{r eval=FALSE}
 write_edh_xml_from_sdp(pkg_path)

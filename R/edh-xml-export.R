@@ -1130,9 +1130,10 @@ edh_build_iso19139_xml <- function(dataset_meta,
 #' Rebuild HNAP-aware EDH XML from a reviewed Salmon Data Package
 #'
 #' Reads `metadata/dataset.csv` from an existing Salmon Data Package and writes a
-#' fresh `metadata-edh-hnap.xml` file using [edh_build_iso19139_xml()]. This is
-#' intended for the post-review step after metadata has been edited manually in
-#' Excel or another spreadsheet tool.
+#' fresh `metadata-edh-hnap.xml` file using the canonical
+#' [edh_build_hnap_xml()] builder. This is the preferred post-review rebuild
+#' path after metadata has been edited manually in Excel or another spreadsheet
+#' tool.
 #'
 #' @param path Character path to the Salmon Data Package directory.
 #' @param output_path Optional path for the regenerated XML. Defaults to
@@ -1142,11 +1143,10 @@ edh_build_iso19139_xml <- function(dataset_meta,
 #' @param language ISO 639-2/T language code for the primary metadata language
 #'   (default: `"eng"`).
 #' @param file_identifier Optional metadata file identifier forwarded to
-#'   [edh_build_iso19139_xml()].
-#' @param date_stamp Metadata date stamp forwarded to
-#'   [edh_build_iso19139_xml()].
+#'   [edh_build_hnap_xml()].
+#' @param date_stamp Metadata date stamp forwarded to [edh_build_hnap_xml()].
 #'
-#' @return Invisibly returns the same list as [edh_build_iso19139_xml()], with
+#' @return Invisibly returns the same list as [edh_build_hnap_xml()], with
 #'   elements `xml` and `path`.
 #' @export
 #'
@@ -1201,7 +1201,7 @@ write_edh_xml_from_sdp <- function(path,
     )
   }
 
-  result <- edh_build_iso19139_xml(
+  result <- edh_build_hnap_xml(
     dataset_meta = dataset_meta,
     output_path = output_path,
     file_identifier = file_identifier,
