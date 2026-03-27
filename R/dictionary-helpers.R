@@ -90,6 +90,11 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     !is.null(llm_api_key) ||
     !is.null(llm_base_url) ||
     !is.null(llm_request_fn)
+  semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
+    semantic_max_per_role,
+    llm_assess = llm_assess,
+    llm_top_n = llm_top_n
+  )
 
   if (is.list(df) && !inherits(df, "data.frame")) {
     resources <- df
@@ -158,7 +163,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = resources,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_max_per_role,
+        max_per_role = semantic_seed_max_per_role,
         codes = codes,
         table_meta = table_meta,
         dataset_meta = dataset_meta
@@ -233,7 +238,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = df,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_max_per_role,
+        max_per_role = semantic_seed_max_per_role,
         codes = seed_codes,
         table_meta = seed_table_meta,
         dataset_meta = seed_dataset_meta

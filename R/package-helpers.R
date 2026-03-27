@@ -412,6 +412,11 @@ infer_salmon_datapackage_artifacts <- function(
     !is.null(llm_api_key) ||
     !is.null(llm_base_url) ||
     !is.null(llm_request_fn)
+  semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
+    semantic_max_per_role,
+    llm_assess = llm_assess,
+    llm_top_n = llm_top_n
+  )
 
   if (inherits(resources, "data.frame")) {
     resources <- list(resources)
@@ -483,7 +488,7 @@ infer_salmon_datapackage_artifacts <- function(
       df = resources,
       dict = dict,
       sources = semantic_sources,
-      max_per_role = semantic_max_per_role,
+      max_per_role = semantic_seed_max_per_role,
       include_dwc = FALSE,
       codes = semantic_codes,
       table_meta = table_meta,

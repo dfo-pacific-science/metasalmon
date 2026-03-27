@@ -288,11 +288,105 @@ test_that("infer_salmon_datapackage_artifacts forwards llm options into suggest_
   )
 
   expect_true(isTRUE(captured$llm_assess))
+  expect_equal(captured$max_per_role, 4L)
   expect_equal(captured$llm_provider, "openrouter")
   expect_equal(captured$llm_model, "openai/gpt-oss-20b:free")
   expect_equal(captured$llm_api_key, "dummy-key")
   expect_equal(captured$llm_context_text, "Spawner context from inline note.")
   expect_equal(captured$llm_top_n, 4L)
+})
+
+test_that("LLM context files are parsed and chunked once per assessment run", {
+  tmp <- withr::local_tempdir()
+  context_path <- file.path(tmp, "context.md")
+  writeLines(
+    c(
+      "# Context",
+      "Spawner abundance and juvenile abundance are both described here.",
+      "These notes should only be read and chunked once per run."
+    ),
+    context_path
+  )
+
+  dict <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("spawner_count", "juvenile_count"),
+    column_label = c("Spawner count", "Juvenile count"),
+    column_description = c("Spawner abundance", "Juvenile abundance"),
+    column_role = c("measurement", "measurement"),
+    value_type = c("integer", "integer"),
+    unit_label = c(NA_character_, NA_character_),
+    unit_iri = c(NA_character_, NA_character_),
+    term_iri = c(NA_character_, NA_character_),
+    property_iri = c(NA_character_, NA_character_),
+    entity_iri = c(NA_character_, NA_character_),
+    constraint_iri = c(NA_character_, NA_character_),
+    method_iri = c(NA_character_, NA_character_)
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(query, "best"), paste(query, "alt")),
+      iri = c(
+        paste0("https://example.org/", gsub("[^a-z]+", "-", tolower(query)), "/best"),
+        paste0("https://example.org/", gsub("[^a-z]+", "-", tolower(query)), "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match", "Alt match"),
+      score = c(0.9, 0.6)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.9,
+      rationale = "Top candidate is fine.",
+      missing_context = ""
+    )
+  }
+
+  read_calls <- 0L
+  chunk_calls <- 0L
+  orig_context_text_from_file <- metasalmon:::.ms_context_text_from_file
+  orig_chunk_context_text <- metasalmon:::.ms_chunk_context_text
+
+  with_mocked_bindings(
+    `.ms_context_text_from_file` = function(path) {
+      read_calls <<- read_calls + 1L
+      orig_context_text_from_file(path)
+    },
+    `.ms_chunk_context_text` = function(text, source, chunk_chars = 2200L, overlap_chars = 200L) {
+      chunk_calls <<- chunk_calls + 1L
+      orig_chunk_context_text(text, source, chunk_chars = chunk_chars, overlap_chars = overlap_chars)
+    },
+    {
+      out <- suggest_semantics(
+        NULL,
+        dict,
+        sources = "smn",
+        max_per_role = 2,
+        search_fn = fake_search,
+        llm_assess = TRUE,
+        llm_provider = "openrouter",
+        llm_api_key = "dummy-key",
+        llm_top_n = 2,
+        llm_context_files = context_path,
+        llm_request_fn = fake_request
+      )
+
+      expect_gt(nrow(attr(out, "semantic_llm_assessments")), 1L)
+    },
+    .package = "metasalmon"
+  )
+
+  expect_equal(read_calls, 1L)
+  expect_equal(chunk_calls, 1L)
 })
 
 test_that("PDF context files either extract text or fail clearly when pdftools is unavailable", {

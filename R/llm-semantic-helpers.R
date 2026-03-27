@@ -30,6 +30,22 @@
   top_n
 }
 
+.ms_llm_effective_shortlist_size <- function(max_per_role,
+                                             llm_assess = FALSE,
+                                             llm_top_n = 5L) {
+  shortlist_size <- max(1L, as.integer(max_per_role[[1]] %||% 1L))
+  if (!isTRUE(llm_assess)) {
+    return(shortlist_size)
+  }
+
+  llm_top_n <- suppressWarnings(as.integer(llm_top_n[[1]] %||% 5L))
+  if (is.na(llm_top_n) || llm_top_n < 1L) {
+    return(shortlist_size)
+  }
+
+  max(shortlist_size, llm_top_n)
+}
+
 .ms_llm_batch_size <- function(config) {
   if (!identical(config$request_fn, .ms_llm_chat_json_request)) {
     return(1L)
@@ -286,11 +302,8 @@
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
-.ms_prepare_context_chunks <- function(context_files = NULL,
-                                       context_text = NULL,
-                                       target_row,
-                                       candidate_rows,
-                                       max_chunks = 4L) {
+.ms_collect_context_chunks <- function(context_files = NULL,
+                                       context_text = NULL) {
   raw_context <- list()
   if (!is.null(context_files) && length(context_files) > 0) {
     raw_context <- c(raw_context, lapply(context_files, .ms_context_text_from_file))
@@ -308,9 +321,28 @@
     return(tibble::tibble())
   }
 
-  chunks <- purrr::map_dfr(raw_context, function(item) {
+  purrr::map_dfr(raw_context, function(item) {
     .ms_chunk_context_text(item$text, item$source)
   })
+}
+
+.ms_prepare_context_chunks <- function(context_files = NULL,
+                                       context_text = NULL,
+                                       target_row,
+                                       candidate_rows,
+                                       max_chunks = 4L,
+                                       context_chunk_pool = NULL) {
+  chunks <- context_chunk_pool
+  if (is.null(chunks)) {
+    chunks <- .ms_collect_context_chunks(
+      context_files = context_files,
+      context_text = context_text
+    )
+  }
+  if (nrow(chunks) == 0) {
+    return(chunks)
+  }
+
   .ms_score_context_chunks(chunks, target_row = target_row, candidate_rows = candidate_rows, max_chunks = max_chunks)
 }
 
@@ -581,7 +613,8 @@
                                    max_per_role,
                                    top_n,
                                    context_files,
-                                   context_text) {
+                                   context_text,
+                                   context_chunk_pool = NULL) {
   assessment_row <- .ms_llm_add_exploration_metadata(assessment_row)
   if (!.ms_llm_should_explore(assessment_row, config)) {
     return(list(record = record, assessment = assessment_row))
@@ -659,7 +692,8 @@
     config = config,
     top_n = top_n,
     context_files = context_files,
-    context_text = context_text
+    context_text = context_text,
+    context_chunk_pool = context_chunk_pool
   )
 
   if (candidate_gain <= 0 || identical(.ms_llm_prompt_candidate_keys(updated_record), .ms_llm_prompt_candidate_keys(record))) {
@@ -860,7 +894,8 @@
                                    config,
                                    top_n,
                                    context_files,
-                                   context_text) {
+                                   context_text,
+                                   context_chunk_pool = NULL) {
   group <- group[order(group$.ms_row_order), , drop = FALSE]
   candidate_rows <- utils::head(group, top_n)
   context_chunks <- .ms_prepare_context_chunks(
@@ -868,7 +903,8 @@
     context_text = context_text,
     target_row = group[1, , drop = FALSE],
     candidate_rows = candidate_rows,
-    max_chunks = .ms_llm_context_chunk_limit(config)
+    max_chunks = .ms_llm_context_chunk_limit(config),
+    context_chunk_pool = context_chunk_pool
   )
 
   list(
@@ -989,6 +1025,10 @@
     request_fn = request_fn
   )
   top_n <- .ms_llm_effective_top_n(config, top_n)
+  context_chunk_pool <- .ms_collect_context_chunks(
+    context_files = context_files,
+    context_text = context_text
+  )
 
   suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
@@ -1002,7 +1042,8 @@
       config = config,
       top_n = top_n,
       context_files = context_files,
-      context_text = context_text
+      context_text = context_text,
+      context_chunk_pool = context_chunk_pool
     )
   )
 
@@ -1026,7 +1067,8 @@
       max_per_role = max_per_role,
       top_n = top_n,
       context_files = context_files,
-      context_text = context_text
+      context_text = context_text,
+      context_chunk_pool = context_chunk_pool
     )
   })
 
