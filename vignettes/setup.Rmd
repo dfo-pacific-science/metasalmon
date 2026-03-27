@@ -1,0 +1,143 @@
+---
+title: "Setup and Credentials"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Setup and Credentials}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+Use this page once before the homepage quick example or the [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html).
+
+It covers two things:
+
+1. GitHub credentials so `remotes::install_github()` works reliably.
+2. Optional LLM provider setup if you want `llm_assess = TRUE` later.
+
+## 1) GitHub setup for installs and updates
+
+`metasalmon` is installed from GitHub. Public installs often work without a token, but setting up a GitHub Personal Access Token (PAT) up front avoids rate limits and awkward auth failures.
+
+### Create a GitHub token
+
+Create a PAT in GitHub:
+
+- <https://github.com/settings/tokens>
+
+For public package install/update, a read-only token is enough. If you also plan to read private GitHub repositories later, make sure the token can access those repositories too.
+
+### Store it in `~/.Renviron`
+
+```{r}
+file.edit("~/.Renviron")
+```
+
+Add:
+
+```{r}
+GITHUB_PAT="paste token here"
+```
+
+Restart R after saving.
+
+### Install `metasalmon`
+
+```{r}
+install.packages("remotes")
+remotes::install_github("dfo-pacific-science/metasalmon")
+```
+
+### If you also need private GitHub CSV access later
+
+The install token and the package's private-repo CSV helpers are related but not identical workflows.
+
+When you later want to use `read_github_csv()` against a private repository, run:
+
+```{r}
+ms_setup_github(repo = "your-org/your-private-repo")
+```
+
+That verifies private GitHub access for the repository you actually intend to read.
+
+## 2) Optional LLM provider setup
+
+The base quick example and quickstart do **not** require an API key.
+
+Only do this setup now if you want to run:
+
+- `create_sdp(..., llm_assess = TRUE)`, or
+- `suggest_semantics(..., llm_assess = TRUE)`
+
+### DFO internal: `chapi`
+
+If you are on the DFO internal network or VPN, open:
+
+- <https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/>
+
+Then:
+
+1. click the user icon in the bottom left,
+2. open **Settings**,
+3. click **Show** next to **API Keys**,
+4. copy the key value.
+
+Store it in `~/.Renviron`:
+
+```{r}
+file.edit("~/.Renviron")
+CHAPI_API_KEY="paste key here"
+```
+
+Optional overrides:
+
+```{r}
+CHAPI_MODEL="ollama2.mistral:7b"
+CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
+```
+
+### External users: OpenRouter
+
+```{r}
+file.edit("~/.Renviron")
+OPENROUTER_API_KEY="paste key here"
+```
+
+`llm_provider = "openrouter"` defaults to `openrouter/free`.
+
+### External users: OpenAI
+
+```{r}
+file.edit("~/.Renviron")
+OPENAI_API_KEY="paste key here"
+```
+
+Then choose an explicit OpenAI model when you call the LLM review path, for example:
+
+```{r}
+suggested <- suggest_semantics(
+  df = your_data,
+  dict = your_dict,
+  llm_assess = TRUE,
+  llm_provider = "openai",
+  llm_model = "gpt-4.1-mini"
+)
+```
+
+## 3) Next step
+
+After this setup is done, go back to:
+
+- [Homepage quick example](https://dfo-pacific-science.github.io/metasalmon/)
+- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+
+If you are continuing from a reviewed package later, use:
+
+- [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)

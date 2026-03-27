@@ -124,6 +124,7 @@ articles:
   - title: "Getting Started"
     navbar: ~
     contents:
+      - setup
       - metasalmon
 
   - title: "Guides"

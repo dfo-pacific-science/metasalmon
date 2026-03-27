@@ -9,7 +9,8 @@ articles:
   metasalmon: metasalmon.html
   post-review-package-publication: post-review-package-publication.html
   reusing-standards-salmon-data-terms: reusing-standards-salmon-data-terms.html
-last_built: 2026-03-27T22:24Z
+  setup: setup.html
+last_built: 2026-03-27T22:31Z
 urls:
   reference: https://dfo-pacific-science.github.io/metasalmon/reference
   article: https://dfo-pacific-science.github.io/metasalmon/articles

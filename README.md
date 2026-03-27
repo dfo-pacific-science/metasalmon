@@ -29,6 +29,8 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
+Before you start, do the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) check so GitHub installs work cleanly and any optional LLM provider is ready in advance.
+
 Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then review in Excel.
 
 ```r
@@ -76,6 +78,7 @@ See `example-data-README.md` for the record/resource URLs, row counts, licensing
 
 To continue:
 
+- [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) — one-time GitHub credential setup for installs plus optional LLM provider setup.
 - [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) — create the full package with metadata and export it.
 - [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) — reload the reviewed package, detect unresolved ontology gaps, route shared vs DFO-specific requests, and finish publication.
 - [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — manual package assembly path when you are not continuing from `create_sdp()`.

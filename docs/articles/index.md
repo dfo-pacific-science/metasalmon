@@ -2,6 +2,8 @@
 
 ### Getting Started
 
+- [Setup and
+  Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.md):
 - [5-Minute
   Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md):
 

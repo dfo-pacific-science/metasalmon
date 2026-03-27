@@ -46,6 +46,11 @@ never gets lost.**
 
 ## Quick Example
 
+Before you start, do the one-time [Setup and
+Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+check so GitHub installs work cleanly and any optional LLM provider is
+ready in advance.
+
 Install, run one function on the bundled Fraser Coho 2023-2024 example
 (173 rows), then review in Excel.
 
@@ -119,6 +124,10 @@ example.
 
 To continue:
 
+- [Setup and
+  Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+  — one-time GitHub credential setup for installs plus optional LLM
+  provider setup.
 - [5-Minute
   Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
   — create the full package with metadata and export it.
