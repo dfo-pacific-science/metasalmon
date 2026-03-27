@@ -840,6 +840,12 @@ infer_column_role <- function(col_name, col) {
 validate_dictionary <- function(dict, require_iris = FALSE) {
   dict <- .ms_dictionary_from_input(dict, normalize = FALSE)
 
+  validation_message_mode <- getOption("metasalmon.validation_message_mode", "default")
+  if (is.null(validation_message_mode) || !validation_message_mode %in% c("default", "review_ready")) {
+    validation_message_mode <- "default"
+  }
+  validation_semantics_seeded <- isTRUE(getOption("metasalmon.validation_semantics_seeded"))
+
   # Required columns
   required_cols <- c(
     "dataset_id", "table_id", "column_name", "column_label",
@@ -934,6 +940,20 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         "x" = "Resolve these fields before final validation:",
         " " = paste("  ", review_summary, collapse = "\n")
       ))
+    } else if (identical(validation_message_mode, "review_ready")) {
+      review_lines <- c(
+        "Review-ready metadata includes draft {.val REVIEW:} IRIs.",
+        "i" = "That is expected at this stage; keep or edit those values in {.file metadata/column_dictionary.csv} (and {.file metadata/tables.csv} if present), then remove the prefix only once each IRI is final.",
+        " " = paste("  ", review_summary, collapse = "\n")
+      )
+      if (isTRUE(validation_semantics_seeded)) {
+        review_lines <- c(
+          review_lines,
+          "i" = "Semantic suggestions already ran in this workflow, and any safe draft IRIs were written directly into the metadata CSVs for review.",
+          "i" = "Review the metadata CSVs first; use {.file semantic_suggestions.csv} only as fallback context when you want more detail or a better match."
+        )
+      }
+      cli::cli_inform(review_lines)
     } else {
       cli::cli_warn(c(
         "REVIEW-prefixed IRI values were found.",
@@ -965,13 +985,34 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         )
       }
 
-      cli::cli_warn(c(
-        "Hey, you definitely should fill those out before publishing.",
-        "x" = "Missing semantic fields for measurement columns:",
-        " " = paste("  ", missing_summary, collapse = "\n"),
-        "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
-        "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
-      ))
+      if (identical(validation_message_mode, "review_ready")) {
+        missing_lines <- c(
+          "Some measurement semantic IRI fields are still blank in this review-ready package.",
+          "i" = "That does not block review-ready creation, but those gaps must be filled before final validation or publication.",
+          " " = paste("  ", missing_summary, collapse = "\n"),
+          "i" = "Review {.file metadata/column_dictionary.csv} first (and {.file metadata/tables.csv} if present), then fill the remaining gaps there."
+        )
+        if (isTRUE(validation_semantics_seeded)) {
+          missing_lines <- c(
+            missing_lines,
+            "i" = "Use {.file semantic_suggestions.csv} only as fallback context when you want more detail or a better match; there is no need to rerun {.fn suggest_semantics} before the initial review pass."
+          )
+        } else {
+          missing_lines <- c(
+            missing_lines,
+            "i" = "If you want candidate IRIs later, run {.fn suggest_semantics} or recreate the package with {.code seed_semantics = TRUE} before final validation."
+          )
+        }
+        cli::cli_inform(missing_lines)
+      } else {
+        cli::cli_warn(c(
+          "Hey, you definitely should fill those out before publishing.",
+          "x" = "Missing semantic fields for measurement columns:",
+          " " = paste("  ", missing_summary, collapse = "\n"),
+          "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
+          "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
+        ))
+      }
     }
   }
 

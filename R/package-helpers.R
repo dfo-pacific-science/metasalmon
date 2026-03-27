@@ -829,16 +829,30 @@ create_sdp <- function(
     )
   }
 
-  pkg_path <- write_salmon_datapackage(
-    resources = artifacts$resources,
-    dataset_meta = artifacts$dataset_meta,
-    table_meta = artifacts$table_meta,
-    dict = artifacts$dict,
-    codes = artifacts$codes,
-    path = path,
-    format = format,
-    overwrite = overwrite
-  )
+  pkg_path <- local({
+    old_validation_message_mode <- getOption("metasalmon.validation_message_mode")
+    old_validation_semantics_seeded <- getOption("metasalmon.validation_semantics_seeded")
+    on.exit({
+      options(metasalmon.validation_message_mode = old_validation_message_mode)
+      options(metasalmon.validation_semantics_seeded = old_validation_semantics_seeded)
+    }, add = TRUE)
+
+    options(
+      metasalmon.validation_message_mode = "review_ready",
+      metasalmon.validation_semantics_seeded = isTRUE(seed_semantics)
+    )
+
+    write_salmon_datapackage(
+      resources = artifacts$resources,
+      dataset_meta = artifacts$dataset_meta,
+      table_meta = artifacts$table_meta,
+      dict = artifacts$dict,
+      codes = artifacts$codes,
+      path = path,
+      format = format,
+      overwrite = overwrite
+    )
+  })
 
   review_suggestions <- .ms_prepare_review_suggestions(suggestions)
   .ms_write_sdp_review_readme(

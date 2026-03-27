@@ -379,21 +379,32 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
   }
 
   pkg_path <- NULL
-  expect_message(
-    with_mocked_bindings(
-      suggest_semantics = fake_suggest,
-      {
-        pkg_path <- create_sdp(
-          resources,
-          path = file.path(withr::local_tempdir(), "review-package"),
-          dataset_id = "review-demo",
-          seed_semantics = TRUE,
-          seed_table_meta = seed_table_meta,
-          overwrite = TRUE
-        )
-      }
-    ),
-    regexp = "Prefilled semantic values were written directly into the metadata CSVs"
+  expect_no_warning(
+    expect_message(
+      expect_message(
+        expect_message(
+          with_mocked_bindings(
+            suggest_semantics = fake_suggest,
+            {
+              pkg_path <- create_sdp(
+                resources,
+                path = file.path(withr::local_tempdir(), "review-package"),
+                dataset_id = "review-demo",
+                seed_semantics = TRUE,
+                seed_table_meta = seed_table_meta,
+                overwrite = TRUE
+              )
+            }
+          ),
+          regexp = "Review-ready metadata includes draft",
+          fixed = TRUE
+        ),
+        regexp = "Some measurement semantic IRI fields are still blank in this review-ready package.",
+        fixed = TRUE
+      ),
+      regexp = "Prefilled semantic values were written directly into the metadata CSVs",
+      fixed = TRUE
+    )
   )
 
   expect_true(file.exists(file.path(pkg_path, "README-review.txt")))

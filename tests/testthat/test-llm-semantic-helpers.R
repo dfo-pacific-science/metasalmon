@@ -480,6 +480,53 @@ test_that("create_sdp auto-writes LLM-selected IRIs with REVIEW prefix", {
   )
 })
 
+test_that("validate_dictionary keeps strong non-strict warnings for direct review markers and gaps", {
+  dict_with_review <- tibble::tibble(
+    dataset_id = "demo",
+    table_id = "main",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Spawner abundance",
+    column_role = "measurement",
+    value_type = "integer",
+    required = TRUE,
+    term_iri = "REVIEW: https://w3id.org/smn/SpawnerAbundance",
+    property_iri = "https://w3id.org/smn/SpawnerAbundance",
+    entity_iri = "https://w3id.org/smn/Spawner",
+    unit_iri = "https://qudt.org/vocab/unit/NUM",
+    unit_label = "count",
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  dict_with_missing <- tibble::tibble(
+    dataset_id = "demo",
+    table_id = "main",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Spawner abundance",
+    column_role = "measurement",
+    value_type = "integer",
+    required = TRUE,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    unit_iri = NA_character_,
+    unit_label = "count",
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  expect_warning(
+    validate_dictionary(dict_with_review, require_iris = FALSE),
+    "REVIEW-prefixed IRI values were found"
+  )
+  expect_warning(
+    validate_dictionary(dict_with_missing, require_iris = FALSE),
+    "definitely should fill those out"
+  )
+})
+
 test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs remain", {
   dict <- tibble::tibble(
     dataset_id = "demo",
