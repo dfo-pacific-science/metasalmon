@@ -621,7 +621,7 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
 #'
 #' @param col A column vector
 #' @return Character string indicating the value type
-#' @keywords internal
+#' @noRd
 infer_value_type <- function(col) {
   if (inherits(col, "Date") || inherits(col, "POSIXt")) {
     return("date")
@@ -742,7 +742,7 @@ infer_value_type <- function(col) {
 #' @param col_name Column name
 #' @param col Column vector
 #' @return Character string indicating the column role
-#' @keywords internal
+#' @noRd
 infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
   name_tokens <- .ms_name_tokens(col_name)

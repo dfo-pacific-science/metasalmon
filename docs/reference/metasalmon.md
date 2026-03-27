@@ -1,8 +1,8 @@
-# metasalmon: Salmon Monitoring Utilities
+# metasalmon: Utilities for Salmon Data Packages
 
-Package scaffold for ingesting, validating, transforming, summarizing,
-and visualizing salmon monitoring datasets. Functions and data will be
-added incrementally.
+Tools to scaffold, standardize, validate, transform, and package salmon
+datasets using the Salmon Data Package conventions plus shared and
+DFO-specific salmon vocabularies.
 
 ## See also
 

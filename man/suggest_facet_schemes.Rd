@@ -19,7 +19,7 @@ individual terms.
 }
 \examples{
 \dontrun{
-proposed <- readr::read_csv("work/semantics/gpt_proposed_terms.csv")
+proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
 facets <- suggest_facet_schemes(proposed)
 print(facets)
 }

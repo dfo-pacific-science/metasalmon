@@ -114,13 +114,13 @@ example.
 To continue:
 
 - [5-Minute
-  Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
+  Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
   — create the full package with metadata and export it.
 - [Publishing Data
-  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
+  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
   — end-to-end publication checklist.
 - [Linking to Standard
-  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
+  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
   — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
 ## Package-native LLM semantic review (optional)
@@ -191,10 +191,10 @@ markers -\> rebuild EDH XML if needed -\> validate -\> publish**.
 
 | If you are… | Start here |
 |----|----|
-| A biologist who wants to share data | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md) |
+| A biologist who wants to share data | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) |
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
-| A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) |
-| Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md) |
+| A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
+| Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html) |
 
 ## Video Walkthrough
 
@@ -294,9 +294,9 @@ whole folder (or a zip of the whole folder), not just
 ## Getting Help
 
 - [Frequently Asked
-  Questions](https://dfo-pacific-science.github.io/metasalmon/articles/faq.md)
+  Questions](https://dfo-pacific-science.github.io/metasalmon/articles/faq.html)
 - [Glossary of
-  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md)
+  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.html)
 - [Report a
   bug](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Request a
@@ -315,8 +315,7 @@ dictionary, dataset/table metadata, and optional code lists are already
 aligned with the specification, which makes the package ready to
 publish. The ontology keeps the column meanings consistent, and the
 package-native review workflow helps draft descriptions and term choices
-without forcing you to bounce back out to a separate ChatGPT export
-loop.
+without forcing you into a separate prompt-export side path.
 
 The high-level flow is:
 
@@ -343,7 +342,7 @@ The high-level flow is:
   consumes the metadata, dictionary, codes, and data to write the files
   in the Salmon Data Package format; the preferred review loop is now
   the package itself plus `README-review.txt` /
-  `semantic_suggestions.csv`, not an external ChatGPT export.
+  `semantic_suggestions.csv`, not an external prompt-export workflow.
 
 ## For Developers
 
@@ -392,5 +391,5 @@ GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not
 silently rewrite legacy `salmon:` IRIs.
 
 See the [Reusing Standards for Salmon Data
-Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
+Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
 guide for details.

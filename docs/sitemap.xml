@@ -1,7 +1,5 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/404.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/AGENTS.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/CLAUDE.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE-text.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/LICENSE.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html</loc></url>
@@ -21,14 +19,6 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_cross_source_agreement.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-apply_embedding_rerank.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-embedding_rerank_enabled.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-expand_query.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-role_preferences.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-search_gbif.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-search_qudt.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dot-search_worms.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/dwc_dp_build_descriptor.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.html</loc></url>
@@ -41,10 +31,8 @@
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_find_codes.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ices_vocab.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/index.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_column_role.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.html</loc></url>
-<url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/infer_value_type.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/metasalmon.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.html</loc></url>
 <url><loc>https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.html</loc></url>

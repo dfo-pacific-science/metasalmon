@@ -167,11 +167,11 @@ concept schemes) while preserving your original data structure.
 <p>To continue:</p>
 <ul>
 <li>
-<a href="articles/metasalmon.html">5-Minute Quickstart</a> — create the full package with metadata and export it.</li>
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a> — create the full package with metadata and export it.</li>
 <li>
-<a href="articles/data-dictionary-publication.html">Publishing Data Packages</a> — end-to-end publication checklist.</li>
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing Data Packages</a> — end-to-end publication checklist.</li>
 <li>
-<a href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
+<a href="https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -226,8 +226,8 @@ concept schemes) while preserving your original data structure.
 </h2>
 <table class="table">
 <colgroup>
-<col width="34%">
-<col width="65%">
+<col width="24%">
+<col width="75%">
 </colgroup>
 <thead><tr>
 <th>If you are…</th>
@@ -236,7 +236,7 @@ concept schemes) while preserving your original data structure.
 <tbody>
 <tr>
 <td>A biologist who wants to share data</td>
-<td><a href="articles/metasalmon.html">5-Minute Quickstart</a></td>
+<td><a href="https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html">5-Minute Quickstart</a></td>
 </tr>
 <tr>
 <td>Curious how it works</td>
@@ -244,11 +244,11 @@ concept schemes) while preserving your original data structure.
 </tr>
 <tr>
 <td>A data steward standardizing datasets</td>
-<td><a href="articles/data-dictionary-publication.html">Data Dictionary &amp; Publication</a></td>
+<td><a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Data Dictionary &amp; Publication</a></td>
 </tr>
 <tr>
 <td>Reading CSVs from private GitHub repos</td>
-<td><a href="articles/github-csv-access.html">GitHub CSV Access</a></td>
+<td><a href="https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html">GitHub CSV Access</a></td>
 </tr>
 </tbody>
 </table>
@@ -320,8 +320,8 @@ concept schemes) while preserving your original data structure.
 <h2 id="getting-help">Getting Help<a class="anchor" aria-label="anchor" href="#getting-help"></a>
 </h2>
 <ul>
-<li><a href="articles/faq.html">Frequently Asked Questions</a></li>
-<li><a href="articles/glossary.html">Glossary of Terms</a></li>
+<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/faq.html">Frequently Asked Questions</a></li>
+<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/glossary.html">Glossary of Terms</a></li>
 <li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Report a bug</a></li>
 <li><a href="https://github.com/dfo-pacific-science/metasalmon/issues" class="external-link">Request a feature</a></li>
 <li><a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a></li>
@@ -331,7 +331,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="how-it-fits-together">How It Fits Together<a class="anchor" aria-label="anchor" href="#how-it-fits-together"></a>
 </h2>
-<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you to bounce back out to a separate ChatGPT export loop.</p>
+<p><code>metasalmon</code> brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you into a separate prompt-export side path.</p>
 <p>The high-level flow is:</p>
 <ul>
 <li>
@@ -345,7 +345,7 @@ concept schemes) while preserving your original data structure.
 <li>
 <strong>The Salmon Domain Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
 <li>
-<strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus <code>README-review.txt</code> / <code>semantic_suggestions.csv</code>, not an external ChatGPT export.</li>
+<strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus <code>README-review.txt</code> / <code>semantic_suggestions.csv</code>, not an external prompt-export workflow.</li>
 </ul>
 <script>
 // Prevent Mermaid from auto-rendering before we prepare the code blocks.
@@ -382,8 +382,8 @@ flowchart LR
   Spec["Salmon Data Package specification"] --&gt; Package["Package root + data/ + datapackage.json"]
   Ontology["Salmon Domain Ontology and published vocabularies"] --&gt; Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
   Ontology["Salmon Domain Ontology and published vocabularies"] --&gt; Package["Package root + data/ + datapackage.json"]
-  GPT["Salmon Data Standardizer GPT"] --&gt; Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
-  GPT["Salmon Data Standardizer GPT"] --&gt; Package["Package root + data/ + datapackage.json"]
+  Review["Package-native review helpers"] --&gt; Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
+  Review["Package-native review helpers"] --&gt; Package["Package root + data/ + datapackage.json"]
 </textarea>
 </div>
 <div class="section level2">
@@ -431,7 +431,7 @@ Development setup and package structure
 <h3 id="salmon-domain-ontology">Salmon Domain Ontology<a class="anchor" aria-label="anchor" href="#salmon-domain-ontology"></a>
 </h3>
 <p>This package can link your data to the <a href="https://w3id.org/smn/" class="external-link">Salmon Domain Ontology</a> for shared terms and to the <a href="https://w3id.org/gcdfo/salmon/" class="external-link">DFO Salmon Ontology</a> for DFO-specific terms. Canonical IRIs are explicit: SMN uses <code>https://w3id.org/smn/&lt;Term&gt;</code> and GCDFO uses <code>https://w3id.org/gcdfo/salmon#&lt;Term&gt;</code>. metasalmon does not silently rewrite legacy <code>salmon:</code> IRIs.</p>
-<p>See the <a href="articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a> guide for details.</p>
+<p>See the <a href="https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html">Reusing Standards for Salmon Data Terms</a> guide for details.</p>
 
 </div>
 </details>

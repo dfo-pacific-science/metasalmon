@@ -10,7 +10,7 @@
 
 #' Deduplicate proposed ontology terms
 #'
-#' Applies I-ADOPT compositional deduplication to a gpt_proposed_terms dataframe.
+#' Applies I-ADOPT compositional deduplication to a proposed-terms dataframe.
 #' This prevents term proliferation by:
 #' 1. Removing duplicates across tables (same term_label)
 #' 2. Collapsing age-stratified variants (X Age 1..7) into one base term
@@ -20,7 +20,7 @@
 #' The function returns a deduplicated dataframe with added columns for facet handling.
 #'
 #' @param proposed_terms A data frame with columns: term_label, term_definition,
-#'   term_type, suggested_parent_iri. Typically loaded from gpt_proposed_terms.csv.
+#'   term_type, suggested_parent_iri. Typically loaded from a proposed-terms CSV.
 #' @param warn_threshold Integer. If the input has more than this many rows,
 #'   issue a warning about potential over-engineering. Default is 30.
 #'
@@ -46,7 +46,7 @@
 #' @examples
 #' \dontrun{
 #' # Load raw proposed terms
-#' proposed <- readr::read_csv("work/semantics/gpt_proposed_terms.csv")
+#' proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
 #'
 #' # Deduplicate
 #' deduped <- deduplicate_proposed_terms(proposed)
@@ -55,7 +55,7 @@
 #' deduped |> dplyr::filter(collapsed_from > 1)
 #'
 #' # Write cleaned output
-#' readr::write_csv(deduped, "work/semantics/gpt_proposed_terms_deduped.csv")
+#' readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
 #' }
 deduplicate_proposed_terms <- function(proposed_terms, warn_threshold = 30L) {
   if (!is.data.frame(proposed_terms) || nrow(proposed_terms) == 0) {
@@ -76,7 +76,7 @@ deduplicate_proposed_terms <- function(proposed_terms, warn_threshold = 30L) {
 
 if (nrow(proposed_terms) > warn_threshold) {
     cli::cli_warn(c(
-      "!" = "gpt_proposed_terms has {nrow(proposed_terms)} rows (threshold: {warn_threshold}).",
+      "!" = "proposed_terms has {nrow(proposed_terms)} rows (threshold: {warn_threshold}).",
       "i" = "This may indicate over-engineering. Expected: 15-25 base terms for a typical dataset.",
       "i" = "Review for: duplicate terms across tables, age/phase variants that should use constraint_iri."
     ))
@@ -232,7 +232,7 @@ if (nrow(proposed_terms) > warn_threshold) {
 #'
 #' @examples
 #' \dontrun{
-#' proposed <- readr::read_csv("work/semantics/gpt_proposed_terms.csv")
+#' proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
 #' facets <- suggest_facet_schemes(proposed)
 #' print(facets)
 #' }

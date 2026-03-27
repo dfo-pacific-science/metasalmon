@@ -48,13 +48,10 @@ for authentication setup.
 ``` r
 # Build a raw URL for a file on main branch
 github_raw_url("data/observations.csv", repo = "myorg/myrepo")
-#> [1] "https://raw.githubusercontent.com/myorg/myrepo/main/data/observations.csv"
 
 # Pin to a specific release tag for reproducibility
 github_raw_url("data/observations.csv", ref = "v1.2.0", repo = "myorg/myrepo")
-#> [1] "https://raw.githubusercontent.com/myorg/myrepo/v1.2.0/data/observations.csv"
 
 # Pin to a specific commit SHA
 github_raw_url("data/observations.csv", ref = "abc1234def", repo = "myorg/myrepo")
-#> [1] "https://raw.githubusercontent.com/myorg/myrepo/abc1234def/data/observations.csv"
 ```

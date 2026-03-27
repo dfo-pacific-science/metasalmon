@@ -8,7 +8,7 @@ deduplicate_proposed_terms(proposed_terms, warn_threshold = 30L)
 }
 \arguments{
 \item{proposed_terms}{A data frame with columns: term_label, term_definition,
-term_type, suggested_parent_iri. Typically loaded from gpt_proposed_terms.csv.}
+term_type, suggested_parent_iri. Typically loaded from a proposed-terms CSV.}
 
 \item{warn_threshold}{Integer. If the input has more than this many rows,
 issue a warning about potential over-engineering. Default is 30.}
@@ -24,7 +24,7 @@ A tibble with deduplicated terms and additional columns:
 }
 }
 \description{
-Applies I-ADOPT compositional deduplication to a gpt_proposed_terms dataframe.
+Applies I-ADOPT compositional deduplication to a proposed-terms dataframe.
 This prevents term proliferation by:
 \enumerate{
 \item Removing duplicates across tables (same term_label)
@@ -50,7 +50,7 @@ further manual review.
 \examples{
 \dontrun{
 # Load raw proposed terms
-proposed <- readr::read_csv("work/semantics/gpt_proposed_terms.csv")
+proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
 
 # Deduplicate
 deduped <- deduplicate_proposed_terms(proposed)
@@ -59,6 +59,6 @@ deduped <- deduplicate_proposed_terms(proposed)
 deduped |> dplyr::filter(collapsed_from > 1)
 
 # Write cleaned output
-readr::write_csv(deduped, "work/semantics/gpt_proposed_terms_deduped.csv")
+readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
 }
 }

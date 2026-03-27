@@ -130,10 +130,8 @@
   disabling the feature: incompatible candidates are now filtered using
   role-hint mismatch checks, match-type/score guards, and token-level
   lexical compatibility with the target column context.
-- Strengthened
-  [`infer_column_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_column_role.md)
-  heuristics for NuSEDS-like fields: year-like columns are now
-  classified as temporal more reliably, and
+- Strengthened `infer_column_role()` heuristics for NuSEDS-like fields:
+  year-like columns are now classified as temporal more reliably, and
   `NATURAL_ADULT_SPAWNERS`-style quantity columns are inferred as
   measurement.
 - Tightened default code-level seeding gates to reduce free-text noise

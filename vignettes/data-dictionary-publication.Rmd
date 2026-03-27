@@ -38,7 +38,7 @@ df <- read_csv("my-table.csv")
 ```
 
 If you already have a dictionary and metadata from the quickstart, skip directly to
-[Describe the dataset and tables](#3-describe-the-dataset-and-tables).
+[Describe the dataset and tables](#describe-the-dataset-and-tables).
 
 Keep a working copy of your data frame handy so you can re-run these steps whenever the source data changes.
 
@@ -56,7 +56,7 @@ dict <- infer_dictionary(
 
 The dictionary lists every column and assigns a `column_role` (identifier, attribute, measurement, temporal, or categorical). Move through the rows and fill in `column_label`, `column_description`, and `value_type` so reviewers understand what each field means, and mark columns as `required` when they must appear in every row.
 
-## 3) Describe the dataset and tables
+## 3) Describe the dataset and tables {#describe-the-dataset-and-tables}
 
 ```{r}
 dataset_meta <- tibble::tibble(

@@ -7,7 +7,7 @@
 #' @param query Original query string
 #' @param role I-ADOPT role hint
 #' @return Character vector of query variants (original always first)
-#' @keywords internal
+#' @noRd
 .expand_query <- function(query, role) {
   if (is.null(query) || is.na(query) || !nzchar(query)) {
     return(character())
@@ -726,7 +726,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 #' @param query Search query string
 #' @param role I-ADOPT role (typically "unit")
 #' @return Tibble of matching terms
-#' @keywords internal
+#' @noRd
 .search_qudt <- function(query, role) {
   tokens <- unique(strsplit(gsub("[^a-z0-9]+", " ", tolower(query)), "\\s+")[[1]])
   tokens <- tokens[nzchar(tokens)]
@@ -805,7 +805,7 @@ pattern <- paste(tokens, collapse = ".*")
 #' @param query Search query string (taxon name)
 #' @param role I-ADOPT role (typically "entity")
 #' @return Tibble of matching taxa
-#' @keywords internal
+#' @noRd
 .search_gbif <- function(query, role) {
   encoded <- utils::URLencode(query, reserved = TRUE)
   # Use GBIF species match for exact-ish matches
@@ -868,7 +868,7 @@ pattern <- paste(tokens, collapse = ".*")
 #' @param query Search query string (taxon name)
 #' @param role I-ADOPT role (typically "entity")
 #' @return Tibble of matching marine species
-#' @keywords internal
+#' @noRd
 .search_worms <- function(query, role) {
   encoded <- utils::URLencode(query, reserved = TRUE)
   url <- paste0(
@@ -1743,7 +1743,7 @@ pattern <- paste(tokens, collapse = ".*")
 #' - Wikidata is alignment-only
 #'
 #' @return Tibble with role preferences and priority rankings
-#' @keywords internal
+#' @noRd
 .role_preferences <- function() {
   path <- system.file("extdata", "ontology-preferences.csv", package = "metasalmon", mustWork = FALSE)
   if (!file.exists(path) || path == "") {
@@ -1804,7 +1804,7 @@ sources_for_role <- function(role) {
 #' @param query Original search query
 #' @param top_k Number of top candidates to rerank (default 50)
 #' @return Data frame with optional embedding_score column
-#' @keywords internal
+#' @noRd
 .apply_embedding_rerank <- function(df, query, top_k = 50L) {
   # Check if embedding rerank is enabled
   if (!.embedding_rerank_enabled()) {
@@ -1862,7 +1862,7 @@ sources_for_role <- function(role) {
 }
 
 #' Check if embedding rerank is enabled
-#' @keywords internal
+#' @noRd
 .embedding_rerank_enabled <- function() {
   tolower(Sys.getenv("METASALMON_EMBEDDING_RERANK", unset = "")) %in% c("1", "true", "yes")
 }
@@ -1988,7 +1988,7 @@ sources_for_role <- function(role) {
 #' @param iri_boost Per-additional-source boost when IRI matches
 #' @param label_boost Per-additional-source boost when only label matches
 #' @return Data frame with agreement boosts applied and agreement_sources column
-#' @keywords internal
+#' @noRd
 .apply_cross_source_agreement <- function(df, iri_boost = 0.5, label_boost = 0.2) {
   if (nrow(df) < 2) {
     df$agreement_sources <- 1L

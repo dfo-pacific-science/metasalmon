@@ -74,9 +74,9 @@ See `example-data-README.md` for the record/resource URLs, row counts, licensing
 
 To continue:
 
-- [5-Minute Quickstart](articles/metasalmon.html) — create the full package with metadata and export it.
-- [Publishing Data Packages](articles/data-dictionary-publication.html) — end-to-end publication checklist.
-- [Linking to Standard Vocabularies](articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
+- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) — create the full package with metadata and export it.
+- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — end-to-end publication checklist.
+- [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
 ## Package-native LLM semantic review (optional)
 
@@ -126,12 +126,12 @@ In other words: **create -> review in Excel -> remove `REVIEW:` markers -> rebui
 
 ## Who Is This For?
 
-| If you are...                           | Start here                                                                 |
-| --------------------------------------- | -------------------------------------------------------------------------- |
-| A biologist who wants to share data     | [5-Minute Quickstart](articles/metasalmon.html)                            |
-| Curious how it works                    | [How It Fits Together](#how-it-fits-together)                              |
-| A data steward standardizing datasets   | [Data Dictionary & Publication](articles/data-dictionary-publication.html) |
-| Reading CSVs from private GitHub repos  | [GitHub CSV Access](articles/github-csv-access.html)                       |
+| If you are...                           | Start here                                                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| A biologist who wants to share data     | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)                         |
+| Curious how it works                    | [How It Fits Together](#how-it-fits-together)                                                                             |
+| A data steward standardizing datasets   | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
+| Reading CSVs from private GitHub repos  | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html)                    |
 
 ## Video Walkthrough
 
@@ -195,8 +195,8 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 ## Getting Help
 
-- [Frequently Asked Questions](articles/faq.html)
-- [Glossary of Terms](articles/glossary.html)
+- [Frequently Asked Questions](https://dfo-pacific-science.github.io/metasalmon/articles/faq.html)
+- [Glossary of Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.html)
 - [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
 - [Salmon Domain Ontology](https://w3id.org/smn/)
@@ -204,7 +204,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 ## How It Fits Together
 
-`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you to bounce back out to a separate ChatGPT export loop.
+`metasalmon` brings together four pieces: your raw data, the Salmon Data Package specification, the Salmon Domain Ontology (and other vocabularies), optional in-package LLM review, and the review files written into the package itself. When you finish the workflow, the dictionary, dataset/table metadata, and optional code lists are already aligned with the specification, which makes the package ready to publish. The ontology keeps the column meanings consistent, and the package-native review workflow helps draft descriptions and term choices without forcing you into a separate prompt-export side path.
 
 The high-level flow is:
 
@@ -213,7 +213,7 @@ The high-level flow is:
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
-- **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus `README-review.txt` / `semantic_suggestions.csv`, not an external ChatGPT export.
+- **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus `README-review.txt` / `semantic_suggestions.csv`, not an external prompt-export workflow.
 
 <script>
 // Prevent Mermaid from auto-rendering before we prepare the code blocks.
@@ -251,8 +251,8 @@ flowchart LR
   Spec["Salmon Data Package specification"] --> Package["Package root + data/ + datapackage.json"]
   Ontology["Salmon Domain Ontology and published vocabularies"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
   Ontology["Salmon Domain Ontology and published vocabularies"] --> Package["Package root + data/ + datapackage.json"]
-  GPT["Salmon Data Standardizer GPT"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
-  GPT["Salmon Data Standardizer GPT"] --> Package["Package root + data/ + datapackage.json"]
+  Review["Package-native review helpers"] --> Dict["metadata/column_dictionary.csv + metadata/codes.csv"]
+  Review["Package-native review helpers"] --> Package["Package root + data/ + datapackage.json"]
 </textarea>
 
 ## For Developers
@@ -295,6 +295,6 @@ pkgdown::build_site()
 
 This package can link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) for shared terms and to the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) for DFO-specific terms. Canonical IRIs are explicit: SMN uses `https://w3id.org/smn/<Term>` and GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not silently rewrite legacy `salmon:` IRIs.
 
-See the [Reusing Standards for Salmon Data Terms](articles/reusing-standards-salmon-data-terms.html) guide for details.
+See the [Reusing Standards for Salmon Data Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) guide for details.
 
 </details>

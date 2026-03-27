@@ -4,6 +4,9 @@
 
 One-shot package creation from raw tables
 
+- [`metasalmon-package`](https://dfo-pacific-science.github.io/metasalmon/reference/metasalmon.md)
+  [`metasalmon`](https://dfo-pacific-science.github.io/metasalmon/reference/metasalmon.md)
+  : metasalmon: Utilities for Salmon Data Packages
 - [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   : Create a Salmon Data Package directly from raw tables
 - [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)

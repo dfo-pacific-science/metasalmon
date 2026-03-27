@@ -4,11 +4,11 @@
 \name{metasalmon}
 \alias{metasalmon-package}
 \alias{metasalmon}
-\title{metasalmon: Salmon Monitoring Utilities}
+\title{metasalmon: Utilities for Salmon Data Packages}
 \description{
-Package scaffold for ingesting, validating, transforming, summarizing, and
-visualizing salmon monitoring datasets. Functions and data will be added
-incrementally.
+Tools to scaffold, standardize, validate, transform, and package salmon
+datasets using the Salmon Data Package conventions plus shared and
+DFO-specific salmon vocabularies.
 }
 \seealso{
 Useful links:
@@ -21,4 +21,3 @@ Useful links:
 \strong{Maintainer}: Brett Johnson \email{brettthomasjohnson@gmail.com}
 
 }
-\keyword{internal}

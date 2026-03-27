@@ -135,7 +135,7 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 ## When to skip linking
 
 - If a column is purely administrative or custom to your survey, it is fine to leave `term_iri` blank and rely on your own `column_description`.
-- If you cannot find a fitting term, use metadata-first workflows (`gpt_proposed_terms.csv`) or the new gap detection tools in metasalmon:
+- If you cannot find a fitting term, use a metadata-first proposed-terms workflow (for example a local `proposed_terms.csv`) or the new gap detection tools in metasalmon:
   - `detect_semantic_term_gaps()` identifies candidates where SMN is missing but fallback sources found useful matches.
   - `render_ontology_term_request()` lets you choose shared SMN vs profile-specific requests and generate ready-to-post issue text.
   - `submit_term_request_issues()` creates GitHub issues (dry-run first) against the ontology request template.
@@ -163,6 +163,6 @@ Treat the suggestions as a starting point, not gospel. The helper above is just 
 
 ## Next steps
 
-- See the "How It Fits Together" section in the README for context on how the dictionary, ontology, and GPT assistant team up.
+- See the "How It Fits Together" section in the README for context on how the dictionary, ontology, and package-native review workflow fit together.
 - Follow the [Publishing Data Packages](data-dictionary-publication.html) guide when you finalize your metadata before publishing.
 - For AI-assisted drafting and package-native review, see the [optional LLM semantic review workflow](../index.html#package-native-llm-semantic-review-optional) on the package home page when you want help reviewing shortlisted terms.

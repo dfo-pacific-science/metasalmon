@@ -29,7 +29,7 @@ df <- read_csv("my-table.csv")
 
 If you already have a dictionary and metadata from the quickstart, skip
 directly to [Describe the dataset and
-tables](#id_3-describe-the-dataset-and-tables).
+tables](#describe-the-dataset-and-tables).
 
 Keep a working copy of your data frame handy so you can re-run these
 steps whenever the source data changes.

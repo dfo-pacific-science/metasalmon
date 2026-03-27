@@ -1,6 +1,6 @@
 # Deduplicate proposed ontology terms
 
-Applies I-ADOPT compositional deduplication to a gpt_proposed_terms
+Applies I-ADOPT compositional deduplication to a proposed-terms
 dataframe. This prevents term proliferation by:
 
 1.  Removing duplicates across tables (same term_label)
@@ -24,7 +24,7 @@ deduplicate_proposed_terms(proposed_terms, warn_threshold = 30L)
 - proposed_terms:
 
   A data frame with columns: term_label, term_definition, term_type,
-  suggested_parent_iri. Typically loaded from gpt_proposed_terms.csv.
+  suggested_parent_iri. Typically loaded from a proposed-terms CSV.
 
 - warn_threshold:
 
@@ -70,7 +70,7 @@ facet handling.
 ``` r
 if (FALSE) { # \dontrun{
 # Load raw proposed terms
-proposed <- readr::read_csv("work/semantics/gpt_proposed_terms.csv")
+proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
 
 # Deduplicate
 deduped <- deduplicate_proposed_terms(proposed)
@@ -79,6 +79,6 @@ deduped <- deduplicate_proposed_terms(proposed)
 deduped |> dplyr::filter(collapsed_from > 1)
 
 # Write cleaned output
-readr::write_csv(deduped, "work/semantics/gpt_proposed_terms_deduped.csv")
+readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
 } # }
 ```

@@ -176,9 +176,9 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 - If a column is purely administrative or custom to your survey, it is
   fine to leave `term_iri` blank and rely on your own
   `column_description`.
-- If you cannot find a fitting term, use metadata-first workflows
-  (`gpt_proposed_terms.csv`) or the new gap detection tools in
-  metasalmon:
+- If you cannot find a fitting term, use a metadata-first proposed-terms
+  workflow (for example a local `proposed_terms.csv`) or the new gap
+  detection tools in metasalmon:
   - [`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
     identifies candidates where SMN is missing but fallback sources
     found useful matches.
@@ -222,7 +222,8 @@ tweak anything that misses your domain nuance.
 ### Next steps
 
 - See the “How It Fits Together” section in the README for context on
-  how the dictionary, ontology, and GPT assistant team up.
+  how the dictionary, ontology, and package-native review workflow fit
+  together.
 - Follow the [Publishing Data
   Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
   guide when you finalize your metadata before publishing.
