@@ -672,6 +672,77 @@ test_that("create_sdp default code-level semantic seeding includes low-cardinali
   expect_setequal(unique(seen_codes$column_name), c("run", "station"))
 })
 
+test_that("create_sdp prefills legacy estimate-method code IRIs without overwriting explicit values", {
+  resources <- list(
+    escapement = tibble::tibble(
+      ESTIMATE_METHOD = c("Area Under the Curve", "Not Applicable", "Sonar-ARIS"),
+      RUN_TYPE = c("EARLY", "LATE", "EARLY"),
+      count = c(10L, 20L, 30L)
+    )
+  )
+  seed_codes <- tibble::tibble(
+    dataset_id = rep("scope-demo", 4),
+    table_id = rep("escapement", 4),
+    column_name = c("ESTIMATE_METHOD", "ESTIMATE_METHOD", "ESTIMATE_METHOD", "RUN_TYPE"),
+    code_value = c("Area Under the Curve", "Not Applicable", "Sonar-ARIS", "EARLY"),
+    code_label = c("Area Under the Curve", "Not Applicable", "Sonar-ARIS", "Early"),
+    code_description = c("Legacy estimate method", "Administrative value", "Legacy estimate method", "Run timing"),
+    vocabulary_iri = NA_character_,
+    term_iri = c(NA_character_, NA_character_, "https://example.org/custom-sonar", NA_character_),
+    term_type = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources,
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE
+  )
+  pkg_path <- create_sdp(
+    resources,
+    path = file.path(withr::local_tempdir(), "estimate-method-prefill"),
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  )
+
+  est_rows_seen <- artifacts$codes[artifacts$codes$column_name == "ESTIMATE_METHOD", , drop = FALSE]
+  est_rows_written <- readr::read_csv(file.path(pkg_path, "metadata", "codes.csv"), show_col_types = FALSE)
+  est_rows_written <- est_rows_written[est_rows_written$column_name == "ESTIMATE_METHOD", , drop = FALSE]
+
+  expect_equal(
+    est_rows_seen$term_iri[est_rows_seen$code_value == "Area Under the Curve"],
+    "https://w3id.org/gcdfo/salmon#AreaUnderTheCurve"
+  )
+  expect_true(
+    is.na(est_rows_seen$term_iri[est_rows_seen$code_value == "Not Applicable"]) ||
+      est_rows_seen$term_iri[est_rows_seen$code_value == "Not Applicable"] == ""
+  )
+  expect_equal(
+    est_rows_seen$term_iri[est_rows_seen$code_value == "Sonar-ARIS"],
+    "https://example.org/custom-sonar"
+  )
+  expect_true(
+    is.na(artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"]) ||
+      artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"] == ""
+  )
+
+  expect_equal(
+    est_rows_written$term_iri[est_rows_written$code_value == "Area Under the Curve"],
+    "https://w3id.org/gcdfo/salmon#AreaUnderTheCurve"
+  )
+  expect_true(
+    is.na(est_rows_written$term_iri[est_rows_written$code_value == "Not Applicable"]) ||
+      est_rows_written$term_iri[est_rows_written$code_value == "Not Applicable"] == ""
+  )
+  expect_equal(
+    est_rows_written$term_iri[est_rows_written$code_value == "Sonar-ARIS"],
+    "https://example.org/custom-sonar"
+  )
+})
+
 test_that("create_sdp filters bad non-measurement term IRIs before auto-apply", {
   fuller_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
   fraser_coho_fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)

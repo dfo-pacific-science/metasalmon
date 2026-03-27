@@ -465,6 +465,7 @@ infer_salmon_datapackage_artifacts <- function(
   } else {
     .ms_normalize_codes(seed_codes)
   }
+  codes <- .ms_prefill_legacy_estimate_method_code_terms(codes, dict = dict)
 
   dataset_meta <- if (is.null(seed_dataset_meta) || isTRUE(seed_dataset_meta)) {
     infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
@@ -1357,6 +1358,71 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(NULL)
   }
   .ms_align_cols(codes, .ms_codes_cols())
+}
+
+.ms_prefill_legacy_estimate_method_code_terms <- function(codes, dict = NULL) {
+  codes <- .ms_normalize_codes(codes)
+  if (is.null(codes) || nrow(codes) == 0) {
+    return(codes)
+  }
+
+  normalize_text <- function(x) {
+    out <- trimws(as.character(x))
+    out[is.na(out) | !nzchar(out)] <- NA_character_
+    tolower(out)
+  }
+  expand_gcdfo_term <- function(x) {
+    out <- trimws(as.character(x))
+    out[is.na(out) | !nzchar(out)] <- NA_character_
+    is_curie <- !is.na(out) & grepl("^gcdfo:", out)
+    out[is_curie] <- sub("^gcdfo:", "https://w3id.org/gcdfo/salmon#", out[is_curie])
+    out
+  }
+  estimate_method_flag <- function(column_name, column_label = NULL, column_description = NULL) {
+    column_name <- if (is.null(column_name)) "" else dplyr::coalesce(as.character(column_name), "")
+    column_label <- if (is.null(column_label)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_label), "")
+    column_description <- if (is.null(column_description)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_description), "")
+    text <- normalize_text(gsub("[^[:alnum:]]+", " ", paste(column_name, column_label, column_description)))
+    !is.na(text) & grepl("\\bestimate\\b", text, perl = TRUE) & grepl("\\bmethod\\b", text, perl = TRUE)
+  }
+
+  estimate_rows <- estimate_method_flag(codes$column_name)
+  if (!is.null(dict) && nrow(dict) > 0) {
+    dict <- .ms_normalize_dictionary(dict)
+    dict_flags <- estimate_method_flag(dict$column_name, dict$column_label, dict$column_description)
+    dict_keys <- paste(
+      dplyr::coalesce(as.character(dict$dataset_id), ""),
+      dplyr::coalesce(as.character(dict$table_id), ""),
+      dplyr::coalesce(as.character(dict$column_name), ""),
+      sep = "\r"
+    )
+    flag_lookup <- stats::setNames(dict_flags, dict_keys)
+    code_keys <- paste(
+      dplyr::coalesce(as.character(codes$dataset_id), ""),
+      dplyr::coalesce(as.character(codes$table_id), ""),
+      dplyr::coalesce(as.character(codes$column_name), ""),
+      sep = "\r"
+    )
+    lookup_flags <- unname(flag_lookup[code_keys])
+    lookup_flags[is.na(lookup_flags)] <- FALSE
+    estimate_rows <- estimate_rows | lookup_flags
+  }
+
+  crosswalk <- nuseds_estimate_method_crosswalk()
+  crosswalk_lookup <- stats::setNames(
+    expand_gcdfo_term(crosswalk$ontology_term),
+    normalize_text(crosswalk$nuseds_value)
+  )
+  mapped_terms <- unname(crosswalk_lookup[normalize_text(codes$code_value)])
+  existing_terms <- trimws(as.character(codes$term_iri))
+  missing_terms <- is.na(existing_terms) | !nzchar(existing_terms)
+  fill_rows <- estimate_rows & missing_terms & !is.na(mapped_terms) & nzchar(mapped_terms)
+
+  if (any(fill_rows)) {
+    codes$term_iri[fill_rows] <- mapped_terms[fill_rows]
+  }
+
+  codes
 }
 
 .ms_parse_logical <- function(x) {
