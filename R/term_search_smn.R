@@ -1,12 +1,12 @@
 # Helpers for Salmon Domain Ontology (SMN) module indexing
 #
-# The shared SMN landing URL (`https://w3id.org/smn/`) currently resolves to a
-# modular Turtle scaffold that imports module files rather than a single
-# RDF/XML term graph. For search, we index the canonical module TTL files from
-# the public salmon-domain-ontology repository as a lightweight lexical index.
+# The shared SMN root (`https://w3id.org/smn/`) is the canonical entrypoint for
+# the latest ontology. For lightweight lexical search we index the canonical
+# module IRIs under `https://w3id.org/smn/modules/...`, which currently remain
+# Turtle-first on W3ID.
 
 .smn_module_urls <- function() {
-  base <- "https://raw.githubusercontent.com/salmon-data-mobilization/salmon-domain-ontology/main/ontology/modules"
+  base <- "https://w3id.org/smn/modules"
   c(
     paste0(base, "/01-entity-systematics.ttl"),
     paste0(base, "/02-observation-measurement.ttl"),
