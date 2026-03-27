@@ -135,6 +135,40 @@ test_that("render_ontology_term_request uses profile scope", {
 })
 
 
+test_that("render_ontology_term_request errors when auto routing needs a profile name", {
+  gaps <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("run_id", "escape_rate"),
+    code_value = c(NA_character_, NA_character_),
+    target_scope = c("column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("term_iri", "term_iri"),
+    target_row_key = c("run_id", "escape_rate"),
+    dictionary_role = c("variable", "variable"),
+    search_query = c("run id", "escape rate"),
+    column_label = c("Run ID", "Escape rate"),
+    column_description = c("Dataset-specific run identifier", "Percent of fish escaping"),
+    top_non_smn_source = c("gbif", "gcdfo"),
+    top_non_smn_label = c("Run event id", "Escape rate"),
+    top_non_smn_iri = c(NA_character_, NA_character_),
+    top_non_smn_ontology = c(NA_character_, "https://w3id.org/gcdfo/salmon#"),
+    top_non_smn_match_type = c("label", "label"),
+    top_non_smn_score = c(0.9, 0.95),
+    candidate_count = c(1L, 1L),
+    non_smn_sources = c("gbif", "gcdfo"),
+    placement_recommendation = c("profile", "smn"),
+    placement_confidence = c(0.82, 0.95),
+    placement_rationale = c("contains internal identifier signal", "shared domain concept")
+  )
+
+  expect_error(
+    render_ontology_term_request(gaps, scope = "auto", ask = FALSE),
+    "Non-interactive profile-scoped requests require `profile_name`"
+  )
+})
+
+
 test_that("submit_term_request_issues dry run and mock post", {
   reqs <- tibble::tibble(
     request_title = c("Request new shared SMN term: escape rate"),

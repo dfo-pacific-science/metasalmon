@@ -376,13 +376,32 @@ render_ontology_term_request <- function(
     }
   } else {
     gaps$profile_name <- NA_character_
-    if (scope == "profile" && is.null(profile_name)) {
-      gaps$request_scope[gaps$request_scope == "profile"] <- "skip"
-      cli::cli_abort("profile_name is required when scope = 'profile' and ask = FALSE.")
+    if (!is.null(profile_name)) {
+      profile_name <- trimws(as.character(profile_name[[1L]]))
     }
-    if (is.null(profile_name)) {
-      profile_name <- "project-profile"
+
+    profile_rows <- which(gaps$request_scope == "profile")
+    profile_name_missing <- is.null(profile_name) || !nzchar(profile_name)
+    if (length(profile_rows) > 0L && profile_name_missing) {
+      profile_terms <- unique(vapply(profile_rows, function(i) {
+        .first_non_empty(c(gaps$top_non_smn_label[[i]], gaps$search_query[[i]], gaps$column_name[[i]], "Unnamed term"))
+      }, character(1), USE.NAMES = FALSE))
+      profile_terms <- profile_terms[nzchar(profile_terms)]
+      profile_detail <- if (length(profile_terms) > 0L) {
+        sprintf(
+          "Profile-scoped rows include: %s.",
+          paste(utils::head(profile_terms, 3L), collapse = ", ")
+        )
+      } else {
+        sprintf("Detected %d profile-scoped row(s).", length(profile_rows))
+      }
+      cli::cli_abort(c(
+        "Non-interactive profile-scoped requests require `profile_name`.",
+        "i" = profile_detail,
+        "x" = "Re-run with `profile_name = 'your-profile'`, set `ask = TRUE`, or override those rows away from `profile`."
+      ))
     }
+
     gaps$profile_name[gaps$request_scope == "profile"] <- profile_name
   }
 
@@ -393,7 +412,10 @@ render_ontology_term_request <- function(
     if (gaps$request_scope[[i]] == "smn") {
       sprintf("Request new shared SMN term: %s", term_label)
     } else if (gaps$request_scope[[i]] == "profile") {
-      profile_label <- .first_non_empty(gaps$profile_name[[i]], "project-profile")
+      profile_label <- .first_non_empty(gaps$profile_name[[i]], "")
+      if (!nzchar(profile_label)) {
+        cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.")
+      }
       sprintf("Request new %s profile term: %s", profile_label, term_label)
     } else {
       sprintf("Skip term request: %s", term_label)
@@ -413,6 +435,9 @@ render_ontology_term_request <- function(
 
     scope <- gaps$request_scope[[i]]
     if (scope == "profile") {
+      if (!nzchar(profile_name)) {
+        cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.")
+      }
       scope_block <- sprintf("Profile: `%s` (default location for this domain term)", profile_name)
     } else if (scope == "smn") {
       scope_block <- "Shared vocabulary candidate for `smn` (reusable across salmon programs and organizations)"
