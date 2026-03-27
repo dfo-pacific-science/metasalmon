@@ -1608,6 +1608,85 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
   )
 })
 
+.ms_write_semantic_validation_fixture <- function(
+    dict_term_iri = "https://example.org/variable",
+    table_observation_unit_iri = "https://w3id.org/smn/Observation"
+) {
+  resources <- list(
+    main = tibble::tibble(
+      id = "A",
+      escapement = 1250
+    )
+  )
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "semantic-validation-demo",
+    title = "Semantic validation demo",
+    description = "Fixture for semantic validation regression tests.",
+    creator = "Test Author",
+    contact_name = "Test Contact",
+    contact_email = "test@example.org",
+    license = "Open Government Licence - Canada"
+  )
+
+  table_meta <- tibble::tibble(
+    dataset_id = "semantic-validation-demo",
+    table_id = "main",
+    file_name = "data/main.csv",
+    table_label = "Main",
+    description = "One row per record.",
+    observation_unit = "record",
+    observation_unit_iri = table_observation_unit_iri,
+    primary_key = "id"
+  )
+
+  dict <- infer_dictionary(
+    resources$main,
+    dataset_id = "semantic-validation-demo",
+    table_id = "main"
+  )
+  dict <- fill_measurement_components(dict)
+  dict$term_iri[dict$column_name == "escapement"] <- dict_term_iri
+
+  temp_dir <- tempfile("semantic-validation-")
+  dir.create(temp_dir, recursive = TRUE)
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  temp_dir
+}
+
+test_that("validate_salmon_datapackage warns cleanly for semantic issues without crashing cli pluralization", {
+  pkg_path <- .ms_write_semantic_validation_fixture(
+    dict_term_iri = "http://w3id.org/salmon/SpawnerAbundance"
+  )
+
+  expect_warning(
+    result <- suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
+    "reported 1 semantic issue"
+  )
+
+  expect_true(is.list(result))
+  expect_true(any(grepl("legacy SMN namespace", result$semantic_validation$issues$message, fixed = TRUE)))
+})
+
+test_that("validate_salmon_datapackage fails final validation when tables.csv keeps REVIEW-prefixed IRIs", {
+  pkg_path <- .ms_write_semantic_validation_fixture(
+    table_observation_unit_iri = "REVIEW: https://w3id.org/smn/Observation"
+  )
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
+    "REVIEW-prefixed IRI"
+  )
+})
+
 .ms_write_composite_guardrail_fixture <- function(
     route_value = NULL,
     datapackage_route_value = NULL,

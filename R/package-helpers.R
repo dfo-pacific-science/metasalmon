@@ -1127,10 +1127,37 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
   }
 
+  if (isTRUE(require_iris) && nrow(table_review_issues) > 0) {
+    preview <- utils::head(unique(table_review_issues$message), 10)
+    abort_lines <- c(
+      sprintf(
+        "Final validation failed with %d REVIEW-prefixed table metadata issue%s.",
+        nrow(table_review_issues),
+        ifelse(nrow(table_review_issues) == 1, "", "s")
+      ),
+      stats::setNames(preview, rep("x", length(preview)))
+    )
+    if (nrow(table_review_issues) > length(preview)) {
+      abort_lines <- c(
+        abort_lines,
+        "i" = sprintf(
+          "%d more REVIEW-prefixed table metadata issue%s not shown.",
+          nrow(table_review_issues) - length(preview),
+          ifelse(nrow(table_review_issues) - length(preview) == 1, "", "s")
+        )
+      )
+    }
+    cli::cli_abort(abort_lines)
+  }
+
   if (nrow(semantic_validation$issues) > 0) {
     preview <- utils::head(unique(semantic_validation$issues$message), 3)
     warn_lines <- c(
-      "Package structure is valid, but {.fn validate_semantics} reported issue{?s}.",
+      sprintf(
+        "Package structure is valid, but {.fn validate_semantics} reported %d semantic issue%s.",
+        nrow(semantic_validation$issues),
+        ifelse(nrow(semantic_validation$issues) == 1, "", "s")
+      ),
       stats::setNames(preview, rep("!", length(preview)))
     )
     if (nrow(semantic_validation$issues) > length(preview)) {
