@@ -1592,6 +1592,12 @@ test_that("validate_salmon_datapackage validates a CU/composite-style package", 
     table_id = "cu_composite_escapement"
   )
   dict <- fill_measurement_components(dict)
+  dict$column_description <- c(
+    "Conservation unit identifier.",
+    "Observation year.",
+    "Escapement estimate value.",
+    "Estimate type code."
+  )
 
   codes <- tibble::tibble(
     dataset_id = "cu-composite-demo",
@@ -1693,7 +1699,12 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
 
 .ms_write_semantic_validation_fixture <- function(
     dict_term_iri = "https://example.org/variable",
-    table_observation_unit_iri = "https://w3id.org/smn/Observation"
+    table_observation_unit_iri = "https://w3id.org/smn/Observation",
+    dataset_description = "Fixture for semantic validation regression tests.",
+    dataset_creator = "Test Author",
+    table_description = "One row per record.",
+    table_observation_unit = "record",
+    escapement_column_description = "Escapement count"
 ) {
   resources <- list(
     main = tibble::tibble(
@@ -1705,8 +1716,8 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
   dataset_meta <- tibble::tibble(
     dataset_id = "semantic-validation-demo",
     title = "Semantic validation demo",
-    description = "Fixture for semantic validation regression tests.",
-    creator = "Test Author",
+    description = dataset_description,
+    creator = dataset_creator,
     contact_name = "Test Contact",
     contact_email = "test@example.org",
     license = "Open Government Licence - Canada"
@@ -1717,8 +1728,8 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
     table_id = "main",
     file_name = "data/main.csv",
     table_label = "Main",
-    description = "One row per record.",
-    observation_unit = "record",
+    description = table_description,
+    observation_unit = table_observation_unit,
     observation_unit_iri = table_observation_unit_iri,
     primary_key = "id"
   )
@@ -1730,6 +1741,7 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
   )
   dict <- fill_measurement_components(dict)
   dict$term_iri[dict$column_name == "escapement"] <- dict_term_iri
+  dict$column_description[dict$column_name == "escapement"] <- escapement_column_description
 
   temp_dir <- tempfile("semantic-validation-")
   dir.create(temp_dir, recursive = TRUE)
@@ -1767,6 +1779,45 @@ test_that("validate_salmon_datapackage fails final validation when tables.csv ke
   expect_error(
     suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
     "REVIEW-prefixed IRI"
+  )
+})
+
+test_that("validate_salmon_datapackage fails final validation on unresolved metadata placeholders", {
+  pkg_path <- .ms_write_semantic_validation_fixture(
+    dataset_description = "MISSING DESCRIPTION: describe the dataset before final review.",
+    dataset_creator = "MISSING METADATA: add creator, team, or originating program.",
+    table_description = "MISSING DESCRIPTION: describe what each row means.",
+    table_observation_unit = "MISSING METADATA: describe the observation unit.",
+    escapement_column_description = "MISSING DESCRIPTION: define what 'escapement' means."
+  )
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
+    "unresolved review placeholder"
+  )
+})
+
+test_that("validate_salmon_datapackage fails final validation when tables.csv observation_unit_iri is blank", {
+  pkg_path <- .ms_write_semantic_validation_fixture(
+    table_observation_unit_iri = ""
+  )
+
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
+    "observation_unit_iri is blank"
+  )
+})
+
+test_that("validate_salmon_datapackage keeps review-ready placeholder packages valid in non-strict mode", {
+  pkg_path <- .ms_write_semantic_validation_fixture(
+    table_observation_unit_iri = "",
+    dataset_description = "MISSING DESCRIPTION: describe the dataset before final review.",
+    table_observation_unit = "MISSING METADATA: describe the observation unit.",
+    escapement_column_description = "MISSING DESCRIPTION: define what 'escapement' means."
+  )
+
+  expect_no_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE))
   )
 })
 

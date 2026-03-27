@@ -886,7 +886,7 @@ create_sdp <- function(
     info_lines <- c(info_lines, "i" = update_note)
   }
 
-  cli::cli_alert_info(info_lines)
+  cli::cli_inform(info_lines)
 
   invisible(pkg_path)
 }
@@ -1082,6 +1082,81 @@ read_salmon_datapackage <- function(path) {
   issues
 }
 
+.ms_validation_row_context <- function(df, row, id_fields = character()) {
+  id_fields <- intersect(id_fields, names(df))
+  if (length(id_fields) == 0) {
+    return(sprintf("row %s", row))
+  }
+
+  bits <- vapply(id_fields, function(field) {
+    value <- .ms_scalar_text(df[[field]][[row]])
+    if (!nzchar(value)) {
+      return("")
+    }
+    sprintf("%s=%s", field, value)
+  }, character(1))
+  bits <- bits[nzchar(bits)]
+
+  if (length(bits) == 0) {
+    return(sprintf("row %s", row))
+  }
+
+  sprintf("row %s (%s)", row, paste(bits, collapse = ", "))
+}
+
+.ms_collect_review_placeholder_issues <- function(df, source_name, id_fields = character()) {
+  if (!is.data.frame(df) || nrow(df) == 0) {
+    return(tibble::tibble())
+  }
+
+  fields <- names(df)
+  if (length(fields) == 0) {
+    return(tibble::tibble())
+  }
+
+  purrr::map_dfr(fields, function(field) {
+    vals <- as.character(df[[field]])
+    rows <- which(!is.na(vals) & vapply(vals, .ms_is_review_placeholder, logical(1)))
+    if (length(rows) == 0) {
+      return(tibble::tibble())
+    }
+
+    tibble::tibble(
+      message = vapply(rows, function(row) {
+        sprintf(
+          "%s %s field %s still contains an unresolved review placeholder (%s). Replace it before final validation.",
+          source_name,
+          .ms_validation_row_context(df, row, id_fields = id_fields),
+          field,
+          vals[[row]]
+        )
+      }, character(1))
+    )
+  })
+}
+
+.ms_collect_missing_table_observation_unit_iri_issues <- function(table_meta, source_name = "metadata/tables.csv") {
+  if (!is.data.frame(table_meta) || nrow(table_meta) == 0 || !"observation_unit_iri" %in% names(table_meta)) {
+    return(tibble::tibble())
+  }
+
+  vals <- as.character(table_meta$observation_unit_iri)
+  rows <- which(is.na(vals) | !nzchar(trimws(vals)))
+  if (length(rows) == 0) {
+    return(tibble::tibble())
+  }
+
+  tibble::tibble(
+    message = vapply(rows, function(row) {
+      sprintf(
+        "%s %s field observation_unit_iri is blank. Final validation requires a resolved table observation-unit IRI.",
+        source_name,
+        .ms_validation_row_context(table_meta, row, id_fields = c("table_id", "file_name"))
+      )
+    }, character(1))
+  )
+}
+
 #' Validate a Salmon Data Package end to end
 #'
 #' Reads a package from disk, checks that metadata/data files stay aligned,
@@ -1125,6 +1200,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     .ms_abort_package_validation_issues(issues)
   }
 
+  final_review_issues <- if (isTRUE(require_iris)) {
+    dplyr::bind_rows(
+      .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv", id_fields = "dataset_id"),
+      .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", id_fields = c("table_id", "file_name")),
+      .ms_collect_missing_table_observation_unit_iri_issues(pkg$tables),
+      .ms_collect_review_placeholder_issues(pkg$dictionary, "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")),
+      .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value"))
+    )
+  } else {
+    tibble::tibble()
+  }
+
   dict <- validate_dictionary(pkg$dictionary, require_iris = require_iris)
   semantic_validation <- validate_semantics(dict, require_iris = require_iris)
   table_review_issues <- .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv")
@@ -1132,23 +1219,28 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
   }
 
-  if (isTRUE(require_iris) && nrow(table_review_issues) > 0) {
-    preview <- utils::head(unique(table_review_issues$message), 10)
+  if (isTRUE(require_iris)) {
+    final_review_issues <- dplyr::bind_rows(final_review_issues, table_review_issues)
+  }
+
+  if (isTRUE(require_iris) && nrow(final_review_issues) > 0) {
+    preview <- utils::head(unique(final_review_issues$message), 10)
     abort_lines <- c(
       sprintf(
-        "Final validation failed with %d REVIEW-prefixed table metadata issue%s.",
-        nrow(table_review_issues),
-        ifelse(nrow(table_review_issues) == 1, "", "s")
+        "Final validation failed with %d unresolved review issue%s.",
+        nrow(final_review_issues),
+        ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
-      stats::setNames(preview, rep("x", length(preview)))
+      stats::setNames(preview, rep("x", length(preview))),
+      "i" = "Resolve placeholder metadata, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
-    if (nrow(table_review_issues) > length(preview)) {
+    if (nrow(final_review_issues) > length(preview)) {
       abort_lines <- c(
         abort_lines,
         "i" = sprintf(
-          "%d more REVIEW-prefixed table metadata issue%s not shown.",
-          nrow(table_review_issues) - length(preview),
-          ifelse(nrow(table_review_issues) - length(preview) == 1, "", "s")
+          "%d more unresolved review issue%s not shown.",
+          nrow(final_review_issues) - length(preview),
+          ifelse(nrow(final_review_issues) - length(preview) == 1, "", "s")
         )
       )
     }
@@ -1159,23 +1251,23 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     preview <- utils::head(unique(semantic_validation$issues$message), 3)
     warn_lines <- c(
       sprintf(
-        "Package structure is valid, but {.fn validate_semantics} reported %d semantic issue%s.",
+        "Package structure is valid, but validate_semantics() reported %d semantic issue%s.",
         nrow(semantic_validation$issues),
         ifelse(nrow(semantic_validation$issues) == 1, "", "s")
       ),
-      stats::setNames(preview, rep("!", length(preview)))
+      paste0("- ", preview)
     )
     if (nrow(semantic_validation$issues) > length(preview)) {
       warn_lines <- c(
         warn_lines,
-        "i" = sprintf(
+        sprintf(
           "%d more semantic issue%s returned in the result.",
           nrow(semantic_validation$issues) - length(preview),
           ifelse(nrow(semantic_validation$issues) - length(preview) == 1, "", "s")
         )
       )
     }
-    cli::cli_warn(warn_lines)
+    cli::cli_warn(paste(warn_lines, collapse = "\n"))
   }
 
   cli::cli_alert_success("Salmon Data Package validation passed")
