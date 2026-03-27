@@ -17,8 +17,7 @@ fetch_salmon_ontology <- function(
     cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
     timeout_seconds = 30,
     fallback_urls = c(
-      "https://w3id.org/smn",
-      "https://dfo-pacific-science.github.io/salmon-domain-ontology/smn.ttl"
+      "https://w3id.org/smn"
     )) {
 
   dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)

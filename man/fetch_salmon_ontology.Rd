@@ -9,8 +9,7 @@ fetch_salmon_ontology(
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
   timeout_seconds = 30,
-  fallback_urls = c("https://w3id.org/smn",
-    "https://dfo-pacific-science.github.io/salmon-domain-ontology/smn.ttl")
+  fallback_urls = c("https://w3id.org/smn")
 )
 }
 \arguments{
