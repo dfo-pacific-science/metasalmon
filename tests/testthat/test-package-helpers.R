@@ -839,6 +839,89 @@ test_that("create_sdp paired value/unit measurements auto-apply only the unit hi
   expect_equal(sample_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M2")
 })
 
+test_that("create_sdp uses the matching table context when semantic seeding multi-table resources", {
+  resources <- list(
+    catches = tibble::tibble(
+      species = c("Coho", "Chinook"),
+      count = c(10L, 20L)
+    ),
+    event = tibble::tibble(
+      sampleSizeValue = c(2046.33, 131340.85),
+      sampleSizeUnit = c("square metre", "square metre"),
+      eventType = c("deployment", "deployment")
+    )
+  )
+
+  fake_find_terms <- function(query, role = NA_character_, sources = c("smn", "gcdfo", "ols", "nvs"), ...) {
+    query <- tolower(query)
+
+    if (identical(role, "unit") && identical(query, "square meter")) {
+      return(tibble::tibble(
+        label = "Square Meter",
+        iri = "http://qudt.org/vocab/unit/M2",
+        source = "qudt",
+        ontology = "qudt",
+        role = "unit",
+        match_type = "label_exact",
+        definition = "Area unit",
+        score = 4.8
+      ))
+    }
+
+    if (identical(role, "variable") && grepl("sample size", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "Sample size",
+        iri = "http://example.org/sample-size",
+        source = "ols",
+        ontology = "demo",
+        role = "variable",
+        match_type = "label_exact",
+        definition = "Still too generic to auto-apply safely here",
+        score = 3.2
+      ))
+    }
+
+    if (identical(role, "property") && grepl("sample size", query, fixed = TRUE)) {
+      return(tibble::tibble(
+        label = "collection size",
+        iri = "http://example.org/collection-size",
+        source = "ols",
+        ontology = "demo",
+        role = "property",
+        match_type = "label_exact",
+        definition = "Generic size property",
+        score = 3.2
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "paired-value-unit-multi-table"),
+        dataset_id = "paired-value-multi-demo",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  sample_row <- dict_written[dict_written$table_id == "event" & dict_written$column_name == "sampleSizeValue", , drop = FALSE]
+
+  expect_equal(sample_row$column_role[[1]], "measurement")
+  expect_true(is.na(sample_row$term_iri[[1]]) || sample_row$term_iri[[1]] == "")
+  expect_true(is.na(sample_row$property_iri[[1]]) || sample_row$property_iri[[1]] == "")
+  expect_true(is.na(sample_row$entity_iri[[1]]) || sample_row$entity_iri[[1]] == "")
+  expect_equal(sample_row$unit_iri[[1]], "http://qudt.org/vocab/unit/M2")
+})
+
 test_that("create_sdp unit seeding can use role-augmented unit sources", {
   resources <- list(
     hydro = tibble::tibble(

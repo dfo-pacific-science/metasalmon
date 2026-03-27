@@ -155,7 +155,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         cli::cli_alert_info("Seeding semantic suggestions during infer_dictionary().")
       }
       suggest_args <- list(
-        df = resources[[1]],
+        df = resources,
         dict = dict,
         sources = semantic_sources,
         max_per_role = semantic_max_per_role,

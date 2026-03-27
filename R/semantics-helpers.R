@@ -334,6 +334,32 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
+  resource_lookup <- NULL
+  default_df <- NULL
+
+  if (is.list(df) && !inherits(df, "data.frame")) {
+    if (length(df) == 0) {
+      cli::cli_abort("{.arg df} cannot be an empty resource list")
+    }
+    if (is.null(names(df)) || any(!nzchar(names(df)))) {
+      cli::cli_abort("{.arg df} list inputs must be named by table_id")
+    }
+    if (anyDuplicated(names(df)) > 0) {
+      cli::cli_abort("{.arg df} table_id names must be unique")
+    }
+    bad_resource <- vapply(df, function(x) !inherits(x, "data.frame"), logical(1))
+    if (any(bad_resource)) {
+      bad <- which(bad_resource)
+      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}")
+    }
+    resource_lookup <- df
+    default_df <- resource_lookup[[1L]]
+  } else if (is.null(df) || inherits(df, "data.frame")) {
+    default_df <- df
+  } else {
+    cli::cli_abort("{.arg df} must be NULL, a data frame, or a named list of data frames")
+  }
+
   dict <- tibble::as_tibble(dict)
   codes <- if (is.null(codes)) tibble::tibble() else tibble::as_tibble(codes)
   table_meta <- if (is.null(table_meta)) tibble::tibble() else tibble::as_tibble(table_meta)
@@ -435,6 +461,18 @@ suggest_semantics <- function(df,
     if (length(candidates) == 0) return(FALSE)
     any(grepl(pattern, candidates, ignore.case = TRUE))
   }
+  current_table_df <- function(row) {
+    if (is.null(resource_lookup)) {
+      return(default_df)
+    }
+
+    table_id <- as.character(row$table_id[[1]] %||% "")
+    if (nzchar(table_id) && table_id %in% names(resource_lookup)) {
+      return(resource_lookup[[table_id]])
+    }
+
+    default_df
+  }
   normalize_measurement_unit_query <- function(x) {
     text <- tolower(as.character(x %||% ""))
     text[is.na(text)] <- ""
@@ -505,13 +543,18 @@ suggest_semantics <- function(df,
       return("")
     }
 
+    table_df <- current_table_df(row)
+    if (is.null(table_df) || !inherits(table_df, "data.frame")) {
+      return("")
+    }
+
     stem <- sub("value$", "", column_name, ignore.case = TRUE)
-    sibling_hits <- names(df)[tolower(names(df)) == paste0(tolower(stem), "unit")]
+    sibling_hits <- names(table_df)[tolower(names(table_df)) == paste0(tolower(stem), "unit")]
     if (length(sibling_hits) == 0) {
       return("")
     }
 
-    sibling_values <- as.character(df[[sibling_hits[[1]]]])
+    sibling_values <- as.character(table_df[[sibling_hits[[1]]]])
     sibling_values <- trimws(sibling_values[!is.na(sibling_values)])
     sibling_values <- sibling_values[nzchar(sibling_values)]
     if (length(sibling_values) == 0) {

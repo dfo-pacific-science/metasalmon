@@ -210,6 +210,8 @@ test_that("infer_dictionary accepts named resource lists and can seed metadata-a
 
   fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"), max_per_role = 1,
                             include_dwc = FALSE, codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
+    expect_type(df, "list")
+    expect_equal(sort(names(df)), c("catches", "environments"))
     expect_true(all(c("catches", "environments") %in% table_meta$table_id))
     expect_equal(dataset_meta$dataset_id[[1]], "dataset-1")
     expect_true("keywords" %in% names(dataset_meta))
@@ -1833,6 +1835,8 @@ test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts",
 
   fake_suggest <- function(df, dict, sources = c("smn", "gcdfo", "ols", "nvs"), max_per_role = 1,
                            include_dwc = FALSE, codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
+    expect_type(df, "list")
+    expect_equal(sort(names(df)), c("catches", "stations"))
     expect_true(all(c("catches", "stations") %in% table_meta$table_id))
     expect_true("dataset_id" %in% names(dataset_meta))
     expect_true("keywords" %in% names(dataset_meta))

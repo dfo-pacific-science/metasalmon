@@ -480,7 +480,7 @@ infer_salmon_datapackage_artifacts <- function(
     }
 
     suggest_args <- list(
-      df = resources[[1L]],
+      df = resources,
       dict = dict,
       sources = semantic_sources,
       max_per_role = semantic_max_per_role,
