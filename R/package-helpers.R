@@ -2331,9 +2331,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     if (isTRUE(has_suggestions)) "[ ] 5. Review semantic_suggestions.csv first. Then finalize semantic IRIs in metadata/column_dictionary.csv and any observation-unit IRIs in metadata/tables.csv. For measurement columns, term_iri, property_iri, entity_iri, and unit_iri must all be present and correct." else "[ ] 5. No semantic_suggestions.csv was written for this package; manually review semantic IRIs in metadata/column_dictionary.csv.",
     if (isTRUE(has_llm_review_prefill)) "[ ] 6. Any IRI that begins with 'REVIEW:' was prefilled from the package-native LLM review. Keep it only if it looks right, then remove the REVIEW prefix. If it looks wrong, replace it or blank it out and leave notes in semantic_suggestions.csv for later ontology follow-up." else "[ ] 6. No LLM-prefilled REVIEW IRIs were written; use semantic_suggestions.csv as a shortlist and fill the final IRI values yourself.",
     "[ ] 7. If no candidate term fits, treat the default request target as the shared salmon-domain ontology. Only route to DFO-specific ontology work when the term is clearly policy/operations specific.",
-    "[ ] 8. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW-prefixed IRI has been resolved.",
-    "[ ] 9. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
+    "[ ] 8. If you need EDH XML after manual review, regenerate it from the finalized package with write_edh_xml_from_sdp(pkg_path).",
+    "[ ] 9. Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW-prefixed IRI has been resolved.",
+    "[ ] 10. Share the whole package folder (or a zip of the whole folder) so metadata files and data files stay together.",
     "",
+    "Recommended path: create package -> review/edit in Excel -> remove REVIEW markers -> rebuild EDH XML if needed -> validate -> publish.",
     "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R.",
     "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize."
   )

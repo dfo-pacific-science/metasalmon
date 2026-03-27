@@ -98,6 +98,23 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 
 This keeps `find_terms()` as the canonical candidate generator. The LLM judges the retrieved shortlist, can use local README/markdown/PDF context to make better calls, and can mark draft IRIs directly in the created package as `REVIEW: <iri>` so you can confirm or replace them in Excel. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
+## Recommended workflow
+
+For the current package-native review path, use this order:
+
+1. Run `create_sdp(...)` to create the Salmon Data Package.
+2. If you want semantic review, set `llm_assess = TRUE`.
+3. Open the created package folder and review:
+   - `metadata/*.csv`
+   - `semantic_suggestions.csv`
+   - `README-review.txt`
+4. In Excel (or another spreadsheet editor), resolve every `REVIEW:`-prefixed IRI in the metadata files.
+5. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)`.
+6. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
+7. Publish/share only after the `REVIEW:` markers are gone and validation passes.
+
+In other words: **create -> review in Excel -> remove `REVIEW:` markers -> rebuild EDH XML if needed -> validate -> publish**.
+
 ## Who Is This For?
 
 | If you are...                           | Start here                                                                 |

@@ -25,6 +25,11 @@ pipeline. It now also covers the package-native LLM review path inside
 `suggest_semantics()`, where the model judges only the retrieved
 shortlist rather than inventing IRIs from scratch.
 
+The preferred workflow is now package-native rather than "export to
+ChatGPT": create the package, review the created CSV files in Excel,
+resolve `REVIEW:` markers, rebuild EDH XML if needed, validate, then
+publish.
+
 **See also:**
 - The README's "How It Fits Together" section for the full picture
 - [Publishing Data Packages](data-dictionary-publication.html) for the metadata and publication workflow
