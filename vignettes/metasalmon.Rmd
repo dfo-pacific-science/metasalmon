@@ -77,6 +77,10 @@ That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`. If you a
 
 The base quickstart does **not** require an API key. If you want `llm_assess = TRUE`, finish the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) guide first, then rerun the `create_sdp()` call with your chosen provider.
 
+When you want the LLM to use supporting README notes, CSV dictionaries, Excel workbooks, or PDF reports as context, continue with:
+
+- [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+
 ## Review In Excel
 
 Open `README-review.txt`, then review these files in this order:

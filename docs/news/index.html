@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -20,6 +20,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
+    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -41,6 +42,13 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.2" id="metasalmon-012">metasalmon 0.1.2<a class="anchor" aria-label="anchor" href="#metasalmon-012"></a></h2>
+<ul><li>Added Excel workbook support for <code>llm_context_files</code>: <code>.xls</code>, <code>.xlsx</code>, and <code>.xlsm</code> files are now read through the optional <code>readxl</code> package and serialized into bounded sheet text before LLM prompting.</li>
+<li>Expanded LLM regression coverage with mixed-context bundle tests for the exact <code>chapi</code> + <code>ollama2.mistral:7b</code> configuration, including markdown, CSV, Excel, and PDF inputs across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, and <code>codes.csv</code> targets.</li>
+<li>Finished the <code>scripts/llm-sanity-check.R</code> harness into a richer end-to-end smoke tool: it now generates per-case context bundles, records context formats in the summaries, rebuilds EDH XML after a simulated review pass, and writes stable CSV outputs under <code>artifacts/</code>.</li>
+<li>Added a dedicated Getting Started article for LLM review with context files and linked it from the quickstart/setup docs so the package-native workflow is easier to discover.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="metasalmon-011">metasalmon 0.1.1<a class="anchor" aria-label="anchor" href="#metasalmon-011"></a></h2>
 <ul><li>Added a first-class <code>chapi</code> LLM provider preset for DFO’s internal Open WebUI endpoint. It defaults to <code>ollama2.mistral:7b</code>, uses <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>, reads provider-specific overrides from <code>CHAPI_API_KEY</code>, <code>CHAPI_MODEL</code>, and <code>CHAPI_BASE_URL</code>, and now gives slower <code>gpt-oss</code> responses a longer effective timeout plus one retry.</li>

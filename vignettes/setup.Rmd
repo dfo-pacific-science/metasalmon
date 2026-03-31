@@ -76,6 +76,12 @@ Only do this setup now if you want to run:
 - `create_sdp(..., llm_assess = TRUE)`, or
 - `suggest_semantics(..., llm_assess = TRUE)`
 
+If you also plan to pass PDF or Excel files through `llm_context_files`, install the optional readers once:
+
+```{r}
+install.packages(c("pdftools", "readxl"))
+```
+
 ### DFO internal: `chapi`
 
 If you are on the DFO internal network or VPN, open:
@@ -137,6 +143,7 @@ After this setup is done, go back to:
 
 - [Homepage quick example](https://dfo-pacific-science.github.io/metasalmon/)
 - [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+- [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
 
 If you are continuing from a reviewed package later, use:
 

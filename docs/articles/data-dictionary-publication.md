@@ -25,7 +25,6 @@ workflow where you assemble the metadata tables yourself and then call
 ### 1) Start with your data
 
 ``` r
-
 library(metasalmon)
 library(readr)
 
@@ -46,7 +45,6 @@ If you already ran the quickstart and already have `dict`, skip this
 section.
 
 ``` r
-
 dict <- infer_dictionary(
   df,
   dataset_id = "my-dataset-2026",
@@ -63,7 +61,6 @@ columns as `required` when they must appear in every row.
 ### 3) Describe the dataset and tables
 
 ``` r
-
 dataset_meta <- tibble::tibble(
   dataset_id = "my-dataset-2026",
   title = "My Project Data",
@@ -93,7 +90,6 @@ run_type, gear, etc.). Each row ties a `code_value` to a short label
 and, ideally, the ontology term that explains what the code means.
 
 ``` r
-
 codes <- tibble::tibble(
   dataset_id = "my-dataset-2026",
   table_id = "main-table",
@@ -114,7 +110,6 @@ factor and low-cardinality character source columns unless you opt into
 ### 5) Create the package
 
 ``` r
-
 resources <- list(main = df)
 
 pkg_path <- write_salmon_datapackage(
@@ -146,7 +141,6 @@ you need an export view for biodiversity tools. The default is OFF to
 keep SDP canonical.
 
 ``` r
-
 dict <- readr::read_csv("inst/extdata/column_dictionary.csv", show_col_types = FALSE)
 sem <- suggest_semantics(dict, include_dwc = TRUE)
 attr(sem, "dwc_mappings") |>
@@ -165,7 +159,6 @@ GeoNetwork,
 writes the HNAP-aware EDH export.
 
 ``` r
-
 edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
 edh_build_hnap_xml(dataset_meta, output_path = edh_hnap_xml)
 
@@ -188,7 +181,6 @@ the canonical
 builder:
 
 ``` r
-
 write_edh_xml_from_sdp(pkg_path)
 ```
 
@@ -204,7 +196,6 @@ For more control over DwC-DP mapping suggestions, use
 [`suggest_dwc_mappings()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_dwc_mappings.md):
 
 ``` r
-
 dict <- tibble::tibble(
  column_name = c("event_date", "decimal_latitude", "scientific_name"),
  column_label = c("Event Date", "Decimal Latitude", "Scientific Name"),
@@ -222,7 +213,6 @@ When using
 the function automatically queries role-appropriate sources:
 
 ``` r
-
 # Default: ontology suggestions only (DwC mappings OFF)
 sem <- suggest_semantics(dict)
 

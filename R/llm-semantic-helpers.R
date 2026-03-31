@@ -20,6 +20,19 @@
   x
 }
 
+.ms_llm_optional_note <- function(x) {
+  x <- .ms_llm_non_empty_string(x)
+  if (is.na(x)) {
+    return(NA_character_)
+  }
+
+  if (tolower(x) %in% c("false", "none", "n/a", "na", "null", "nil")) {
+    return(NA_character_)
+  }
+
+  x
+}
+
 .ms_llm_scalar_numeric <- function(x) {
   x <- .ms_llm_first_scalar(x)
   if (is.null(x) || length(x) == 0) {
@@ -245,7 +258,108 @@
 }
 
 .ms_supported_context_extensions <- function() {
-  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf")
+  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf", "xls", "xlsx", "xlsm")
+}
+
+.ms_context_text_from_excel <- function(path,
+                                        max_sheets = 6L,
+                                        max_rows = 200L,
+                                        max_cols = 40L) {
+  if (!requireNamespace("readxl", quietly = TRUE)) {
+    cli::cli_abort(
+      c(
+        "Excel context files require the optional {.pkg readxl} package.",
+        "i" = "Install it with {.code install.packages('readxl')} or remove the spreadsheet from {.arg llm_context_files}."
+      )
+    )
+  }
+
+  max_sheets <- max(1L, as.integer(max_sheets[[1]] %||% 6L))
+  max_rows <- max(1L, as.integer(max_rows[[1]] %||% 200L))
+  max_cols <- max(1L, as.integer(max_cols[[1]] %||% 40L))
+
+  sheet_names <- readxl::excel_sheets(path)
+  if (length(sheet_names) == 0L) {
+    return("")
+  }
+  if (length(sheet_names) > max_sheets) {
+    sheet_names <- sheet_names[seq_len(max_sheets)]
+  }
+
+  sheet_text <- purrr::map(sheet_names, function(sheet_name) {
+    sheet_df <- readxl::read_excel(
+      path,
+      sheet = sheet_name,
+      .name_repair = "minimal"
+    )
+    sheet_df <- tibble::as_tibble(sheet_df)
+    if (ncol(sheet_df) == 0L && nrow(sheet_df) == 0L) {
+      return(NULL)
+    }
+
+    truncated_rows <- FALSE
+    truncated_cols <- FALSE
+
+    if (ncol(sheet_df) > max_cols) {
+      sheet_df <- sheet_df[, seq_len(max_cols), drop = FALSE]
+      truncated_cols <- TRUE
+    }
+    if (nrow(sheet_df) > max_rows) {
+      sheet_df <- sheet_df[seq_len(max_rows), , drop = FALSE]
+      truncated_rows <- TRUE
+    }
+
+    col_names <- names(sheet_df)
+    if (is.null(col_names)) {
+      col_names <- rep("", ncol(sheet_df))
+    }
+    blank_names <- is.na(col_names) | !nzchar(trimws(col_names))
+    if (any(blank_names)) {
+      col_names[blank_names] <- paste0("column_", which(blank_names))
+    }
+
+    sheet_df[] <- lapply(sheet_df, function(col) {
+      if (inherits(col, "POSIXt")) {
+        return(format(col, "%Y-%m-%d %H:%M:%S"))
+      }
+      if (inherits(col, "Date")) {
+        return(as.character(col))
+      }
+      out <- as.character(col)
+      out[is.na(out)] <- ""
+      trimws(out)
+    })
+
+    header <- paste(col_names, collapse = "\t")
+    rows <- character()
+    if (nrow(sheet_df) > 0L) {
+      rows <- apply(as.data.frame(sheet_df, stringsAsFactors = FALSE), 1, function(row) {
+        paste(as.character(row), collapse = "\t")
+      })
+    }
+
+    notes <- character()
+    if (isTRUE(truncated_cols)) {
+      notes <- c(notes, sprintf("Note: truncated to first %d columns.", max_cols))
+    }
+    if (isTRUE(truncated_rows)) {
+      notes <- c(notes, sprintf("Note: truncated to first %d rows.", max_rows))
+    }
+
+    paste(
+      c(
+        sprintf("Sheet: %s", sheet_name),
+        header,
+        rows,
+        notes
+      ),
+      collapse = "\n"
+    )
+  })
+
+  sheet_text <- unlist(sheet_text, use.names = FALSE)
+  sheet_text <- sheet_text[nzchar(trimws(sheet_text))]
+  paste(sheet_text, collapse = "\n\n")
 }
 
 .ms_context_text_from_file <- function(path) {
@@ -262,7 +376,9 @@
     return(NULL)
   }
 
-  if (identical(ext, "pdf")) {
+  if (ext %in% c("xls", "xlsx", "xlsm")) {
+    text <- .ms_context_text_from_excel(normalized)
+  } else if (identical(ext, "pdf")) {
     if (!requireNamespace("pdftools", quietly = TRUE)) {
       cli::cli_abort(
         c(
@@ -453,7 +569,10 @@
     "Choose only from the provided candidates; never invent an IRI.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context.",
     "decision must be one of accept, review, propose_new_term.",
+    "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
+    "If no provided candidate is clearly acceptable, return review and set selected_candidate_index to null.",
     "selected_candidate_index must be null when no candidate should be selected.",
+    "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
     "confidence must be a number between 0 and 1."
   )
 
@@ -485,7 +604,10 @@
     "Return JSON only with a single top-level key named assessments.",
     "assessments must be an array of objects with keys target_key, decision, selected_candidate_index, confidence, rationale, missing_context.",
     "decision must be one of accept, review, propose_new_term.",
+    "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
+    "If no provided candidate is clearly acceptable, return review and set selected_candidate_index to null.",
     "selected_candidate_index must be null when no candidate should be selected.",
+    "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
     "confidence must be a number between 0 and 1."
   )
 
@@ -904,6 +1026,16 @@
   }
 
   rationale <- .ms_llm_non_empty_string(result$rationale %||% NA_character_)
+  if (identical(decision, "accept") && is.na(selected_index)) {
+    decision <- "review"
+    rationale <- paste(
+      c(
+        rationale,
+        "Model returned accept without selecting a candidate; downgraded to review."
+      )[nzchar(c(rationale, "Model returned accept without selecting a candidate; downgraded to review."))],
+      collapse = " "
+    )
+  }
   if (!is.na(selected_index) && (selected_index < 1L || selected_index > nrow(candidate_rows))) {
     decision <- "review"
     selected_index <- NA_integer_
@@ -924,7 +1056,7 @@
     selected_candidate_index = selected_index,
     confidence = confidence,
     rationale = rationale,
-    missing_context = .ms_llm_non_empty_string(result$missing_context %||% NA_character_)
+    missing_context = .ms_llm_optional_note(result$missing_context %||% NA_character_)
   )
 }
 

@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
+    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -142,6 +143,10 @@ an API key.</p>
 <code>create_sdp(..., llm_assess = TRUE)</code>, or</li>
 <li><code>suggest_semantics(..., llm_assess = TRUE)</code></li>
 </ul>
+<p>If you also plan to pass PDF or Excel files through
+<code>llm_context_files</code>, install the optional readers once:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pdftools"</span>, <span class="st">"readxl"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="dfo-internal-chapi">DFO internal: <code>chapi</code><a class="anchor" aria-label="anchor" href="#dfo-internal-chapi"></a>
 </h3>
@@ -157,18 +162,18 @@ an API key.</p>
 <li>copy the key value.</li>
 </ol>
 <p>Store it in <code>~/.Renviron</code>:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">CHAPI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p>Optional overrides:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">CHAPI_MODEL</span><span class="op">=</span><span class="st">"ollama2.mistral:7b"</span></span>
 <span><span class="va">CHAPI_BASE_URL</span><span class="op">=</span><span class="st">"https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="external-users-openrouter">External users: OpenRouter<a class="anchor" aria-label="anchor" href="#external-users-openrouter"></a>
 </h3>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">OPENROUTER_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p><code>llm_provider = "openrouter"</code> defaults to
@@ -177,12 +182,12 @@ an API key.</p>
 <div class="section level3">
 <h3 id="external-users-openai">External users: OpenAI<a class="anchor" aria-label="anchor" href="#external-users-openai"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p>Then choose an explicit OpenAI model when you call the LLM review
 path, for example:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">suggested</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
 <span>  df <span class="op">=</span> <span class="va">your_data</span>,</span>
 <span>  dict <span class="op">=</span> <span class="va">your_dict</span>,</span>
@@ -201,6 +206,8 @@ path, for example:</p>
 quick example</a></li>
 <li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html">5-Minute
 Quickstart</a></li>
+<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html">LLM
+Review With Context Files</a></li>
 </ul>
 <p>If you are continuing from a reviewed package later, use:</p>
 <ul>

@@ -32,7 +32,6 @@ discover terms without drowning in jargon.
     vocabularies.
 
 ``` r
-
 library(metasalmon)
 devtools::load_all(".")
 find_terms("spawner count",
@@ -56,7 +55,6 @@ can query multiple vocabulary sources. Use
 to get the recommended sources for each I-ADOPT role:
 
 ``` r
-
 sources_for_role("unit")
 # Returns: c("qudt", "nvs", "ols")
 
@@ -85,7 +83,6 @@ legacy `salmon:`-namespace variants.
 For unit columns, QUDT provides authoritative unit IRIs:
 
 ``` r
-
 find_terms("kilogram", role = "unit", sources = sources_for_role("unit")) |>
   dplyr::select(label, iri, source, score) |>
   head()
@@ -96,7 +93,6 @@ find_terms("kilogram", role = "unit", sources = sources_for_role("unit")) |>
 For species or organism columns, use taxon resolvers:
 
 ``` r
-
 find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms")) |>
   dplyr::select(label, iri, source, ontology, score) |>
   head()
@@ -118,7 +114,6 @@ The results include several columns for transparency:
 Filter out alignment-only terms when selecting canonical IRIs:
 
 ``` r
-
 results <- find_terms("salmon", role = "entity", sources = sources_for_role("entity"))
 canonical <- results[!results$alignment_only, ]
 ```
@@ -128,7 +123,6 @@ canonical <- results[!results$alignment_only, ]
 If a search returns unexpected results, check the diagnostics:
 
 ``` r
-
 results <- find_terms("temperature", role = "property", sources = c("gcdfo", "ols", "nvs", "zooma"))
 diagnostics <- attr(results, "diagnostics")
 print(diagnostics)
@@ -146,7 +140,6 @@ print(diagnostics)
     URI in multiple columns unless they genuinely mean different things.
 
 ``` r
-
 dict <- infer_dictionary(
   df,
   dataset_id = "my-dataset-2026",
@@ -210,7 +203,6 @@ can look at your dictionary and offer `term_iri`, `entity_iri`, or
 I-ADOPT components based on the bundled catalog.
 
 ``` r
-
 dict_suggested <- suggest_semantics(df, dict)
 suggestions <- attr(dict_suggested, "semantic_suggestions")
 head(suggestions)

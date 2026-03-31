@@ -276,6 +276,28 @@ test_that("invalid candidate indexes degrade to review instead of erroring", {
   expect_match(result$rationale, "out-of-range candidate index")
 })
 
+test_that("accept without a selected candidate degrades to review", {
+  candidates <- tibble::tibble(
+    iri = c("https://example.org/a", "https://example.org/b"),
+    label = c("A", "B")
+  )
+
+  result <- metasalmon:::.ms_validate_llm_assessment(
+    list(
+      decision = "accept",
+      selected_candidate_index = NULL,
+      confidence = 0.81,
+      rationale = "Top candidate looks right.",
+      missing_context = ""
+    ),
+    candidates
+  )
+
+  expect_equal(result$decision, "review")
+  expect_true(is.na(result$selected_candidate_index))
+  expect_match(result$rationale, "without selecting a candidate")
+})
+
 test_that("vector-valued confidence uses the first element instead of erroring", {
   candidates <- tibble::tibble(
     iri = c("https://example.org/a", "https://example.org/b"),
@@ -319,6 +341,26 @@ test_that("nested structured values are flattened to the first scalar", {
   expect_equal(result$selected_candidate_index, 2L)
   expect_equal(result$confidence, 0.74)
   expect_equal(result$rationale, "Use the first rationale.")
+})
+
+test_that("falsey missing_context strings normalize to NA", {
+  candidates <- tibble::tibble(
+    iri = c("https://example.org/a", "https://example.org/b"),
+    label = c("A", "B")
+  )
+
+  result <- metasalmon:::.ms_validate_llm_assessment(
+    list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.42,
+      rationale = "Need more context.",
+      missing_context = "FALSE"
+    ),
+    candidates
+  )
+
+  expect_true(is.na(result$missing_context))
 })
 
 test_that("JSON cleaner extracts the first balanced object from wrapper text", {
@@ -590,6 +632,212 @@ test_that("PDF context files either extract text or fail clearly when pdftools i
       "pdftools"
     )
   }
+})
+
+test_that("Excel context files either extract sheet text or fail clearly when readxl is unavailable", {
+  testthat::skip_if_not_installed("openxlsx")
+
+  tmp <- withr::local_tempdir()
+  xlsx_path <- file.path(tmp, "context.xlsx")
+
+  wb <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(wb, "dictionary")
+  openxlsx::writeData(
+    wb,
+    "dictionary",
+    tibble::tibble(
+      field = c("column_name", "column_description"),
+      value = c("spawner_count", "Spawner abundance estimate")
+    )
+  )
+  openxlsx::addWorksheet(wb, "notes")
+  openxlsx::writeData(
+    wb,
+    "notes",
+    tibble::tibble(
+      section = "overview",
+      text = "Spawner abundance counts are summarized by population and year."
+    )
+  )
+  openxlsx::saveWorkbook(wb, xlsx_path, overwrite = TRUE)
+
+  if (requireNamespace("readxl", quietly = TRUE)) {
+    result <- metasalmon:::.ms_context_text_from_file(xlsx_path)
+    expect_true(is.list(result))
+    expect_equal(result$source, "context.xlsx")
+    expect_match(result$text, "Sheet: dictionary", fixed = TRUE)
+    expect_match(result$text, "Spawner abundance counts are summarized", fixed = TRUE)
+  } else {
+    expect_error(
+      metasalmon:::.ms_context_text_from_file(xlsx_path),
+      "readxl"
+    )
+  }
+})
+
+test_that("chapi/mistral review can use mixed context files across dataset, table, column, and code targets", {
+  testthat::skip_if_not_installed("openxlsx")
+  testthat::skip_if_not_installed("readxl")
+  testthat::skip_if_not_installed("pdftools")
+
+  tmp <- withr::local_tempdir()
+  md_path <- file.path(tmp, "context.md")
+  csv_path <- file.path(tmp, "context.csv")
+  xlsx_path <- file.path(tmp, "context.xlsx")
+  pdf_path <- file.path(tmp, "context.pdf")
+
+  writeLines(
+    c(
+      "# Monitoring context",
+      "Spawner abundance and method codes are summarized by station and year.",
+      "Use the package metadata to review dataset keywords and table observation units."
+    ),
+    md_path
+  )
+
+  readr::write_csv(
+    tibble::tibble(
+      field = c("dataset_keywords", "observation_unit", "method_code"),
+      note = c(
+        "salmon monitoring keywords",
+        "station visit observation",
+        "field method vocabulary"
+      )
+    ),
+    csv_path,
+    na = ""
+  )
+
+  wb <- openxlsx::createWorkbook()
+  openxlsx::addWorksheet(wb, "dictionary")
+  openxlsx::writeData(
+    wb,
+    "dictionary",
+    tibble::tibble(
+      column_name = c("count", "method_code"),
+      description = c("Spawner abundance count", "Field method code")
+    )
+  )
+  openxlsx::addWorksheet(wb, "dataset")
+  openxlsx::writeData(
+    wb,
+    "dataset",
+    tibble::tibble(
+      title = "Spawner monitoring package",
+      description = "Dataset keywords should reflect salmon monitoring and station visits."
+    )
+  )
+  openxlsx::saveWorkbook(wb, xlsx_path, overwrite = TRUE)
+
+  grDevices::pdf(pdf_path)
+  plot.new()
+  text(0.5, 0.6, "Spawner monitoring technical note")
+  text(0.5, 0.4, "Method codes, observation units, and dataset keywords are described here.")
+  grDevices::dev.off()
+
+  resources <- list(
+    visits = tibble::tibble(
+      station_id = c("S1", "S2", "S3"),
+      visit_year = c(2024L, 2024L, 2025L),
+      count = c(12L, 18L, 9L),
+      method_code = factor(c("trap", "visual", "trap"))
+    )
+  )
+
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "demo-dataset",
+    title = "Spawner monitoring package",
+    description = "Station visit summaries for salmon monitoring.",
+    creator = "Demo team",
+    contact_name = "Demo contact",
+    contact_email = "demo@example.org",
+    license = "Open Government Licence - Canada",
+    spec_version = "sdp-0.1.0",
+    keywords = NA_character_,
+    temporal_start = NA_character_,
+    temporal_end = NA_character_
+  )
+
+  seed_table_meta <- tibble::tibble(
+    dataset_id = "demo-dataset",
+    table_id = "visits",
+    file_name = "visits.csv",
+    table_label = "Spawner monitoring visits",
+    description = "Each row is a station visit observation with a salmon count and method code.",
+    observation_unit = "station visit observation",
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources = resources,
+    dataset_id = "demo-dataset",
+    table_id = "visits",
+    seed_semantics = FALSE,
+    seed_table_meta = seed_table_meta,
+    seed_dataset_meta = seed_dataset_meta,
+    semantic_code_scope = "all"
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  seen_messages <- character()
+  fake_request <- function(messages, config) {
+    seen_messages <<- c(seen_messages, messages[[2]]$content)
+    expect_equal(config$provider, "chapi")
+    expect_equal(config$model, "ollama2.mistral:7b")
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.87,
+      rationale = "The mixed context bundle supports the first candidate.",
+      missing_context = ""
+    )
+  }
+
+  out <- suggest_semantics(
+    df = artifacts$resources,
+    dict = artifacts$dict,
+    codes = artifacts$codes,
+    table_meta = artifacts$table_meta,
+    dataset_meta = artifacts$dataset_meta,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "chapi",
+    llm_model = "ollama2.mistral:7b",
+    llm_api_key = "dummy-key",
+    llm_context_files = c(md_path, csv_path, xlsx_path, pdf_path),
+    llm_request_fn = fake_request
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  assessments <- attr(out, "semantic_llm_assessments")
+
+  expect_true(all(c("column_dictionary.csv", "codes.csv", "tables.csv", "dataset.csv") %in% unique(suggestions$target_sdp_file)))
+  expect_true(all(assessments$llm_provider == "chapi"))
+  expect_true(all(assessments$llm_model == "ollama2.mistral:7b"))
+  expect_true(any(grepl("context.md", assessments$llm_context_sources, fixed = TRUE)))
+  expect_true(any(grepl("context.csv", assessments$llm_context_sources, fixed = TRUE)))
+  expect_true(any(grepl("context.xlsx", assessments$llm_context_sources, fixed = TRUE)))
+  expect_true(any(grepl("context.pdf", assessments$llm_context_sources, fixed = TRUE)))
+  expect_true(length(seen_messages) >= 4L)
 })
 
 test_that("create_sdp auto-writes LLM-selected IRIs with REVIEW prefix", {

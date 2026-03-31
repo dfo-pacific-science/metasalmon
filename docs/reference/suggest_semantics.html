@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,6 +30,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><a class="dropdown-item" href="../articles/setup.html">Setup and Credentials</a></li>
+    <li><a class="dropdown-item" href="../articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="../articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="../articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="../articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -184,8 +185,10 @@ per target for each assessment round. Default is <code>5</code>.</p></dd>
 
 <dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>
 <dd><p>Optional character vector of local context files
-(for example README files, markdown notes, or PDF reports) used to provide
-extra domain context to the LLM.</p></dd>
+(for example README/markdown notes, CSV dictionaries, Excel workbooks, or
+PDF reports) used to provide extra domain context to the LLM. PDF support
+uses the optional <code>pdftools</code> package; Excel support uses the optional
+<code>readxl</code> package.</p></dd>
 
 
 <dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>
@@ -248,7 +251,8 @@ the model may suggest at most one bounded alternate-query round (1–2
 plain-text queries), the package reruns deterministic retrieval, de-dupes
 the merged shortlist, and reassesses once. Local context files are read on
 disk, chunked, and lexically trimmed down before prompt assembly so large
-README/report files do not get dumped wholesale into the model call.</p>
+README/report/workbook files do not get dumped wholesale into the model
+call.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

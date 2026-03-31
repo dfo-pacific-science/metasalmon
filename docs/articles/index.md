@@ -6,6 +6,8 @@
   Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.md):
 - [5-Minute
   Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md):
+- [LLM Review With Context
+  Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.md):
 
 ### Guides
 

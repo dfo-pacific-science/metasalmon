@@ -126,6 +126,7 @@ articles:
     contents:
       - setup
       - metasalmon
+      - llm-context-review
 
   - title: "Guides"
     navbar: ~

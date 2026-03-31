@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,6 +49,7 @@ concept schemes) while preserving your original data structure.
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="articles/setup.html">Setup and Credentials</a></li>
+    <li><a class="dropdown-item" href="articles/llm-context-review.html">LLM Review With Context Files</a></li>
     <li><a class="dropdown-item" href="articles/post-review-package-publication.html">After Excel Review: Finalize and Publish Your Package</a></li>
     <li><a class="dropdown-item" href="articles/data-dictionary-publication.html">Publishing Data Packages</a></li>
     <li><a class="dropdown-item" href="articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a></li>
@@ -182,6 +183,7 @@ concept schemes) while preserving your original data structure.
 <li>
 <a href="https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html">Linking to Standard Vocabularies</a> — pick <code>term_iri</code>, <code>property_iri</code>, and <code>entity_iri</code> with confidence.</li>
 </ul>
+<p>Need the full context-file workflow? See <a href="https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="package-native-llm-semantic-review-optional">Package-native LLM semantic review (optional)<a class="anchor" aria-label="anchor" href="#package-native-llm-semantic-review-optional"></a>
@@ -191,6 +193,7 @@ concept schemes) while preserving your original data structure.
 <code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"column_dictionary.csv"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"README.md"</span>,</span>
+<span>  <span class="st">"data-dictionary.xlsx"</span>,</span>
 <span>  <span class="st">"methods-report.pdf"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -208,7 +211,8 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># In create_sdp(...), any auto-applied semantic IRI drafts are written back</span></span>
 <span><span class="co"># into the package metadata as REVIEW-prefixed values for manual cleanup,</span></span>
 <span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into <code>metadata/tables.csv</code>. Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into <code>metadata/tables.csv</code>. <code>llm_context_files</code> supports text/markdown notes, CSV dictionaries, Excel workbooks (<code>.xls</code>, <code>.xlsx</code>, <code>.xlsm</code> via <code>readxl</code>), and PDF reports (<code>.pdf</code> via <code>pdftools</code>). Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> now defaults to <code>openrouter/free</code>.</p>
+<p>For the full workflow across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, <code>codes.csv</code>, and the post-review EDH rebuild, use the <a href="https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a> guide.</p>
 <p>The quickstart path does not require an API key. Only set up one of these providers when you want <code>create_sdp(..., llm_assess = TRUE)</code> or <code>suggest_semantics(..., llm_assess = TRUE)</code>.</p>
 <p>For DFO internal users on the internal network or VPN, open <a href="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/" class="external-link uri">https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/</a>, click the user icon in the bottom left, open <strong>Settings</strong>, click <strong>Show</strong> next to <strong>API Keys</strong>, and copy the key value. Then run:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">

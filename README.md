@@ -84,6 +84,8 @@ To continue:
 - [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — manual package assembly path when you are not continuing from `create_sdp()`.
 - [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
+Need the full context-file workflow? See [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html).
+
 ## Package-native LLM semantic review (optional)
 
 If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:
@@ -92,6 +94,7 @@ If you want an LLM to judge the shortlisted semantic matches directly from R, ke
 context_files <- c(
   file.path(pkg_path, "metadata", "column_dictionary.csv"),
   "README.md",
+  "data-dictionary.xlsx",
   "methods-report.pdf"
 )
 
@@ -111,7 +114,9 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 # including table-level observation-unit selections in metadata/tables.csv.
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. `llm_context_files` supports text/markdown notes, CSV dictionaries, Excel workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports (`.pdf` via `pdftools`). Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+
+For the full workflow across `dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild, use the [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html) guide.
 
 The quickstart path does not require an API key. Only set up one of these providers when you want `create_sdp(..., llm_assess = TRUE)` or `suggest_semantics(..., llm_assess = TRUE)`.
 

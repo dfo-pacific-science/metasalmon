@@ -135,9 +135,11 @@ suggest_semantics(
 
 - llm_context_files:
 
-  Optional character vector of local context files (for example README
-  files, markdown notes, or PDF reports) used to provide extra domain
-  context to the LLM.
+  Optional character vector of local context files (for example
+  README/markdown notes, CSV dictionaries, Excel workbooks, or PDF
+  reports) used to provide extra domain context to the LLM. PDF support
+  uses the optional `pdftools` package; Excel support uses the optional
+  `readxl` package.
 
 - llm_context_text:
 
@@ -202,8 +204,8 @@ looks weak, the model may suggest at most one bounded alternate-query
 round (1–2 plain-text queries), the package reruns deterministic
 retrieval, de-dupes the merged shortlist, and reassesses once. Local
 context files are read on disk, chunked, and lexically trimmed down
-before prompt assembly so large README/report files do not get dumped
-wholesale into the model call.
+before prompt assembly so large README/report/workbook files do not get
+dumped wholesale into the model call.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a

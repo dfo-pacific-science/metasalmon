@@ -26,3 +26,5 @@ inst/extdata/\.gitkeep$
 ^CLAUDE\.md$
 ^local-r-lib(/|$)
 ^Untitled-1\.R$
+^artifacts(/|$)
+^metasalmon_.*\.tar\.gz$

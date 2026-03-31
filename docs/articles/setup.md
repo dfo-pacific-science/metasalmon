@@ -29,14 +29,12 @@ can access those repositories too.
 ### Store it in `~/.Renviron`
 
 ``` r
-
 file.edit("~/.Renviron")
 ```
 
 Add:
 
 ``` r
-
 GITHUB_PAT="paste token here"
 ```
 
@@ -45,7 +43,6 @@ Restart R after saving.
 ### Install `metasalmon`
 
 ``` r
-
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
 ```
@@ -60,7 +57,6 @@ When you later want to use
 against a private repository, run:
 
 ``` r
-
 ms_setup_github(repo = "your-org/your-private-repo")
 ```
 
@@ -75,6 +71,13 @@ Only do this setup now if you want to run:
 
 - `create_sdp(..., llm_assess = TRUE)`, or
 - `suggest_semantics(..., llm_assess = TRUE)`
+
+If you also plan to pass PDF or Excel files through `llm_context_files`,
+install the optional readers once:
+
+``` r
+install.packages(c("pdftools", "readxl"))
+```
 
 ### DFO internal: `chapi`
 
@@ -92,7 +95,6 @@ Then:
 Store it in `~/.Renviron`:
 
 ``` r
-
 file.edit("~/.Renviron")
 CHAPI_API_KEY="paste key here"
 ```
@@ -100,7 +102,6 @@ CHAPI_API_KEY="paste key here"
 Optional overrides:
 
 ``` r
-
 CHAPI_MODEL="ollama2.mistral:7b"
 CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
 ```
@@ -108,7 +109,6 @@ CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
 ### External users: OpenRouter
 
 ``` r
-
 file.edit("~/.Renviron")
 OPENROUTER_API_KEY="paste key here"
 ```
@@ -118,7 +118,6 @@ OPENROUTER_API_KEY="paste key here"
 ### External users: OpenAI
 
 ``` r
-
 file.edit("~/.Renviron")
 OPENAI_API_KEY="paste key here"
 ```
@@ -127,7 +126,6 @@ Then choose an explicit OpenAI model when you call the LLM review path,
 for example:
 
 ``` r
-
 suggested <- suggest_semantics(
   df = your_data,
   dict = your_dict,
@@ -145,6 +143,8 @@ After this setup is done, go back to:
   example](https://dfo-pacific-science.github.io/metasalmon/)
 - [5-Minute
   Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+- [LLM Review With Context
+  Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
 
 If you are continuing from a reviewed package later, use:
 

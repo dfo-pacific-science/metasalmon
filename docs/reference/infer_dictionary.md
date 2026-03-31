@@ -126,6 +126,8 @@ infer_dictionary(
 
   Optional local context files forwarded to
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  See that function for supported file types, including PDF and Excel
+  context files.
 
 - llm_context_text:
 
