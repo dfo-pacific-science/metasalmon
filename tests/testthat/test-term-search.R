@@ -318,6 +318,45 @@ test_that("find_terms falls back to gcdfo when smn has no good hit", {
   expect_equal(res$label[[1]], "Stock")
 })
 
+test_that("smn module urls use extensionless W3ID module paths", {
+  urls <- .smn_module_urls()
+
+  expect_true(all(grepl("^https://w3id\\.org/smn/modules/", urls)))
+  expect_false(any(grepl("\\.ttl$", urls)))
+  expect_true("https://w3id.org/smn/modules/01-entity-systematics" %in% urls)
+})
+
+test_that("search_smn indexes negotiated SMN module ttl when available", {
+  fixture <- withr::local_tempfile(fileext = ".ttl")
+  writeLines(c(
+    '@prefix smn: <https://w3id.org/smn/> .',
+    '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .',
+    '@prefix owl: <http://www.w3.org/2002/07/owl#> .',
+    '@prefix skos: <http://www.w3.org/2004/02/skos/core#> .',
+    '',
+    'smn:Population a owl:Class ;',
+    '  rdfs:label "Population" ;',
+    '  rdfs:comment "A population of salmon." .',
+    '',
+    'smn:NaturalOrigin a owl:NamedIndividual ;',
+    '  rdfs:label "Natural-origin" ;',
+    '  rdfs:comment "Individuals born and reared in the wild." ;',
+    '  skos:inScheme smn:OriginContext .'
+  ), fixture)
+
+  if (length(ls(envir = .smn_index_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .smn_index_cache, all.names = TRUE), envir = .smn_index_cache)
+  }
+
+  res <- with_mocked_bindings(
+    .smn_module_urls = function() c("https://w3id.org/smn/modules/01-entity-systematics"),
+    .smn_fetch_module_path = function(url, cache_dir) fixture,
+    fetch_salmon_ontology = function(...) stop("root fallback should not run"),
+    find_terms("population", role = "entity", sources = c("smn"), expand_query = FALSE)
+  )
+  expect_equal(res$iri[[1]], "https://w3id.org/smn/Population")
+})
+
 test_that("search_smn indexes the shared root ontology for canonical population and origin terms", {
   fixture <- withr::local_tempfile(fileext = ".rdf")
   writeLines(c(
