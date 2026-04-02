@@ -699,13 +699,60 @@ test_that("HTML context files are converted to plain text", {
   expect_false(grepl("ignore me", result$text, fixed = TRUE))
 })
 
-test_that("unsupported context files warn without cli interpolation errors", {
+test_that("R Markdown context files keep prose and drop fenced code chunks", {
+  tmp <- withr::local_tempdir()
+  rmd_path <- file.path(tmp, "context.Rmd")
+
+  writeLines(
+    c(
+      "---",
+      "title: 'Trawl dictionary'",
+      "output: html_document",
+      "---",
+      "",
+      "Spawner abundance is estimated per tow.",
+      "",
+      "```{r}",
+      "x <- 1",
+      "summary(x)",
+      "```",
+      "",
+      "Method codes describe the field protocol."
+    ),
+    rmd_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(rmd_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.Rmd")
+  expect_match(result$text, "Spawner abundance is estimated per tow.", fixed = TRUE)
+  expect_match(result$text, "Method codes describe the field protocol.", fixed = TRUE)
+  expect_false(grepl("x <- 1", result$text, fixed = TRUE))
+  expect_false(grepl("title:", result$text, fixed = TRUE))
+})
+
+test_that("DOCX context files are converted to plain text", {
   tmp <- withr::local_tempdir()
   docx_path <- file.path(tmp, "context.docx")
-  writeLines("not really a docx", docx_path)
+  docx_b64 <- paste0(
+    "UEsDBBQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH2QzU7DMBCE730Ky9cqccoBIZSkB36OwKE8wMreJFb9J69b2rdn00KREOVozXwz62nXB+/EHjPZGDq5qhspMOhobBg7+b55ru6koALBgIsBO3lEkut+0W6OCUkwHKiTUynpXinSE3qgOiYMrAwxeyj8zKNKoLcworppmlulYygYSlXmDNkvhGgfcYCdK+LpwMr5loyOpHg4e+e6TkJKzmoorKt9ML+Kqq+SmsmThyabaMkGqa6VzOL1jh/0lSfK1qB4g1xewLNRfcRslIl65xmu/0/649o4DFbjhZ/TUo4aiXh77+qL4sGG71+06jR8/wlQSwMEFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAABfcmVscy8ucmVsc43Puw6CMBQG4J2naM4uBQdjDIXFmLAafICmPZRGeklbL7y9HRzEODie23fyN93TzOSOIWpnGdRlBQStcFJbxeAynDZ7IDFxK/nsLDJYMELXFs0ZZ57yTZy0jyQjNjKYUvIHSqOY0PBYOo82T0YXDE+5DIp6Lq5cId1W1Y6GTwPagpAVS3rJIPSyBjIsHv/h3ThqgUcnbgZt+vHlayPLPChMDB4uSCrf7TKzQHNKuorZvgBQSwMEFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAB3b3JkL2RvY3VtZW50LnhtbG1PMW7DMAzc8wpCeyO3Q1EYtrP1BelcyBKTCLBIgZTr+veV0nbLcrjDkcfjcPpOC3yhaGQazfOxM4DkOUS6jubj/P70ZkCLo+AWJhzNjmpO02HY+sB+TUgFagJpv43mVkrurVV/w+T0yBmpeheW5EqVcrUbS8jCHlXrgbTYl657tclFMtMBoKbOHPZG7yJPFaRBmc7itgXmyOpSXhBC9KV2drIPtvkN5Y754b5mtxHKp+e1dh4BtcTaCwPQmmYU4Av8zejDxEZ+2zX2//30A1BLAQIUAxQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAAAAAAAAAAAAAIABIgEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAAAAAAAAAAAAIAB/QEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPsCAAAAAA=="
+  )
+  writeBin(jsonlite::base64_dec(docx_b64), docx_path)
+
+  result <- metasalmon:::.ms_context_text_from_file(docx_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.docx")
+  expect_match(result$text, "Trawl biosample dictionary", fixed = TRUE)
+  expect_match(result$text, "spawner_count = estimated number of spawners", fixed = TRUE)
+})
+
+test_that("unsupported context files warn without cli interpolation errors", {
+  tmp <- withr::local_tempdir()
+  doc_path <- file.path(tmp, "context.doc")
+  writeLines("not really a doc", doc_path)
 
   expect_warning(
-    result <- metasalmon:::.ms_context_text_from_file(docx_path),
+    result <- metasalmon:::.ms_context_text_from_file(doc_path),
     "Skipping unsupported context file"
   )
   expect_null(result)

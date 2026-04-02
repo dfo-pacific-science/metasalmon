@@ -258,7 +258,7 @@
 }
 
 .ms_supported_context_extensions <- function() {
-  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf", "htm", "html", "xls", "xlsx", "xlsm")
+  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "rmd", "qmd", "pdf", "htm", "html", "docx", "xls", "xlsx", "xlsm")
 }
 
 .ms_context_text_from_excel <- function(path,
@@ -362,6 +362,61 @@
   paste(sheet_text, collapse = "\n\n")
 }
 
+.ms_context_text_from_rmarkdown <- function(path) {
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  if (length(lines) == 0L) {
+    return("")
+  }
+
+  # Drop leading YAML front matter.
+  if (length(lines) >= 1L && trimws(lines[[1]]) == "---") {
+    end_idx <- which(trimws(lines[-1]) == "---")
+    if (length(end_idx) > 0L) {
+      lines <- lines[-seq_len(end_idx[[1]] + 1L)]
+    }
+  }
+
+  keep <- character()
+  in_chunk <- FALSE
+  for (line in lines) {
+    trimmed <- trimws(line)
+    if (grepl("^```", trimmed)) {
+      in_chunk <- !in_chunk
+      next
+    }
+    if (in_chunk) {
+      next
+    }
+    keep <- c(keep, line)
+  }
+
+  paste(keep, collapse = "\n")
+}
+
+.ms_context_text_from_docx <- function(path) {
+  tmp_dir <- tempfile("metasalmon-docx-")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  utils::unzip(path, files = "word/document.xml", exdir = tmp_dir)
+  document_path <- file.path(tmp_dir, "word", "document.xml")
+  if (!file.exists(document_path)) {
+    cli::cli_abort("DOCX context file {.path {path}} does not contain {.file word/document.xml}.")
+  }
+
+  doc <- xml2::read_xml(document_path)
+  ns <- xml2::xml_ns(doc)
+  paragraphs <- xml2::xml_find_all(doc, ".//w:p", ns = ns)
+  paragraph_text <- vapply(paragraphs, function(node) {
+    runs <- xml2::xml_find_all(node, ".//w:t", ns = ns)
+    text <- trimws(xml2::xml_text(runs))
+    text <- text[nzchar(text)]
+    paste(text, collapse = "")
+  }, character(1L))
+  paragraph_text <- paragraph_text[nzchar(trimws(paragraph_text))]
+  paste(paragraph_text, collapse = "\n")
+}
+
 .ms_context_text_from_html <- function(path) {
   doc <- xml2::read_html(path)
   scope <- xml2::xml_find_first(doc, ".//body")
@@ -408,6 +463,10 @@
     text <- paste(pages, collapse = "\n\n")
   } else if (ext %in% c("htm", "html")) {
     text <- .ms_context_text_from_html(normalized)
+  } else if (ext %in% c("rmd", "qmd")) {
+    text <- .ms_context_text_from_rmarkdown(normalized)
+  } else if (identical(ext, "docx")) {
+    text <- .ms_context_text_from_docx(normalized)
   } else {
     text <- paste(readLines(normalized, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   }
