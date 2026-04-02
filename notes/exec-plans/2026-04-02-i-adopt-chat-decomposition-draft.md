@@ -28,6 +28,21 @@ This draft lives in `notes/exec-plans/` specifically so it does **not** affect p
 - it is outside `man/`, `vignettes/`, `doc/`, and `docs/`
 - it can be committed to `main` as a planning artifact without changing the built package surface
 
+## Ontology conventions that now constrain this plan
+
+After reviewing `code/dfo-salmon-ontology/docs/CONVENTIONS.md`, this plan needs to follow four non-optional modeling rules:
+
+1. **Compound variables / metrics are SKOS concepts, not OWL classes.**
+   If routing leads to a stronger variable pick or a new-term recommendation, the target identity should be a SKOS variable concept in the appropriate scheme.
+2. **Canonical I-ADOPT authoring is annotation-centric.**
+   The ontology’s canonical pattern is local annotation properties such as `gcdfo:iadoptProperty`, `gcdfo:iadoptEntity`, `gcdfo:iadoptConstraint`, and `gcdfo:usedProcedure`.
+3. **Procedure is not an I-ADOPT role.**
+   The conventions explicitly replace `gcdfo:iadoptMethod` with `gcdfo:usedProcedure`; methods/protocols are handled as procedures, not as an I-ADOPT decomposition slot.
+4. **Keep concept alignment separate from OWL equivalence.**
+   If the routing logic or downstream issue templates talk about mappings, concept-to-concept mappings stay in SKOS space; do not blur them into OWL class equivalence language.
+
+These rules do not change the immediate metasalmon routing goal, but they do change how the ExecPlan must describe the decomposition target and what “good” output looks like.
+
 ## Current State / Orientation
 
 ### Canonical files in play
@@ -56,7 +71,10 @@ When a target looks like a measurement variable or another compound variable:
 1. metasalmon should route LLM review through an I-ADOPT-aware path
 2. that path should call the chat function `chat_decomposition()`
 3. the decomposition-oriented response should still resolve back onto the existing candidate shortlist machinery
-4. non-measurement targets should keep using the current generic review flow
+4. the decomposition framing should treat the selected variable as a **SKOS concept** whose meaning can be explained through local annotation-style slots (`property`, `entity`, `constraint`, optional `procedure`)
+5. non-measurement targets should keep using the current generic review flow
+
+Crucial nuance from the ontology conventions: this path should **not** talk as if method is a native I-ADOPT role. If procedure context matters, the plan should frame it as `usedProcedure`-style context, not `iadoptMethod`.
 
 ## Detection Rule (draft)
 
@@ -84,6 +102,7 @@ Expected edits:
 Acceptance for Slice 1:
 - a plain measurement `term_iri` target routes to decomposition
 - a measurement `property_iri` / `entity_iri` / `unit_iri` target does **not** route there by default unless explicitly intended
+- a `method_iri` target is **not** treated as an I-ADOPT slot; if anything procedure-aware is added later, it must be framed separately as procedure context
 - ordinary categorical / attribute / code-term targets stay on the generic route
 
 ### Slice 2 — add decomposition-specific chat payload generation
@@ -94,6 +113,9 @@ Expected characteristics:
 - explicitly frames the task as I-ADOPT-style decomposition
 - reminds the model that it must still choose from the provided candidates only
 - instructs the chat layer to call `chat_decomposition()`
+- tells the model that compound variables are represented as SKOS concepts, not OWL classes
+- uses the ontology’s canonical local decomposition language: property, entity in ObjectOfInterest role, constraint, and optional procedure context via `usedProcedure`
+- avoids any wording that implies an `iadoptMethod` slot exists in the canonical ontology pattern
 - preserves the same downstream decision contract (`accept`, `review`, `propose_new_term`, candidate index, confidence, rationale, missing context) unless a stricter bridge is genuinely needed
 
 Likely edit:
@@ -116,6 +138,7 @@ Add focused tests that prove:
 - measurement `term_iri` records use decomposition routing
 - compound-variable-like non-obvious cases use decomposition routing when intended
 - generic non-measurement targets still use the current path
+- decomposition prompts describe the target as a SKOS variable concept and do not instruct the model to use an `iadoptMethod` slot
 - exploration / retry / validation behavior still works after routing is added
 
 Likely edit:
@@ -134,6 +157,15 @@ Possible helper set:
 - `.ms_llm_messages_for_decomposition_target(target_row, candidate_rows, context_chunks)`
 - `.ms_llm_messages_for_decomposition_batch(records)` only if batching remains clean
 - `.ms_llm_chat_decomposition_request(...)` **or** a thin branch inside the existing request layer, depending on how `chat_decomposition()` must be invoked
+
+### Ontology-convention guardrails
+
+The decomposition prompt and any downstream new-term guidance should explicitly preserve these ontology rules:
+- variable identity lives in a SKOS concept scheme
+- local annotation properties are the canonical decomposition pattern
+- `entity` means the object of interest role, not just any nearby noun
+- `procedure` is optional context and maps to `usedProcedure`-style handling, not an `iadoptMethod` role
+- if a downstream issue/template is generated, it should ask for required ontology annotations (`prefLabel`/`definition`/`isDefinedBy` and scheme membership as appropriate) instead of speaking in package-only shorthand
 
 ### Important constraint
 
@@ -159,6 +191,7 @@ Minimum validation for implementation:
 Acceptance signals:
 - routed measurement `term_iri` tests pass
 - generic LLM assessment tests still pass
+- decomposition prompt text matches the ontology conventions (SKOS variable concept + local annotation pattern + `usedProcedure` wording)
 - no changes under `man/`, `vignettes/`, `doc/`, or `docs/` for this planning-only slice
 
 ## Risks / Watch-outs
@@ -166,6 +199,8 @@ Acceptance signals:
 - **Over-routing risk:** if the heuristic is too broad, normal attribute/categorical targets may get pushed through an unnecessary decomposition path.
 - **Batching complexity:** mixed routed/non-routed batches may complicate the current batched assessment flow.
 - **Prompt drift:** a decomposition-specific prompt could accidentally stop respecting the shortlist-only rule.
+- **Procedure confusion:** it is easy to slide back into `iadoptMethod` language even though the ontology conventions explicitly moved procedure handling to `usedProcedure`.
+- **Punning / class drift:** if prompt wording gets sloppy, downstream issue text could imply OWL classes where the conventions require SKOS variable concepts.
 - **Function-call portability:** `chat_decomposition()` must work across the supported chat backends or degrade cleanly.
 
 ## Decision Log
@@ -182,10 +217,19 @@ Acceptance signals:
   Rationale: This captures the clear win first without turning heuristics into soup.
   Date/Author: 2026-04-02 / Alan
 
+- Decision: The ExecPlan now treats compound-variable identity as a SKOS concept outcome, not an OWL class outcome.
+  Rationale: `code/dfo-salmon-ontology/docs/CONVENTIONS.md` explicitly says compound variables / metrics should be modeled as SKOS concepts in the appropriate scheme.
+  Date/Author: 2026-04-02 / Alan
+
+- Decision: Procedure context must be described with `usedProcedure`-style language, not `iadoptMethod`.
+  Rationale: The ontology conventions explicitly replace `gcdfo:iadoptMethod` with `gcdfo:usedProcedure` and state that method is not an I-ADOPT role.
+  Date/Author: 2026-04-02 / Alan
+
 ## Progress
 
 - [x] (2026-04-02) Draft ExecPlan created in `notes/exec-plans/`.
 - [x] (2026-04-02) Draft positioned to avoid package-build and publisher-doc side effects.
+- [x] (2026-04-02) Reviewed `code/dfo-salmon-ontology/docs/CONVENTIONS.md` and tightened the plan around SKOS variable concepts, local annotation-style decomposition, and `usedProcedure` wording.
 - [ ] Implementation branch opened from clean `main` state.
 - [ ] Routing predicate added.
 - [ ] `chat_decomposition()` path wired.
