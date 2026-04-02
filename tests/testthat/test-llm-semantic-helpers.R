@@ -675,6 +675,42 @@ test_that("Excel context files either extract sheet text or fail clearly when re
   }
 })
 
+test_that("HTML context files are converted to plain text", {
+  tmp <- withr::local_tempdir()
+  html_path <- file.path(tmp, "context.html")
+
+  writeLines(
+    c(
+      "<html><head><title>Example</title><style>.hidden{display:none;}</style></head>",
+      "<body>",
+      "<h1>Trawl biosample dictionary</h1>",
+      "<p>spawner_count = estimated number of spawners</p>",
+      "<script>console.log('ignore me')</script>",
+      "</body></html>"
+    ),
+    html_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(html_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.html")
+  expect_match(result$text, "Trawl biosample dictionary", fixed = TRUE)
+  expect_match(result$text, "spawner_count = estimated number of spawners", fixed = TRUE)
+  expect_false(grepl("ignore me", result$text, fixed = TRUE))
+})
+
+test_that("unsupported context files warn without cli interpolation errors", {
+  tmp <- withr::local_tempdir()
+  docx_path <- file.path(tmp, "context.docx")
+  writeLines("not really a docx", docx_path)
+
+  expect_warning(
+    result <- metasalmon:::.ms_context_text_from_file(docx_path),
+    "Skipping unsupported context file"
+  )
+  expect_null(result)
+})
+
 test_that("chapi/mistral review can use mixed context files across dataset, table, column, and code targets", {
   testthat::skip_if_not_installed("openxlsx")
   testthat::skip_if_not_installed("readxl")

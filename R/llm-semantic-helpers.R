@@ -258,7 +258,7 @@
 }
 
 .ms_supported_context_extensions <- function() {
-  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf", "xls", "xlsx", "xlsm")
+  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf", "htm", "html", "xls", "xlsx", "xlsm")
 }
 
 .ms_context_text_from_excel <- function(path,
@@ -362,6 +362,22 @@
   paste(sheet_text, collapse = "\n\n")
 }
 
+.ms_context_text_from_html <- function(path) {
+  doc <- xml2::read_html(path)
+  scope <- xml2::xml_find_first(doc, ".//body")
+  if (inherits(scope, "xml_missing")) {
+    scope <- doc
+  }
+
+  nodes <- xml2::xml_find_all(
+    scope,
+    ".//text()[normalize-space() and not(ancestor::script) and not(ancestor::style)]"
+  )
+  text <- trimws(xml2::xml_text(nodes))
+  text <- text[nzchar(text)]
+  paste(text, collapse = "\n")
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
@@ -369,9 +385,10 @@
   }
 
   ext <- tolower(tools::file_ext(normalized))
-  if (!ext %in% .ms_supported_context_extensions()) {
+  supported_extensions <- .ms_supported_context_extensions()
+  if (!ext %in% supported_extensions) {
     cli::cli_warn(
-      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {.ms_supported_context_extensions()}}"
+      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {(supported_extensions)}}"
     )
     return(NULL)
   }
@@ -389,6 +406,8 @@
     }
     pages <- pdftools::pdf_text(normalized)
     text <- paste(pages, collapse = "\n\n")
+  } else if (ext %in% c("htm", "html")) {
+    text <- .ms_context_text_from_html(normalized)
   } else {
     text <- paste(readLines(normalized, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   }
