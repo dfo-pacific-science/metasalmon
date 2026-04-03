@@ -4,6 +4,7 @@ Title: Utilities for Salmon Data Packages
 Version: 0.1.2
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
+Author: Brett Johnson [aut, cre], Codex [aut]
 Description: Tools to scaffold, standardize, validate, transform, and package
     salmon datasets using the DFO Salmon Ontology and Salmon Data Package
     conventions.
