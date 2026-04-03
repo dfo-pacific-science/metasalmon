@@ -258,7 +258,7 @@
 }
 
 .ms_supported_context_extensions <- function() {
-  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "rmd", "qmd", "pdf", "htm", "html", "docx", "xls", "xlsx", "xlsm")
+  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "r", "rmd", "qmd", "pdf", "htm", "html", "docx", "xls", "xlsx", "xlsm")
 }
 
 .ms_context_text_from_excel <- function(path,
@@ -377,14 +377,9 @@
   }
 
   keep <- character()
-  in_chunk <- FALSE
   for (line in lines) {
     trimmed <- trimws(line)
     if (grepl("^```", trimmed)) {
-      in_chunk <- !in_chunk
-      next
-    }
-    if (in_chunk) {
       next
     }
     keep <- c(keep, line)
