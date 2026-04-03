@@ -811,7 +811,7 @@ create_sdp <- function(
     if (isTRUE(llm_assess) && "llm_selected" %in% names(suggestions)) {
       auto_apply_suggestions <- .ms_prepare_llm_auto_apply_suggestions(artifacts$dict, suggestions)
       apply_strategy <- "llm"
-      min_llm_confidence <- .ms_create_sdp_llm_auto_apply_min_confidence()
+      min_llm_confidence <- NULL
     } else {
       auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
       apply_strategy <- "top"
@@ -2228,6 +2228,40 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   any(table_matches & !is.na(dict$column_name) & tolower(as.character(dict$column_name)) == tolower(sibling_name))
 }
 
+.ms_measurement_supports_constraint_slot <- function(suggestion, dict_row) {
+  text <- tolower(paste(
+    if ("search_query" %in% names(suggestion)) .ms_scalar_text(suggestion$search_query) else "",
+    if ("target_label" %in% names(suggestion)) .ms_scalar_text(suggestion$target_label) else "",
+    if ("target_description" %in% names(suggestion)) .ms_scalar_text(suggestion$target_description) else "",
+    if ("column_label" %in% names(dict_row)) .ms_scalar_text(dict_row$column_label) else "",
+    if ("column_description" %in% names(dict_row)) .ms_scalar_text(dict_row$column_description) else "",
+    if ("column_name" %in% names(dict_row)) .ms_scalar_text(dict_row$column_name) else ""
+  ))
+
+  grepl(
+    "\\b(origin|life[ -]?stage|stage|run|season|age|sex|maturity|status|class|type|phase|terminal|ocean|freshwater|wild|hatchery|population|stock|species group|reporting unit|benchmark)\\b",
+    text,
+    perl = TRUE
+  )
+}
+
+.ms_measurement_supports_procedure_slot <- function(suggestion, dict_row) {
+  text <- tolower(paste(
+    if ("search_query" %in% names(suggestion)) .ms_scalar_text(suggestion$search_query) else "",
+    if ("target_label" %in% names(suggestion)) .ms_scalar_text(suggestion$target_label) else "",
+    if ("target_description" %in% names(suggestion)) .ms_scalar_text(suggestion$target_description) else "",
+    if ("column_label" %in% names(dict_row)) .ms_scalar_text(dict_row$column_label) else "",
+    if ("column_description" %in% names(dict_row)) .ms_scalar_text(dict_row$column_description) else "",
+    if ("column_name" %in% names(dict_row)) .ms_scalar_text(dict_row$column_name) else ""
+  ))
+
+  grepl(
+    "\\b(method|protocol|procedure|gear|estimated|estimate|estimation|enumerat|calculated|derived|modelled|modeled|assay|technique|field method|lab method|survey method)\\b",
+    text,
+    perl = TRUE
+  )
+}
+
 .ms_measurement_suggestion_is_compatible <- function(suggestion, dict_row, dict = NULL) {
   role <- tolower(as.character(dict_row$column_role[[1]] %||% ""))
   if (!identical(role, "measurement")) {
@@ -2247,6 +2281,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     ""
   }
   if (!is.null(dict) && !identical(target_field, "unit_iri") && .ms_measurement_has_paired_unit_column(dict_row, dict)) {
+    return(FALSE)
+  }
+  if (identical(target_field, "constraint_iri") && !.ms_measurement_supports_constraint_slot(suggestion, dict_row)) {
+    return(FALSE)
+  }
+  if (identical(target_field, "method_iri") && !.ms_measurement_supports_procedure_slot(suggestion, dict_row)) {
     return(FALSE)
   }
 
@@ -2321,13 +2361,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   c("variable", "property", "entity", "unit")
 }
 
-.ms_create_sdp_llm_auto_apply_min_confidence <- function() {
-  0.9
-}
-
 .ms_prepare_llm_auto_apply_suggestions <- function(dict,
                                                    suggestions,
-                                                   min_confidence = .ms_create_sdp_llm_auto_apply_min_confidence(),
                                                    allowed_roles = .ms_create_sdp_llm_auto_apply_roles()) {
   suggestions <- tibble::as_tibble(suggestions)
   if (nrow(suggestions) == 0 || !"llm_selected" %in% names(suggestions)) {
@@ -2337,7 +2372,6 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   suggestions <- suggestions %>%
     dplyr::filter(
       !is.na(.data$llm_selected) & .data$llm_selected,
-      !is.na(.data$llm_confidence) & .data$llm_confidence >= min_confidence,
       .data$dictionary_role %in% allowed_roles
     )
 

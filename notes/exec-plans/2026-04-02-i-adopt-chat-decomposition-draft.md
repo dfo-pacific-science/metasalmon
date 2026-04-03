@@ -30,6 +30,20 @@ That means the document now covers two layers:
 1. **Immediate slice:** route measurement / compound-variable `term_iri` review through `chat_decomposition()`.
 2. **Follow-on architecture:** the shared session engine, state model, question-planning rules, context-window discipline, provenance outputs, provider abstraction, and R-console-first UX that the decomposition path should eventually live inside.
 
+## Relationship to the bundle-aware semantic-fit roadmap
+
+This plan is now the **routing and prompt-architecture foundation** for the broader bundle-aware semantic-fit work captured in:
+- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md`
+
+The intended division of labor is:
+- this plan defines **when** metasalmon should switch from generic shortlist review to decomposition-oriented review and what ontology conventions constrain that route
+- the bundle-aware plan defines **how** decomposition-oriented review should handle whole-variable reasoning, second-pass retrieval, bundle-fit validation, and ontology-gap escalation
+
+To keep the two plans from drifting into parallel designs:
+- measurement-like semantic review should route through the decomposition path described here, rather than inventing a second bundle-review prompt stack elsewhere
+- the broader roadmap may temporarily preserve bridge outputs like `accept` / `review` / `request_new_term`, but richer actions such as `retry_search` should be treated as a forward-compatible extension of this same route, not a separate API family
+- package-level `method_iri` behavior should continue to be described as a **bridge to procedure context** (`usedProcedure`-style reasoning), not as if `method` were a native I-ADOPT slot
+
 ## Why this lives in `notes/`
 
 This draft lives in `notes/exec-plans/` specifically so it does **not** affect package building or publisher docs:

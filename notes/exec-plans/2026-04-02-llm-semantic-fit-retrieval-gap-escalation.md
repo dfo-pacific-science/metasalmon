@@ -22,6 +22,19 @@ The goal of this update is to move from **slotwise nearest-neighbour selection**
 3. judge whether the chosen bundle is coherent as a whole
 4. if the shortlist is wrong, retry retrieval more intelligently or recommend a new term request in `smn` / `gcdfo`
 
+## Relationship to the I-ADOPT chat decomposition plan
+
+This roadmap now assumes the routing / architecture foundation described in:
+- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md`
+
+That means this plan should be implemented **through** the decomposition route rather than beside it.
+
+Concretely:
+- Phase 1 prompt changes should ride on the `chat_decomposition()`-style path introduced by the I-ADOPT plan
+- bundle-aware review should reuse that route for measurement-like targets instead of creating a second competing LLM-review architecture
+- package-level `method_iri` handling must be treated as a **procedure-context bridge** (`usedProcedure`-style reasoning), not as if method were a canonical I-ADOPT slot
+- richer outcomes such as `retry_search` and `request_new_term` are meant to extend the decomposition route, not replace it with a new API family
+
 ## Why this plan exists now
 
 Live experiments on the DFO Salish Sea juvenile salmon trawl catch table showed that simply raising confidence thresholds is not a satisfying fix.
@@ -136,6 +149,7 @@ For each measurement-like / decomposition-like target:
      - `unit_iri`
      - optional `constraint_iri`
      - optional `method_iri`
+   - ontology nuance: package output may still write `method_iri`, but decomposition reasoning should treat that as a bridge to procedure context (`usedProcedure`-style semantics), not as a native I-ADOPT role
 
 3. **Bundle coherence check**
    - verify slot compatibility and semantic non-redundancy
@@ -157,6 +171,7 @@ The LLM review layer should be able to return one of:
 - `reject_shortlist`
 
 These are richer than today’s effective “pick something or abstain row-by-row” behavior.
+For the first implementation slice, these richer actions may still be bridged onto the narrower package-level contract (`accept` / `review` / `request_new_term`) as long as the routing and stored metadata preserve the distinction needed for later expansion.
 
 ### Retry-search behavior
 
@@ -325,6 +340,7 @@ Working hypothesis:
 - [ ] Identify the minimum representative regression cases
 
 ### Phase 1 — role-fit prompting improvements
+- [ ] Implement these prompt changes on top of the `chat_decomposition()` routing path from the I-ADOPT plan
 - [ ] Add explicit role-fit rubric to LLM prompts
 - [ ] Add whole-variable summary step before slot selection
 - [ ] Add “do not force local winners when shortlist family is wrong” language

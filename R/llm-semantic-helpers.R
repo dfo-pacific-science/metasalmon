@@ -586,8 +586,8 @@
   .ms_score_context_chunks(chunks, target_row = target_row, candidate_rows = candidate_rows, max_chunks = max_chunks)
 }
 
-.ms_llm_target_payload <- function(target_row, candidate_rows, context_chunks, target_key = NULL) {
-  candidate_payload <- purrr::map(seq_len(nrow(candidate_rows)), function(i) {
+.ms_llm_candidate_payload <- function(candidate_rows) {
+  purrr::map(seq_len(nrow(candidate_rows)), function(i) {
     list(
       candidate_index = i,
       label = candidate_rows$label[[i]] %||% "",
@@ -596,24 +596,101 @@
       ontology = candidate_rows$ontology[[i]] %||% "",
       definition = candidate_rows$definition[[i]] %||% "",
       lexical_score = if ("score" %in% names(candidate_rows)) candidate_rows$score[[i]] else NA_real_,
-      retrieval_query = if ("retrieval_query" %in% names(candidate_rows)) candidate_rows$retrieval_query[[i]] else target_row$search_query[[1]] %||% "",
+      retrieval_query = if ("retrieval_query" %in% names(candidate_rows)) candidate_rows$retrieval_query[[i]] else candidate_rows$search_query[[i]] %||% "",
       retrieval_pass = if ("retrieval_pass" %in% names(candidate_rows)) candidate_rows$retrieval_pass[[i]] else 1L
     )
   })
+}
 
-  context_payload <- purrr::map(seq_len(nrow(context_chunks)), function(i) {
+.ms_llm_context_payload <- function(context_chunks) {
+  purrr::map(seq_len(nrow(context_chunks)), function(i) {
     list(
       source = context_chunks$source[[i]],
       chunk_id = context_chunks$chunk_id[[i]],
       excerpt = context_chunks$chunk_text[[i]]
     )
   })
+}
 
+.ms_llm_bundle_group_cols <- function() {
+  c("dataset_id", "table_id", "column_name")
+}
+
+.ms_llm_bundle_key_df <- function(df) {
+  df <- tibble::as_tibble(df)
+  group_cols <- .ms_llm_bundle_group_cols()
+  missing_cols <- setdiff(group_cols, names(df))
+  for (nm in missing_cols) {
+    df[[nm]] <- NA_character_
+  }
+
+  do.call(
+    paste,
+    c(
+      lapply(df[group_cols], function(x) ifelse(is.na(x), "<NA>", as.character(x))),
+      sep = "\r"
+    )
+  )
+}
+
+.ms_llm_bundle_payload <- function(bundle_group, max_candidates = 2L) {
+  bundle_group <- tibble::as_tibble(bundle_group)
+  if (nrow(bundle_group) == 0) {
+    return(list())
+  }
+
+  if (!".ms_row_order" %in% names(bundle_group)) {
+    bundle_group$.ms_row_order <- seq_len(nrow(bundle_group))
+  }
+
+  role_order <- c("variable", "property", "entity", "unit", "constraint", "method")
+  roles <- unique(as.character(bundle_group$dictionary_role %||% character()))
+  roles <- c(intersect(role_order, roles), setdiff(roles, role_order))
+
+  Filter(Negate(is.null), purrr::map(roles, function(role) {
+    role_rows <- bundle_group[bundle_group$dictionary_role == role, , drop = FALSE]
+    if (nrow(role_rows) == 0) {
+      return(NULL)
+    }
+    role_rows <- role_rows[order(role_rows$.ms_row_order), , drop = FALSE]
+    role_rows <- utils::head(role_rows, max(1L, as.integer(max_candidates[[1]] %||% 2L)))
+    list(
+      dictionary_role = role,
+      target_sdp_field = role_rows$target_sdp_field[[1]] %||% NA_character_,
+      search_query = role_rows$search_query[[1]] %||% NA_character_,
+      target_label = role_rows$target_label[[1]] %||% NA_character_,
+      target_description = role_rows$target_description[[1]] %||% NA_character_,
+      candidates = .ms_llm_candidate_payload(role_rows)
+    )
+  }))
+}
+
+.ms_llm_decomposition_slot_values <- function(target_row) {
+  slot_fields <- intersect(
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    names(target_row)
+  )
+  if (length(slot_fields) == 0) {
+    return(NULL)
+  }
+
+  stats::setNames(
+    lapply(slot_fields, function(field) target_row[[field]][[1]] %||% NA_character_),
+    slot_fields
+  )
+}
+
+.ms_llm_target_payload <- function(target_row,
+                                   candidate_rows,
+                                   context_chunks,
+                                   target_key = NULL,
+                                   bundle_context = NULL) {
   payload <- list(
     target = list(
       dataset_id = target_row$dataset_id[[1]] %||% NA_character_,
       table_id = target_row$table_id[[1]] %||% NA_character_,
       column_name = target_row$column_name[[1]] %||% NA_character_,
+      column_role = if ("column_role" %in% names(target_row)) target_row$column_role[[1]] %||% NA_character_ else NA_character_,
       dictionary_role = target_row$dictionary_role[[1]] %||% NA_character_,
       target_scope = target_row$target_scope[[1]] %||% NA_character_,
       target_sdp_field = target_row$target_sdp_field[[1]] %||% NA_character_,
@@ -623,9 +700,18 @@
       target_query_basis = target_row$target_query_basis[[1]] %||% NA_character_,
       target_query_context = target_row$target_query_context[[1]] %||% NA_character_
     ),
-    candidates = candidate_payload,
-    context_excerpts = context_payload
+    candidates = .ms_llm_candidate_payload(candidate_rows),
+    context_excerpts = .ms_llm_context_payload(context_chunks)
   )
+
+  slot_values <- .ms_llm_decomposition_slot_values(target_row)
+  if (!is.null(slot_values)) {
+    payload$current_slots <- slot_values
+  }
+
+  if (!is.null(bundle_context) && length(bundle_context) > 0) {
+    payload$bundle_context <- bundle_context
+  }
 
   if (!is.null(target_key) && !is.na(target_key) && nzchar(target_key)) {
     payload$target_key <- target_key
@@ -634,20 +720,84 @@
   payload
 }
 
-.ms_llm_messages_for_target <- function(target_row, candidate_rows, context_chunks) {
-  payload <- .ms_llm_target_payload(target_row, candidate_rows, context_chunks)
+.ms_llm_should_route_to_decomposition <- function(target_row) {
+  target_row <- tibble::as_tibble(target_row)
+  if (nrow(target_row) == 0) {
+    return(FALSE)
+  }
 
-  system_prompt <- paste(
+  target_scope <- tolower(.ms_llm_non_empty_string(if ("target_scope" %in% names(target_row)) target_row$target_scope[[1]] else NA_character_))
+  if (identical(target_scope, "code")) {
+    return(FALSE)
+  }
+
+  dictionary_role <- tolower(.ms_llm_non_empty_string(if ("dictionary_role" %in% names(target_row)) target_row$dictionary_role[[1]] else NA_character_))
+  target_field <- tolower(.ms_llm_non_empty_string(if ("target_sdp_field" %in% names(target_row)) target_row$target_sdp_field[[1]] else NA_character_))
+  column_role <- tolower(.ms_llm_non_empty_string(if ("column_role" %in% names(target_row)) target_row$column_role[[1]] else NA_character_))
+  text <- tolower(paste(
+    if ("search_query" %in% names(target_row)) target_row$search_query[[1]] %||% "" else "",
+    if ("target_label" %in% names(target_row)) target_row$target_label[[1]] %||% "" else "",
+    if ("target_description" %in% names(target_row)) target_row$target_description[[1]] %||% "" else "",
+    if ("column_label" %in% names(target_row)) target_row$column_label[[1]] %||% "" else "",
+    if ("column_description" %in% names(target_row)) target_row$column_description[[1]] %||% "" else ""
+  ))
+
+  measurement_like <- column_role %in% c("measurement", "ratio", "index") ||
+    grepl(
+      "\\b(count|abundance|weight|mass|length|width|height|depth|temperature|ratio|rate|density|concentration|biomass|cpue|effort|volume|area|proportion|percentage)\\b",
+      text,
+      perl = TRUE
+    )
+
+  if (!measurement_like) {
+    return(FALSE)
+  }
+
+  dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method") ||
+    target_field %in% c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
+}
+
+.ms_llm_generic_system_prompt <- function() {
+  paste(
     "You are assessing ontology candidate matches for the metasalmon R package.",
     "Choose only from the provided candidates; never invent an IRI.",
-    "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context.",
-    "decision must be one of accept, review, propose_new_term.",
+    "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context, retry_query, suggested_label, suggested_definition, suggested_namespace.",
+    "decision must be one of accept, review, retry_search, request_new_term.",
     "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
     "If no provided candidate is clearly acceptable, return review and set selected_candidate_index to null.",
+    "If the shortlist family looks wrong, use retry_search and provide a short retry_query.",
+    "If the ontology likely lacks the right concept, use request_new_term and provide suggested_label, suggested_definition, and suggested_namespace.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
     "confidence must be a number between 0 and 1."
   )
+}
+
+.ms_llm_decomposition_system_prompt <- function() {
+  paste(
+    "You are assessing ontology candidate matches for the metasalmon R package by running a chat_decomposition()-style review.",
+    "Treat the variable as a SKOS variable concept and assess the current slot in the context of the whole decomposition.",
+    "Choose only from the provided candidates; never invent an IRI.",
+    "Role-fit beats topical relatedness: the best nearby term is still wrong if it does not fit the slot.",
+    "Reason about the whole variable first, then assess the current slot.",
+    "Treat procedure context as usedProcedure-style context; do not treat package method_iri as a native I-ADOPT role.",
+    "For constraint_iri, choose a candidate only when it adds qualifying context that changes meaning, not when it merely restates obvious field context such as a generic catch framing.",
+    "For method_iri, choose a candidate only when the field explicitly names a method, protocol, gear, or estimation procedure.",
+    "If the shortlist is the wrong candidate family, prefer retry_search with a better lexical query.",
+    "If no precise existing term appears available, prefer request_new_term over forcing a weak local winner.",
+    "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context, bundle_summary, retry_query, suggested_label, suggested_definition, suggested_namespace.",
+    "decision must be one of accept, review, retry_search, request_new_term.",
+    "If decision is accept, selected_candidate_index must point to exactly one provided candidate for the current slot.",
+    "If decision is retry_search, selected_candidate_index must be null and retry_query must be a short plain-language lexical query.",
+    "If decision is request_new_term, selected_candidate_index must be null and suggested_label, suggested_definition, and suggested_namespace should be filled when possible.",
+    "selected_candidate_index must be null when no candidate should be selected.",
+    "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note.",
+    "confidence must be a number between 0 and 1."
+  )
+}
+
+.ms_llm_messages_for_target <- function(target_row, candidate_rows, context_chunks) {
+  payload <- .ms_llm_target_payload(target_row, candidate_rows, context_chunks)
 
   user_prompt <- paste(
     "Assessment payload:",
@@ -656,7 +806,28 @@
   )
 
   list(
-    list(role = "system", content = system_prompt),
+    list(role = "system", content = .ms_llm_generic_system_prompt()),
+    list(role = "user", content = user_prompt)
+  )
+}
+
+.ms_llm_messages_for_decomposition_target <- function(record) {
+  payload <- .ms_llm_target_payload(
+    record$group[1, , drop = FALSE],
+    record$candidate_rows,
+    record$context_chunks,
+    target_key = record$group_name,
+    bundle_context = .ms_llm_bundle_payload(record$bundle_group, max_candidates = 2L)
+  )
+
+  user_prompt <- paste(
+    "Decomposition assessment payload:",
+    jsonlite::toJSON(payload, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    "\n\nReturn JSON only."
+  )
+
+  list(
+    list(role = "system", content = .ms_llm_decomposition_system_prompt()),
     list(role = "user", content = user_prompt)
   )
 }
@@ -675,10 +846,11 @@
     "You are assessing ontology candidate matches for the metasalmon R package.",
     "Choose only from the provided candidates for each target; never invent an IRI.",
     "Return JSON only with a single top-level key named assessments.",
-    "assessments must be an array of objects with keys target_key, decision, selected_candidate_index, confidence, rationale, missing_context.",
-    "decision must be one of accept, review, propose_new_term.",
+    "assessments must be an array of objects with keys target_key, decision, selected_candidate_index, confidence, rationale, missing_context, retry_query, suggested_label, suggested_definition, suggested_namespace.",
+    "decision must be one of accept, review, retry_search, request_new_term.",
     "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
-    "If no provided candidate is clearly acceptable, return review and set selected_candidate_index to null.",
+    "If decision is retry_search, selected_candidate_index must be null and retry_query must be a short plain-language lexical query.",
+    "If decision is request_new_term, selected_candidate_index must be null and suggested_label, suggested_definition, and suggested_namespace should be filled when possible.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
     "confidence must be a number between 0 and 1."
@@ -740,8 +912,22 @@
     return(FALSE)
   }
 
-  decision %in% c("review", "propose_new_term") ||
+  decision %in% c("review", "retry_search", "reject_shortlist") ||
+    (identical(decision, "request_new_term") && (is.na(confidence) || confidence < 0.8)) ||
     is.na(confidence) || confidence < .ms_llm_exploration_confidence_threshold(config)
+}
+
+.ms_llm_query_exploration_role_guidance <- function(target_row) {
+  role <- tolower(.ms_llm_non_empty_string(target_row$dictionary_role[[1]] %||% NA_character_))
+  switch(role,
+    variable = "Suggest short noun phrases that describe the whole variable, not just a nearby broad concept.",
+    property = "Suggest phrases that name the measured attribute or phenomenon (for example weight of catch rather than generic context terms).",
+    entity = "Suggest phrases that name the thing or aggregate being measured.",
+    unit = "Suggest phrases that name the expected unit or enumeration unit only when the current shortlist looks wrong.",
+    constraint = "Suggest qualifier phrases only when the field meaning truly depends on contextual qualification; generic catch wording alone is usually too weak.",
+    method = "Suggest procedure / protocol / gear / estimation phrases only when the field explicitly implies a procedure.",
+    ""
+  )
 }
 
 .ms_llm_normalize_query_text <- function(x) {
@@ -767,19 +953,22 @@
     record$group[1, , drop = FALSE],
     record$candidate_rows,
     record$context_chunks,
-    target_key = record$group_name
+    target_key = record$group_name,
+    bundle_context = if (isTRUE(record$decomposition_mode)) .ms_llm_bundle_payload(record$bundle_group, max_candidates = 2L) else NULL
   )
   payload$previous_assessment <- list(
     decision = assessment_row$llm_decision[[1]] %||% NA_character_,
     confidence = assessment_row$llm_confidence[[1]] %||% NA_real_,
     rationale = assessment_row$llm_rationale[[1]] %||% NA_character_,
-    missing_context = assessment_row$llm_missing_context[[1]] %||% NA_character_
+    missing_context = assessment_row$llm_missing_context[[1]] %||% NA_character_,
+    bundle_summary = assessment_row$llm_bundle_summary[[1]] %||% NA_character_
   )
 
   system_prompt <- paste(
     "You are improving deterministic ontology candidate retrieval for the metasalmon R package.",
     "Do not propose IRIs, CURIEs, ontology identifiers, or candidate indexes.",
     "When the current shortlist looks weak, suggest at most 2 short alternate lexical search queries that may retrieve better candidates.",
+    .ms_llm_query_exploration_role_guidance(record$group[1, , drop = FALSE]),
     "Use plain text noun phrases only, grounded in the target description and supplied context.",
     "Return JSON only with keys alternate_queries and rationale.",
     "alternate_queries must be an array with 0 to 2 plain-text search strings."
@@ -867,29 +1056,44 @@
   }
 
   target <- record$group[1, , drop = FALSE]
-  exploration_result <- tryCatch(
-    .ms_llm_request_with_retries(
-      messages = .ms_llm_messages_for_query_exploration(record, assessment_row),
-      config = config
-    ),
-    error = function(e) e
-  )
-  if (inherits(exploration_result, "error")) {
-    cli::cli_warn(
-      "LLM exploration query suggestion failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(exploration_result)}"
+  decision <- .ms_llm_non_empty_string(assessment_row$llm_decision[[1]] %||% NA_character_)
+  queries <- character()
+  if (identical(decision, "retry_search") && "llm_retry_query" %in% names(assessment_row)) {
+    queries <- tryCatch(
+      .ms_llm_validate_exploration_queries(
+        list(alternate_queries = assessment_row$llm_retry_query[[1]] %||% NA_character_),
+        original_query = target$search_query[[1]],
+        max_queries = 1L
+      ),
+      error = function(e) character()
     )
-    return(list(record = record, assessment = assessment_row))
   }
 
-  queries <- tryCatch(
-    .ms_llm_validate_exploration_queries(exploration_result, original_query = target$search_query[[1]]),
-    error = function(e) {
+  if (length(queries) == 0) {
+    exploration_result <- tryCatch(
+      .ms_llm_request_with_retries(
+        messages = .ms_llm_messages_for_query_exploration(record, assessment_row),
+        config = config
+      ),
+      error = function(e) e
+    )
+    if (inherits(exploration_result, "error")) {
       cli::cli_warn(
-        "LLM exploration query validation failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(e)}"
+        "LLM exploration query suggestion failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(exploration_result)}"
       )
-      character()
+      return(list(record = record, assessment = assessment_row))
     }
-  )
+
+    queries <- tryCatch(
+      .ms_llm_validate_exploration_queries(exploration_result, original_query = target$search_query[[1]]),
+      error = function(e) {
+        cli::cli_warn(
+          "LLM exploration query validation failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(e)}"
+        )
+        character()
+      }
+    )
+  }
   if (length(queries) == 0) {
     return(list(record = record, assessment = assessment_row))
   }
@@ -1081,9 +1285,14 @@
 }
 
 .ms_validate_llm_assessment <- function(result, candidate_rows) {
-  decision <- .ms_llm_non_empty_string(result$decision %||% NA_character_)
-  if (is.na(decision) || !decision %in% c("accept", "review", "propose_new_term")) {
-    cli::cli_abort("LLM assessment must return decision = accept, review, or propose_new_term.")
+  decision <- tolower(.ms_llm_non_empty_string(result$decision %||% NA_character_))
+  aliases <- c(propose_new_term = "request_new_term")
+  if (!is.na(decision) && decision %in% names(aliases)) {
+    decision <- aliases[[decision]]
+  }
+  allowed_decisions <- c("accept", "review", "retry_search", "request_new_term", "reject_shortlist")
+  if (is.na(decision) || !decision %in% allowed_decisions) {
+    cli::cli_abort("LLM assessment must return decision = accept, review, retry_search, request_new_term, or reject_shortlist.")
   }
 
   selected_index <- .ms_llm_first_scalar(result$selected_candidate_index %||% NULL)
@@ -1099,6 +1308,12 @@
   }
 
   rationale <- .ms_llm_non_empty_string(result$rationale %||% NA_character_)
+  retry_query <- .ms_llm_optional_note(result$retry_query %||% result$alternate_query %||% NA_character_)
+  bundle_summary <- .ms_llm_optional_note(result$bundle_summary %||% result$whole_variable_summary %||% NA_character_)
+  suggested_label <- .ms_llm_optional_note(result$suggested_label %||% NA_character_)
+  suggested_definition <- .ms_llm_optional_note(result$suggested_definition %||% NA_character_)
+  suggested_namespace <- .ms_llm_optional_note(result$suggested_namespace %||% result$namespace %||% NA_character_)
+
   if (identical(decision, "accept") && is.na(selected_index)) {
     decision <- "review"
     rationale <- paste(
@@ -1120,8 +1335,18 @@
       collapse = " "
     )
   }
-  if (identical(decision, "propose_new_term")) {
+  if (decision %in% c("request_new_term", "retry_search", "reject_shortlist")) {
     selected_index <- NA_integer_
+  }
+  if (identical(decision, "retry_search") && is.na(retry_query)) {
+    decision <- "review"
+    rationale <- paste(
+      c(
+        rationale,
+        "Model requested retry_search without providing a retry query; downgraded to review."
+      )[nzchar(c(rationale, "Model requested retry_search without providing a retry query; downgraded to review."))],
+      collapse = " "
+    )
   }
 
   list(
@@ -1129,7 +1354,12 @@
     selected_candidate_index = selected_index,
     confidence = confidence,
     rationale = rationale,
-    missing_context = .ms_llm_optional_note(result$missing_context %||% NA_character_)
+    missing_context = .ms_llm_optional_note(result$missing_context %||% NA_character_),
+    bundle_summary = bundle_summary,
+    retry_query = retry_query,
+    suggested_label = suggested_label,
+    suggested_definition = suggested_definition,
+    suggested_namespace = suggested_namespace
   )
 }
 
@@ -1154,6 +1384,11 @@
     llm_selected_label = NA_character_,
     llm_rationale = NA_character_,
     llm_missing_context = NA_character_,
+    llm_bundle_summary = NA_character_,
+    llm_retry_query = NA_character_,
+    llm_new_term_label = NA_character_,
+    llm_new_term_definition = NA_character_,
+    llm_new_term_namespace = NA_character_,
     llm_context_sources = NA_character_,
     llm_exploration_used = FALSE,
     llm_exploration_queries = NA_character_,
@@ -1186,6 +1421,11 @@
     llm_selected_label = if (!is.na(validated$selected_candidate_index)) candidate_rows$label[[validated$selected_candidate_index]] else NA_character_,
     llm_rationale = validated$rationale,
     llm_missing_context = validated$missing_context,
+    llm_bundle_summary = validated$bundle_summary,
+    llm_retry_query = validated$retry_query,
+    llm_new_term_label = validated$suggested_label,
+    llm_new_term_definition = validated$suggested_definition,
+    llm_new_term_namespace = validated$suggested_namespace,
     llm_context_sources = if (nrow(context_chunks) > 0) paste(unique(context_chunks$source), collapse = "; ") else NA_character_,
     llm_exploration_used = FALSE,
     llm_exploration_queries = NA_character_,
@@ -1200,7 +1440,8 @@
                                    top_n,
                                    context_files,
                                    context_text,
-                                   context_chunk_pool = NULL) {
+                                   context_chunk_pool = NULL,
+                                   bundle_group = NULL) {
   group <- group[order(group$.ms_row_order), , drop = FALSE]
   candidate_rows <- utils::head(group, top_n)
   context_chunks <- .ms_prepare_context_chunks(
@@ -1216,12 +1457,18 @@
     group_name = group_name,
     group = group,
     candidate_rows = candidate_rows,
-    context_chunks = context_chunks
+    context_chunks = context_chunks,
+    bundle_group = bundle_group,
+    decomposition_mode = .ms_llm_should_route_to_decomposition(group[1, , drop = FALSE])
   )
 }
 
 .ms_llm_assess_one_record <- function(record, config) {
-  messages <- .ms_llm_messages_for_target(record$group[1, , drop = FALSE], record$candidate_rows, record$context_chunks)
+  messages <- if (isTRUE(record$decomposition_mode)) {
+    .ms_llm_messages_for_decomposition_target(record)
+  } else {
+    .ms_llm_messages_for_target(record$group[1, , drop = FALSE], record$candidate_rows, record$context_chunks)
+  }
 
   tryCatch(
     {
@@ -1268,7 +1515,7 @@
 }
 
 .ms_llm_assess_record_batch <- function(records, config) {
-  if (length(records) <= 1L) {
+  if (length(records) <= 1L || any(vapply(records, function(record) isTRUE(record$decomposition_mode), logical(1)))) {
     return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
   }
 
@@ -1362,17 +1609,24 @@
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
 
   suggestion_groups <- split(suggestions, suggestions$.ms_group_key)
+  suggestions$.ms_bundle_key <- .ms_llm_bundle_key_df(suggestions)
+  bundle_groups <- split(suggestions, suggestions$.ms_bundle_key)
   records <- purrr::map(
     names(suggestion_groups),
-    ~ .ms_llm_prepare_record(
-      group_name = .x,
-      group = suggestion_groups[[.x]],
-      config = config,
-      top_n = top_n,
-      context_files = context_files,
-      context_text = context_text,
-      context_chunk_pool = context_chunk_pool
-    )
+    ~ {
+      group <- suggestion_groups[[.x]]
+      bundle_key <- .ms_llm_bundle_key_df(group[1, , drop = FALSE])[[1]]
+      .ms_llm_prepare_record(
+        group_name = .x,
+        group = group,
+        config = config,
+        top_n = top_n,
+        context_files = context_files,
+        context_text = context_text,
+        context_chunk_pool = context_chunk_pool,
+        bundle_group = bundle_groups[[bundle_key]]
+      )
+    }
   )
 
   batch_size <- .ms_llm_batch_size(config)
@@ -1430,7 +1684,7 @@
         !is.na(.data$llm_candidate_rank) &
         .data$llm_selected_candidate_index == .data$llm_candidate_rank
     ) |>
-    dplyr::select(-dplyr::any_of(c(".ms_group_key", ".ms_row_order")))
+    dplyr::select(-dplyr::any_of(c(".ms_group_key", ".ms_bundle_key", ".ms_row_order")))
 
   list(
     suggestions = suggestions,

@@ -632,7 +632,7 @@ test_that("create_sdp writes selected LLM table suggestions back to tables.csv a
   expect_true(is.na(age_row$observation_unit_iri[[1]]) || age_row$observation_unit_iri[[1]] == "")
 })
 
-test_that("create_sdp only auto-writes high-confidence LLM suggestions for safer semantic roles", {
+test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer semantic roles", {
   resources <- list(main = tibble::tibble(weight_kg = c(1, 2)))
 
   fake_suggest <- function(df, dict, ...) {
@@ -670,11 +670,11 @@ test_that("create_sdp only auto-writes high-confidence LLM suggestions for safer
       target_description = rep("Fish weight in kilograms", 6),
       llm_provider = rep("openrouter", 6),
       llm_model = rep("openai/gpt-5.4-mini", 6),
-      llm_decision = rep("accept", 6),
+      llm_decision = c("review", rep("accept", 5)),
       llm_confidence = c(0.89, 0.93, 0.91, 0.95, 0.99, 0.99),
-      llm_selected_candidate_index = rep(1L, 6),
+      llm_selected_candidate_index = c(NA_integer_, rep(1L, 5)),
       llm_selected_iri = c(
-        "https://example.org/term/weight",
+        NA_character_,
         "https://example.org/property/weight",
         "https://example.org/entity/fish-weight",
         "http://qudt.org/vocab/unit/KiloGM",
@@ -682,7 +682,7 @@ test_that("create_sdp only auto-writes high-confidence LLM suggestions for safer
         "https://example.org/constraint/catch-context"
       ),
       llm_selected_label = c(
-        "Weight variable",
+        NA_character_,
         "Fish weight",
         "Fish weight",
         "Kilogram",
@@ -694,7 +694,7 @@ test_that("create_sdp only auto-writes high-confidence LLM suggestions for safer
       llm_context_sources = rep("Data_Dictionary_EN_FR.csv", 6),
       llm_error = rep(NA_character_, 6),
       llm_candidate_rank = rep(1L, 6),
-      llm_selected = rep(TRUE, 6)
+      llm_selected = c(FALSE, rep(TRUE, 5))
     )
     attr(dict, "semantic_suggestions") <- suggestions
     attr(dict, "semantic_llm_assessments") <- suggestions[, c(
