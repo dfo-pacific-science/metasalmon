@@ -132,6 +132,71 @@ test_that("create_sdp creates valid package", {
   expect_true(file.exists(file.path(pkg_path_with_edh, "metadata", "metadata-edh-hnap.xml")))
 })
 
+test_that("create_sdp falls back to deterministic suggestions when LLM assessment fails", {
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  failing_request <- function(messages, config) {
+    stop("HTTP 402 Payment Required.")
+  }
+
+  temp_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho", "Chinook"), count = c(1L, 2L)))
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_search,
+    {
+      out <- NULL
+      expect_warning(
+        out <- create_sdp(
+          resources,
+          path = file.path(temp_dir, "package-llm-fallback"),
+          dataset_id = "llm-fallback-demo",
+          seed_semantics = TRUE,
+          semantic_sources = "smn",
+          semantic_max_per_role = 2,
+          seed_verbose = FALSE,
+          llm_assess = TRUE,
+          llm_provider = "openrouter",
+          llm_model = "openai/gpt-5.4-mini",
+          llm_api_key = "dummy-key",
+          llm_top_n = 2,
+          llm_request_fn = failing_request,
+          check_updates = FALSE,
+          overwrite = TRUE
+        ),
+        "falling back to deterministic semantic suggestions only"
+      )
+      out
+    }
+  )
+
+  expect_true(dir.exists(pkg_path))
+  expect_true(file.exists(file.path(pkg_path, "semantic_suggestions.csv")))
+
+  dict <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  suggestions <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
+  iri_cols <- grep("_iri$", names(dict), value = TRUE)
+  iri_values <- unlist(dict[iri_cols], use.names = FALSE)
+
+  expect_gt(nrow(suggestions), 0)
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+  expect_true(any(grepl("https://example.org/", iri_values, fixed = TRUE), na.rm = TRUE))
+})
+
 test_that("create_sdp auto-enables EDH XML export when legacy edh_profile is supplied", {
   temp_dir <- withr::local_tempdir()
   resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))

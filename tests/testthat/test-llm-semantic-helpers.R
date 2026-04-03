@@ -149,7 +149,7 @@ test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
   expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
 })
 
-test_that("suggest_semantics aborts when every LLM assessment fails", {
+test_that("suggest_semantics falls back to deterministic suggestions when every LLM assessment fails", {
   dict <- tibble::tibble(
     dataset_id = "d1",
     table_id = "t1",
@@ -187,23 +187,47 @@ test_that("suggest_semantics aborts when every LLM assessment fails", {
     stop("HTTP 402 Payment Required.")
   }
 
-  suppressWarnings(
-    expect_error(
-      suggest_semantics(
-        NULL,
-        dict,
-        sources = "smn",
-        max_per_role = 2,
-        search_fn = fake_search,
-        llm_assess = TRUE,
-        llm_provider = "openrouter",
-        llm_model = "openai/gpt-5.4-mini",
-        llm_api_key = "dummy-key",
-        llm_top_n = 2,
-        llm_request_fn = failing_request
-      ),
-      "All LLM assessments failed"
-    )
+  res <- NULL
+  expect_warning(
+    res <- suggest_semantics(
+      NULL,
+      dict,
+      sources = "smn",
+      max_per_role = 2,
+      search_fn = fake_search,
+      llm_assess = TRUE,
+      llm_provider = "openrouter",
+      llm_model = "openai/gpt-5.4-mini",
+      llm_api_key = "dummy-key",
+      llm_top_n = 2,
+      llm_request_fn = failing_request
+    ),
+    "falling back to deterministic semantic suggestions only"
+  )
+
+  suggestions <- attr(res, "semantic_suggestions")
+  assessments <- attr(res, "semantic_llm_assessments")
+
+  expect_gt(nrow(suggestions), 0)
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+  expect_true(all(assessments$llm_provider == "openrouter"))
+  expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
+  expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
+})
+
+test_that("provider-wide LLM failure still aborts without usable deterministic suggestions", {
+  assessments <- tibble::tibble(
+    llm_error = c("HTTP 429 Too Many Requests.", "HTTP 402 Payment Required."),
+    llm_decision = c(NA_character_, NA_character_)
+  )
+
+  expect_error(
+    .ms_llm_abort_if_provider_wide_failure(
+      assessments = assessments,
+      config = list(provider = "openrouter", model = "openrouter/free"),
+      deterministic_suggestions = tibble::tibble(iri = c(NA_character_, ""))
+    ),
+    "no usable deterministic semantic suggestions were available"
   )
 })
 

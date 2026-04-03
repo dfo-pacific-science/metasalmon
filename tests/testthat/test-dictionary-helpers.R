@@ -194,6 +194,63 @@ test_that("infer_dictionary can seed semantic suggestions", {
   )
 })
 
+test_that("infer_dictionary falls back to deterministic suggestions when LLM assessment fails", {
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  failing_request <- function(messages, config) {
+    stop("HTTP 402 Payment Required.")
+  }
+
+  dict <- with_mocked_bindings(
+    find_terms = fake_search,
+    {
+      out <- NULL
+      expect_warning(
+        out <- infer_dictionary(
+          data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+          dataset_id = "dataset-1",
+          table_id = "table-1",
+          seed_semantics = TRUE,
+          semantic_sources = "smn",
+          semantic_max_per_role = 2,
+          seed_verbose = FALSE,
+          llm_assess = TRUE,
+          llm_provider = "openrouter",
+          llm_model = "openai/gpt-5.4-mini",
+          llm_api_key = "dummy-key",
+          llm_top_n = 2,
+          llm_request_fn = failing_request
+        ),
+        "falling back to deterministic semantic suggestions only"
+      )
+      out
+    }
+  )
+
+  suggestions <- attr(dict, "semantic_suggestions")
+  assessments <- attr(dict, "semantic_llm_assessments")
+
+  expect_s3_class(dict, "tbl_df")
+  expect_gt(nrow(suggestions), 0)
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+  expect_true(any(suggestions$iri == "https://example.org/variable/best"))
+  expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
+})
+
 test_that("infer_dictionary accepts named resource lists and can seed metadata-aware suggestions", {
   resources <- list(
     catches = data.frame(

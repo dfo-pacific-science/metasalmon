@@ -1547,27 +1547,56 @@
   validated
 }
 
-.ms_llm_abort_if_provider_wide_failure <- function(assessments, config) {
+.ms_has_usable_semantic_suggestions <- function(suggestions) {
+  suggestions <- tibble::as_tibble(suggestions)
+  if (nrow(suggestions) == 0 || !"iri" %in% names(suggestions)) {
+    return(FALSE)
+  }
+
+  iris <- as.character(suggestions$iri)
+  iris[is.na(iris)] <- ""
+  any(nzchar(trimws(iris)))
+}
+
+.ms_llm_abort_if_provider_wide_failure <- function(assessments,
+                                                   config,
+                                                   deterministic_suggestions = NULL) {
   assessments <- tibble::as_tibble(assessments)
   if (nrow(assessments) == 0 || !"llm_error" %in% names(assessments)) {
-    return(invisible(NULL))
+    return(FALSE)
   }
 
   has_error <- !is.na(assessments$llm_error) & nzchar(assessments$llm_error)
   has_decision <- "llm_decision" %in% names(assessments) &
     !is.na(assessments$llm_decision) & nzchar(assessments$llm_decision)
   if (!all(has_error) || any(has_decision)) {
-    return(invisible(NULL))
+    return(FALSE)
   }
 
   model_ref <- paste0(config$provider, "/", config$model)
   unique_errors <- unique(trimws(as.character(assessments$llm_error[has_error])))
   error_summary <- paste(unique_errors[nzchar(unique_errors)], collapse = " | ")
-  cli::cli_abort(c(
+
+  if (.ms_has_usable_semantic_suggestions(deterministic_suggestions)) {
+    warn_lines <- c(
+      "All LLM assessments failed for {.code {model_ref}}; falling back to deterministic semantic suggestions only.",
+      "i" = paste0(nrow(assessments), " target(s) returned only LLM errors, so metasalmon will keep the retrieved semantic suggestions and skip LLM review for this run.")
+    )
+    if (nzchar(error_summary)) {
+      warn_lines <- c(warn_lines, "i" = error_summary)
+    }
+    cli::cli_warn(warn_lines)
+    return(TRUE)
+  }
+
+  abort_lines <- c(
     "All LLM assessments failed for {.code {model_ref}}.",
-    "i" = paste0(nrow(assessments), " target(s) returned only LLM errors, so the package is stopping instead of silently writing review-ready metadata with no usable LLM decisions."),
-    "i" = error_summary
-  ))
+    "i" = paste0(nrow(assessments), " target(s) returned only LLM errors and no usable deterministic semantic suggestions were available.")
+  )
+  if (nzchar(error_summary)) {
+    abort_lines <- c(abort_lines, "i" = error_summary)
+  }
+  cli::cli_abort(abort_lines)
 }
 
 .ms_assess_semantic_suggestions_llm <- function(suggestions,
@@ -1656,7 +1685,20 @@
 
   final_records <- purrr::map(explored, "record")
   assessments <- dplyr::bind_rows(purrr::map(explored, "assessment"))
-  .ms_llm_abort_if_provider_wide_failure(assessments, config)
+  fallback_to_deterministic <- .ms_llm_abort_if_provider_wide_failure(
+    assessments,
+    config,
+    deterministic_suggestions = suggestions
+  )
+  if (isTRUE(fallback_to_deterministic)) {
+    suggestions <- suggestions |>
+      dplyr::select(-dplyr::any_of(c(".ms_group_key", ".ms_bundle_key", ".ms_row_order")))
+    return(list(
+      suggestions = suggestions,
+      assessments = assessments
+    ))
+  }
+
   suggestions <- dplyr::bind_rows(purrr::map(final_records, "group"))
   suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
