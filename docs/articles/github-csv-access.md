@@ -18,6 +18,7 @@ GitHub. The
 function guides you through this process:
 
 ``` r
+
 library(metasalmon)
 
 # Run once to set up authentication
@@ -42,6 +43,7 @@ verifies access to a test repository. You can specify your own
 repository to verify:
 
 ``` r
+
 # Verify access to a specific private repository
 ms_setup_github(repo = "your-org/your-private-repo")
 ```
@@ -51,6 +53,7 @@ ms_setup_github(repo = "your-org/your-private-repo")
 If you encounter authentication issues:
 
 ``` r
+
 # Check if you have a stored PAT
 gh::gh_token()
 
@@ -76,6 +79,7 @@ Once authenticated, use
 to read CSV files directly into R:
 
 ``` r
+
 # Read a CSV from a private repository
 my_data <- read_github_csv(
   path = "data/my-dataset.csv",
@@ -92,6 +96,7 @@ By default, files are read from the `main` branch. You can specify a
 different reference:
 
 ``` r
+
 # Read from a specific branch
 dev_data <- read_github_csv(
   path = "data/my-dataset.csv",
@@ -124,6 +129,7 @@ Additional arguments are passed through to
 [`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html):
 
 ``` r
+
 # Specify column types
 typed_data <- read_github_csv(
   path = "data/my-dataset.csv",
@@ -150,6 +156,7 @@ This is similar to using
 [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files:
 
 ``` r
+
 # Read all CSV files from a directory
 data_list <- read_github_csv_dir(
   path = "data/observations",
@@ -169,6 +176,7 @@ names(data_list)
 You can use a regular expression pattern to filter which files to read:
 
 ``` r
+
 # Only read files matching a pattern
 subset <- read_github_csv_dir(
   path = "data",
@@ -184,6 +192,7 @@ Like
 you can pin to specific tags or commits:
 
 ``` r
+
 # Read all CSVs from a pinned version
 data_v1 <- read_github_csv_dir(
   path = "data/observations",
@@ -199,6 +208,7 @@ Additional arguments are passed through to
 for each file:
 
 ``` r
+
 # Apply the same read_csv options to all files
 data_typed <- read_github_csv_dir(
   path = "data/observations",
@@ -217,6 +227,7 @@ Sometimes you need the raw GitHub URL rather than the data itself. Use
 [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md):
 
 ``` r
+
 # Get the stable raw URL for a file
 url <- github_raw_url(
   path = "data/my-dataset.csv",
@@ -245,6 +256,7 @@ If you already have a GitHub URL (blob or raw), you can pass it
 directly:
 
 ``` r
+
 # From a GitHub blob URL (the kind you see in the browser)
 data1 <- read_github_csv(
   path = "https://github.com/your-org/your-repo/blob/main/data/file.csv"
@@ -264,6 +276,7 @@ automatically and don’t need to be specified.
 Here’s a complete example workflow for a reproducible analysis:
 
 ``` r
+
 library(metasalmon)
 
 # First time only: set up authentication

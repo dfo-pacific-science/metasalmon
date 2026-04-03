@@ -231,10 +231,11 @@
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
 #'   per target for each assessment round. Default is `5`.
 #' @param llm_context_files Optional character vector of local context files
-#'   (for example README/markdown notes, CSV dictionaries, Excel workbooks, or
-#'   PDF reports) used to provide extra domain context to the LLM. PDF support
-#'   uses the optional `pdftools` package; Excel support uses the optional
-#'   `readxl` package.
+#'   (for example README/markdown notes, CSV dictionaries, HTML exports,
+#'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
+#'   workbooks, or PDF reports) used to provide extra domain context to the
+#'   LLM. PDF support uses the optional `pdftools` package; Excel support uses
+#'   the optional `readxl` package.
 #' @param llm_context_text Optional character vector of extra inline context
 #'   snippets passed alongside `llm_context_files`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.

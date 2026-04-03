@@ -31,6 +31,7 @@ This is the post-review path:
 ### 1) Reload the reviewed package
 
 ``` r
+
 library(metasalmon)
 
 pkg_path <- "fraser-coho-2023-2024-sdp"
@@ -49,6 +50,7 @@ are checking the same metadata you just reviewed in Excel.
 Start with the package-level validator in **non-strict** mode:
 
 ``` r
+
 review_check <- validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```
 
@@ -59,6 +61,7 @@ If you also want the semantic details separated out, inspect the
 reloaded package directly:
 
 ``` r
+
 review_semantics <- validate_semantics(pkg$dictionary, require_iris = FALSE)
 
 review_semantics$issues
@@ -85,6 +88,7 @@ against the **current** package state so you only inspect what is still
 unresolved.
 
 ``` r
+
 reviewed_dict <- suggest_semantics(
   df = pkg$resources,
   dict = pkg$dictionary,
@@ -118,6 +122,7 @@ Now detect the places where `metasalmon` still cannot find a shared SMN
 match, but did find useful fallback candidates elsewhere:
 
 ``` r
+
 gaps <- detect_semantic_term_gaps(reviewed_dict)
 
 gaps |>
@@ -144,6 +149,7 @@ This is the key post-review gap table:
 If you only want a narrower slice, filter by role or scope:
 
 ``` r
+
 gaps |>
   dplyr::filter(dictionary_role %in% c("variable", "property", "entity"))
 ```
@@ -191,6 +197,7 @@ currently use these buckets:
 First build a simple routing table you can save with the package:
 
 ``` r
+
 request_plan <- gaps |>
   dplyr::mutate(
     request_scope = dplyr::case_when(
@@ -233,6 +240,7 @@ That gives you a concrete list of:
 Next, render draft request text from that plan:
 
 ``` r
+
 requests <- render_ontology_term_request(
   gaps,
   scope = "auto",
@@ -251,6 +259,7 @@ For shared salmon-domain requests, the package already has a dry-run
 GitHub path:
 
 ``` r
+
 smn_preview <- requests |>
   dplyr::filter(request_scope == "smn") |>
   submit_term_request_issues(dry_run = TRUE)
@@ -278,6 +287,7 @@ Once the metadata is final and every surviving IRI is deliberate,
 regenerate EDH XML if your publication path needs it:
 
 ``` r
+
 write_edh_xml_from_sdp(pkg_path)
 ```
 
@@ -296,6 +306,7 @@ including:
 When the package is genuinely ready, switch to strict validation:
 
 ``` r
+
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 

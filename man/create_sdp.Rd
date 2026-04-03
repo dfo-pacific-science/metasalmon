@@ -96,7 +96,7 @@ target.}
 
 \item{llm_context_files}{Optional local context files forwarded to
 \code{suggest_semantics()}. See that function for supported file types,
-including PDF and Excel context files.}
+including HTML, DOCX, \code{.R}, \code{.Rmd}, \code{.qmd}, PDF, and Excel context files.}
 
 \item{llm_context_text}{Optional inline context snippets forwarded to
 \code{suggest_semantics()}.}

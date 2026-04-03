@@ -12,8 +12,11 @@ files such as README notes, data dictionaries, or technical reports.
 `llm_context_files` accepts local files that can add domain context to
 the LLM review step:
 
-- markdown/text: `.md`, `.txt`, `.rst`
+- markdown/text notes: `.md`, `.txt`, `.rst`
 - delimited/text data: `.csv`, `.tsv`, `.json`, `.yaml`, `.yml`
+- source/notebook files: `.R`, `.Rmd`, `.qmd`
+- HTML pages: `.htm`, `.html`
+- Word documents: `.docx`
 - PDF reports: `.pdf` with the optional `pdftools` package
 - Excel workbooks: `.xls`, `.xlsx`, `.xlsm` with the optional `readxl`
   package
@@ -29,15 +32,17 @@ it does not mint raw IRIs.
 For a realistic Salmon Data Package review, pass a small bundle that
 mixes:
 
-1.  a README or methods note describing the dataset,
-2.  a CSV or workbook data dictionary,
+1.  a README, HTML export, or methods note describing the dataset,
+2.  a CSV, workbook, or DOCX/R Markdown data dictionary or analyst note,
 3.  a technical report or PDF summary if one exists.
 
 For example:
 
 ``` r
+
 context_files <- c(
   "README.md",
+  "methods-note.Rmd",
   "data-dictionary.xlsx",
   "technical-report.pdf"
 )
@@ -49,6 +54,7 @@ For DFO internal users, `chapi` plus the default Mistral model is the
 shortest path:
 
 ``` r
+
 library(metasalmon)
 
 data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
@@ -93,6 +99,7 @@ inferred package artifacts and pass `codes`, `table_meta`, and
 [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md):
 
 ``` r
+
 artifacts <- infer_salmon_datapackage_artifacts(
   resources = list(escapement = fraser_coho),
   dataset_id = "fraser-coho-2023-2024",
@@ -119,6 +126,7 @@ assessments <- attr(reviewed_dict, "semantic_llm_assessments")
 Now you can filter by target file:
 
 ``` r
+
 suggestions[, c("target_sdp_file", "target_sdp_field", "table_id", "column_name", "code_value", "label", "iri", "llm_decision", "llm_selected")]
 ```
 
@@ -155,6 +163,7 @@ state.
 Once the package metadata is finalized:
 
 ``` r
+
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 write_edh_xml_from_sdp(pkg_path)
 ```

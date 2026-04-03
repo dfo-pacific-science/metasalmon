@@ -44,10 +44,13 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.2" id="metasalmon-012">metasalmon 0.1.2<a class="anchor" aria-label="anchor" href="#metasalmon-012"></a></h2>
-<ul><li>Added Excel workbook support for <code>llm_context_files</code>: <code>.xls</code>, <code>.xlsx</code>, and <code>.xlsm</code> files are now read through the optional <code>readxl</code> package and serialized into bounded sheet text before LLM prompting.</li>
-<li>Expanded LLM regression coverage with mixed-context bundle tests for the exact <code>chapi</code> + <code>ollama2.mistral:7b</code> configuration, including markdown, CSV, Excel, and PDF inputs across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, and <code>codes.csv</code> targets.</li>
+<ul><li>Fixed the seeded semantic-context warning path so <code>seed_semantics = TRUE</code> no longer crashes when mixed or previously unsupported <code>llm_context_files</code> trigger <code>cli</code> interpolation in package creation/review flows.</li>
+<li>Expanded <code>llm_context_files</code> handling so HTML/HTM, DOCX, <code>.R</code>, <code>.Rmd</code>, and <code>.qmd</code> inputs are read or normalized cleanly during LLM review instead of failing on unsupported-file warnings.</li>
+<li>Added Excel workbook context-file support for package-native LLM review, including <code>.xls</code>, <code>.xlsx</code>, and <code>.xlsm</code> inputs via the optional <code>readxl</code> package.</li>
+<li>Hardened LLM assessment parsing so malformed <code>accept</code> responses without a selected candidate degrade to <code>review</code>, and falsey <code>missing_context</code> placeholders no longer pollute outputs.</li>
+<li>Expanded LLM regression coverage with mixed-context bundle tests for the exact <code>chapi</code> + <code>ollama2.mistral:7b</code> configuration, including markdown, CSV, Excel, PDF, HTML, DOCX, and notebook/source context bundles across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, and <code>codes.csv</code> targets.</li>
 <li>Finished the <code>scripts/llm-sanity-check.R</code> harness into a richer end-to-end smoke tool: it now generates per-case context bundles, records context formats in the summaries, rebuilds EDH XML after a simulated review pass, and writes stable CSV outputs under <code>artifacts/</code>.</li>
-<li>Added a dedicated Getting Started article for LLM review with context files and linked it from the quickstart/setup docs so the package-native workflow is easier to discover.</li>
+<li>Added and linked a dedicated LLM review getting-started guide from the quickstart/setup docs so the package-native workflow is easier to discover.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="metasalmon-011">metasalmon 0.1.1<a class="anchor" aria-label="anchor" href="#metasalmon-011"></a></h2>
