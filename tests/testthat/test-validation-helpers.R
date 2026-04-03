@@ -79,6 +79,17 @@ test_that("validate_semantics warns that deprecated arguments are ignored", {
 
 test_that("fetch_salmon_ontology returns a ttl path", {
   testthat::skip_if_offline("w3id.org")
+  reachable <- tryCatch(
+    {
+      resp <- httr2::request("https://w3id.org/smn/") |>
+        httr2::req_method("HEAD") |>
+        httr2::req_timeout(5) |>
+        httr2::req_perform()
+      httr2::resp_status(resp) < 500
+    },
+    error = function(...) FALSE
+  )
+  testthat::skip_if_not(reachable, "w3id.org is not reachable from this environment")
   path <- fetch_salmon_ontology()
   expect_true(file.exists(path))
   expect_match(path, "salmon-ontology\\.ttl$")
