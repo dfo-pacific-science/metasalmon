@@ -415,6 +415,12 @@ infer_salmon_datapackage_artifacts <- function(
     !is.null(llm_api_key) ||
     !is.null(llm_base_url) ||
     !is.null(llm_request_fn)
+  if (!isTRUE(seed_semantics) && llm_requested) {
+    cli::cli_warn(c(
+      "Ignoring LLM semantic options because {.code seed_semantics = FALSE}.",
+      "i" = "Enable {.code seed_semantics = TRUE} to generate semantic suggestions or call {.fn suggest_semantics} later with the same LLM/context arguments."
+    ))
+  }
   semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
     semantic_max_per_role,
     llm_assess = llm_assess,

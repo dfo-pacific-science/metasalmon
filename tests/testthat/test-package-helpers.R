@@ -750,6 +750,29 @@ test_that("create_sdp seed note explains slower semantic lookup", {
   expect_null(metasalmon:::.ms_create_sdp_seed_note(seed_semantics = TRUE, seed_verbose = FALSE))
 })
 
+test_that("infer_salmon_datapackage_artifacts warns when LLM options are ignored", {
+  resources <- list(main = tibble::tibble(spawner_count = 1L))
+  context_path <- file.path(withr::local_tempdir(), "context.html")
+  writeLines("<html><body><p>Spawner abundance dictionary</p></body></html>", context_path)
+
+  expect_warning(
+    artifacts <- infer_salmon_datapackage_artifacts(
+      resources = resources,
+      dataset_id = "demo-dataset",
+      table_id = "main",
+      seed_semantics = FALSE,
+      llm_assess = TRUE,
+      llm_provider = "chapi",
+      llm_api_key = "dummy-key",
+      llm_context_files = context_path
+    ),
+    "seed_semantics = FALSE"
+  )
+
+  expect_null(artifacts$semantic_suggestions)
+  expect_null(artifacts$semantic_llm_assessments)
+})
+
 test_that("create_sdp default code-level semantic seeding includes low-cardinality character columns but skips free-text fields", {
   resources <- list(
     catches = tibble::tibble(

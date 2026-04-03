@@ -83,6 +83,72 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 
+test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    expect_equal(config$provider, "openrouter")
+    expect_equal(config$model, "openai/gpt-5.4-mini")
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.92,
+      rationale = "The custom OpenRouter model id should pass through unchanged.",
+      missing_context = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "openrouter",
+    llm_model = "openai/gpt-5.4-mini",
+    llm_api_key = "dummy-key",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  assessments <- attr(res, "semantic_llm_assessments")
+  expect_true(all(assessments$llm_provider == "openrouter"))
+  expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
+})
+
 test_that("suggest_semantics aborts when every LLM assessment fails", {
   dict <- tibble::tibble(
     dataset_id = "d1",
@@ -733,6 +799,138 @@ test_that("Excel context files either extract sheet text or fail clearly when re
   }
 })
 
+test_that("HTML context files are converted to plain text", {
+  tmp <- withr::local_tempdir()
+  html_path <- file.path(tmp, "context.html")
+
+  writeLines(
+    c(
+      "<html><head><title>Example</title><style>.hidden{display:none;}</style></head>",
+      "<body>",
+      "<h1>Trawl biosample dictionary</h1>",
+      "<p>spawner_count = estimated number of spawners</p>",
+      "<script>console.log('ignore me')</script>",
+      "</body></html>"
+    ),
+    html_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(html_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.html")
+  expect_match(result$text, "Trawl biosample dictionary", fixed = TRUE)
+  expect_match(result$text, "spawner_count = estimated number of spawners", fixed = TRUE)
+  expect_false(grepl("ignore me", result$text, fixed = TRUE))
+})
+
+test_that("R Markdown context files keep prose and code while dropping fences/front matter", {
+  tmp <- withr::local_tempdir()
+  rmd_path <- file.path(tmp, "context.Rmd")
+
+  writeLines(
+    c(
+      "---",
+      "title: 'Trawl dictionary'",
+      "output: html_document",
+      "---",
+      "",
+      "Spawner abundance is estimated per tow.",
+      "",
+      "```{r}",
+      "semantic_hint <- 'estimated number of spawners'",
+      "summary(semantic_hint)",
+      "```",
+      "",
+      "Method codes describe the field protocol."
+    ),
+    rmd_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(rmd_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.Rmd")
+  expect_match(result$text, "Spawner abundance is estimated per tow.", fixed = TRUE)
+  expect_match(result$text, "Method codes describe the field protocol.", fixed = TRUE)
+  expect_match(result$text, "semantic_hint <- 'estimated number of spawners'", fixed = TRUE)
+  expect_false(grepl("```", result$text, fixed = TRUE))
+  expect_false(grepl("title:", result$text, fixed = TRUE))
+})
+
+test_that("Quarto context files keep prose and code while dropping fences/front matter", {
+  tmp <- withr::local_tempdir()
+  qmd_path <- file.path(tmp, "context.qmd")
+
+  writeLines(
+    c(
+      "---",
+      "title: 'Trawl dictionary'",
+      "format: html",
+      "---",
+      "",
+      "Tow-level counts are recorded here.",
+      "",
+      "```{r}",
+      "semantic_hint <- 'estimated number of spawners'",
+      "```"
+    ),
+    qmd_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(qmd_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.qmd")
+  expect_match(result$text, "Tow-level counts are recorded here.", fixed = TRUE)
+  expect_match(result$text, "semantic_hint <- 'estimated number of spawners'", fixed = TRUE)
+  expect_false(grepl("```", result$text, fixed = TRUE))
+  expect_false(grepl("format:", result$text, fixed = TRUE))
+})
+
+test_that("R script context files preserve code and comments", {
+  tmp <- withr::local_tempdir()
+  r_path <- file.path(tmp, "context.R")
+
+  writeLines(
+    c(
+      "# estimated number of spawners",
+      "semantic_hint <- 'estimated number of spawners'"
+    ),
+    r_path
+  )
+
+  result <- metasalmon:::.ms_context_text_from_file(r_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.R")
+  expect_match(result$text, "# estimated number of spawners", fixed = TRUE)
+  expect_match(result$text, "semantic_hint <- 'estimated number of spawners'", fixed = TRUE)
+})
+
+test_that("DOCX context files are converted to plain text", {
+  tmp <- withr::local_tempdir()
+  docx_path <- file.path(tmp, "context.docx")
+  docx_b64 <- paste0(
+    "UEsDBBQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH2QzU7DMBCE730Ky9cqccoBIZSkB36OwKE8wMreJFb9J69b2rdn00KREOVozXwz62nXB+/EHjPZGDq5qhspMOhobBg7+b55ru6koALBgIsBO3lEkut+0W6OCUkwHKiTUynpXinSE3qgOiYMrAwxeyj8zKNKoLcworppmlulYygYSlXmDNkvhGgfcYCdK+LpwMr5loyOpHg4e+e6TkJKzmoorKt9ML+Kqq+SmsmThyabaMkGqa6VzOL1jh/0lSfK1qB4g1xewLNRfcRslIl65xmu/0/649o4DFbjhZ/TUo4aiXh77+qL4sGG71+06jR8/wlQSwMEFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAABfcmVscy8ucmVsc43Puw6CMBQG4J2naM4uBQdjDIXFmLAafICmPZRGeklbL7y9HRzEODie23fyN93TzOSOIWpnGdRlBQStcFJbxeAynDZ7IDFxK/nsLDJYMELXFs0ZZ57yTZy0jyQjNjKYUvIHSqOY0PBYOo82T0YXDE+5DIp6Lq5cId1W1Y6GTwPagpAVS3rJIPSyBjIsHv/h3ThqgUcnbgZt+vHlayPLPChMDB4uSCrf7TKzQHNKuorZvgBQSwMEFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAB3b3JkL2RvY3VtZW50LnhtbG1PMW7DMAzc8wpCeyO3Q1EYtrP1BelcyBKTCLBIgZTr+veV0nbLcrjDkcfjcPpOC3yhaGQazfOxM4DkOUS6jubj/P70ZkCLo+AWJhzNjmpO02HY+sB+TUgFagJpv43mVkrurVV/w+T0yBmpeheW5EqVcrUbS8jCHlXrgbTYl657tclFMtMBoKbOHPZG7yJPFaRBmc7itgXmyOpSXhBC9KV2drIPtvkN5Y754b5mtxHKp+e1dh4BtcTaCwPQmmYU4Av8zejDxEZ+2zX2//30A1BLAQIUAxQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAAAAAAAAAAAAAIABIgEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAAAAAAAAAAAAIAB/QEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPsCAAAAAA=="
+  )
+  writeBin(jsonlite::base64_dec(docx_b64), docx_path)
+
+  result <- metasalmon:::.ms_context_text_from_file(docx_path)
+  expect_true(is.list(result))
+  expect_equal(result$source, "context.docx")
+  expect_match(result$text, "Trawl biosample dictionary", fixed = TRUE)
+  expect_match(result$text, "spawner_count = estimated number of spawners", fixed = TRUE)
+})
+
+test_that("unsupported context files warn without cli interpolation errors", {
+  tmp <- withr::local_tempdir()
+  doc_path <- file.path(tmp, "context.doc")
+  writeLines("not really a doc", doc_path)
+
+  expect_warning(
+    result <- metasalmon:::.ms_context_text_from_file(doc_path),
+    "Skipping unsupported context file"
+  )
+  expect_null(result)
+})
+
 test_that("chapi/mistral review can use mixed context files across dataset, table, column, and code targets", {
   testthat::skip_if_not_installed("openxlsx")
   testthat::skip_if_not_installed("readxl")
@@ -962,6 +1160,103 @@ test_that("create_sdp auto-writes LLM-selected IRIs with REVIEW prefix", {
       expect_match(review_txt, "REVIEW:", fixed = TRUE)
       expect_match(review_txt, "already lives there", fixed = TRUE)
       expect_match(review_txt, "salmon-domain-ontology/issues/new/choose", fixed = TRUE)
+    },
+    .package = "metasalmon"
+  )
+})
+
+test_that("HTML, PDF, DOCX, R Markdown, Quarto, and R context files can materially change LLM-selected metadata", {
+  testthat::skip_if_not_installed("pdftools")
+
+  tmp <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(count = c(1L, 2L)))
+  hint_phrase <- "estimated number of spawners"
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste("Generic", role), paste("Spawner", role)),
+      iri = c(
+        paste0("https://example.org/", role, "/generic"),
+        paste0("https://example.org/", role, "/spawner")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Generic candidate", "Spawner-specific candidate"),
+      score = c(0.91, 0.89)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    text <- paste(vapply(messages, function(msg) paste(msg$content, collapse = "\n"), character(1L)), collapse = "\n\n")
+    use_spawner <- grepl(hint_phrase, text, fixed = TRUE)
+    list(
+      decision = "accept",
+      selected_candidate_index = if (use_spawner) 2L else 1L,
+      confidence = 0.95,
+      rationale = if (use_spawner) "Context identifies a spawner-specific semantic." else "No context hint detected.",
+      missing_context = ""
+    )
+  }
+
+  write_docx <- function(path) {
+    docx_b64 <- paste0(
+      "UEsDBBQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH2QzU7DMBCE730Ky9cqccoBIZSkB36OwKE8wMreJFb9J69b2rdn00KREOVozXwz62nXB+/EHjPZGDq5qhspMOhobBg7+b55ru6koALBgIsBO3lEkut+0W6OCUkwHKiTUynpXinSE3qgOiYMrAwxeyj8zKNKoLcworppmlulYygYSlXmDNkvhGgfcYCdK+LpwMr5loyOpHg4e+e6TkJKzmoorKt9ML+Kqq+SmsmThyabaMkGqa6VzOL1jh/0lSfK1qB4g1xewLNRfcRslIl65xmu/0/649o4DFbjhZ/TUo4aiXh77+qL4sGG71+06jR8/wlQSwMEFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAABfcmVscy8ucmVsc43Puw6CMBQG4J2naM4uBQdjDIXFmLAafICmPZRGeklbL7y9HRzEODie23fyN93TzOSOIWpnGdRlBQStcFJbxeAynDZ7IDFxK/nsLDJYMELXFs0ZZ57yTZy0jyQjNjKYUvIHSqOY0PBYOo82T0YXDE+5DIp6Lq5cId1W1Y6GTwPagpAVS3rJIPSyBjIsHv/h3ThqgUcnbgZt+vHlayPLPChMDB4uSCrf7TKzQHNKuorZvgBQSwMEFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAB3b3JkL2RvY3VtZW50LnhtbG1PMW7DMAzc8wpCeyO3Q1EYtrP1BelcyBKTCLBIgZTr+veV0nbLcrjDkcfjcPpOC3yhaGQazfOxM4DkOUS6jubj/P70ZkCLo+AWJhzNjmpO02HY+sB+TUgFagJpv43mVkrurVV/w+T0yBmpeheW5EqVcrUbS8jCHlXrgbTYl657tclFMtMBoKbOHPZG7yJPFaRBmc7itgXmyOpSXhBC9KV2drIPtvkN5Y754b5mtxHKp+e1dh4BtcTaCwPQmmYU4Av8zejDxEZ+2zX2//30A1BLAQIUAxQAAAAIAGmFglzXeYTq8QAAALgBAAATAAAAAAAAAAAAAACAAQAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQDFAAAAAgAaYWCXCAbhuqyAAAALgEAAAsAAAAAAAAAAAAAAIABIgEAAF9yZWxzLy5yZWxzUEsBAhQDFAAAAAgAaYWCXClsz4HPAAAAQgEAABEAAAAAAAAAAAAAAIAB/QEAAHdvcmQvZG9jdW1lbnQueG1sUEsFBgAAAAADAAMAuQAAAPsCAAAAAA=="
+    )
+    writeBin(jsonlite::base64_dec(docx_b64), path)
+  }
+
+  writers <- list(
+    html = function(path) writeLines(c("<html><body>", sprintf("<p>%s</p>", hint_phrase), "</body></html>"), path),
+    pdf = function(path) { grDevices::pdf(path); plot.new(); text(0.5, 0.5, hint_phrase); grDevices::dev.off() },
+    docx = write_docx,
+    rmd = function(path) writeLines(c("---", "title: 'hint'", "output: html_document", "---", "", "```{r}", sprintf("semantic_hint <- '%s'", hint_phrase), "```"), path),
+    qmd = function(path) writeLines(c("---", "title: 'hint'", "format: html", "---", "", "```{r}", sprintf("semantic_hint <- '%s'", hint_phrase), "```"), path),
+    r = function(path) writeLines(c(sprintf("# %s", hint_phrase), sprintf("semantic_hint <- '%s'", hint_phrase)), path)
+  )
+
+  run_case <- function(case_name, context_path = NULL) {
+    pkg_path <- file.path(tmp, paste0("pkg-", case_name))
+    create_sdp(
+      resources,
+      path = pkg_path,
+      dataset_id = paste0("demo-", case_name),
+      table_id = "main",
+      seed_semantics = TRUE,
+      llm_assess = TRUE,
+      llm_provider = "chapi",
+      llm_api_key = "dummy-key",
+      llm_context_files = context_path,
+      llm_request_fn = fake_request,
+      check_updates = FALSE,
+      overwrite = TRUE
+    )
+    dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+    suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
+    list(dict = dict_written, suggestions = suggestions_written)
+  }
+
+  with_mocked_bindings(
+    find_terms = fake_search,
+    {
+      baseline <- run_case("baseline")
+      expect_equal(baseline$dict$term_iri[[1]], "REVIEW: https://example.org/variable/generic")
+
+      for (ext in names(writers)) {
+        context_path <- file.path(tmp, paste0("context.", ext))
+        writers[[ext]](context_path)
+        out <- run_case(ext, context_path)
+        selected <- out$suggestions[
+          out$suggestions$column_name == "count" &
+            out$suggestions$dictionary_role == "variable" &
+            !is.na(out$suggestions$llm_selected) & out$suggestions$llm_selected,
+          , drop = FALSE
+        ]
+        expect_equal(out$dict$term_iri[[1]], "REVIEW: https://example.org/variable/spawner")
+        expect_true(nrow(selected) >= 1L)
+        expect_true(any(grepl(basename(context_path), selected$llm_context_sources, fixed = TRUE)))
+      }
     },
     .package = "metasalmon"
   )

@@ -8,17 +8,17 @@
 .smn_module_urls <- function() {
   base <- "https://w3id.org/smn/modules"
   c(
-    paste0(base, "/01-entity-systematics.ttl"),
-    paste0(base, "/02-observation-measurement.ttl"),
-    paste0(base, "/03-assessment-benchmarks.ttl"),
-    paste0(base, "/04-management-governance.ttl"),
-    paste0(base, "/05-provenance-quality.ttl"),
-    paste0(base, "/06-data-interoperability.ttl"),
-    paste0(base, "/07-controlled-vocabularies.ttl"),
-    paste0(base, "/08-rda-case-study-profile-bridges.ttl"),
-    paste0(base, "/09-rda-neville-decomposition-profile-bridges.ttl"),
-    paste0(base, "/alignment-main.ttl"),
-    paste0(base, "/alignment-research.ttl")
+    paste0(base, "/01-entity-systematics"),
+    paste0(base, "/02-observation-measurement"),
+    paste0(base, "/03-assessment-benchmarks"),
+    paste0(base, "/04-management-governance"),
+    paste0(base, "/05-provenance-quality"),
+    paste0(base, "/06-data-interoperability"),
+    paste0(base, "/07-controlled-vocabularies"),
+    paste0(base, "/08-rda-case-study-profile-bridges"),
+    paste0(base, "/09-rda-neville-decomposition-profile-bridges"),
+    paste0(base, "/alignment-main"),
+    paste0(base, "/alignment-research")
   )
 }
 
@@ -35,6 +35,21 @@
     accept = "text/turtle, text/plain;q=0.9",
     cache_dir = file.path(cache_dir, .smn_cache_slug(url)),
     fallback_urls = character()
+  )
+}
+
+.smn_module_index_bundle <- function(cache_dir) {
+  paths <- vapply(.smn_module_urls(), .smn_fetch_module_path, character(1), cache_dir = cache_dir)
+  info <- file.info(paths)
+  stamp <- paste(
+    paste(paths, as.numeric(info$mtime), info$size, sep = "::"),
+    collapse = "|"
+  )
+
+  list(
+    paths = paths,
+    stamp = stamp,
+    index = .parse_smn_ttl_modules(paths)
   )
 }
 
