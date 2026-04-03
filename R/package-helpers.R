@@ -802,17 +802,21 @@ create_sdp <- function(
     suggestions <- attr(artifacts$dict, "semantic_suggestions", exact = TRUE)
   }
   if (!is.null(suggestions) && nrow(suggestions) > 0) {
-    auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
-    apply_strategy <- if (isTRUE(llm_assess) && "llm_selected" %in% names(auto_apply_suggestions)) {
-      "llm"
+    if (isTRUE(llm_assess) && "llm_selected" %in% names(suggestions)) {
+      auto_apply_suggestions <- .ms_prepare_llm_auto_apply_suggestions(artifacts$dict, suggestions)
+      apply_strategy <- "llm"
+      min_llm_confidence <- .ms_create_sdp_llm_auto_apply_min_confidence()
     } else {
-      "top"
+      auto_apply_suggestions <- .ms_filter_auto_apply_suggestions(artifacts$dict, suggestions)
+      apply_strategy <- "top"
+      min_llm_confidence <- NULL
     }
     dict_before_apply <- artifacts$dict
     artifacts$dict <- apply_semantic_suggestions(
       artifacts$dict,
       suggestions = auto_apply_suggestions,
       strategy = apply_strategy,
+      min_llm_confidence = min_llm_confidence,
       overwrite = FALSE,
       verbose = FALSE
     )
@@ -826,6 +830,7 @@ create_sdp <- function(
       artifacts$table_meta,
       suggestions = suggestions,
       strategy = apply_strategy,
+      min_llm_confidence = min_llm_confidence,
       overwrite = FALSE,
       mark_review = TRUE
     )
@@ -2306,6 +2311,33 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   length(intersect(query_tokens, label_tokens)) > 0
 }
 
+.ms_create_sdp_llm_auto_apply_roles <- function() {
+  c("variable", "property", "entity", "unit")
+}
+
+.ms_create_sdp_llm_auto_apply_min_confidence <- function() {
+  0.9
+}
+
+.ms_prepare_llm_auto_apply_suggestions <- function(dict,
+                                                   suggestions,
+                                                   min_confidence = .ms_create_sdp_llm_auto_apply_min_confidence(),
+                                                   allowed_roles = .ms_create_sdp_llm_auto_apply_roles()) {
+  suggestions <- tibble::as_tibble(suggestions)
+  if (nrow(suggestions) == 0 || !"llm_selected" %in% names(suggestions)) {
+    return(suggestions[0, , drop = FALSE])
+  }
+
+  suggestions <- suggestions %>%
+    dplyr::filter(
+      !is.na(.data$llm_selected) & .data$llm_selected,
+      !is.na(.data$llm_confidence) & .data$llm_confidence >= min_confidence,
+      .data$dictionary_role %in% allowed_roles
+    )
+
+  .ms_filter_auto_apply_suggestions(dict, suggestions)
+}
+
 .ms_filter_auto_apply_suggestions <- function(dict, suggestions) {
   if (is.null(suggestions) || nrow(suggestions) == 0) {
     return(suggestions)
@@ -2688,7 +2720,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   length(intersect(context_tokens, label_tokens)) > 0
 }
 
-.ms_apply_table_semantic_suggestions <- function(table_meta, suggestions, strategy = c("top", "llm"), overwrite = FALSE, mark_review = FALSE) {
+.ms_apply_table_semantic_suggestions <- function(table_meta,
+                                               suggestions,
+                                               strategy = c("top", "llm"),
+                                               min_llm_confidence = NULL,
+                                               overwrite = FALSE,
+                                               mark_review = FALSE) {
   table_meta <- .ms_normalize_table_meta(table_meta)
   suggestions <- tibble::as_tibble(suggestions)
   strategy <- match.arg(strategy)
@@ -2718,6 +2755,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       return(table_meta)
     }
     table_suggestions <- dplyr::filter(table_suggestions, !is.na(.data$llm_selected) & .data$llm_selected)
+    if (!is.null(min_llm_confidence)) {
+      table_suggestions <- dplyr::filter(
+        table_suggestions,
+        !is.na(.data$llm_confidence) & .data$llm_confidence >= min_llm_confidence
+      )
+    }
   }
 
   if (nrow(table_suggestions) == 0) {

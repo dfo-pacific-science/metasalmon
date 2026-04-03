@@ -1227,6 +1227,29 @@
   validated
 }
 
+.ms_llm_abort_if_provider_wide_failure <- function(assessments, config) {
+  assessments <- tibble::as_tibble(assessments)
+  if (nrow(assessments) == 0 || !"llm_error" %in% names(assessments)) {
+    return(invisible(NULL))
+  }
+
+  has_error <- !is.na(assessments$llm_error) & nzchar(assessments$llm_error)
+  has_decision <- "llm_decision" %in% names(assessments) &
+    !is.na(assessments$llm_decision) & nzchar(assessments$llm_decision)
+  if (!all(has_error) || any(has_decision)) {
+    return(invisible(NULL))
+  }
+
+  model_ref <- paste0(config$provider, "/", config$model)
+  unique_errors <- unique(trimws(as.character(assessments$llm_error[has_error])))
+  error_summary <- paste(unique_errors[nzchar(unique_errors)], collapse = " | ")
+  cli::cli_abort(c(
+    "All LLM assessments failed for {.code {model_ref}}.",
+    "i" = paste0(nrow(assessments), " target(s) returned only LLM errors, so the package is stopping instead of silently writing review-ready metadata with no usable LLM decisions."),
+    "i" = error_summary
+  ))
+}
+
 .ms_assess_semantic_suggestions_llm <- function(suggestions,
                                                 provider = c("openai", "openrouter", "openai_compatible", "chapi"),
                                                 model = NULL,
@@ -1306,6 +1329,7 @@
 
   final_records <- purrr::map(explored, "record")
   assessments <- dplyr::bind_rows(purrr::map(explored, "assessment"))
+  .ms_llm_abort_if_provider_wide_failure(assessments, config)
   suggestions <- dplyr::bind_rows(purrr::map(final_records, "group"))
   suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
