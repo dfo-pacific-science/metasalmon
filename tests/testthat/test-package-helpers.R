@@ -632,6 +632,111 @@ test_that("create_sdp writes selected LLM table suggestions back to tables.csv a
   expect_true(is.na(age_row$observation_unit_iri[[1]]) || age_row$observation_unit_iri[[1]] == "")
 })
 
+test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer semantic roles", {
+  resources <- list(main = tibble::tibble(weight_kg = c(1, 2)))
+
+  fake_suggest <- function(df, dict, ...) {
+    suggestions <- tibble::tibble(
+      column_name = rep("weight_kg", 6),
+      dictionary_role = c("variable", "property", "entity", "unit", "method", "constraint"),
+      table_id = rep("main", 6),
+      dataset_id = rep("review-demo", 6),
+      target_scope = rep("column", 6),
+      target_sdp_file = rep("column_dictionary.csv", 6),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "method_iri", "constraint_iri"),
+      iri = c(
+        "https://example.org/term/weight",
+        "https://example.org/property/weight",
+        "https://example.org/entity/fish-weight",
+        "http://qudt.org/vocab/unit/KiloGM",
+        "https://example.org/method/fork-length",
+        "https://example.org/constraint/catch-context"
+      ),
+      label = c(
+        "Weight variable",
+        "Fish weight",
+        "Fish weight",
+        "Kilogram",
+        "Fork-length field method",
+        "Catch context"
+      ),
+      source = rep("smn", 6),
+      ontology = rep("demo", 6),
+      role = c("variable", "property", "entity", "unit", "method", "constraint"),
+      match_type = rep("label_partial", 6),
+      definition = NA_character_,
+      search_query = c("weight kg", "fish weight kg", "fish weight kg", "kg", "fish weight method", "fish weight context"),
+      target_label = rep("Weight kg", 6),
+      target_description = rep("Fish weight in kilograms", 6),
+      llm_provider = rep("openrouter", 6),
+      llm_model = rep("openai/gpt-5.4-mini", 6),
+      llm_decision = c("review", rep("accept", 5)),
+      llm_confidence = c(0.89, 0.93, 0.91, 0.95, 0.99, 0.99),
+      llm_selected_candidate_index = c(NA_integer_, rep(1L, 5)),
+      llm_selected_iri = c(
+        NA_character_,
+        "https://example.org/property/weight",
+        "https://example.org/entity/fish-weight",
+        "http://qudt.org/vocab/unit/KiloGM",
+        "https://example.org/method/fork-length",
+        "https://example.org/constraint/catch-context"
+      ),
+      llm_selected_label = c(
+        NA_character_,
+        "Fish weight",
+        "Fish weight",
+        "Kilogram",
+        "Fork-length field method",
+        "Catch context"
+      ),
+      llm_rationale = rep("Selected for test coverage.", 6),
+      llm_missing_context = rep(NA_character_, 6),
+      llm_context_sources = rep("Data_Dictionary_EN_FR.csv", 6),
+      llm_error = rep(NA_character_, 6),
+      llm_candidate_rank = rep(1L, 6),
+      llm_selected = c(FALSE, rep(TRUE, 5))
+    )
+    attr(dict, "semantic_suggestions") <- suggestions
+    attr(dict, "semantic_llm_assessments") <- suggestions[, c(
+      "dataset_id", "table_id", "column_name", "dictionary_role",
+      "target_scope", "target_sdp_file", "target_sdp_field", "search_query",
+      "llm_provider", "llm_model", "llm_decision", "llm_confidence",
+      "llm_selected_candidate_index", "llm_selected_iri", "llm_selected_label",
+      "llm_rationale", "llm_missing_context", "llm_context_sources", "llm_error"
+    )]
+    dict
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      pkg_path <- create_sdp(
+        resources,
+        path = file.path(withr::local_tempdir(), "review-package-llm-guardrails"),
+        dataset_id = "review-demo",
+        table_id = "main",
+        seed_semantics = TRUE,
+        llm_assess = TRUE,
+        check_updates = FALSE,
+        overwrite = TRUE,
+        seed_verbose = FALSE
+      )
+    },
+    .package = "metasalmon"
+  )
+
+  dict_written <- readr::read_csv(file.path(pkg_path, "metadata", "column_dictionary.csv"), show_col_types = FALSE)
+  weight_row <- dict_written[dict_written$column_name == "weight_kg", , drop = FALSE]
+
+  expect_true(is.na(weight_row$term_iri[[1]]) || weight_row$term_iri[[1]] == "")
+  expect_equal(weight_row$property_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/property/weight"))
+  expect_equal(weight_row$entity_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/entity/fish-weight"))
+  expect_equal(weight_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/KiloGM"))
+  expect_true(is.na(weight_row$method_iri[[1]]) || weight_row$method_iri[[1]] == "")
+  expect_true(is.na(weight_row$constraint_iri[[1]]) || weight_row$constraint_iri[[1]] == "")
+})
+
 test_that("create_sdp seed note explains slower semantic lookup", {
   note <- metasalmon:::.ms_create_sdp_seed_note(
     seed_semantics = TRUE,

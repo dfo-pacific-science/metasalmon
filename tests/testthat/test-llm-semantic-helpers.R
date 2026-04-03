@@ -149,6 +149,64 @@ test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
   expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
 })
 
+test_that("suggest_semantics aborts when every LLM assessment fails", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  failing_request <- function(messages, config) {
+    stop("HTTP 402 Payment Required.")
+  }
+
+  suppressWarnings(
+    expect_error(
+      suggest_semantics(
+        NULL,
+        dict,
+        sources = "smn",
+        max_per_role = 2,
+        search_fn = fake_search,
+        llm_assess = TRUE,
+        llm_provider = "openrouter",
+        llm_model = "openai/gpt-5.4-mini",
+        llm_api_key = "dummy-key",
+        llm_top_n = 2,
+        llm_request_fn = failing_request
+      ),
+      "All LLM assessments failed"
+    )
+  )
+})
+
 test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
   dict <- tibble::tibble(
     dataset_id = "d1",
@@ -492,6 +550,210 @@ test_that("batched LLM responses are mapped back onto target records", {
   expect_equal(sort(out$column_name), c("a", "b"))
   expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
   expect_true(is.na(out$llm_selected_iri[out$column_name == "b"]))
+})
+
+test_that("measurement targets route to decomposition-aware review with bundle context", {
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1", "d1", "d1"),
+    table_id = c("t1", "t1", "t1", "t1"),
+    column_name = c("catch_weight", "catch_weight", "catch_weight", "catch_weight"),
+    column_label = c("Catch weight", "Catch weight", "Catch weight", "Catch weight"),
+    column_description = c("Weight of catch", "Weight of catch", "Weight of catch", "Weight of catch"),
+    column_role = c("measurement", "measurement", "measurement", "measurement"),
+    code_value = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    dictionary_role = c("property", "property", "method", "method"),
+    target_scope = c("column", "column", "column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("property_iri", "property_iri", "method_iri", "method_iri"),
+    search_query = c("catch weight", "catch weight", "catch weight method", "catch weight method"),
+    target_label = c("Weight of catch", "Weight of catch", "Catch weight method", "Catch weight method"),
+    target_description = c("Weight of catch", "Weight of catch", "Method used for catch weight", "Method used for catch weight"),
+    target_query_basis = c("label", "label", "label", "label"),
+    target_query_context = c("ctx", "ctx", "ctx", "ctx"),
+    label = c("Fish weight", "Catch mass", "Enumeration method", "Fork-length field method"),
+    iri = c("https://example.org/p1", "https://example.org/p2", "https://example.org/m1", "https://example.org/m2"),
+    source = c("smn", "smn", "smn", "smn"),
+    ontology = c("demo", "demo", "demo", "demo"),
+    definition = c("P1", "P2", "M1", "M2"),
+    score = c(0.8, 0.7, 0.8, 0.7),
+    .ms_group_key = c("g1", "g1", "g2", "g2"),
+    .ms_row_order = 1:4
+  )
+
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = function(messages, config) list()
+  )
+  record <- metasalmon:::.ms_llm_prepare_record(
+    "g1",
+    suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
+    config,
+    2L,
+    NULL,
+    NULL,
+    bundle_group = suggestions
+  )
+
+  expect_true(isTRUE(record$decomposition_mode))
+  messages <- metasalmon:::.ms_llm_messages_for_decomposition_target(record)
+  expect_match(messages[[1]]$content, "chat_decomposition", fixed = TRUE)
+  expect_match(messages[[1]]$content, "usedProcedure", fixed = TRUE)
+  expect_false(grepl("iadoptMethod", messages[[1]]$content, fixed = TRUE))
+  expect_match(messages[[2]]$content, '"bundle_context"', fixed = TRUE)
+  expect_match(messages[[2]]$content, '"method"', fixed = TRUE)
+})
+
+test_that("LLM retry_search can trigger a second deterministic retrieval pass", {
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("CATCH_WEIGHT", "CATCH_WEIGHT"),
+    column_label = c("Catch weight", "Catch weight"),
+    column_description = c("Weight of catch", "Weight of catch"),
+    column_role = c("measurement", "measurement"),
+    code_value = c(NA_character_, NA_character_),
+    dictionary_role = c("property", "property"),
+    search_role = c("property", "property"),
+    target_scope = c("column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("property_iri", "property_iri"),
+    search_query = c("catch weight", "catch weight"),
+    target_label = c("Weight of catch", "Weight of catch"),
+    target_description = c("Weight of catch", "Weight of catch"),
+    target_query_basis = c("label", "label"),
+    target_query_context = c("ctx", "ctx"),
+    label = c("Fish weight", "Weight context"),
+    iri = c("https://example.org/property/fish-weight", "https://example.org/constraint/context"),
+    source = c("smn", "smn"),
+    ontology = c("demo", "demo"),
+    definition = c("Fish weight property", "Weak context term"),
+    match_type = c("label_partial", "label_partial"),
+    score = c(0.8, 0.79)
+  )
+
+  call_idx <- 0L
+  fake_request <- function(messages, config) {
+    call_idx <<- call_idx + 1L
+    if (call_idx == 1L) {
+      return(list(
+        decision = "retry_search",
+        selected_candidate_index = NULL,
+        confidence = 0.45,
+        rationale = "Need a catch-mass specific property rather than a generic weight/property-adjacent term.",
+        missing_context = "",
+        bundle_summary = "Total mass of organisms in catch.",
+        retry_query = "catch mass"
+      ))
+    }
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.93,
+      rationale = "Catch mass is the better slot fit for the property.",
+      missing_context = "",
+      bundle_summary = "Total mass of organisms in catch."
+    )
+  }
+
+  fake_search <- function(query, role, sources) {
+    if (identical(query, "catch mass")) {
+      return(tibble::tibble(
+        label = c("Catch mass", "Fish weight"),
+        iri = c("https://example.org/property/catch-mass", "https://example.org/property/fish-weight"),
+        source = c("smn", "smn"),
+        ontology = c("demo", "demo"),
+        role = c(role, role),
+        match_type = c("label_partial", "label_partial"),
+        definition = c("Total mass of catch", "Fish weight property"),
+        score = c(0.94, 0.86)
+      ))
+    }
+
+    tibble::tibble(
+      label = c("Fish weight", "Weight context"),
+      iri = c("https://example.org/property/fish-weight", "https://example.org/constraint/context"),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Fish weight property", "Weak context term"),
+      score = c(0.8, 0.79)
+    )
+  }
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 2L,
+    request_fn = fake_request,
+    search_fn = fake_search,
+    sources = "smn",
+    max_per_role = 2L
+  )
+
+  selected <- out$suggestions[out$suggestions$llm_selected, , drop = FALSE]
+  expect_equal(selected$llm_selected_iri[[1]], "https://example.org/property/catch-mass")
+  expect_true(isTRUE(selected$llm_exploration_used[[1]]))
+  expect_match(selected$llm_exploration_queries[[1]], "catch mass", fixed = TRUE)
+})
+
+test_that("LLM request_new_term stores ontology-gap metadata", {
+  suggestions <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t1"),
+    column_name = c("CATCH_WEIGHT", "CATCH_WEIGHT"),
+    column_label = c("Catch weight", "Catch weight"),
+    column_description = c("Weight of catch", "Weight of catch"),
+    column_role = c("measurement", "measurement"),
+    code_value = c(NA_character_, NA_character_),
+    dictionary_role = c("property", "property"),
+    target_scope = c("column", "column"),
+    target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv"),
+    target_sdp_field = c("property_iri", "property_iri"),
+    search_query = c("catch weight", "catch weight"),
+    target_label = c("Weight of catch", "Weight of catch"),
+    target_description = c("Weight of catch", "Weight of catch"),
+    target_query_basis = c("label", "label"),
+    target_query_context = c("ctx", "ctx"),
+    label = c("Fish weight", "Fish mass"),
+    iri = c("https://example.org/property/fish-weight", "https://example.org/property/fish-mass"),
+    source = c("smn", "smn"),
+    ontology = c("demo", "demo"),
+    definition = c("Fish weight property", "Fish mass property"),
+    match_type = c("label_partial", "label_partial"),
+    score = c(0.84, 0.81)
+  )
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 2L,
+    request_fn = function(messages, config) list(
+      decision = "request_new_term",
+      selected_candidate_index = NULL,
+      confidence = 0.87,
+      rationale = "Existing candidates are too individual-organism oriented.",
+      missing_context = "",
+      bundle_summary = "Total mass of organisms in catch.",
+      suggested_label = "Catch mass",
+      suggested_definition = "Total mass of organisms captured in a fishing or survey event.",
+      suggested_namespace = "smn"
+    ),
+    search_fn = function(query, role, sources) suggestions[, c("label", "iri", "source", "ontology", "definition", "match_type", "score")],
+    sources = "smn",
+    max_per_role = 2L
+  )
+
+  assessment <- out$assessments[1, , drop = FALSE]
+  expect_equal(assessment$llm_decision[[1]], "request_new_term")
+  expect_equal(assessment$llm_new_term_label[[1]], "Catch mass")
+  expect_equal(assessment$llm_new_term_namespace[[1]], "smn")
+  expect_true(is.na(assessment$llm_selected_iri[[1]]))
 })
 
 test_that("apply_semantic_suggestions can use llm strategy with a confidence threshold", {
