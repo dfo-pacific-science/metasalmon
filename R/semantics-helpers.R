@@ -216,9 +216,10 @@
 #' @param llm_model Character model identifier. Required when
 #'   `llm_assess = TRUE` unless supplied via `METASALMON_LLM_MODEL`. When
 #'   `llm_provider = "openrouter"` and no model is supplied, the package
-#'   defaults to `"openrouter/free"`. When `llm_provider = "chapi"` and no
-#'   model is supplied, the package defaults to `"ollama2.mistral:7b"` and
-#'   also checks `CHAPI_MODEL`.
+#'   defaults to `"openrouter/free"`. Any valid OpenRouter model ID may be
+#'   supplied here (for example `"openai/gpt-5.4-mini"`). When
+#'   `llm_provider = "chapi"` and no model is supplied, the package defaults
+#'   to `"ollama2.mistral:7b"` and also checks `CHAPI_MODEL`.
 #' @param llm_api_key Optional API key override. If omitted, provider-specific
 #'   environment variables are used (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
 #'   `CHAPI_API_KEY`, or `METASALMON_LLM_API_KEY`).

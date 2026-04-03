@@ -182,7 +182,7 @@
       c(
         "LLM assessment requires a model.",
         "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}.",
-        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}.",
+        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}, but any valid OpenRouter model ID is accepted (for example {.code 'openai/gpt-5.4-mini'}).",
         "i" = "For {.code llm_provider = 'chapi'}, the default is {.code 'ollama2.mistral:7b'}."
       )
     )

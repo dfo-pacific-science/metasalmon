@@ -83,6 +83,72 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
   expect_true(any(grepl("README-context.md", assessments$llm_context_sources, fixed = TRUE)))
 })
 
+test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    expect_equal(config$provider, "openrouter")
+    expect_equal(config$model, "openai/gpt-5.4-mini")
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.92,
+      rationale = "The custom OpenRouter model id should pass through unchanged.",
+      missing_context = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "openrouter",
+    llm_model = "openai/gpt-5.4-mini",
+    llm_api_key = "dummy-key",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  assessments <- attr(res, "semantic_llm_assessments")
+  expect_true(all(assessments$llm_provider == "openrouter"))
+  expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
+})
+
 test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
   dict <- tibble::tibble(
     dataset_id = "d1",
