@@ -182,7 +182,7 @@
       c(
         "LLM assessment requires a model.",
         "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}.",
-        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}.",
+        "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}, but any valid OpenRouter model ID is accepted (for example {.code 'openai/gpt-5.4-mini'}).",
         "i" = "For {.code llm_provider = 'chapi'}, the default is {.code 'ollama2.mistral:7b'}."
       )
     )
@@ -258,7 +258,7 @@
 }
 
 .ms_supported_context_extensions <- function() {
-  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "pdf", "xls", "xlsx", "xlsm")
+  c("md", "txt", "csv", "tsv", "json", "yaml", "yml", "rst", "r", "rmd", "qmd", "pdf", "htm", "html", "docx", "xls", "xlsx", "xlsm")
 }
 
 .ms_context_text_from_excel <- function(path,
@@ -362,6 +362,72 @@
   paste(sheet_text, collapse = "\n\n")
 }
 
+.ms_context_text_from_rmarkdown <- function(path) {
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  if (length(lines) == 0L) {
+    return("")
+  }
+
+  # Drop leading YAML front matter.
+  if (length(lines) >= 1L && trimws(lines[[1]]) == "---") {
+    end_idx <- which(trimws(lines[-1]) == "---")
+    if (length(end_idx) > 0L) {
+      lines <- lines[-seq_len(end_idx[[1]] + 1L)]
+    }
+  }
+
+  keep <- character()
+  for (line in lines) {
+    trimmed <- trimws(line)
+    if (grepl("^```", trimmed)) {
+      next
+    }
+    keep <- c(keep, line)
+  }
+
+  paste(keep, collapse = "\n")
+}
+
+.ms_context_text_from_docx <- function(path) {
+  tmp_dir <- tempfile("metasalmon-docx-")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive = TRUE, force = TRUE), add = TRUE)
+
+  utils::unzip(path, files = "word/document.xml", exdir = tmp_dir)
+  document_path <- file.path(tmp_dir, "word", "document.xml")
+  if (!file.exists(document_path)) {
+    cli::cli_abort("DOCX context file {.path {path}} does not contain {.file word/document.xml}.")
+  }
+
+  doc <- xml2::read_xml(document_path)
+  ns <- xml2::xml_ns(doc)
+  paragraphs <- xml2::xml_find_all(doc, ".//w:p", ns = ns)
+  paragraph_text <- vapply(paragraphs, function(node) {
+    runs <- xml2::xml_find_all(node, ".//w:t", ns = ns)
+    text <- trimws(xml2::xml_text(runs))
+    text <- text[nzchar(text)]
+    paste(text, collapse = "")
+  }, character(1L))
+  paragraph_text <- paragraph_text[nzchar(trimws(paragraph_text))]
+  paste(paragraph_text, collapse = "\n")
+}
+
+.ms_context_text_from_html <- function(path) {
+  doc <- xml2::read_html(path)
+  scope <- xml2::xml_find_first(doc, ".//body")
+  if (inherits(scope, "xml_missing")) {
+    scope <- doc
+  }
+
+  nodes <- xml2::xml_find_all(
+    scope,
+    ".//text()[normalize-space() and not(ancestor::script) and not(ancestor::style)]"
+  )
+  text <- trimws(xml2::xml_text(nodes))
+  text <- text[nzchar(text)]
+  paste(text, collapse = "\n")
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
@@ -369,9 +435,10 @@
   }
 
   ext <- tolower(tools::file_ext(normalized))
-  if (!ext %in% .ms_supported_context_extensions()) {
+  supported_extensions <- .ms_supported_context_extensions()
+  if (!ext %in% supported_extensions) {
     cli::cli_warn(
-      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {.ms_supported_context_extensions()}}"
+      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {(supported_extensions)}}"
     )
     return(NULL)
   }
@@ -389,6 +456,12 @@
     }
     pages <- pdftools::pdf_text(normalized)
     text <- paste(pages, collapse = "\n\n")
+  } else if (ext %in% c("htm", "html")) {
+    text <- .ms_context_text_from_html(normalized)
+  } else if (ext %in% c("rmd", "qmd")) {
+    text <- .ms_context_text_from_rmarkdown(normalized)
+  } else if (identical(ext, "docx")) {
+    text <- .ms_context_text_from_docx(normalized)
   } else {
     text <- paste(readLines(normalized, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   }
