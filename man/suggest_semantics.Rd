@@ -72,9 +72,10 @@ looks weak, the LLM may request at most one bounded alternate-query pass
 \item{llm_model}{Character model identifier. Required when
 \code{llm_assess = TRUE} unless supplied via \code{METASALMON_LLM_MODEL}. When
 \code{llm_provider = "openrouter"} and no model is supplied, the package
-defaults to \code{"openrouter/free"}. When \code{llm_provider = "chapi"} and no
-model is supplied, the package defaults to \code{"ollama2.mistral:7b"} and
-also checks \code{CHAPI_MODEL}.}
+defaults to \code{"openrouter/free"}. Any valid OpenRouter model ID may be
+supplied here (for example \code{"openai/gpt-5.4-mini"}). When
+\code{llm_provider = "chapi"} and no model is supplied, the package defaults
+to \code{"ollama2.mistral:7b"} and also checks \code{CHAPI_MODEL}.}
 
 \item{llm_api_key}{Optional API key override. If omitted, provider-specific
 environment variables are used (\code{OPENAI_API_KEY}, \code{OPENROUTER_API_KEY},
