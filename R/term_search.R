@@ -1546,6 +1546,24 @@ pattern <- paste(tokens, collapse = ".*")
 
 .smn_term_index <- function(refresh = FALSE) {
   cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "smn")
+
+  module_bundle <- tryCatch(
+    .smn_module_index_bundle(cache_dir),
+    error = function(e) NULL
+  )
+  if (!is.null(module_bundle) && nrow(module_bundle$index) > 0) {
+    stamp <- paste("modules", module_bundle$stamp, sep = "::")
+    if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
+        exists("index", envir = .smn_index_cache, inherits = FALSE) &&
+        identical(get("stamp", envir = .smn_index_cache), stamp)) {
+      return(get("index", envir = .smn_index_cache))
+    }
+
+    assign("stamp", stamp, envir = .smn_index_cache)
+    assign("index", module_bundle$index, envir = .smn_index_cache)
+    return(module_bundle$index)
+  }
+
   path <- fetch_salmon_ontology(
     url = "https://w3id.org/smn/",
     accept = "application/rdf+xml",
@@ -1553,7 +1571,7 @@ pattern <- paste(tokens, collapse = ".*")
     fallback_urls = c("https://w3id.org/smn")
   )
 
-  stamp <- paste(path, file.info(path)$mtime, file.info(path)$size)
+  stamp <- paste("root", path, file.info(path)$mtime, file.info(path)$size, sep = "::")
   if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
       exists("index", envir = .smn_index_cache, inherits = FALSE) &&
       identical(get("stamp", envir = .smn_index_cache), stamp)) {
