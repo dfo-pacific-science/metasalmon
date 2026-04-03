@@ -3,6 +3,7 @@
 export(apply_salmon_dictionary)
 export(apply_semantic_suggestions)
 export(benchmark_term_ranking_fixtures)
+export(chat_decomposition)
 export(check_for_updates)
 export(create_sdp)
 export(deduplicate_proposed_terms)
