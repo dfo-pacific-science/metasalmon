@@ -2,21 +2,32 @@
 
 ## metasalmon 0.1.2
 
-- Added Excel workbook support for `llm_context_files`: `.xls`, `.xlsx`,
-  and `.xlsm` files are now read through the optional `readxl` package
-  and serialized into bounded sheet text before LLM prompting.
+- Fixed the seeded semantic-context warning path so
+  `seed_semantics = TRUE` no longer crashes when mixed or previously
+  unsupported `llm_context_files` trigger `cli` interpolation in package
+  creation/review flows.
+- Expanded `llm_context_files` handling so HTML/HTM, DOCX, `.R`, `.Rmd`,
+  and `.qmd` inputs are read or normalized cleanly during LLM review
+  instead of failing on unsupported-file warnings.
+- Added Excel workbook context-file support for package-native LLM
+  review, including `.xls`, `.xlsx`, and `.xlsm` inputs via the optional
+  `readxl` package.
+- Hardened LLM assessment parsing so malformed `accept` responses
+  without a selected candidate degrade to `review`, and falsey
+  `missing_context` placeholders no longer pollute outputs.
 - Expanded LLM regression coverage with mixed-context bundle tests for
   the exact `chapi` + `ollama2.mistral:7b` configuration, including
-  markdown, CSV, Excel, and PDF inputs across `dataset.csv`,
-  `tables.csv`, `column_dictionary.csv`, and `codes.csv` targets.
+  markdown, CSV, Excel, PDF, HTML, DOCX, and notebook/source context
+  bundles across `dataset.csv`, `tables.csv`, `column_dictionary.csv`,
+  and `codes.csv` targets.
 - Finished the `scripts/llm-sanity-check.R` harness into a richer
   end-to-end smoke tool: it now generates per-case context bundles,
   records context formats in the summaries, rebuilds EDH XML after a
   simulated review pass, and writes stable CSV outputs under
   `artifacts/`.
-- Added a dedicated Getting Started article for LLM review with context
-  files and linked it from the quickstart/setup docs so the
-  package-native workflow is easier to discover.
+- Added and linked a dedicated LLM review getting-started guide from the
+  quickstart/setup docs so the package-native workflow is easier to
+  discover.
 
 ## metasalmon 0.1.1
 

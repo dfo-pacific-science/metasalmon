@@ -21,8 +21,11 @@ Use this guide when you want `create_sdp()` or `suggest_semantics()` to review s
 
 `llm_context_files` accepts local files that can add domain context to the LLM review step:
 
-- markdown/text: `.md`, `.txt`, `.rst`
+- markdown/text notes: `.md`, `.txt`, `.rst`
 - delimited/text data: `.csv`, `.tsv`, `.json`, `.yaml`, `.yml`
+- source/notebook files: `.R`, `.Rmd`, `.qmd`
+- HTML pages: `.htm`, `.html`
+- Word documents: `.docx`
 - PDF reports: `.pdf` with the optional `pdftools` package
 - Excel workbooks: `.xls`, `.xlsx`, `.xlsm` with the optional `readxl` package
 
@@ -32,8 +35,8 @@ The files are read locally, chunked, and trimmed before prompting. They are used
 
 For a realistic Salmon Data Package review, pass a small bundle that mixes:
 
-1. a README or methods note describing the dataset,
-2. a CSV or workbook data dictionary,
+1. a README, HTML export, or methods note describing the dataset,
+2. a CSV, workbook, or DOCX/R Markdown data dictionary or analyst note,
 3. a technical report or PDF summary if one exists.
 
 For example:
@@ -41,6 +44,7 @@ For example:
 ```{r}
 context_files <- c(
   "README.md",
+  "methods-note.Rmd",
   "data-dictionary.xlsx",
   "technical-report.pdf"
 )

@@ -144,7 +144,9 @@ an API key.</p>
 <li><code>suggest_semantics(..., llm_assess = TRUE)</code></li>
 </ul>
 <p>If you also plan to pass PDF or Excel files through
-<code>llm_context_files</code>, install the optional readers once:</p>
+<code>llm_context_files</code>, install the optional readers once. HTML,
+DOCX, <code>.R</code>, <code>.Rmd</code>, and <code>.qmd</code> inputs
+work without extra reader packages:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pdftools"</span>, <span class="st">"readxl"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="section level3">

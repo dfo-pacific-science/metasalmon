@@ -10,6 +10,7 @@ any optional LLM provider is configured before you begin.
 ## Installation
 
 ``` r
+
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
 ```
@@ -20,6 +21,7 @@ Load the built-in Fraser Coho 2023-2024 example (173 rows) and create a
 review-ready Salmon Data Package in one call.
 
 ``` r
+
 library(metasalmon)
 
 data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
@@ -62,6 +64,7 @@ If you also need the DFO Enterprise Data Hub / GeoNetwork XML, use the
 one-shot path:
 
 ``` r
+
 pkg_path <- create_sdp(
   fraser_coho,
   path = "fraser-coho-2023-2024-sdp",
@@ -160,6 +163,7 @@ After Excel edits, save the metadata back to CSV and reload the package
 in R:
 
 ``` r
+
 pkg <- read_salmon_datapackage(pkg_path)
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```

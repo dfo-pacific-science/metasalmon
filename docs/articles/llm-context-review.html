@@ -86,11 +86,18 @@ data dictionaries, or technical reports.</p>
 <p><code>llm_context_files</code> accepts local files that can add
 domain context to the LLM review step:</p>
 <ul>
-<li>markdown/text: <code>.md</code>, <code>.txt</code>,
+<li>markdown/text notes: <code>.md</code>, <code>.txt</code>,
 <code>.rst</code>
 </li>
 <li>delimited/text data: <code>.csv</code>, <code>.tsv</code>,
 <code>.json</code>, <code>.yaml</code>, <code>.yml</code>
+</li>
+<li>source/notebook files: <code>.R</code>, <code>.Rmd</code>,
+<code>.qmd</code>
+</li>
+<li>HTML pages: <code>.htm</code>, <code>.html</code>
+</li>
+<li>Word documents: <code>.docx</code>
 </li>
 <li>PDF reports: <code>.pdf</code> with the optional
 <code>pdftools</code> package</li>
@@ -108,14 +115,16 @@ it does not mint raw IRIs.</p>
 <p>For a realistic Salmon Data Package review, pass a small bundle that
 mixes:</p>
 <ol style="list-style-type: decimal">
-<li>a README or methods note describing the dataset,</li>
-<li>a CSV or workbook data dictionary,</li>
+<li>a README, HTML export, or methods note describing the dataset,</li>
+<li>a CSV, workbook, or DOCX/R Markdown data dictionary or analyst
+note,</li>
 <li>a technical report or PDF summary if one exists.</li>
 </ol>
 <p>For example:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">"README.md"</span>,</span>
+<span>  <span class="st">"methods-note.Rmd"</span>,</span>
 <span>  <span class="st">"data-dictionary.xlsx"</span>,</span>
 <span>  <span class="st">"technical-report.pdf"</span></span>
 <span><span class="op">)</span></span></code></pre></div>

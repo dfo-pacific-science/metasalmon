@@ -129,8 +129,8 @@ infer_salmon_datapackage_artifacts(
 
   Optional local context files forwarded to
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
-  See that function for supported file types, including PDF and Excel
-  context files.
+  See that function for supported file types, including HTML, DOCX,
+  `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
 
 - llm_context_text:
 

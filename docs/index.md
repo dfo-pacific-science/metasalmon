@@ -55,6 +55,7 @@ Install, run one function on the bundled Fraser Coho 2023-2024 example
 (173 rows), then review in Excel.
 
 ``` r
+
 # Install from GitHub (recommended)
 # install.packages("remotes")
 # remotes::install_github("dfo-pacific-science/metasalmon")
@@ -152,6 +153,7 @@ from R, keep the deterministic search path and add an opt-in review
 pass:
 
 ``` r
+
 context_files <- c(
   file.path(pkg_path, "metadata", "column_dictionary.csv"),
   "README.md",
@@ -183,11 +185,13 @@ confirm or replace them in Excel rather than treating them as final.
 When you enable the LLM pass, it judges the retrieved shortlist using
 the same review-first convention, including table-level observation-unit
 matches written into `metadata/tables.csv`. `llm_context_files` supports
-text/markdown notes, CSV dictionaries, Excel workbooks (`.xls`, `.xlsx`,
-`.xlsm` via `readxl`), and PDF reports (`.pdf` via `pdftools`).
-Validation should only pass after the REVIEW prefix is removed. When you
-use `llm_provider = "openrouter"` without specifying `llm_model`,
-`metasalmon` now defaults to `openrouter/free`.
+text and notes (`.md`, `.txt`, `.rst`), delimited/data files (`.csv`,
+`.tsv`, `.json`, `.yaml`, `.yml`), source and notebook-style files
+(`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`), DOCX (`.docx`), Excel
+workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports
+(`.pdf` via `pdftools`). Validation should only pass after the REVIEW
+prefix is removed. When you use `llm_provider = "openrouter"` without
+specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
 For the full workflow across `dataset.csv`, `tables.csv`,
 `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild,
@@ -205,6 +209,7 @@ icon in the bottom left, open **Settings**, click **Show** next to **API
 Keys**, and copy the key value. Then run:
 
 ``` r
+
 file.edit("~/.Renviron")
 CHAPI_API_KEY="paste key here"
 ```
@@ -218,6 +223,7 @@ automatic timeout.
 For external users, OpenRouter is the easiest free option:
 
 ``` r
+
 file.edit("~/.Renviron")
 OPENROUTER_API_KEY="paste key here"
 ```
@@ -227,6 +233,7 @@ OPENROUTER_API_KEY="paste key here"
 If you already have OpenAI API credits, use:
 
 ``` r
+
 file.edit("~/.Renviron")
 OPENAI_API_KEY="paste key here"
 ```
@@ -292,6 +299,7 @@ Package](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 ## Installation
 
 ``` r
+
 # Install from GitHub
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
@@ -441,6 +449,7 @@ Development setup and package structure
 ### Installation for Development
 
 ``` r
+
 install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
                    "tibble", "readr", "jsonlite", "cli", "rlang", "dplyr",
                    "tidyr", "purrr", "withr", "frictionless"))
@@ -449,6 +458,7 @@ install.packages(c("devtools", "roxygen2", "testthat", "knitr", "rmarkdown",
 ### Build and Check
 
 ``` r
+
 devtools::document()
 devtools::test()
 devtools::check()

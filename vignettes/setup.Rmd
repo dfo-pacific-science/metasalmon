@@ -76,7 +76,7 @@ Only do this setup now if you want to run:
 - `create_sdp(..., llm_assess = TRUE)`, or
 - `suggest_semantics(..., llm_assess = TRUE)`
 
-If you also plan to pass PDF or Excel files through `llm_context_files`, install the optional readers once:
+If you also plan to pass PDF or Excel files through `llm_context_files`, install the optional readers once. HTML, DOCX, `.R`, `.Rmd`, and `.qmd` inputs work without extra reader packages:
 
 ```{r}
 install.packages(c("pdftools", "readxl"))

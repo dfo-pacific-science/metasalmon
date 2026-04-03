@@ -35,7 +35,7 @@
 #'   target.
 #' @param llm_context_files Optional local context files forwarded to
 #'   `suggest_semantics()`. See that function for supported file types,
-#'   including PDF and Excel context files.
+#'   including HTML, DOCX, `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
 #' @param llm_context_text Optional inline context snippets forwarded to
 #'   `suggest_semantics()`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.

@@ -110,9 +110,10 @@ suggest_semantics(
   Character model identifier. Required when `llm_assess = TRUE` unless
   supplied via `METASALMON_LLM_MODEL`. When
   `llm_provider = "openrouter"` and no model is supplied, the package
-  defaults to `"openrouter/free"`. When `llm_provider = "chapi"` and no
-  model is supplied, the package defaults to `"ollama2.mistral:7b"` and
-  also checks `CHAPI_MODEL`.
+  defaults to `"openrouter/free"`. Any valid OpenRouter model ID may be
+  supplied here (for example `"openai/gpt-5.4-mini"`). When
+  `llm_provider = "chapi"` and no model is supplied, the package
+  defaults to `"ollama2.mistral:7b"` and also checks `CHAPI_MODEL`.
 
 - llm_api_key:
 
@@ -136,10 +137,11 @@ suggest_semantics(
 - llm_context_files:
 
   Optional character vector of local context files (for example
-  README/markdown notes, CSV dictionaries, Excel workbooks, or PDF
-  reports) used to provide extra domain context to the LLM. PDF support
-  uses the optional `pdftools` package; Excel support uses the optional
-  `readxl` package.
+  README/markdown notes, CSV dictionaries, HTML exports, DOCX files,
+  source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
+  workbooks, or PDF reports) used to provide extra domain context to the
+  LLM. PDF support uses the optional `pdftools` package; Excel support
+  uses the optional `readxl` package.
 
 - llm_context_text:
 
