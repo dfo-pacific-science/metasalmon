@@ -161,7 +161,8 @@
                                    api_key = NULL,
                                    base_url = NULL,
                                    timeout_seconds = 60,
-                                   request_fn = NULL) {
+                                   request_fn = NULL,
+                                   reasoning_effort = NULL) {
   provider <- match.arg(provider)
 
   model <- .ms_llm_non_empty_string(model)
@@ -236,6 +237,14 @@
     )
   }
 
+  reasoning_effort <- .ms_llm_non_empty_string(reasoning_effort)
+  if (is.na(reasoning_effort)) {
+    reasoning_effort <- .ms_llm_non_empty_string(Sys.getenv("METASALMON_LLM_REASONING_EFFORT", unset = ""))
+  }
+  if (!identical(provider, "openai")) {
+    reasoning_effort <- NA_character_
+  }
+
   timeout_seconds <- suppressWarnings(as.numeric(timeout_seconds[[1]] %||% 60))
   if (is.na(timeout_seconds) || timeout_seconds <= 0) {
     cli::cli_abort("{.arg llm_timeout_seconds} must be a positive number.")
@@ -253,7 +262,8 @@
     api_key = api_key,
     base_url = sub("/$", "", base_url),
     timeout_seconds = timeout_seconds,
-    request_fn = request_fn %||% .ms_llm_chat_json_request
+    request_fn = request_fn %||% .ms_llm_chat_json_request,
+    reasoning_effort = reasoning_effort
   )
 }
 
@@ -1249,6 +1259,27 @@
   text
 }
 
+.ms_llm_build_chat_request_body <- function(messages, config) {
+  body <- list(
+    model = config$model,
+    messages = messages
+  )
+
+  provider <- tolower(trimws(as.character(config$provider %||% "")))
+  model <- tolower(trimws(as.character(config$model %||% "")))
+  omit_temperature <- identical(provider, "openai") && grepl("^gpt-5", model)
+
+  if (!omit_temperature) {
+    body$temperature <- 0
+  }
+
+  if (!is.na(config$reasoning_effort %||% NA_character_)) {
+    body$reasoning_effort <- config$reasoning_effort
+  }
+
+  body
+}
+
 .ms_llm_chat_json_request <- function(messages, config) {
   req <- httr2::request(paste0(config$base_url, "/chat/completions")) |>
     httr2::req_method("POST") |>
@@ -1258,11 +1289,7 @@
     ) |>
     httr2::req_user_agent(ms_user_agent()) |>
     httr2::req_timeout(seconds = config$timeout_seconds) |>
-    httr2::req_body_json(list(
-      model = config$model,
-      messages = messages,
-      temperature = 0
-    ), auto_unbox = TRUE)
+    httr2::req_body_json(.ms_llm_build_chat_request_body(messages, config), auto_unbox = TRUE)
 
   if (identical(config$provider, "openrouter")) {
     req <- httr2::req_headers(
@@ -1575,6 +1602,7 @@
                                                 model = NULL,
                                                 api_key = NULL,
                                                 base_url = NULL,
+                                                reasoning_effort = NULL,
                                                 top_n = 5L,
                                                 context_files = NULL,
                                                 context_text = NULL,
@@ -1597,7 +1625,8 @@
     api_key = api_key,
     base_url = base_url,
     timeout_seconds = timeout_seconds,
-    request_fn = request_fn
+    request_fn = request_fn,
+    reasoning_effort = reasoning_effort
   )
   top_n <- .ms_llm_effective_top_n(config, top_n)
   context_chunk_pool <- .ms_collect_context_chunks(

@@ -149,6 +149,94 @@ test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
   expect_true(all(assessments$llm_model == "openai/gpt-5.4-mini"))
 })
 
+test_that("suggest_semantics forwards OpenAI reasoning effort to LLM review", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+
+  fake_search <- function(query, role, sources) {
+    tibble::tibble(
+      label = c(paste(role, "best"), paste(role, "alt")),
+      iri = c(
+        paste0("https://example.org/", role, "/best"),
+        paste0("https://example.org/", role, "/alt")
+      ),
+      source = c("smn", "smn"),
+      ontology = c("demo", "demo"),
+      role = c(role, role),
+      match_type = c("label_partial", "label_partial"),
+      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
+      score = c(0.9, 0.5)
+    )
+  }
+
+  fake_request <- function(messages, config) {
+    expect_equal(config$provider, "openai")
+    expect_equal(config$model, "gpt-5.4")
+    expect_equal(config$reasoning_effort, "xhigh")
+
+    list(
+      decision = "accept",
+      selected_candidate_index = 1,
+      confidence = 0.95,
+      rationale = "The reasoning-effort value should pass through unchanged.",
+      missing_context = ""
+    )
+  }
+
+  res <- suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 2,
+    search_fn = fake_search,
+    llm_assess = TRUE,
+    llm_provider = "openai",
+    llm_model = "gpt-5.4",
+    llm_api_key = "dummy-key",
+    llm_reasoning_effort = "xhigh",
+    llm_top_n = 2,
+    llm_request_fn = fake_request
+  )
+
+  assessments <- attr(res, "semantic_llm_assessments")
+  expect_true(all(assessments$llm_provider == "openai"))
+  expect_true(all(assessments$llm_model == "gpt-5.4"))
+})
+
+test_that("chat request body includes reasoning effort only when configured", {
+  messages <- list(list(role = "user", content = "test"))
+
+  openai_body <- .ms_llm_build_chat_request_body(messages, list(
+    provider = "openai",
+    model = "gpt-5.4",
+    reasoning_effort = "xhigh"
+  ))
+  openrouter_body <- .ms_llm_build_chat_request_body(messages, list(
+    provider = "openrouter",
+    model = "openai/gpt-5.4-mini",
+    reasoning_effort = NA_character_
+  ))
+
+  expect_equal(openai_body$reasoning_effort, "xhigh")
+  expect_false("temperature" %in% names(openai_body))
+  expect_false("reasoning_effort" %in% names(openrouter_body))
+  expect_equal(openrouter_body$temperature, 0)
+})
+
 test_that("suggest_semantics aborts when every LLM assessment fails", {
   dict <- tibble::tibble(
     dataset_id = "d1",
