@@ -228,6 +228,8 @@
 #'   set via `METASALMON_LLM_BASE_URL`. For `llm_provider = "chapi"`, the
 #'   package defaults to `https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api`
 #'   and also checks `CHAPI_BASE_URL`.
+#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to the
+#'   OpenAI chat-completions request body when `llm_provider = "openai"`.
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
 #'   per target for each assessment round. Default is `5`.
 #' @param llm_context_files Optional character vector of local context files
@@ -343,6 +345,7 @@ suggest_semantics <- function(df,
                               llm_model = NULL,
                               llm_api_key = NULL,
                               llm_base_url = NULL,
+                              llm_reasoning_effort = NULL,
                               llm_top_n = 5L,
                               llm_context_files = NULL,
                               llm_context_text = NULL,
@@ -1222,6 +1225,7 @@ suggest_semantics <- function(df,
       model = llm_model,
       api_key = llm_api_key,
       base_url = llm_base_url,
+      reasoning_effort = llm_reasoning_effort,
       top_n = llm_top_n,
       context_files = llm_context_files,
       context_text = llm_context_text,

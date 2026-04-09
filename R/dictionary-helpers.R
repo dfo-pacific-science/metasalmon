@@ -31,6 +31,8 @@
 #'   `suggest_semantics()`.
 #' @param llm_base_url Optional OpenAI-compatible base URL forwarded to
 #'   `suggest_semantics()`.
+#' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to
+#'   `suggest_semantics()` when using the OpenAI provider.
 #' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
 #'   target.
 #' @param llm_context_files Optional local context files forwarded to
@@ -79,6 +81,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_model = NULL,
                             llm_api_key = NULL,
                             llm_base_url = NULL,
+                            llm_reasoning_effort = NULL,
                             llm_top_n = 5L,
                             llm_context_files = NULL,
                             llm_context_text = NULL,
@@ -90,6 +93,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     !is.null(llm_model) ||
     !is.null(llm_api_key) ||
     !is.null(llm_base_url) ||
+    !is.null(llm_reasoning_effort) ||
     !is.null(llm_request_fn)
   semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
     semantic_max_per_role,
@@ -176,6 +180,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
           llm_model = llm_model,
           llm_api_key = llm_api_key,
           llm_base_url = llm_base_url,
+          llm_reasoning_effort = llm_reasoning_effort,
           llm_top_n = llm_top_n,
           llm_context_files = llm_context_files,
           llm_context_text = llm_context_text,
@@ -251,6 +256,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
           llm_model = llm_model,
           llm_api_key = llm_api_key,
           llm_base_url = llm_base_url,
+          llm_reasoning_effort = llm_reasoning_effort,
           llm_top_n = llm_top_n,
           llm_context_files = llm_context_files,
           llm_context_text = llm_context_text,
@@ -1197,4 +1203,3 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
 
   result
 }
-
